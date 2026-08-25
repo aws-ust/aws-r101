@@ -29,8 +29,10 @@ JetBrains Mono for anything meant to read as a shell/code snippet.
 
 | Name | Hex | Use |
 |---|---|---|
-| `haiti` | `#170F33` | Base background (near-black navy) |
-| `daisy-bush` | `#46258A` | Accent violet |
+| `haiti` | `#170F33` | Base background (near-black navy), navbar bar fill |
+| `jacarta` | `#2A1259` | Page/section purple background (lighter than `haiti`) — eye-matched from screenshots, confirm against Figma |
+| `aquamarine` | `#5AF0C0` | Cyan/blue CTA fill, accordion `+` icon, active nav pill — eye-matched from screenshots, confirm against Figma |
+| `daisy-bush` | `#46258A` | Accent violet, purple button fill |
 | `meteorite` | `#3F247C` | Primary button fill, card overlays (also at 55% opacity: `rgba(63,36,124,0.55)`) |
 | `biloba-flower` | `#B78CF0` | Accent/highlight violet (also at 15%: `rgba(183,140,240,0.15)`) |
 | `prelude` | `#C6B8E8` | Terminal/mono text on dark backgrounds |
@@ -40,7 +42,35 @@ JetBrains Mono for anything meant to read as a shell/code snippet.
 
 Borders on cards/pills are typically `1px solid` `blue-chalk` at 15–25% opacity.
 Overlay panels (nav dropdown, etc.) use `blue-chalk`/`haiti` at low opacity with
-a backdrop blur (`4–5px`).
+a backdrop blur (`12px` — raised from an earlier `4–5px` note; at 12px the
+background glow blobs actually read through glass surfaces instead of just
+softening a flat color).
+
+### Glassmorphism
+
+Glass surfaces use the `glass` utility (`frontend/src/app/globals.css`),
+composable with any `bg-*/NN` and border color:
+
+```css
+@utility glass {
+  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in oklch, var(--blue-chalk) 12%, transparent),
+    0 8px 32px -8px color-mix(in oklch, black 45%, transparent);
+}
+```
+
+`--glass-blur` is `12px`. `glass` deliberately sets no background-color and
+no border — each component supplies its own translucent fill and hue-matched
+border so utility ordering never fights. Recipe: translucent fill at 40–55%
+opacity, a 1px hue-matched border at 15–40% opacity, the inset top highlight
+(this is what sells "glass" over "blurry"), and an ambient drop shadow.
+**Light fills need higher opacity than dark ones** to hold text contrast —
+e.g. the cyan button sits at `aquamarine/85` so `haiti` text stays legible,
+while the purple button holds `daisy-bush/55`. Glass only reads as glass over
+a background with variation — the page has soft violet radial-gradient glow
+blobs behind it (`body::before`, `z-index: -1`) for exactly this reason; glass
+over a flat color is indistinguishable from a solid fill.
 
 ### Typography
 
@@ -74,13 +104,18 @@ in the screenshots, not the raw `100%` value.
 ## Layout conventions
 
 - Page content is centered in a `1180px` column with generous outer padding.
+- The navbar is a **full-bleed** glass bar spanning the full viewport width,
+  with its contents (logo, links, CTA) held to the same `1180px` column as
+  the rest of the page — the `100px` pill radius still applies to nav chips
+  (active link pill, mobile links), just not to the bar itself.
 - Each major section opens with a small pill-shaped "`$ command`" eyebrow
   label in JetBrains Mono (e.g. `$ whoami`, `$ what-we-do`,
   `$ builders --start`, `$ ls committees/`, `$ cat events.log`,
   `$ join --now`), then a Heading 2, then a one-paragraph intro.
-- Buttons are pill-shaped (`radius: 100`): **primary** = solid `meteorite`
-  fill with `blue-chalk`-25% border; **secondary** = transparent with a
-  `blue-chalk`-30% border. Both use the Button text style.
+- Buttons are glass rounded-rects at radius `14`, both variants the same
+  shape and border treatment, differing only in hue: **cyan** =
+  `aquamarine`-tinted fill/border, `haiti` text; **purple** = `daisy-bush`-
+  tinted fill, `biloba-flower`-tinted border, `blue-chalk` text.
 - Cards/panels use `meteorite` (or `blue-chalk`-low-opacity) fills with a
   hairline border and rounded corners (14–28px), sometimes with backdrop
   blur.
@@ -127,9 +162,9 @@ section (frame `5:14930`), each with `default`/`hover` variants:
 navbar (`5:15518`) is the actual persistent header/nav across the page; build
 that as the shared `Header`/`Navbar` component.
 
-**Accordion**: not present in the design. No collapse/expand pattern exists
-anywhere in the current draft (including the missing FAQ section). Build one
-using the card/border/radius tokens above until Figma has a reference.
+**Accordion**: implemented at `frontend/src/components/ui/accordion.tsx`
+(shadcn/Base UI, restyled) — hairline-separated rows, `aquamarine` `+` icon
+that rotates to an × on open. Use this as the reference until Figma has one.
 
 ## Gaps to flag with design
 
