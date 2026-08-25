@@ -6,6 +6,16 @@ This file is the design basis for every frontend component in this repo. When a
 component's look or copy is unclear, check the Figma file (node IDs are noted
 below) before guessing.
 
+## Component library
+
+This repository must use [shadcn/ui](https://ui.shadcn.com) for UI primitives
+(buttons, cards, dialogs, inputs, etc.) — already initialized in `frontend/`
+(`components.json`, `src/lib/utils.ts`, `src/components/ui/`). Add new
+components with `npx shadcn@latest add <component>` rather than hand-rolling
+primitives; extend the generated component source directly for one-off
+variants instead of wrapping it. Style/theme new components against the
+tokens below (`@theme inline` in `globals.css`), not shadcn's defaults.
+
 ## Theme
 
 Dark, terminal/dev-inspired. Deep navy-violet background, glassmorphic
