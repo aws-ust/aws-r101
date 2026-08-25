@@ -18,7 +18,6 @@ app.use(
 
 app.get("/health", (c) => c.json({ ok: true, service: "aws-ust-api" }));
 
-// ponytail: hardcoded until the positions schema exists, matches PDF's committee shape
 app.get("/positions", (c) =>
   c.json([
     {
@@ -63,7 +62,6 @@ app.patch("/applications/:id/status", async (c) => {
   return c.json({ id, status: body.status ?? "unknown" });
 });
 
-// ponytail: stubbed 501, add real S3 presign when the upload step is built
 app.post("/uploads/presign", (c) =>
   c.json({ error: "not implemented" }, 501)
 );

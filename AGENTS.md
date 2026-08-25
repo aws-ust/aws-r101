@@ -8,10 +8,3 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# Design basis
-
-[`DESIGN.md`](../DESIGN.md) at the repo root is the design basis for every
-frontend component — colors, typography, spacing, page sections, and the
-component inventory. Read it before building or styling any component, and
-keep new components consistent with its tokens and conventions rather than
-introducing new ones ad hoc.
