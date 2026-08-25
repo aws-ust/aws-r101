@@ -1,0 +1,31 @@
+import type { ReactNode } from "react"
+import { cn } from "@/lib/utils"
+
+const eyebrowClasses =
+  "w-fit font-mono text-xs font-medium uppercase tracking-wide text-aquamarine"
+const titleClasses =
+  "max-w-[640px] font-sans text-4xl font-bold text-blue-chalk md:text-5xl"
+const subtitleClasses =
+  "max-w-[680px] font-sans text-base leading-relaxed text-prelude"
+
+type SectionHeaderProps = {
+  eyebrow: string
+  title: ReactNode
+  subtitle?: string
+  className?: string
+}
+
+export function SectionHeader({
+  eyebrow,
+  title,
+  subtitle,
+  className,
+}: SectionHeaderProps) {
+  return (
+    <div className={cn("flex flex-col gap-3", className)}>
+      <p className={eyebrowClasses}>{eyebrow}</p>
+      <h2 className={titleClasses}>{title}</h2>
+      {subtitle && <p className={subtitleClasses}>{subtitle}</p>}
+    </div>
+  )
+}
