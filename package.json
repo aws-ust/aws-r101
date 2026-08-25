@@ -11,5 +11,8 @@
     "db:seed": "pnpm --filter backend db:seed",
     "test": "pnpm --filter backend test",
     "deploy": "pnpm --filter backend deploy"
+  },
+  "dependencies": {
+    "react-doctor": "^0.9.12"
   }
 }
