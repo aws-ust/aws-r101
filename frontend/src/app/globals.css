@@ -157,6 +157,33 @@
   }
 }
 
+@utility panel-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--aquamarine) 45%, transparent)
+    transparent;
+}
+
+@utility reveal {
+  animation: positions-reveal 280ms ease-out;
+}
+
+@keyframes positions-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    animation: none;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
