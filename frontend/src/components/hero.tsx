@@ -161,7 +161,7 @@ export function Hero() {
     <section
       aria-labelledby="hero-title"
       className={heroClasses}
-      style={{ backgroundImage: "url('/hero-background.png')" }}
+      style={{ backgroundImage: "url('/hero/hero-background.png')" }}
     >
       <div aria-hidden="true" className={overlayClasses} />
       <div className={contentClasses}>
@@ -201,7 +201,7 @@ export function Hero() {
           role="img"
         >
           <Image
-            src="/cloud.png"
+            src="/hero/cloud.png"
             alt=""
             fill
             sizes="(max-width: 640px) 58vw, (max-width: 768px) 34vw, 540px"
@@ -210,7 +210,7 @@ export function Hero() {
           />
           <Image
             ref={faceRef}
-            src="/cloud-face.png"
+            src="/hero/cloud-face.png"
             alt=""
             fill
             sizes="(max-width: 640px) 58vw, (max-width: 768px) 34vw, 540px"
@@ -228,7 +228,11 @@ export function Hero() {
             </p>
 
             <div className={buttonRowClasses}>
-              <Button color="purple" className={`${buttonClasses} ${purpleButtonEffectClasses}`}>
+              <Button
+                color="purple"
+                render={<a href="#committees" />}
+                className={`${buttonClasses} ${purpleButtonEffectClasses}`}
+              >
                 Find your committee
               </Button>
               <Button color="cyan" className={`${buttonClasses} ${cyanButtonEffectClasses}`}>
