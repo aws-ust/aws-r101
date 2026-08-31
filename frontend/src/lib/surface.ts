@@ -7,6 +7,8 @@ export const glassPanelClasses =
 export const fieldLabelClasses =
   "font-sans text-sm font-medium text-blue-chalk"
 
+export const requiredMarkClasses = "ml-1 text-aquamarine"
+
 export const fieldControlClasses =
   "h-12 w-full data-[size=default]:h-12 rounded-[20px] border-0 bg-haiti/70 px-4 text-sm text-blue-chalk placeholder:text-prelude/60 focus-visible:border-aquamarine/40 focus-visible:ring-2 focus-visible:ring-aquamarine/30"
 
