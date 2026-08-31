@@ -5,19 +5,22 @@ import { useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 
 const heroClasses =
-  "relative left-1/2 -mt-16 mb-[-40px] flex h-[calc(100svh-4.25rem)] min-h-0 w-screen -translate-x-1/2 overflow-hidden bg-cover bg-center text-center"
+  "relative left-1/2 -mt-16 mb-[-40px] flex min-h-[calc(100svh-6rem)] w-screen -translate-x-1/2 overflow-hidden bg-cover bg-center text-center"
 const overlayClasses =
   "absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(23,15,51,0.1),rgba(42,18,89,0.03)_50%,rgba(23,15,51,0.2))]"
-const contentClasses = "relative mx-auto h-full w-full max-w-[1180px]"
+const contentClasses =
+  "relative mx-auto flex min-h-[calc(100svh-6rem)] w-full max-w-[1180px] flex-col items-center justify-between"
+const artworkClasses =
+  "flex w-full shrink-0 flex-col items-center"
 const titleClasses =
-  "absolute left-1/2 top-[clamp(0.25rem,1vh,0.75rem)] z-10 h-[clamp(205px,39vh,340px)] max-md:top-[clamp(0.5rem,1.5vh,1rem)] max-md:h-[clamp(175px,32vh,235px)] max-[700px]:top-0 max-[700px]:h-[clamp(150px,28vh,205px)] w-[min(94vw,1040px)] max-[700px]:w-[min(100vw,620px)] -translate-x-1/2 overflow-visible"
+  "z-10 h-[clamp(190px,34vw,340px)] w-[min(100vw,1040px)] overflow-visible max-md:h-[clamp(175px,32vh,235px)] max-[700px]:h-[clamp(155px,34vw,205px)]"
 const cloudClasses =
-  "absolute left-1/2 top-[clamp(0.5rem,1.5vh,1.25rem)] z-20 aspect-square w-[clamp(300px,34vw,540px)] max-md:top-[clamp(0.75rem,2.5vh,1.5rem)] max-md:w-[clamp(210px,58vw,320px)] max-[700px]:top-[clamp(6.5rem,18vh,9rem)] max-[700px]:w-[clamp(190px,56vw,280px)] -translate-x-1/2"
+  "relative z-20 -mt-[clamp(5rem,12vw,10rem)] aspect-square w-[clamp(260px,30vw,400px)] max-md:w-[clamp(210px,58vw,320px)] max-[700px]:-mt-[clamp(4rem,12vw,5.5rem)] max-[700px]:w-[clamp(190px,56vw,280px)]"
 const cloudImageClasses = "absolute inset-0 h-full w-full object-contain"
 const lowerContentClasses =
-  "absolute bottom-[clamp(1.125rem,2.5vh,1.75rem)] left-1/2 z-30 flex w-[min(94vw,720px)] -translate-x-1/2 flex-col items-center"
+  "z-30 flex w-[min(94vw,720px)] flex-col items-center pb-[clamp(1.125rem,2.5vh,1.75rem)]"
 const informationClasses =
-  "relative top-[clamp(1rem,3vh,2rem)] max-[700px]:top-[clamp(0.5rem,2vh,1rem)] flex w-full flex-col items-center gap-[clamp(1.25rem,2.5vh,2rem)]"
+  "flex w-full flex-col items-center gap-[clamp(1.25rem,2.5vh,2rem)]"
 const descriptionClasses =
   "w-[min(88vw,640px)] text-xs leading-relaxed text-white drop-shadow-[0_2px_8px_rgba(23,15,51,0.5)] sm:text-sm md:text-base"
 const buttonRowClasses =
@@ -29,7 +32,7 @@ const purpleButtonEffectClasses =
 const cyanButtonEffectClasses =
   "hover:shadow-[0_0_24px_rgba(90,240,192,0.45)]"
 const scrollClasses =
-  "mt-[clamp(2.5rem,6vh,4rem)] flex flex-col items-center font-mono text-[clamp(0.7rem,1vw,0.9rem)] uppercase tracking-[0.2em] text-white max-[700px]:mt-[clamp(1.25rem,4vh,2rem)]"
+  "mt-[clamp(1.25rem,4vh,4rem)] flex flex-col items-center font-mono text-[clamp(0.7rem,1vw,0.9rem)] uppercase tracking-[0.2em] text-white"
 const scrollArrowClasses = "mt-2 block text-xl leading-none sm:text-2xl"
 
 export function Hero() {
@@ -165,59 +168,60 @@ export function Hero() {
     >
       <div aria-hidden="true" className={overlayClasses} />
       <div className={contentClasses}>
-        <h1
-          id="hero-title"
-          aria-label="What's in the Clouds?"
-          className={titleClasses}
-        >
-          <svg
-            aria-hidden="true"
-            className="h-full w-full overflow-visible"
-            viewBox="0 0 1200 400"
-            role="presentation"
+        <div className={artworkClasses}>
+          <h1
+            id="hero-title"
+            aria-label="What's in the Clouds?"
+            className={titleClasses}
           >
-            <defs>
-              <path id="hero-title-arch" d="M 100 350 Q 600 -110 1100 350" />
-            </defs>
-            <text
-              fill="white"
-              fontFamily="var(--font-poppins), sans-serif"
-              fontSize="105"
-              fontWeight="700"
-              letterSpacing="1"
-              textAnchor="middle"
+            <svg
+              aria-hidden="true"
+              className="h-full w-full overflow-visible"
+              viewBox="0 0 1200 400"
+              role="presentation"
             >
-              <textPath href="#hero-title-arch" startOffset="50%">
-                What&apos;s in the Clouds?
-              </textPath>
-            </text>
-          </svg>
-        </h1>
+              <defs>
+                <path id="hero-title-arch" d="M 100 350 Q 600 -110 1100 350" />
+              </defs>
+              <text
+                fill="white"
+                fontFamily="var(--font-poppins), sans-serif"
+                fontSize="105"
+                fontWeight="700"
+                letterSpacing="1"
+                textAnchor="middle"
+              >
+                <textPath href="#hero-title-arch" startOffset="50%">
+                  What&apos;s in the Clouds?
+                </textPath>
+              </text>
+            </svg>
+          </h1>
 
-        <div
-          ref={cloudRef}
-          className={cloudClasses}
-          aria-label="A cloud with an interactive face"
-          role="img"
-        >
-          <Image
-            src="/hero/cloud.png"
-            alt=""
-            fill
-            sizes="(max-width: 640px) 58vw, (max-width: 768px) 34vw, 540px"
-            className={cloudImageClasses}
-            draggable={false}
-          />
-          <Image
-            ref={faceRef}
-            src="/hero/cloud-face.png"
-            alt=""
-            fill
-            sizes="(max-width: 640px) 58vw, (max-width: 768px) 34vw, 540px"
-            className={`${cloudImageClasses} will-change-transform`}
-
-            draggable={false}
-          />
+          <div
+            ref={cloudRef}
+            className={cloudClasses}
+            aria-label="A cloud with an interactive face"
+            role="img"
+          >
+            <Image
+              src="/hero/cloud.png"
+              alt=""
+              fill
+              sizes="(max-width: 640px) 58vw, (max-width: 768px) 34vw, 540px"
+              className={cloudImageClasses}
+              draggable={false}
+            />
+            <Image
+              ref={faceRef}
+              src="/hero/cloud-face.png"
+              alt=""
+              fill
+              sizes="(max-width: 640px) 58vw, (max-width: 768px) 34vw, 540px"
+              className={`${cloudImageClasses} will-change-transform`}
+              draggable={false}
+            />
+          </div>
         </div>
 
         <div className={lowerContentClasses}>
@@ -230,7 +234,7 @@ export function Hero() {
             <div className={buttonRowClasses}>
               <Button
                 color="purple"
-                render={<a href="#committees" />}
+                render={<a href="#committees" aria-label="Find your committee" />}
                 className={`${buttonClasses} ${purpleButtonEffectClasses}`}
               >
                 Find your committee

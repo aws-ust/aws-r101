@@ -39,7 +39,7 @@ const sectionClasses =
 const cardsClasses =
   "grid auto-rows-fr grid-cols-1 gap-x-5 gap-y-6 sm:grid-cols-2 lg:grid-cols-3"
 const cardClasses =
-  "flex h-full min-h-[15rem] flex-col rounded-[14px] border border-biloba-flower/15 bg-daisy-bush/25 p-4 transition-all duration-300 ease-out hover:-translate-y-1 hover:border-biloba-flower/35 hover:bg-daisy-bush/35 hover:shadow-[0_0_24px_rgba(183,140,240,0.18)] motion-reduce:transition-none motion-reduce:hover:transform-none sm:min-h-[16rem] sm:p-5 lg:p-6"
+  "flex h-full min-h-[15rem] flex-col rounded-[14px] border border-biloba-flower/15 bg-daisy-bush/25 p-4 transition-[background-color,border-color,box-shadow,transform] duration-300 ease-out hover:-translate-y-1 hover:border-biloba-flower/35 hover:bg-daisy-bush/35 hover:shadow-[0_0_24px_rgba(183,140,240,0.18)] motion-reduce:transition-none motion-reduce:hover:transform-none sm:min-h-[16rem] sm:p-5 lg:p-6"
 const iconClasses = "flex size-12 shrink-0 items-center justify-center rounded-full border border-biloba-flower/25 bg-haiti/60 shadow-[0_0_20px_rgba(183,140,240,0.24)]"
 const categoryClasses =
   "font-mono text-[0.65rem] uppercase tracking-[0.1em] text-prelude sm:text-xs"
@@ -48,7 +48,7 @@ const descriptionClasses = "mt-2.5 text-sm leading-[1.4] text-prelude"
 const ctaClasses =
   "flex min-h-[6.5rem] flex-col gap-5 rounded-[18px] border border-biloba-flower/25 bg-daisy-bush/35 p-5 shadow-[0_0_28px_rgba(183,140,240,0.12)] sm:flex-row sm:items-center sm:justify-between sm:px-7"
 const ctaTextClasses = "text-base font-medium text-blue-chalk sm:text-lg"
-const ctaButtonClasses = "h-11 px-6 text-sm transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_0_24px_rgba(90,240,192,0.45)] active:translate-y-0 motion-reduce:transition-none sm:h-12 sm:px-7 sm:text-base"
+const ctaButtonClasses = "h-11 px-6 text-sm transition-[background-color,box-shadow,transform] duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_0_24px_rgba(90,240,192,0.45)] active:translate-y-0 motion-reduce:transition-none sm:h-12 sm:px-7 sm:text-base"
 
 export function Committees() {
   return (
