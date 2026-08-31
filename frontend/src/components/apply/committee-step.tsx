@@ -41,7 +41,7 @@ function CommitteeSelect({
   onValueChange: (value: string) => void
 }) {
   return (
-    <Field label={label} htmlFor={id}>
+    <Field label={label} htmlFor={id} required>
       <Select
         value={value || null}
         onValueChange={(next: string | null) => onValueChange(next ?? "")}
@@ -75,16 +75,19 @@ function PositionSelect({
   onValueChange: (value: string) => void
 }) {
   const options = POSITIONS.filter((position) => position.committee === committee)
+  const selectedTitle = options.find((position) => position.id === value)?.title
 
   return (
-    <Field label={label} htmlFor={id}>
+    <Field label={label} htmlFor={id} required>
       <Select
         value={value || null}
         onValueChange={(next: string | null) => onValueChange(next ?? "")}
         disabled={!committee}
       >
         <SelectTrigger id={id} className={triggerClasses}>
-          <SelectValue placeholder="Select a position" />
+          <span className="flex flex-1 truncate text-left">
+            {selectedTitle ?? "Select a position"}
+          </span>
         </SelectTrigger>
         <SelectContent>
           {options.map((position) => (
@@ -131,7 +134,7 @@ export function CommitteeStep({ values, onChange }: CommitteeStepProps) {
         value={values.secondPositionId}
         onValueChange={(secondPositionId) => onChange({ secondPositionId })}
       />
-      <Field label="Why do you want to join AWS Builders - UST?" htmlFor="motivation">
+      <Field label="Why do you want to join AWS Builders - UST?" htmlFor="motivation" required>
         <Textarea
           id="motivation"
           name="motivation"
