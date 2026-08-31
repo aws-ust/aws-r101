@@ -9,11 +9,14 @@ import { CommitteeStep } from "@/components/apply/committee-step"
 import { UploadStep } from "@/components/apply/upload-step"
 import { SuccessPanel } from "@/components/apply/success-panel"
 import {
+  committeeStepError,
   committeeValid,
   emptyCommittee,
   emptyGeneral,
   emptyUpload,
+  generalStepError,
   generalValid,
+  uploadStepError,
 } from "@/components/apply/form-model"
 import { SectionHeader } from "@/components/section-header"
 import { createApplication } from "@/lib/api"
@@ -40,11 +43,11 @@ export function ApplyForm() {
   function goNext() {
     setError("")
     if (step === 1 && !generalValid(general)) {
-      setError("Please fill in every field. Age must be a positive number.")
+      setError(generalStepError(general))
       return
     }
     if (step === 2 && !committeeValid(committee)) {
-      setError("Pick two different positions and tell us why you want to join.")
+      setError(committeeStepError(committee))
       return
     }
     if (step === 1) setStep(2)
@@ -54,7 +57,7 @@ export function ApplyForm() {
   function submit() {
     setError("")
     if (!upload.resume || !upload.transcript) {
-      setError("Please attach a PDF resume and transcript.")
+      setError(uploadStepError)
       return
     }
     createApplication({
