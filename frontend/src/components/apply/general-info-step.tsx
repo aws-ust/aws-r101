@@ -28,55 +28,75 @@ type GeneralInfoStepProps = {
   onChange: (patch: Partial<GeneralInfoValues>) => void
 }
 
+function lettersOnly(value: string) {
+  return value.replace(/[^\p{L}\s'-]/gu, "")
+}
+
+function positiveDigits(value: string) {
+  const digits = value.replace(/\D/g, "")
+  if (digits === "" || Number(digits) <= 0) return ""
+  return String(Number(digits))
+}
+
 export function GeneralInfoStep({ values, onChange }: GeneralInfoStepProps) {
   return (
     <div className={gridClasses}>
-      <Field label="First Name" htmlFor="firstName">
+      <Field label="First Name" htmlFor="firstName" required>
         <Input
           id="firstName"
           name="firstName"
           autoComplete="given-name"
+          placeholder="Juan"
+          inputMode="text"
           value={values.firstName}
-          onChange={(e) => onChange({ firstName: e.target.value })}
+          onChange={(e) => onChange({ firstName: lettersOnly(e.target.value) })}
           className={fieldControlClasses}
         />
       </Field>
-      <Field label="Last Name" htmlFor="lastName">
+      <Field label="Last Name" htmlFor="lastName" required>
         <Input
           id="lastName"
           name="lastName"
           autoComplete="family-name"
+          placeholder="Dela Cruz"
+          inputMode="text"
           value={values.lastName}
-          onChange={(e) => onChange({ lastName: e.target.value })}
+          onChange={(e) => onChange({ lastName: lettersOnly(e.target.value) })}
           className={fieldControlClasses}
         />
       </Field>
       <div className={cn(ageRowClasses, "sm:col-span-2")}>
-        <Field label="Age" htmlFor="age">
+        <Field label="Age" htmlFor="age" required>
           <Input
             id="age"
             name="age"
+            type="text"
             inputMode="numeric"
+            pattern="[1-9][0-9]*"
+            min={1}
+            placeholder="21"
             value={values.age}
-            onChange={(e) => onChange({ age: e.target.value })}
+            onChange={(e) => onChange({ age: positiveDigits(e.target.value) })}
             className={fieldControlClasses}
           />
         </Field>
-        <Field label="Year & Section" htmlFor="section">
+        <Field label="Year & Section" htmlFor="section" required>
           <Input
             id="section"
             name="section"
             value={values.section}
+            placeholder="3ISB"
             onChange={(e) => onChange({ section: e.target.value })}
             className={fieldControlClasses}
           />
         </Field>
-        <Field label="Email" htmlFor="emailLocal">
+        <Field label="UST Email" htmlFor="emailLocal" required>
           <div className={emailWrapClasses}>
             <Input
               id="emailLocal"
               name="emailLocal"
               autoComplete="username"
+              placeholder="juan.delacruz"
               value={values.emailLocal}
               onChange={(e) =>
                 onChange({
