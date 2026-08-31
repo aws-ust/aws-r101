@@ -235,6 +235,7 @@ export function Hero() {
               <Button
                 color="purple"
                 render={<a href="#committees" aria-label="Find your committee" />}
+                nativeButton={false}
                 className={`${buttonClasses} ${purpleButtonEffectClasses}`}
               >
                 Find your committee
