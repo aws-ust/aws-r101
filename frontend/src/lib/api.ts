@@ -3,7 +3,6 @@ import type {
   Application,
   ApplicationStatus,
   CreateApplicationInput,
-  Position,
 } from "./application-types"
 import { POSITIONS, SEED_APPLICATIONS } from "./mock-applications"
 
@@ -37,10 +36,6 @@ export function useApplications() {
 export function useApplication(id: string) {
   const apps = useApplications()
   return apps.find((app) => app.id === id) ?? null
-}
-
-export function getPositions(): Position[] {
-  return POSITIONS
 }
 
 export function getApplication(id: string) {
