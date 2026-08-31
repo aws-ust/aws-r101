@@ -1,8 +1,8 @@
 "use client"
 
 import { useId, useState } from "react"
+import { Field } from "@/components/field"
 import { cn } from "@/lib/utils"
-import { fieldLabelClasses } from "@/lib/surface"
 
 const stackClasses = "flex flex-col gap-5"
 const dropClasses =
@@ -28,10 +28,7 @@ function FileDrop({ label, file, onFile }: FileDropProps) {
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <label htmlFor={id} className={fieldLabelClasses}>
-        {label}
-      </label>
+    <Field label={label} htmlFor={id} required>
       <label
         htmlFor={id}
         className={cn(dropClasses, (active || file) && dropActiveClasses)}
@@ -57,7 +54,7 @@ function FileDrop({ label, file, onFile }: FileDropProps) {
         className={inputClasses}
         onChange={(event) => takeFile(event.target.files)}
       />
-    </div>
+    </Field>
   )
 }
 
@@ -80,7 +77,7 @@ export function UploadStep({ values, onChange }: UploadStepProps) {
         onFile={(resume) => onChange({ resume })}
       />
       <FileDrop
-        label="Transcript"
+        label="Transcript of Records (TOR)"
         file={values.transcript}
         onFile={(transcript) => onChange({ transcript })}
       />
