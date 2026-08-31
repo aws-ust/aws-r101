@@ -1,0 +1,157 @@
+"use client"
+
+import { useState } from "react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { ApplyStepper } from "@/components/apply/stepper"
+import { GeneralInfoStep } from "@/components/apply/general-info-step"
+import { CommitteeStep } from "@/components/apply/committee-step"
+import { UploadStep } from "@/components/apply/upload-step"
+import { SuccessPanel } from "@/components/apply/success-panel"
+import {
+  committeeValid,
+  emptyCommittee,
+  emptyGeneral,
+  emptyUpload,
+  generalValid,
+} from "@/components/apply/form-model"
+import { SectionHeader } from "@/components/section-header"
+import { createApplication } from "@/lib/api"
+import { UST_EMAIL_DOMAIN } from "@/lib/mock-applications"
+import {
+  glassPanelClasses,
+  ghostPillButtonClasses,
+  pageShellClasses,
+  positionsLinkClasses,
+} from "@/lib/surface"
+
+const panelClasses = `mx-auto mt-10 w-full max-w-2xl ${glassPanelClasses} px-6 py-8 md:px-10`
+const actionsClasses = "mt-8 flex items-center justify-between gap-4"
+const nextButtonClasses = "h-10 px-5 text-xs"
+const errorClasses = "mt-4 text-sm text-aquamarine"
+
+export function ApplyForm() {
+  const [step, setStep] = useState<1 | 2 | 3 | "success">(1)
+  const [general, setGeneral] = useState(emptyGeneral)
+  const [committee, setCommittee] = useState(emptyCommittee)
+  const [upload, setUpload] = useState(emptyUpload)
+  const [error, setError] = useState("")
+
+  function goNext() {
+    setError("")
+    if (step === 1 && !generalValid(general)) {
+      setError("Please fill in every field. Age must be a positive number.")
+      return
+    }
+    if (step === 2 && !committeeValid(committee)) {
+      setError("Pick two different positions and tell us why you want to join.")
+      return
+    }
+    if (step === 1) setStep(2)
+    if (step === 2) setStep(3)
+  }
+
+  function submit() {
+    setError("")
+    if (!upload.resume || !upload.transcript) {
+      setError("Please attach a PDF resume and transcript.")
+      return
+    }
+    createApplication({
+      firstName: general.firstName.trim(),
+      lastName: general.lastName.trim(),
+      email: `${general.emailLocal.trim()}${UST_EMAIL_DOMAIN}`,
+      age: Number(general.age),
+      section: general.section.trim(),
+      motivation: committee.motivation.trim(),
+      choices: [
+        { positionId: committee.firstPositionId, preferenceRank: 1 },
+        { positionId: committee.secondPositionId, preferenceRank: 2 },
+      ],
+      documents: [
+        { documentType: "resume", fileName: upload.resume.name },
+        { documentType: "transcript", fileName: upload.transcript.name },
+      ],
+    })
+    setStep("success")
+  }
+
+  if (step === "success") {
+    return (
+      <main className={pageShellClasses}>
+        <SectionHeader
+          className="items-center text-center"
+          eyebrow="// RECRUITMENT 101"
+          title="AWS Builders – UST"
+        />
+        <SuccessPanel />
+      </main>
+    )
+  }
+
+  return (
+    <main className={pageShellClasses}>
+      <SectionHeader
+        eyebrow="// RECRUITMENT 101"
+        title="Apply to AWS Builders – UST"
+        subtitle="Every member lands on a committee that fits how they like to build, organize, or create."
+      />
+      <div className="mt-10">
+        <ApplyStepper current={step} />
+      </div>
+      <div className={panelClasses}>
+        {step === 1 && (
+          <GeneralInfoStep
+            values={general}
+            onChange={(patch) => setGeneral((current) => ({ ...current, ...patch }))}
+          />
+        )}
+        {step === 2 && (
+          <CommitteeStep
+            values={committee}
+            onChange={(patch) => setCommittee((current) => ({ ...current, ...patch }))}
+          />
+        )}
+        {step === 3 && (
+          <UploadStep
+            values={upload}
+            onChange={(patch) => setUpload((current) => ({ ...current, ...patch }))}
+          />
+        )}
+        {error ? <p className={errorClasses}>{error}</p> : null}
+        <div className={actionsClasses}>
+          {step === 1 ? (
+            <Button color="purple" className={ghostPillButtonClasses} nativeButton={false} render={<Link href="/" />}>
+              ← Back
+            </Button>
+          ) : (
+            <Button
+              color="purple"
+              className={ghostPillButtonClasses}
+              onClick={() => {
+                setError("")
+                setStep(step === 3 ? 2 : 1)
+              }}
+            >
+              ← Back
+            </Button>
+          )}
+          {step === 3 ? (
+            <Button color="cyan" className={nextButtonClasses} onClick={submit}>
+              Submit Application
+            </Button>
+          ) : (
+            <Button color="cyan" className={nextButtonClasses} onClick={goNext}>
+              {step === 1 ? "Next → Step 2" : "Next → Step 3"}
+            </Button>
+          )}
+        </div>
+      </div>
+      <p className="mt-8 text-center">
+        <Link href="/apply/positions" className={positionsLinkClasses}>
+          View all open positions →
+        </Link>
+      </p>
+    </main>
+  )
+}

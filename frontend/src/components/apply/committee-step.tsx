@@ -1,0 +1,146 @@
+"use client"
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
+import { Field } from "@/components/field"
+import { fieldControlClasses } from "@/lib/surface"
+import { COMMITTEES, POSITIONS } from "@/lib/mock-applications"
+
+const stackClasses = "flex flex-col gap-5"
+const triggerClasses = `${fieldControlClasses} justify-between`
+const textareaClasses = `${fieldControlClasses} h-auto min-h-28 py-3`
+
+export type CommitteeValues = {
+  firstCommittee: string
+  firstPositionId: string
+  secondCommittee: string
+  secondPositionId: string
+  motivation: string
+}
+
+type CommitteeStepProps = {
+  values: CommitteeValues
+  onChange: (patch: Partial<CommitteeValues>) => void
+}
+
+function CommitteeSelect({
+  id,
+  label,
+  value,
+  onValueChange,
+}: {
+  id: string
+  label: string
+  value: string
+  onValueChange: (value: string) => void
+}) {
+  return (
+    <Field label={label} htmlFor={id}>
+      <Select
+        value={value || null}
+        onValueChange={(next: string | null) => onValueChange(next ?? "")}
+      >
+        <SelectTrigger id={id} className={triggerClasses}>
+          <SelectValue placeholder="Select a committee" />
+        </SelectTrigger>
+        <SelectContent>
+          {COMMITTEES.map((committee) => (
+            <SelectItem key={committee} value={committee}>
+              {committee}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </Field>
+  )
+}
+
+function PositionSelect({
+  id,
+  label,
+  committee,
+  value,
+  onValueChange,
+}: {
+  id: string
+  label: string
+  committee: string
+  value: string
+  onValueChange: (value: string) => void
+}) {
+  const options = POSITIONS.filter((position) => position.committee === committee)
+
+  return (
+    <Field label={label} htmlFor={id}>
+      <Select
+        value={value || null}
+        onValueChange={(next: string | null) => onValueChange(next ?? "")}
+        disabled={!committee}
+      >
+        <SelectTrigger id={id} className={triggerClasses}>
+          <SelectValue placeholder="Select a position" />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((position) => (
+            <SelectItem key={position.id} value={position.id}>
+              {position.title}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </Field>
+  )
+}
+
+export function CommitteeStep({ values, onChange }: CommitteeStepProps) {
+  return (
+    <div className={stackClasses}>
+      <CommitteeSelect
+        id="firstCommittee"
+        label="First Choice - Committee"
+        value={values.firstCommittee}
+        onValueChange={(firstCommittee) =>
+          onChange({ firstCommittee, firstPositionId: "" })
+        }
+      />
+      <PositionSelect
+        id="firstPosition"
+        label="First Choice - Position"
+        committee={values.firstCommittee}
+        value={values.firstPositionId}
+        onValueChange={(firstPositionId) => onChange({ firstPositionId })}
+      />
+      <CommitteeSelect
+        id="secondCommittee"
+        label="Second Choice - Committee"
+        value={values.secondCommittee}
+        onValueChange={(secondCommittee) =>
+          onChange({ secondCommittee, secondPositionId: "" })
+        }
+      />
+      <PositionSelect
+        id="secondPosition"
+        label="Second Choice - Position"
+        committee={values.secondCommittee}
+        value={values.secondPositionId}
+        onValueChange={(secondPositionId) => onChange({ secondPositionId })}
+      />
+      <Field label="Why do you want to join AWS Builders - UST?" htmlFor="motivation">
+        <Textarea
+          id="motivation"
+          name="motivation"
+          value={values.motivation}
+          onChange={(e) => onChange({ motivation: e.target.value })}
+          placeholder="Tell us a bit of yourself..."
+          className={textareaClasses}
+        />
+      </Field>
+    </div>
+  )
+}
