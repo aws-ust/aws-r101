@@ -1,0 +1,67 @@
+"use client"
+
+import { useMemo, useState } from "react"
+import { SectionHeader } from "@/components/section-header"
+import {
+  ApplicationFilters,
+  type HrFilters,
+} from "@/components/hr/application-filters"
+import { ApplicationRow } from "@/components/hr/application-row"
+import { firstChoiceCommittee, fullName, useApplications } from "@/lib/api"
+import { pageShellClasses } from "@/lib/surface"
+
+const listClasses = "mt-8 flex flex-col gap-3"
+const emptyClasses = "mt-8 font-sans text-sm text-prelude"
+
+const emptyFilters: HrFilters = {
+  query: "",
+  committee: "",
+  status: "",
+}
+
+export function HrApplicationList() {
+  const applications = useApplications()
+  const [filters, setFilters] = useState(emptyFilters)
+
+  const visible = useMemo(() => {
+    const query = filters.query.trim().toLowerCase()
+    const committee =
+      filters.committee === "all" ? "" : filters.committee
+    return applications.filter((app) => {
+      if (query && !fullName(app).toLowerCase().includes(query)) return false
+      if (committee && firstChoiceCommittee(app) !== committee) return false
+      if (filters.status && app.status !== filters.status) return false
+      return true
+    })
+  }, [applications, filters])
+
+  return (
+    <main className={pageShellClasses}>
+      <SectionHeader
+        eyebrow="// APPLICATIONS"
+        title="Applications Results"
+        subtitle="Every R101 application so far."
+      />
+      <div className="mt-8">
+        <ApplicationFilters
+          value={filters}
+          onChange={(patch) => setFilters((current) => ({ ...current, ...patch }))}
+        />
+      </div>
+      {visible.length === 0 ? (
+        <p className={emptyClasses}>No applications match those filters.</p>
+      ) : (
+        <ul className={listClasses}>
+          {visible.map((application, index) => (
+            <li key={application.id}>
+              <ApplicationRow
+                application={application}
+                emphasized={index === 0}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+    </main>
+  )
+}
