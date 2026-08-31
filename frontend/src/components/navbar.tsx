@@ -60,7 +60,9 @@ export function Navbar() {
           </div>
 
           <div className="hidden md:block">
-            <Button color="cyan">Apply now!</Button>
+            <Button color="cyan" nativeButton={false} render={<Link href="/apply" />}>
+              Apply now!
+            </Button>
           </div>
 
           <div className="md:hidden">
@@ -92,7 +94,13 @@ export function Navbar() {
                 {item.label}
               </Link>
             ))}
-            <Button color="cyan" className="mt-2 w-full" onClick={() => setOpen(false)}>
+            <Button
+              color="cyan"
+              className="mt-2 w-full"
+              nativeButton={false}
+              render={<Link href="/apply" />}
+              onClick={() => setOpen(false)}
+            >
               Apply now!
             </Button>
           </div>

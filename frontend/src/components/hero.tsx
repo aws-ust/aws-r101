@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
 import { useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 
@@ -231,7 +232,12 @@ export function Hero() {
               <Button color="purple" className={`${buttonClasses} ${purpleButtonEffectClasses}`}>
                 Find your committee
               </Button>
-              <Button color="cyan" className={`${buttonClasses} ${cyanButtonEffectClasses}`}>
+              <Button
+                color="cyan"
+                className={`${buttonClasses} ${cyanButtonEffectClasses}`}
+                nativeButton={false}
+                render={<Link href="/apply" />}
+              >
                 Apply now!
               </Button>
               <Button color="purple" className={`${buttonClasses} ${purpleButtonEffectClasses}`}>
