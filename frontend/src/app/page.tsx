@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { SectionHeader } from "@/components/section-header"
 import { Hero } from "@/components/hero"
+import { Committees } from "@/components/committees"
 import {
   Accordion,
   AccordionItem,
@@ -33,8 +34,9 @@ const FAQ_ITEMS = [
 
 export default function Home() {
   return (
-    <main className="mx-auto flex w-full max-w-[1180px] flex-1 flex-col gap-10 px-4 py-16">
+    <main className="mx-auto flex w-full max-w-[1180px] flex-1 flex-col gap-10 px-4 pb-4 pt-16">
       <Hero />
+      <Committees />
       <div className="flex flex-col gap-10 pt-[clamp(3rem,7vw,5.625rem)]">
         <SectionHeader
           eyebrow="// what we do · faqs"
