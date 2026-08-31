@@ -5,6 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import Hamburger from "hamburger-react"
+import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -36,6 +37,8 @@ const mobileOverlayClosedClasses = "invisible pointer-events-none opacity-0"
 const mobileBackdropClasses = "absolute inset-0 glass bg-haiti/80"
 const mobilePanelInnerClasses =
   "relative mx-auto flex h-full max-w-[1180px] flex-col items-center justify-center gap-3 px-4 font-mono text-2xl text-prelude"
+const mobileCloseButtonClasses =
+  "absolute top-4 right-4 inline-flex size-10 items-center justify-center rounded-pill text-blue-chalk transition-colors hover:bg-biloba-flower/15 hover:text-aquamarine focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-aquamarine"
 const mobileNavLinkClasses =
   "rounded-pill px-5 py-2 transition-colors hover:bg-biloba-flower/15 hover:text-blue-chalk"
 
@@ -110,6 +113,14 @@ export function Navbar() {
           onClick={() => setOpen(false)}
         />
         <div className={mobilePanelInnerClasses}>
+          <button
+            type="button"
+            className={mobileCloseButtonClasses}
+            aria-label="Close menu"
+            onClick={() => setOpen(false)}
+          >
+            <X aria-hidden="true" className="size-6" />
+          </button>
           {NAV_ITEMS.map((item) => (
             <Link
               key={item.href}
