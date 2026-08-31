@@ -5,11 +5,11 @@ import { useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 
 const heroClasses =
-  "relative left-1/2 -mt-16 mb-[-40px] flex min-h-[calc(100svh-6rem)] w-screen -translate-x-1/2 overflow-hidden bg-cover bg-center text-center"
+  "relative left-1/2 -mt-16 mb-[-40px] flex min-h-[calc(100svh-10rem)] w-screen -translate-x-1/2 overflow-hidden bg-cover bg-center text-center"
 const overlayClasses =
   "absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(23,15,51,0.1),rgba(42,18,89,0.03)_50%,rgba(23,15,51,0.2))]"
 const contentClasses =
-  "relative mx-auto flex min-h-[calc(100svh-6rem)] w-full max-w-[1180px] flex-col items-center justify-between"
+  "relative mx-auto flex min-h-[calc(100svh-10rem)] w-full max-w-[1180px] flex-col items-center justify-between pt-16"
 const artworkClasses =
   "flex w-full shrink-0 flex-col items-center"
 const titleClasses =
