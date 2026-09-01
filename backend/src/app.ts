@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import type { LambdaEvent, LambdaContext } from "hono/aws-lambda";
 import { db } from "./db";
 import { committees, positions } from "./db/schema";
+import { applicationsRoutes } from "./routes/applications";
 
 type Bindings = {
   event: LambdaEvent;
@@ -36,26 +37,7 @@ app.get("/positions", async (c) => {
   return c.json(rows);
 });
 
-app.get("/applications", (c) => c.json({ applications: [], total: 0 }));
-
-app.post("/applications", async (c) => {
-  const body = await c.req.json().catch(() => ({}));
-  return c.json(
-    { id: crypto.randomUUID(), status: "submitted", ...body },
-    201
-  );
-});
-
-app.get("/applications/:id", (c) => {
-  const id = c.req.param("id");
-  return c.json({ id, status: "submitted" });
-});
-
-app.patch("/applications/:id/status", async (c) => {
-  const id = c.req.param("id");
-  const body = await c.req.json().catch(() => ({}));
-  return c.json({ id, status: body.status ?? "unknown" });
-});
+app.route("/applications", applicationsRoutes);
 
 app.post("/uploads/presign", (c) =>
   c.json({ error: "not implemented" }, 501)
