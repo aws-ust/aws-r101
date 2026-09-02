@@ -1,90 +1,147 @@
-import { useSyncExternalStore } from "react"
+import { useEffect, useState } from "react"
 import type {
   Application,
   ApplicationStatus,
   CreateApplicationInput,
+  DocumentType,
+  Position,
 } from "./application-types"
-import { POSITIONS, SEED_APPLICATIONS } from "./mock-applications"
+import {
+  ApiError,
+  getApplicationById,
+  listApplications,
+  listOpenPositions,
+  patchApplicationStatusRequest,
+  postApplication,
+} from "./api-client"
 
-let applications: Application[] = SEED_APPLICATIONS.map((app) => ({
-  ...app,
-  choices: app.choices.map((choice) => ({ ...choice })),
-  documents: app.documents.map((doc) => ({ ...doc })),
-}))
-
-const listeners = new Set<() => void>()
-
-function emit() {
-  for (const listener of listeners) listener()
-}
-
-function subscribe(listener: () => void) {
-  listeners.add(listener)
-  return () => {
-    listeners.delete(listener)
-  }
-}
-
-function snapshot() {
-  return applications
-}
+export { ApiError }
 
 export function useApplications() {
-  return useSyncExternalStore(subscribe, snapshot, snapshot)
-}
+  const [applications, setApplications] = useState<Application[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-export function useApplication(id: string) {
-  const apps = useApplications()
-  return apps.find((app) => app.id === id) ?? null
-}
-
-export function getApplication(id: string) {
-  return applications.find((app) => app.id === id) ?? null
-}
-
-export function createApplication(input: CreateApplicationInput): Application {
-  const choices = input.choices.map((choice) => {
-    const position = POSITIONS.find((item) => item.id === choice.positionId)
-    if (!position) {
-      throw new Error(`Unknown position: ${choice.positionId}`)
+  useEffect(() => {
+    let cancelled = false
+    listApplications()
+      .then((rows) => {
+        if (cancelled) return
+        setApplications(rows)
+        setError(null)
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        setApplications([])
+        setError(err instanceof Error ? err.message : "Failed to load applications.")
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
     }
+  }, [])
+
+  return { applications, loading, error }
+}
+
+export function useApplication(id: string | undefined) {
+  const [application, setApplication] = useState<Application | null>(null)
+  const [loading, setLoading] = useState(Boolean(id))
+  const [error, setError] = useState<string | null>(null)
+  const [notFound, setNotFound] = useState(false)
+
+  useEffect(() => {
+    if (!id) return
+
+    let cancelled = false
+    getApplicationById(id)
+      .then((row) => {
+        if (cancelled) return
+        setApplication(row)
+        setError(null)
+        setNotFound(false)
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        setApplication(null)
+        if (err instanceof ApiError && err.status === 404) {
+          setNotFound(true)
+          setError(null)
+          return
+        }
+        setNotFound(false)
+        setError(err instanceof Error ? err.message : "Failed to load application.")
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  if (!id) {
     return {
-      preferenceRank: choice.preferenceRank,
-      positionId: position.id,
-      committee: position.committee,
-      title: position.title,
+      application: null,
+      setApplication,
+      loading: false,
+      error: null,
+      notFound: true,
     }
-  })
-
-  const application: Application = {
-    id: crypto.randomUUID(),
-    status: "pending",
-    submittedAt: new Date().toISOString(),
-    firstName: input.firstName,
-    lastName: input.lastName,
-    email: input.email,
-    age: input.age,
-    section: input.section,
-    motivation: input.motivation,
-    choices,
-    documents: input.documents.map((doc) => ({
-      documentType: doc.documentType,
-      fileName: doc.fileName,
-      s3Key: null,
-    })),
   }
 
-  applications = [application, ...applications]
-  emit()
-  return application
+  return { application, setApplication, loading, error, notFound }
+}
+
+export function useOpenPositions() {
+  const [positions, setPositions] = useState<Position[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    listOpenPositions()
+      .then((rows) => {
+        if (cancelled) return
+        setPositions(rows)
+        setError(null)
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        setPositions([])
+        setError(err instanceof Error ? err.message : "Failed to load positions.")
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const committees = [...new Set(positions.map((position) => position.committee))]
+  return { positions, committees, loading, error }
+}
+
+export async function createApplication(
+  input: Omit<CreateApplicationInput, "documents"> & {
+    documents: { documentType: DocumentType; fileName: string }[]
+  }
+): Promise<Application> {
+  return postApplication({
+    ...input,
+    documents: input.documents.map((doc) => ({
+      ...doc,
+      // Presign isn't in yet (#10); this string only exists so POST validation passes.
+      s3Key: `dev/uploads/${crypto.randomUUID()}/${doc.fileName}`,
+    })),
+  })
 }
 
 export function patchApplicationStatus(id: string, status: ApplicationStatus) {
-  applications = applications.map((app) =>
-    app.id === id ? { ...app, status } : app
-  )
-  emit()
-  return getApplication(id)
+  return patchApplicationStatusRequest(id, status)
 }
 
 export function fullName(app: Application) {
