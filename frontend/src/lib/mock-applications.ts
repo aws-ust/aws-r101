@@ -1,6 +1,6 @@
 import type { Application, Position } from "./application-types"
 
-export const UST_EMAIL_DOMAIN = "@ust.edu.ph"
+// Apply + HR hit the API. This file is leftover mock data; /apply/positions uses mock-positions.ts.
 
 export const POSITIONS: Position[] = [
   {
