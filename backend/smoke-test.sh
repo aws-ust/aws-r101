@@ -55,6 +55,39 @@ contains_id() {
   " "$id"
 }
 
+check_positions_contract() {
+  if printf '%s' "$LAST_BODY" | node -e '
+    const fs = require("fs");
+    const rows = JSON.parse(fs.readFileSync(0, "utf8"));
+    const stringFields = [
+      "id",
+      "title",
+      "office",
+      "committee_id",
+      "committee",
+      "committeeDescription",
+      "description",
+      "responsibilities",
+    ];
+    const valid =
+      Array.isArray(rows) &&
+      rows.length > 0 &&
+      rows.every(
+        (row) =>
+          stringFields.every((field) => typeof row[field] === "string") &&
+          row.isOpen === true,
+      );
+    if (!valid) process.exit(1);
+  '; then
+    echo "PASS  GET /positions contract"
+    pass=$((pass + 1))
+  else
+    echo "FAIL  GET /positions contract"
+    echo "      body: $LAST_BODY"
+    fail=$((fail + 1))
+  fi
+}
+
 echo "Smoke testing $BASE_URL"
 echo
 
@@ -63,17 +96,18 @@ expect "GET  /health" 200
 
 request GET "/positions"
 expect "GET  /positions" 200
+check_positions_contract
 
 positions_count=$(printf '%s' "$LAST_BODY" | node -e "
   const fs = require('fs');
   const rows = JSON.parse(fs.readFileSync(0, 'utf8'));
   process.stdout.write(Array.isArray(rows) ? String(rows.length) : '0');
 " 2>/dev/null || echo "0")
-if [[ "$positions_count" -ge 5 ]]; then
-  echo "PASS  GET /positions returns at least 5 open seeded rows ($positions_count)"
+if [[ "$positions_count" -ge 21 ]]; then
+  echo "PASS  GET /positions returns at least 21 open seeded rows ($positions_count)"
   pass=$((pass + 1))
 else
-  echo "FAIL  GET /positions expected at least 5 open rows, got $positions_count"
+  echo "FAIL  GET /positions expected at least 21 open rows, got $positions_count"
   fail=$((fail + 1))
 fi
 

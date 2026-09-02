@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { db } from "../db";
 import { committees, positions } from "../db/schema";
 
@@ -21,18 +21,24 @@ type PositionResponse = {
   id: string;
   title: string;
   committee_id: string;
+  office: string;
   committee: string;
-  description: string | null;
-  responsibilities: string | null;
+  committeeDescription: string;
+  description: string;
+  responsibilities: string;
+  isOpen: boolean;
 };
 
 type PositionRow = {
   id: string;
   title: string;
   committeeId: string;
+  office: string | null;
   committee: string;
+  committeeDescription: string | null;
   description: string | null;
   responsibilities: string | null;
+  isOpen: boolean;
 };
 
 function toPositionResponse(row: PositionRow): PositionResponse {
@@ -40,9 +46,12 @@ function toPositionResponse(row: PositionRow): PositionResponse {
     id: row.id,
     title: row.title,
     committee_id: row.committeeId,
+    office: row.office ?? row.committee,
     committee: row.committee,
-    description: row.description,
-    responsibilities: row.responsibilities,
+    committeeDescription: row.committeeDescription ?? "",
+    description: row.description ?? "",
+    responsibilities: row.responsibilities ?? "",
+    isOpen: row.isOpen,
   };
 }
 
@@ -52,13 +61,17 @@ async function selectOpenPositions() {
       id: positions.id,
       title: positions.name,
       committeeId: positions.committeeId,
+      office: positions.office,
       committee: committees.name,
+      committeeDescription: committees.description,
       description: positions.description,
       responsibilities: positions.responsibilities,
+      isOpen: positions.isOpen,
     })
     .from(positions)
     .innerJoin(committees, eq(positions.committeeId, committees.id))
-    .where(eq(positions.isOpen, true));
+    .where(eq(positions.isOpen, true))
+    .orderBy(asc(positions.office), asc(positions.name));
 }
 
 async function selectPositionById(id: string) {
@@ -67,9 +80,12 @@ async function selectPositionById(id: string) {
       id: positions.id,
       title: positions.name,
       committeeId: positions.committeeId,
+      office: positions.office,
       committee: committees.name,
+      committeeDescription: committees.description,
       description: positions.description,
       responsibilities: positions.responsibilities,
+      isOpen: positions.isOpen,
     })
     .from(positions)
     .innerJoin(committees, eq(positions.committeeId, committees.id))
