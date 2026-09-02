@@ -31,8 +31,10 @@ const downloadsClasses = "mt-8 flex flex-wrap justify-center gap-4"
 const downloadButtonClasses = "h-10 px-5 text-xs"
 const statusRowClasses =
   "mt-8 flex flex-wrap items-center justify-center gap-3 font-mono text-xs uppercase tracking-wide text-prelude"
-const outlineActionClasses =
-  "h-9 rounded-pill border border-aquamarine/80 bg-transparent px-5 font-mono text-xs text-aquamarine hover:bg-aquamarine/15"
+const statusActionBaseClasses =
+  "h-9 rounded-pill border bg-transparent px-5 font-mono text-xs transition-colors"
+const approveActionClasses = `${statusActionBaseClasses} border-aquamarine/80 text-aquamarine hover:border-aquamarine hover:bg-aquamarine hover:text-haiti`
+const rejectActionClasses = `${statusActionBaseClasses} border-prelude/50 text-prelude hover:border-prelude/80 hover:bg-haiti/80 hover:text-prelude`
 const missingClasses = "font-sans text-sm text-prelude"
 
 function documentFor(
@@ -113,15 +115,15 @@ export function HrApplicationDetail() {
         <div className={statusRowClasses}>
           <span>Applicant Status:</span>
           <Button
-            color="cyan"
-            className={outlineActionClasses}
+            variant="ghost"
+            className={approveActionClasses}
             onClick={() => patchApplicationStatus(application.id, "approved")}
           >
             Approve
           </Button>
           <Button
-            color="cyan"
-            className={outlineActionClasses}
+            variant="ghost"
+            className={rejectActionClasses}
             onClick={() => patchApplicationStatus(application.id, "rejected")}
           >
             Reject
