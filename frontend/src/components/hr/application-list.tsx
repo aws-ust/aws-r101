@@ -20,7 +20,7 @@ const emptyFilters: HrFilters = {
 }
 
 export function HrApplicationList() {
-  const applications = useApplications()
+  const { applications, loading, error } = useApplications()
   const [filters, setFilters] = useState(emptyFilters)
 
   const visible = useMemo(() => {
@@ -48,7 +48,11 @@ export function HrApplicationList() {
           onChange={(patch) => setFilters((current) => ({ ...current, ...patch }))}
         />
       </div>
-      {visible.length === 0 ? (
+      {loading ? (
+        <p className={emptyClasses}>Loading applications…</p>
+      ) : error ? (
+        <p className={emptyClasses}>{error}</p>
+      ) : visible.length === 0 ? (
         <p className={emptyClasses}>No applications match those filters.</p>
       ) : (
         <ul className={listClasses}>

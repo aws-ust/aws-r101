@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { fieldControlClasses } from "@/lib/surface"
-import { COMMITTEES } from "@/lib/mock-applications"
+import { useOpenPositions } from "@/lib/api"
 import type { ApplicationStatus } from "@/lib/application-types"
 
 const rowClasses = "flex flex-col gap-3 md:flex-row md:items-center"
@@ -34,6 +34,9 @@ type ApplicationFiltersProps = {
 }
 
 export function ApplicationFilters({ value, onChange }: ApplicationFiltersProps) {
+  // Client-side by name. Query ?committee= is a UUID; we don't use it here.
+  const { committees } = useOpenPositions()
+
   return (
     <div className={rowClasses}>
       <Input
@@ -56,7 +59,7 @@ export function ApplicationFilters({ value, onChange }: ApplicationFiltersProps)
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">Committee: All</SelectItem>
-          {COMMITTEES.map((committee) => (
+          {committees.map((committee) => (
             <SelectItem key={committee} value={committee}>
               {committee}
             </SelectItem>

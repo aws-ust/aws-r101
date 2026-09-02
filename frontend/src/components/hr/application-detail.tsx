@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -46,9 +47,36 @@ function documentFor(
 
 export function HrApplicationDetail() {
   const { id } = useParams<{ id: string }>()
-  const application = useApplication(id)
+  const { application, setApplication, loading, error, notFound } =
+    useApplication(id)
+  const [actionError, setActionError] = useState("")
+  const [pendingStatus, setPendingStatus] = useState<"approved" | "rejected" | null>(
+    null
+  )
 
-  if (!application) {
+  if (loading) {
+    return (
+      <main className={pageShellClasses}>
+        <Link href="/admin/hr" className={backClasses}>
+          ← Back to Applications
+        </Link>
+        <p className={missingClasses}>Loading application…</p>
+      </main>
+    )
+  }
+
+  if (error) {
+    return (
+      <main className={pageShellClasses}>
+        <Link href="/admin/hr" className={backClasses}>
+          ← Back to Applications
+        </Link>
+        <p className={missingClasses}>{error}</p>
+      </main>
+    )
+  }
+
+  if (notFound || !application) {
     return (
       <main className={pageShellClasses}>
         <Link href="/admin/hr" className={backClasses}>
@@ -59,10 +87,26 @@ export function HrApplicationDetail() {
     )
   }
 
+  const applicationId = application.id
   const first = application.choices.find((choice) => choice.preferenceRank === 1)
   const second = application.choices.find((choice) => choice.preferenceRank === 2)
   const resume = documentFor(application, "resume")
   const transcript = documentFor(application, "transcript")
+
+  async function setStatus(status: "approved" | "rejected") {
+    setActionError("")
+    setPendingStatus(status)
+    try {
+      const updated = await patchApplicationStatus(applicationId, status)
+      setApplication(updated)
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : "Could not update status."
+      )
+    } finally {
+      setPendingStatus(null)
+    }
+  }
 
   return (
     <main className={pageShellClasses}>
@@ -80,11 +124,11 @@ export function HrApplicationDetail() {
         <div className={metaRowClasses}>
           <p>
             <span className={metaLabelClasses}>Year & Section:</span>
-            {application.section}
+            {application.section ?? "—"}
           </p>
           <p>
             <span className={metaLabelClasses}>Age:</span>
-            {application.age}
+            {application.age ?? "—"}
           </p>
           <p>
             <span className={metaLabelClasses}>Email:</span>
@@ -99,7 +143,7 @@ export function HrApplicationDetail() {
         <p className={whyLabelClasses}>
           Why do you want to join AWS Builders - UST?
         </p>
-        <p className={whyBodyClasses}>{application.motivation}</p>
+        <p className={whyBodyClasses}>{application.motivation || "—"}</p>
         <div className={downloadsClasses}>
           <Button color="cyan" className={downloadButtonClasses} disabled={!resume?.s3Key}>
             Download Resume ({resume?.fileName ?? "—"})
@@ -117,18 +161,21 @@ export function HrApplicationDetail() {
           <Button
             variant="ghost"
             className={approveActionClasses}
-            onClick={() => patchApplicationStatus(application.id, "approved")}
+            disabled={pendingStatus !== null}
+            onClick={() => setStatus("approved")}
           >
             Approve
           </Button>
           <Button
             variant="ghost"
             className={rejectActionClasses}
-            onClick={() => patchApplicationStatus(application.id, "rejected")}
+            disabled={pendingStatus !== null}
+            onClick={() => setStatus("rejected")}
           >
             Reject
           </Button>
         </div>
+        {actionError ? <p className={missingClasses}>{actionError}</p> : null}
       </div>
     </main>
   )
