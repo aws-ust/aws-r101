@@ -93,6 +93,7 @@ export function ApplyForm() {
           className="items-center text-center"
           eyebrow="// RECRUITMENT 101"
           title="AWS Builders – UST"
+          titleClassName="max-w-none whitespace-nowrap"
         />
         <SuccessPanel />
       </main>
@@ -104,6 +105,7 @@ export function ApplyForm() {
       <SectionHeader
         eyebrow="// RECRUITMENT 101"
         title="Apply to AWS Builders – UST"
+        titleClassName="max-w-none whitespace-nowrap"
         subtitle="Every member lands on a committee that fits how they like to build, organize, or create."
       />
       <div className="mt-10">
