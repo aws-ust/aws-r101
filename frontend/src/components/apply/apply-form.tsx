@@ -20,7 +20,7 @@ import {
 } from "@/components/apply/form-model"
 import { SectionHeader } from "@/components/section-header"
 import { createApplication } from "@/lib/api"
-import { UST_EMAIL_DOMAIN } from "@/lib/mock-applications"
+import { UST_EMAIL_DOMAIN } from "@/lib/constants"
 import {
   glassPanelClasses,
   ghostPillButtonClasses,
@@ -39,6 +39,7 @@ export function ApplyForm() {
   const [committee, setCommittee] = useState(emptyCommittee)
   const [upload, setUpload] = useState(emptyUpload)
   const [error, setError] = useState("")
+  const [submitting, setSubmitting] = useState(false)
 
   function goNext() {
     setError("")
@@ -54,29 +55,35 @@ export function ApplyForm() {
     if (step === 2) setStep(3)
   }
 
-  function submit() {
+  async function submit() {
     setError("")
     if (!upload.resume || !upload.transcript) {
       setError(uploadStepError)
       return
     }
-    createApplication({
-      firstName: general.firstName.trim(),
-      lastName: general.lastName.trim(),
-      email: `${general.emailLocal.trim()}${UST_EMAIL_DOMAIN}`,
-      age: Number(general.age),
-      section: general.section.trim(),
-      motivation: committee.motivation.trim(),
-      choices: [
-        { positionId: committee.firstPositionId, preferenceRank: 1 },
-        { positionId: committee.secondPositionId, preferenceRank: 2 },
-      ],
-      documents: [
-        { documentType: "resume", fileName: upload.resume.name },
-        { documentType: "transcript", fileName: upload.transcript.name },
-      ],
-    })
-    setStep("success")
+    setSubmitting(true)
+    try {
+      await createApplication({
+        firstName: general.firstName.trim(),
+        lastName: general.lastName.trim(),
+        email: `${general.emailLocal.trim()}${UST_EMAIL_DOMAIN}`,
+        age: Number(general.age),
+        section: general.section.trim(),
+        choices: [
+          { positionId: committee.firstPositionId, preferenceRank: 1 },
+          { positionId: committee.secondPositionId, preferenceRank: 2 },
+        ],
+        documents: [
+          { documentType: "resume", fileName: upload.resume.name },
+          { documentType: "transcript", fileName: upload.transcript.name },
+        ],
+      })
+      setStep("success")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not submit application.")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   if (step === "success") {
@@ -140,7 +147,12 @@ export function ApplyForm() {
             </Button>
           )}
           {step === 3 ? (
-            <Button color="cyan" className={nextButtonClasses} onClick={submit}>
+            <Button
+              color="cyan"
+              className={nextButtonClasses}
+              onClick={submit}
+              disabled={submitting}
+            >
               Submit Application
             </Button>
           ) : (

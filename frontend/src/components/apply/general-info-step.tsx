@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Field } from "@/components/field"
 import { cn } from "@/lib/utils"
 import { fieldControlClasses } from "@/lib/surface"
-import { UST_EMAIL_DOMAIN } from "@/lib/mock-applications"
+import { UST_EMAIL_DOMAIN } from "@/lib/constants"
 
 const gridClasses = "grid gap-5 sm:grid-cols-2"
 const ageRowClasses = "grid gap-5 sm:grid-cols-[5.5rem_1fr_1.4fr]"
