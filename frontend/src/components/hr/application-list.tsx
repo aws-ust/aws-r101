@@ -7,7 +7,7 @@ import {
   type HrFilters,
 } from "@/components/hr/application-filters"
 import { ApplicationRow } from "@/components/hr/application-row"
-import { firstChoiceCommittee, fullName, useApplications } from "@/lib/api"
+import { fullName, hasCommittee, useApplications } from "@/lib/api"
 import { pageShellClasses } from "@/lib/surface"
 
 const listClasses = "mt-8 flex flex-col gap-3"
@@ -29,7 +29,7 @@ export function HrApplicationList() {
       filters.committee === "all" ? "" : filters.committee
     return applications.filter((app) => {
       if (query && !fullName(app).toLowerCase().includes(query)) return false
-      if (committee && firstChoiceCommittee(app) !== committee) return false
+      if (committee && !hasCommittee(app, committee)) return false
       if (filters.status && app.status !== filters.status) return false
       return true
     })

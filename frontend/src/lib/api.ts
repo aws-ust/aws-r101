@@ -162,6 +162,10 @@ export function firstChoiceCommittee(app: Application) {
   )
 }
 
+export function hasCommittee(app: Application, committee: string) {
+  return app.choices.some((choice) => choice.committee === committee)
+}
+
 export function formatAppliedDate(iso: string) {
   const [year, month, day] = iso.slice(0, 10).split("-")
   return `${Number(month)}/${Number(day)}/${year}`
