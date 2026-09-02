@@ -16,6 +16,12 @@ const rowClasses = "flex flex-col gap-3 md:flex-row md:items-center"
 const searchClasses = `${fieldControlClasses} md:flex-1`
 const selectClasses = `${fieldControlClasses} md:w-52`
 
+const STATUS_LABELS: Record<ApplicationStatus, string> = {
+  pending: "Pending",
+  approved: "Approved",
+  rejected: "Rejected",
+}
+
 export type HrFilters = {
   query: string
   committee: string
@@ -44,7 +50,9 @@ export function ApplicationFilters({ value, onChange }: ApplicationFiltersProps)
         }
       >
         <SelectTrigger className={selectClasses}>
-          <SelectValue placeholder="Committee: All" />
+          <SelectValue placeholder="Committee: All">
+            {value.committee || "Committee: All"}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">Committee: All</SelectItem>
@@ -64,7 +72,9 @@ export function ApplicationFilters({ value, onChange }: ApplicationFiltersProps)
         }
       >
         <SelectTrigger className={selectClasses}>
-          <SelectValue placeholder="Status: All" />
+          <SelectValue placeholder="Status: All">
+            {value.status ? STATUS_LABELS[value.status] : "Status: All"}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">Status: All</SelectItem>
