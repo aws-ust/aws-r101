@@ -34,6 +34,7 @@ export type ApplicationJson = {
   email: string;
   age: number | null;
   section: string | null;
+  motivation: string;
   choices: ApplicationChoiceJson[];
   documents: ApplicationDocumentJson[];
 };
@@ -44,6 +45,7 @@ export type CreateApplicationInput = {
   email: string;
   age: number;
   section: string;
+  motivation: string;
   choices: { positionId: string; preferenceRank: 1 | 2 }[];
   documents: { documentType: DocumentType; fileName: string; s3Key: string }[];
 };
@@ -63,6 +65,7 @@ type ApplicationRow = {
   email: string;
   age: number | null;
   section: string | null;
+  motivation: string;
 };
 
 function iso(value: Date): string {
@@ -131,6 +134,7 @@ async function attachRelations(
     email: row.email,
     age: row.age,
     section: row.section,
+    motivation: row.motivation,
     choices: (choicesByApp.get(row.id) ?? []).sort(
       (a, b) => a.preferenceRank - b.preferenceRank,
     ),
@@ -147,6 +151,7 @@ const applicationSelect = {
   email: applicants.email,
   age: applicants.age,
   section: applicants.section,
+  motivation: applications.motivation,
 };
 
 export async function getApplicationById(
@@ -255,7 +260,7 @@ export async function createApplication(
 
     const [application] = await tx
       .insert(applications)
-      .values({ applicantId, status: "pending" })
+      .values({ applicantId, status: "pending", motivation: input.motivation })
       .returning({ id: applications.id });
 
     await tx.insert(applicationChoices).values(

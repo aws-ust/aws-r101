@@ -86,7 +86,7 @@ else
   SECTION="SMOKE-$(date +%s)"
   EMAIL="smoke.$SECTION@example.com"
   CREATE_BODY=$(cat <<EOF
-{"firstName":"Smoke","lastName":"Test","email":"$EMAIL","age":21,"section":"$SECTION","choices":[{"positionId":"$POS1","preferenceRank":1},{"positionId":"$POS2","preferenceRank":2}],"documents":[{"documentType":"resume","fileName":"resume.pdf","s3Key":"dev/resume.pdf"},{"documentType":"transcript","fileName":"tor.pdf","s3Key":"dev/transcript.pdf"}]}
+{"firstName":"Smoke","lastName":"Test","email":"$EMAIL","age":21,"section":"$SECTION","motivation":"Smoke test why join.","choices":[{"positionId":"$POS1","preferenceRank":1},{"positionId":"$POS2","preferenceRank":2}],"documents":[{"documentType":"resume","fileName":"resume.pdf","s3Key":"dev/resume.pdf"},{"documentType":"transcript","fileName":"tor.pdf","s3Key":"dev/transcript.pdf"}]}
 EOF
 )
 

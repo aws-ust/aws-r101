@@ -35,11 +35,12 @@ function parseCreateBody(
     !isNonEmptyString(input.firstName) ||
     !isNonEmptyString(input.lastName) ||
     !isNonEmptyString(input.email) ||
-    !isNonEmptyString(input.section)
+    !isNonEmptyString(input.section) ||
+    !isNonEmptyString(input.motivation)
   ) {
     return {
       ok: false,
-      error: "firstName, lastName, email, and section are required.",
+      error: "firstName, lastName, email, section, and motivation are required.",
     };
   }
 
@@ -123,6 +124,7 @@ function parseCreateBody(
       email: input.email.trim(),
       age: input.age as number,
       section: input.section.trim(),
+      motivation: input.motivation.trim(),
       choices,
       documents,
     },
