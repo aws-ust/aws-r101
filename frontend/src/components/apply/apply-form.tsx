@@ -16,7 +16,9 @@ import {
   emptyUpload,
   generalStepError,
   generalValid,
-  uploadStepError,
+  mapApplyApiError,
+  submitBlockedMessage,
+  toCreateApplicationInput,
 } from "@/components/apply/form-model"
 import { SectionHeader } from "@/components/section-header"
 import { createApplication } from "@/lib/api"
@@ -57,31 +59,21 @@ export function ApplyForm() {
 
   async function submit() {
     setError("")
-    if (!upload.resume || !upload.transcript) {
-      setError(uploadStepError)
+    const blocked = submitBlockedMessage(general, committee, upload)
+    if (blocked) {
+      setError(blocked)
       return
     }
     setSubmitting(true)
     try {
-      await createApplication({
-        firstName: general.firstName.trim(),
-        lastName: general.lastName.trim(),
-        email: `${general.emailLocal.trim()}${UST_EMAIL_DOMAIN}`,
-        age: Number(general.age),
-        section: general.section.trim(),
-        motivation: committee.motivation.trim(),
-        choices: [
-          { positionId: committee.firstPositionId, preferenceRank: 1 },
-          { positionId: committee.secondPositionId, preferenceRank: 2 },
-        ],
-        documents: [
-          { documentType: "resume", fileName: upload.resume.name },
-          { documentType: "transcript", fileName: upload.transcript.name },
-        ],
-      })
+      await createApplication(
+        toCreateApplicationInput(general, committee, upload, UST_EMAIL_DOMAIN)
+      )
       setStep("success")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not submit application.")
+      const message =
+        err instanceof Error ? err.message : "Could not submit application."
+      setError(mapApplyApiError(message))
     } finally {
       setSubmitting(false)
     }
@@ -139,6 +131,7 @@ export function ApplyForm() {
             </Button>
           ) : (
             <Button
+              type="button"
               color="purple"
               className={ghostPillButtonClasses}
               onClick={() => {
@@ -151,6 +144,7 @@ export function ApplyForm() {
           )}
           {step === 3 ? (
             <Button
+              type="button"
               color="cyan"
               className={nextButtonClasses}
               onClick={submit}
@@ -159,7 +153,7 @@ export function ApplyForm() {
               Submit Application
             </Button>
           ) : (
-            <Button color="cyan" className={nextButtonClasses} onClick={goNext}>
+            <Button type="button" color="cyan" className={nextButtonClasses} onClick={goNext}>
               {step === 1 ? "Next → Step 2" : "Next → Step 3"}
             </Button>
           )}

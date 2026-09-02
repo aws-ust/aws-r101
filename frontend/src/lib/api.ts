@@ -130,14 +130,22 @@ export async function createApplication(
     documents: { documentType: DocumentType; fileName: string }[]
   }
 ): Promise<Application> {
-  return postApplication({
-    ...input,
+  const payload: CreateApplicationInput = {
+    firstName: input.firstName,
+    lastName: input.lastName,
+    email: input.email,
+    age: input.age,
+    section: input.section,
+    motivation: input.motivation,
+    choices: input.choices,
     documents: input.documents.map((doc) => ({
-      ...doc,
+      documentType: doc.documentType,
+      fileName: doc.fileName,
       // Presign isn't in yet (#10); this string only exists so POST validation passes.
       s3Key: `dev/uploads/${crypto.randomUUID()}/${doc.fileName}`,
     })),
-  })
+  }
+  return postApplication(payload)
 }
 
 export function patchApplicationStatus(id: string, status: ApplicationStatus) {
