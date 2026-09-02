@@ -69,6 +69,7 @@ export function ApplyForm() {
         email: `${general.emailLocal.trim()}${UST_EMAIL_DOMAIN}`,
         age: Number(general.age),
         section: general.section.trim(),
+        motivation: committee.motivation.trim(),
         choices: [
           { positionId: committee.firstPositionId, preferenceRank: 1 },
           { positionId: committee.secondPositionId, preferenceRank: 2 },

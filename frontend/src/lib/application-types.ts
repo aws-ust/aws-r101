@@ -31,7 +31,7 @@ export type Application = {
   email: string
   age: number | null
   section: string | null
-  motivation?: string
+  motivation: string
   choices: ApplicationChoice[]
   documents: ApplicationDocument[]
 }
@@ -42,6 +42,7 @@ export type CreateApplicationInput = {
   email: string
   age: number
   section: string
+  motivation: string
   choices: { positionId: string; preferenceRank: 1 | 2 }[]
   documents: { documentType: DocumentType; fileName: string; s3Key: string }[]
 }

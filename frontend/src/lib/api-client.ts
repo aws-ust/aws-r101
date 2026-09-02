@@ -48,38 +48,31 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>
 }
 
-type ApiApplication = Omit<Application, "motivation">
-
-function toApplication(row: ApiApplication): Application {
-  // API doesn't return motivation; the field on the detail page stays empty.
-  return row
-}
-
 export function listApplications() {
-  return apiFetch<{ applications: ApiApplication[]; total: number }>(
+  return apiFetch<{ applications: Application[]; total: number }>(
     "/applications"
-  ).then((body) => body.applications.map(toApplication))
+  ).then((body) => body.applications)
 }
 
 export function getApplicationById(id: string) {
-  return apiFetch<ApiApplication>(`/applications/${id}`).then(toApplication)
+  return apiFetch<Application>(`/applications/${id}`)
 }
 
 export function postApplication(body: CreateApplicationInput) {
-  return apiFetch<ApiApplication>("/applications", {
+  return apiFetch<Application>("/applications", {
     method: "POST",
     body: JSON.stringify(body),
-  }).then(toApplication)
+  })
 }
 
 export function patchApplicationStatusRequest(
   id: string,
   status: ApplicationStatus
 ) {
-  return apiFetch<ApiApplication>(`/applications/${id}/status`, {
+  return apiFetch<Application>(`/applications/${id}/status`, {
     method: "PATCH",
     body: JSON.stringify({ status }),
-  }).then(toApplication)
+  })
 }
 
 export function listOpenPositions() {
