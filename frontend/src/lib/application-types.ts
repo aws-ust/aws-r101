@@ -29,9 +29,9 @@ export type Application = {
   firstName: string
   lastName: string
   email: string
-  age: number
-  section: string
-  motivation: string
+  age: number | null
+  section: string | null
+  motivation?: string
   choices: ApplicationChoice[]
   documents: ApplicationDocument[]
 }
@@ -42,7 +42,6 @@ export type CreateApplicationInput = {
   email: string
   age: number
   section: string
-  motivation: string
   choices: { positionId: string; preferenceRank: 1 | 2 }[]
-  documents: { documentType: DocumentType; fileName: string }[]
+  documents: { documentType: DocumentType; fileName: string; s3Key: string }[]
 }
