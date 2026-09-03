@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ApplyStepper } from "@/components/apply/stepper"
@@ -8,6 +8,11 @@ import { GeneralInfoStep } from "@/components/apply/general-info-step"
 import { CommitteeStep } from "@/components/apply/committee-step"
 import { UploadStep } from "@/components/apply/upload-step"
 import { SuccessPanel } from "@/components/apply/success-panel"
+import {
+  clearApplyFormDraft,
+  loadApplyFormDraft,
+  saveApplyFormDraft,
+} from "@/components/apply/apply-form-draft"
 import {
   committeeStepError,
   committeeValid,
@@ -42,6 +47,34 @@ export function ApplyForm() {
   const [upload, setUpload] = useState(emptyUpload)
   const [error, setError] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [draftReady, setDraftReady] = useState(false)
+
+  useEffect(() => {
+    const draft = loadApplyFormDraft()
+    if (draft) {
+      setGeneral(draft.general)
+      setCommittee(draft.committee)
+      setStep(draft.step)
+      setUpload({
+        resume: null,
+        transcript: null,
+        resumeDisplayName: draft.resumeName,
+        transcriptDisplayName: draft.transcriptName,
+      })
+    }
+    setDraftReady(true)
+  }, [])
+
+  useEffect(() => {
+    if (!draftReady || step === "success") return
+    saveApplyFormDraft({
+      step,
+      general,
+      committee,
+      resumeName: upload.resume?.name ?? upload.resumeDisplayName,
+      transcriptName: upload.transcript?.name ?? upload.transcriptDisplayName,
+    })
+  }, [draftReady, step, general, committee, upload])
 
   function goNext() {
     setError("")
@@ -69,6 +102,7 @@ export function ApplyForm() {
       await createApplication(
         toCreateApplicationInput(general, committee, upload, UST_EMAIL_DOMAIN)
       )
+      clearApplyFormDraft()
       setStep("success")
     } catch (err) {
       const message =
