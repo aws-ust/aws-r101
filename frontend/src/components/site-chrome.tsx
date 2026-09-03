@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation"
 import { ApplyAdminChrome } from "@/components/apply-admin-chrome"
+import { useChromeVisibility } from "@/components/chrome-visibility"
 import { Navbar } from "@/components/navbar"
 
 function isSlimPath(pathname: string) {
@@ -10,5 +11,9 @@ function isSlimPath(pathname: string) {
 
 export function SiteChrome() {
   const pathname = usePathname()
+  const { hideChrome } = useChromeVisibility()
+
+  if (hideChrome) return null
+
   return isSlimPath(pathname) ? <ApplyAdminChrome /> : <Navbar />
 }

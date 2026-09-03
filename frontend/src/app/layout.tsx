@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Poppins, JetBrains_Mono } from "next/font/google";
+import { ChromeVisibilityProvider } from "@/components/chrome-visibility";
 import { SiteChrome } from "@/components/site-chrome";
 import "./globals.css";
 
@@ -26,8 +27,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${poppins.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col overflow-x-clip bg-background text-foreground">
-        <SiteChrome />
-        {children}
+        <ChromeVisibilityProvider>
+          <SiteChrome />
+          {children}
+        </ChromeVisibilityProvider>
       </body>
     </html>
   );
