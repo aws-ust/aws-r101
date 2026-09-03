@@ -1,9 +1,7 @@
 "use client"
 
-import { useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { useChromeVisibility } from "@/components/chrome-visibility"
 import { Button } from "@/components/ui/button"
 
 const ERROR_COPY: Record<number, string> = {
@@ -38,13 +36,7 @@ type EspiErrorPageProps = {
 }
 
 export function EspiErrorPage({ code, retry }: EspiErrorPageProps) {
-  const { setHideChrome } = useChromeVisibility()
   const message = ERROR_COPY[code] ?? FALLBACK_COPY
-
-  useEffect(() => {
-    setHideChrome(true)
-    return () => setHideChrome(false)
-  }, [setHideChrome])
 
   return (
     <main className={shellClasses}>
