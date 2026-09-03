@@ -1,6 +1,10 @@
 import type { Application, Position } from "./application-types"
 
+<<<<<<< HEAD
 // Apply + HR hit the API. This file is leftover mock data; /apply/positions uses mock-positions.ts.
+=======
+// Leftover fixtures; Apply, HR, and the positions browser use the API.
+>>>>>>> 48bd77d4fd932f5f42a682bc8865030cfe5bd4ba
 
 export const POSITIONS: Position[] = [
   {

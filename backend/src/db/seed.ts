@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import { eq } from "drizzle-orm";
+=======
+import { eq, inArray } from "drizzle-orm";
+>>>>>>> 48bd77d4fd932f5f42a682bc8865030cfe5bd4ba
 import { db } from "./index";
 import {
   applicants,
@@ -8,10 +12,19 @@ import {
   positions,
   users,
 } from "./schema";
+import { POSITION_SEEDS } from "./position-seeds";
 
 // Dev password for both seeded users is "password123" — local/dev only.
 const DEV_PASSWORD_HASH =
   "$2b$10$CwTycUXWue0Thq9StjUM0uJ8yTaSGE3Va8p8V6b8Vqjc.gBFm9UhK";
+const LEGACY_POSITION_NAMES = [
+  "Web Developer",
+  "Cloud Engineer",
+  "Graphic Designer",
+  "Video Editor",
+  "Documentation Officer",
+  "Scheduling Coordinator",
+];
 
 async function main() {
   await db
@@ -34,84 +47,57 @@ async function main() {
     ])
     .onConflictDoNothing({ target: users.email });
 
-  await db
-    .insert(committees)
-    .values([
+  const committeeSeeds = new Map(
+    POSITION_SEEDS.map((positionSeed) => [
+      positionSeed.committee,
       {
-        name: "Technical Committee",
-        description: "Builds and maintains AWS UST's software and infrastructure.",
+        name: positionSeed.committee,
+        description: positionSeed.committeeDescription,
       },
-      {
-        name: "Creatives Committee",
-        description: "Handles design, branding, and multimedia content.",
-      },
-      {
-        name: "Secretariat Committee",
-        description: "Manages documentation, scheduling, and internal communications.",
-      },
-    ])
-    .onConflictDoNothing({ target: committees.name });
+    ]),
+  );
+
+  for (const committeeSeed of committeeSeeds.values()) {
+    await db
+      .insert(committees)
+      .values(committeeSeed)
+      .onConflictDoUpdate({
+        target: committees.name,
+        set: { description: committeeSeed.description },
+      });
+  }
 
   const committeeRows = await db.select().from(committees);
   const committeeIdByName = new Map(committeeRows.map((c) => [c.name, c.id]));
 
-  const positionSeeds = [
-    {
-      committee: "Technical Committee",
-      name: "Web Developer",
-      description: "Builds and maintains the recruitment website.",
-      responsibilities: "Implement features, fix bugs, review PRs.",
-      isOpen: true,
-    },
-    {
-      committee: "Technical Committee",
-      name: "Cloud Engineer",
-      description: "Manages AWS infrastructure for club projects.",
-      responsibilities: "Provision resources, monitor costs, write IaC.",
-      isOpen: true,
-    },
-    {
-      committee: "Creatives Committee",
-      name: "Graphic Designer",
-      description: "Produces visual assets for events and campaigns.",
-      responsibilities: "Design posters, social media graphics, brand assets.",
-      isOpen: true,
-    },
-    {
-      committee: "Creatives Committee",
-      name: "Video Editor",
-      description: "Edits video content for events and promotions.",
-      responsibilities: "Cut footage, add captions, publish recaps.",
-      isOpen: false,
-    },
-    {
-      committee: "Secretariat Committee",
-      name: "Documentation Officer",
-      description: "Maintains meeting minutes and internal records.",
-      responsibilities: "Take minutes, organize files, track action items.",
-      isOpen: true,
-    },
-    {
-      committee: "Secretariat Committee",
-      name: "Scheduling Coordinator",
-      description: "Coordinates event and meeting schedules.",
-      responsibilities: "Book venues, send invites, manage calendars.",
-      isOpen: true,
-    },
-  ];
-
   await db
-    .insert(positions)
-    .values(
-      positionSeeds.map((p) => ({
-        committeeId: committeeIdByName.get(p.committee)!,
-        name: p.name,
-        description: p.description,
-        responsibilities: p.responsibilities,
-        isOpen: p.isOpen,
-      })),
-    )
-    .onConflictDoNothing();
+    .update(positions)
+    .set({ isOpen: false })
+    .where(inArray(positions.name, LEGACY_POSITION_NAMES));
+
+  for (const positionSeed of POSITION_SEEDS) {
+    const values = {
+      committeeId: committeeIdByName.get(positionSeed.committee)!,
+      name: positionSeed.name,
+      office: positionSeed.office,
+      description: positionSeed.description,
+      responsibilities: positionSeed.responsibilities.join("\n"),
+      isOpen: positionSeed.isOpen,
+    };
+
+    await db
+      .insert(positions)
+      .values(values)
+      .onConflictDoUpdate({
+        target: [positions.committeeId, positions.name],
+        set: {
+          office: values.office,
+          description: values.description,
+          responsibilities: values.responsibilities,
+          isOpen: values.isOpen,
+        },
+      });
+  }
 
   const positionRows = await db.select().from(positions);
   const positionIdByName = new Map(positionRows.map((p) => [p.name, p.id]));
@@ -137,28 +123,48 @@ async function main() {
     {
       email: "ana.cruz@example.com",
       status: "pending" as const,
+<<<<<<< HEAD
       choices: ["Web Developer", "Cloud Engineer"],
       motivation:
         "I want to build real products with the technical committee and learn how AWS UST ships features.",
+=======
+      choices: ["Executive Assistant to the CEO", "Finance Committee Staff"],
+      motivation:
+        "I want to support organization-wide initiatives and learn how executive and finance teams keep projects running.",
+>>>>>>> 48bd77d4fd932f5f42a682bc8865030cfe5bd4ba
     },
     {
       email: "ben.santos@example.com",
       status: "approved" as const,
+<<<<<<< HEAD
       choices: ["Cloud Engineer", "Web Developer"],
       motivation:
         "Cloud infrastructure is what I want to get better at, and this org is where I'd actually use it.",
+=======
+      choices: ["Development Committee Staff", "Technicals Committee Staff"],
+      motivation:
+        "I want to improve my technical skills and help build and operate the organization's digital tools.",
+>>>>>>> 48bd77d4fd932f5f42a682bc8865030cfe5bd4ba
     },
     {
       email: "carla.mendoza@example.com",
       status: "rejected" as const,
+<<<<<<< HEAD
       choices: ["Graphic Designer", "Video Editor"],
+=======
+      choices: ["Publicity Committee Staff", "Media Committee Staff"],
+>>>>>>> 48bd77d4fd932f5f42a682bc8865030cfe5bd4ba
       motivation:
         "I like turning events into posters and recaps people actually want to share.",
     },
     {
       email: "dario.aquino@example.com",
       status: "pending" as const,
+<<<<<<< HEAD
       choices: ["Documentation Officer", "Scheduling Coordinator"],
+=======
+      choices: ["Human Resources Committee Staff", "Secretariat Committee Staff"],
+>>>>>>> 48bd77d4fd932f5f42a682bc8865030cfe5bd4ba
       motivation:
         "I'm organized and I want to keep meetings, files, and calendars from falling apart.",
     },
@@ -172,12 +178,34 @@ async function main() {
   for (const seed of applicationSeeds) {
     const applicantId = applicantIdByEmail.get(seed.email)!;
     const existing = applicationByApplicantId.get(applicantId);
+<<<<<<< HEAD
     if (existing) {
       // Insert is skipped for existing apps; still fill motivation after the column lands.
+=======
+    const choices = seed.choices.map((positionName, i) => ({
+      positionId: positionIdByName.get(positionName)!,
+      preferenceRank: i + 1,
+    }));
+
+    if (existing) {
+>>>>>>> 48bd77d4fd932f5f42a682bc8865030cfe5bd4ba
       await db
         .update(applications)
         .set({ motivation: seed.motivation })
         .where(eq(applications.id, existing.id));
+<<<<<<< HEAD
+=======
+
+      await db
+        .delete(applicationChoices)
+        .where(eq(applicationChoices.applicationId, existing.id));
+      await db.insert(applicationChoices).values(
+        choices.map((choice) => ({
+          ...choice,
+          applicationId: existing.id,
+        })),
+      );
+>>>>>>> 48bd77d4fd932f5f42a682bc8865030cfe5bd4ba
       continue;
     }
 
@@ -186,16 +214,12 @@ async function main() {
       .values({ applicantId, status: seed.status, motivation: seed.motivation })
       .returning();
 
-    await db
-      .insert(applicationChoices)
-      .values(
-        seed.choices.map((positionName, i) => ({
-          applicationId: application.id,
-          positionId: positionIdByName.get(positionName)!,
-          preferenceRank: i + 1,
-        })),
-      )
-      .onConflictDoNothing();
+    await db.insert(applicationChoices).values(
+      choices.map((choice) => ({
+        ...choice,
+        applicationId: application.id,
+      })),
+    );
   }
 
   console.log("Seed complete.");

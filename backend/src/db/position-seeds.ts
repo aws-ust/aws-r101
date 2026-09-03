@@ -1,8 +1,13 @@
+<<<<<<< HEAD:frontend/src/lib/mock-positions.ts
 // Still for /apply/positions. Apply + HR go through the API.
 
 export type Position = {
   id: string
   title: string
+=======
+type PositionSeed = {
+  name: string
+>>>>>>> 48bd77d4fd932f5f42a682bc8865030cfe5bd4ba:backend/src/db/position-seeds.ts
   office: string
   committee: string
   committeeDescription: string
@@ -11,10 +16,9 @@ export type Position = {
   isOpen: boolean
 }
 
-export const MOCK_POSITIONS: Position[] = [
+export const POSITION_SEEDS: PositionSeed[] = [
   {
-    id: "ea-ceo",
-    title: "Executive Assistant to the CEO",
+    name: "Executive Assistant to the CEO",
     office: "Office of the Chief Executive Officer",
     committee: "Office of the Chief Executive Officer",
     committeeDescription:
@@ -32,8 +36,7 @@ export const MOCK_POSITIONS: Position[] = [
     isOpen: true,
   },
   {
-    id: "ea-cfo",
-    title: "Executive Assistant to the CFO",
+    name: "Executive Assistant to the CFO",
     office: "Office of the Chief Finance Officer",
     committee: "Office of the Chief Finance Officer",
     committeeDescription:
@@ -51,8 +54,7 @@ export const MOCK_POSITIONS: Position[] = [
     isOpen: true,
   },
   {
-    id: "staff-finance",
-    title: "Finance Committee Staff",
+    name: "Finance Committee Staff",
     office: "Office of the Chief Finance Officer",
     committee: "Finance Committee",
     committeeDescription:
@@ -71,8 +73,7 @@ export const MOCK_POSITIONS: Position[] = [
     isOpen: true,
   },
   {
-    id: "ea-corporate-secretary",
-    title: "Executive Assistant to the Corporate Secretary",
+    name: "Executive Assistant to the Corporate Secretary",
     office: "Office of the Corporate Secretary",
     committee: "Office of the Corporate Secretary",
     committeeDescription:
@@ -90,8 +91,7 @@ export const MOCK_POSITIONS: Position[] = [
     isOpen: true,
   },
   {
-    id: "staff-secretariat",
-    title: "Secretariat Committee Staff",
+    name: "Secretariat Committee Staff",
     office: "Office of the Corporate Secretary",
     committee: "Secretariat Committee",
     committeeDescription:
@@ -112,8 +112,7 @@ export const MOCK_POSITIONS: Position[] = [
     isOpen: true,
   },
   {
-    id: "ea-cro",
-    title: "Executive Assistant to the CRO",
+    name: "Executive Assistant to the CRO",
     office: "Office of the Chief Relations Officer",
     committee: "Office of the Chief Relations Officer",
     committeeDescription:
@@ -131,8 +130,7 @@ export const MOCK_POSITIONS: Position[] = [
     isOpen: true,
   },
   {
-    id: "staff-external-affairs",
-    title: "External Affairs Committee Staff",
+    name: "External Affairs Committee Staff",
     office: "Office of the Chief Relations Officer",
     committee: "External Affairs Committee",
     committeeDescription:
@@ -152,8 +150,7 @@ export const MOCK_POSITIONS: Position[] = [
     isOpen: true,
   },
   {
-    id: "staff-sponsorship",
-    title: "Sponsorship Committee Staff",
+    name: "Sponsorship Committee Staff",
     office: "Office of the Chief Relations Officer",
     committee: "Sponsorship Committee",
     committeeDescription:
@@ -173,8 +170,7 @@ export const MOCK_POSITIONS: Position[] = [
     isOpen: true,
   },
   {
-    id: "staff-marketing",
-    title: "Marketing Committee Staff",
+    name: "Marketing Committee Staff",
     office: "Office of the Chief Relations Officer",
     committee: "Marketing Committee",
     committeeDescription:
@@ -194,8 +190,7 @@ export const MOCK_POSITIONS: Position[] = [
     isOpen: true,
   },
   {
-    id: "ea-cco",
-    title: "Executive Assistant to the CCO",
+    name: "Executive Assistant to the CCO",
     office: "Office of the Chief Creative Officer",
     committee: "Office of the Chief Creative Officer",
     committeeDescription:
@@ -213,8 +208,7 @@ export const MOCK_POSITIONS: Position[] = [
     isOpen: true,
   },
   {
-    id: "staff-publicity",
-    title: "Publicity Committee Staff",
+    name: "Publicity Committee Staff",
     office: "Office of the Chief Creative Officer",
     committee: "Publicity Committee",
     committeeDescription:
@@ -234,8 +228,7 @@ export const MOCK_POSITIONS: Position[] = [
     isOpen: true,
   },
   {
-    id: "staff-media",
-    title: "Media Committee Staff",
+    name: "Media Committee Staff",
     office: "Office of the Chief Creative Officer",
     committee: "Media Committee",
     committeeDescription:
@@ -255,8 +248,7 @@ export const MOCK_POSITIONS: Position[] = [
     isOpen: true,
   },
   {
-    id: "staff-documentation",
-    title: "Documentation Committee Staff",
+    name: "Documentation Committee Staff",
     office: "Office of the Chief Creative Officer",
     committee: "Documentation Committee",
     committeeDescription:
@@ -276,8 +268,7 @@ export const MOCK_POSITIONS: Position[] = [
     isOpen: true,
   },
   {
-    id: "ea-coo",
-    title: "Executive Assistant to the COO",
+    name: "Executive Assistant to the COO",
     office: "Office of the Chief Operating Officer",
     committee: "Office of the Chief Operating Officer",
     committeeDescription:
@@ -296,8 +287,7 @@ export const MOCK_POSITIONS: Position[] = [
     isOpen: true,
   },
   {
-    id: "staff-community-development",
-    title: "Community Development Committee Staff",
+    name: "Community Development Committee Staff",
     office: "Office of the Chief Operating Officer",
     committee: "Community Development Committee",
     committeeDescription:
@@ -317,8 +307,7 @@ export const MOCK_POSITIONS: Position[] = [
     isOpen: true,
   },
   {
-    id: "staff-logistics",
-    title: "Logistics Committee Staff",
+    name: "Logistics Committee Staff",
     office: "Office of the Chief Operating Officer",
     committee: "Logistics Committee",
     committeeDescription:
@@ -339,8 +328,7 @@ export const MOCK_POSITIONS: Position[] = [
     isOpen: true,
   },
   {
-    id: "ea-cto",
-    title: "Executive Assistant to the CTO",
+    name: "Executive Assistant to the CTO",
     office: "Office of the Chief Technology Officer",
     committee: "Office of the Chief Technology Officer",
     committeeDescription:
@@ -358,8 +346,7 @@ export const MOCK_POSITIONS: Position[] = [
     isOpen: true,
   },
   {
-    id: "staff-technicals",
-    title: "Technicals Committee Staff",
+    name: "Technicals Committee Staff",
     office: "Office of the Chief Technology Officer",
     committee: "Technicals Committee",
     committeeDescription:
@@ -379,8 +366,7 @@ export const MOCK_POSITIONS: Position[] = [
     isOpen: true,
   },
   {
-    id: "staff-development",
-    title: "Development Committee Staff",
+    name: "Development Committee Staff",
     office: "Office of the Chief Technology Officer",
     committee: "Development Committee",
     committeeDescription:
@@ -400,8 +386,7 @@ export const MOCK_POSITIONS: Position[] = [
     isOpen: true,
   },
   {
-    id: "ea-chro",
-    title: "Executive Assistant to the CHRO",
+    name: "Executive Assistant to the CHRO",
     office: "Office of the Chief Human Resources Officer",
     committee: "Office of the Chief Human Resources Officer",
     committeeDescription:
@@ -420,8 +405,7 @@ export const MOCK_POSITIONS: Position[] = [
     isOpen: true,
   },
   {
-    id: "staff-human-resources",
-    title: "Human Resources Committee Staff",
+    name: "Human Resources Committee Staff",
     office: "Office of the Chief Human Resources Officer",
     committee: "Human Resources Committee",
     committeeDescription:
@@ -442,45 +426,3 @@ export const MOCK_POSITIONS: Position[] = [
     isOpen: true,
   },
 ]
-
-export function getOpenPositions() {
-  return MOCK_POSITIONS.filter((position) => position.isOpen)
-}
-
-export function groupPositionsByOffice(positions: Position[]) {
-  const groups: { office: string; positions: Position[] }[] = []
-
-  for (const position of positions) {
-    const existing = groups.find((group) => group.office === position.office)
-
-    if (existing) {
-      existing.positions.push(position)
-    } else {
-      groups.push({
-        office: position.office,
-        positions: [position],
-      })
-    }
-  }
-
-  return groups
-}
-
-export const OFFICE_CODE: Record<string, string> = {
-  "Office of the Chief Executive Officer": "ceo",
-  "Office of the Chief Finance Officer": "cfo",
-  "Office of the Corporate Secretary": "sec",
-  "Office of the Chief Relations Officer": "cro",
-  "Office of the Chief Creative Officer": "cco",
-  "Office of the Chief Operating Officer": "coo",
-  "Office of the Chief Technology Officer": "cto",
-  "Office of the Chief Human Resources Officer": "chro",
-}
-
-export function isAssistantRole(position: Position) {
-  return position.title.startsWith("Executive Assistant")
-}
-
-export function openSpots(position: Position) {
-  return isAssistantRole(position) ? 1 : 4
-}
