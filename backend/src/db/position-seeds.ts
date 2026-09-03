@@ -1,13 +1,5 @@
-<<<<<<< HEAD:frontend/src/lib/mock-positions.ts
-// Still for /apply/positions. Apply + HR go through the API.
-
-export type Position = {
-  id: string
-  title: string
-=======
 type PositionSeed = {
   name: string
->>>>>>> 48bd77d4fd932f5f42a682bc8865030cfe5bd4ba:backend/src/db/position-seeds.ts
   office: string
   committee: string
   committeeDescription: string
