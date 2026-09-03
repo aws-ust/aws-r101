@@ -1,14 +1,9 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import type { LambdaEvent, LambdaContext } from "hono/aws-lambda";
-<<<<<<< HEAD
-import { db } from "./db";
-import { committees, positions } from "./db/schema";
-import { applicationsRoutes } from "./routes/applications";
-=======
 import { applicationsRoutes } from "./routes/applications";
 import { positionsRoutes } from "./routes/positions";
->>>>>>> 48bd77d4fd932f5f42a682bc8865030cfe5bd4ba
+import { credentialsMatch, requireAuth, signToken } from "./auth";
 
 type Bindings = {
   event: LambdaEvent;
@@ -21,19 +16,42 @@ app.use(
   "*",
   cors({
     origin: process.env.CORS_ORIGIN ?? "http://localhost:3000",
+    allowHeaders: ["Content-Type", "Authorization"],
   })
 );
 
 app.get("/health", (c) => c.json({ ok: true, service: "aws-ust-api" }));
 
-app.route("/positions", positionsRoutes);
+app.post("/auth/login", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as {
+    email?: unknown;
+    password?: unknown;
+  };
+  const email = typeof body.email === "string" ? body.email : "";
+  const password = typeof body.password === "string" ? body.password : "";
 
-<<<<<<< HEAD
-  return c.json(rows);
+  if (!credentialsMatch(email, password)) {
+    return c.json({ error: "invalid credentials" }, 401);
+  }
+
+  try {
+    const result = await signToken(email.trim().toLowerCase());
+    return c.json(result);
+  } catch {
+    return c.json({ error: "auth not configured" }, 500);
+  }
 });
 
-=======
->>>>>>> 48bd77d4fd932f5f42a682bc8865030cfe5bd4ba
+app.get("/auth/me", requireAuth, (c) => {
+  const payload = c.get("jwtPayload") as { sub?: unknown };
+  const email = typeof payload.sub === "string" ? payload.sub : "";
+  return c.json({ email });
+});
+
+app.post("/auth/logout", requireAuth, (c) => c.body(null, 204));
+
+app.route("/positions", positionsRoutes);
+
 app.route("/applications", applicationsRoutes);
 
 app.post("/uploads/presign", (c) =>

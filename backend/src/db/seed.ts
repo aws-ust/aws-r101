@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import { eq } from "drizzle-orm";
-=======
 import { eq, inArray } from "drizzle-orm";
->>>>>>> 48bd77d4fd932f5f42a682bc8865030cfe5bd4ba
 import { db } from "./index";
 import {
   applicants,
@@ -123,48 +119,28 @@ async function main() {
     {
       email: "ana.cruz@example.com",
       status: "pending" as const,
-<<<<<<< HEAD
-      choices: ["Web Developer", "Cloud Engineer"],
-      motivation:
-        "I want to build real products with the technical committee and learn how AWS UST ships features.",
-=======
       choices: ["Executive Assistant to the CEO", "Finance Committee Staff"],
       motivation:
         "I want to support organization-wide initiatives and learn how executive and finance teams keep projects running.",
->>>>>>> 48bd77d4fd932f5f42a682bc8865030cfe5bd4ba
     },
     {
       email: "ben.santos@example.com",
       status: "approved" as const,
-<<<<<<< HEAD
-      choices: ["Cloud Engineer", "Web Developer"],
-      motivation:
-        "Cloud infrastructure is what I want to get better at, and this org is where I'd actually use it.",
-=======
       choices: ["Development Committee Staff", "Technicals Committee Staff"],
       motivation:
         "I want to improve my technical skills and help build and operate the organization's digital tools.",
->>>>>>> 48bd77d4fd932f5f42a682bc8865030cfe5bd4ba
     },
     {
       email: "carla.mendoza@example.com",
       status: "rejected" as const,
-<<<<<<< HEAD
-      choices: ["Graphic Designer", "Video Editor"],
-=======
       choices: ["Publicity Committee Staff", "Media Committee Staff"],
->>>>>>> 48bd77d4fd932f5f42a682bc8865030cfe5bd4ba
       motivation:
         "I like turning events into posters and recaps people actually want to share.",
     },
     {
       email: "dario.aquino@example.com",
       status: "pending" as const,
-<<<<<<< HEAD
-      choices: ["Documentation Officer", "Scheduling Coordinator"],
-=======
       choices: ["Human Resources Committee Staff", "Secretariat Committee Staff"],
->>>>>>> 48bd77d4fd932f5f42a682bc8865030cfe5bd4ba
       motivation:
         "I'm organized and I want to keep meetings, files, and calendars from falling apart.",
     },
@@ -178,23 +154,16 @@ async function main() {
   for (const seed of applicationSeeds) {
     const applicantId = applicantIdByEmail.get(seed.email)!;
     const existing = applicationByApplicantId.get(applicantId);
-<<<<<<< HEAD
-    if (existing) {
-      // Insert is skipped for existing apps; still fill motivation after the column lands.
-=======
     const choices = seed.choices.map((positionName, i) => ({
       positionId: positionIdByName.get(positionName)!,
       preferenceRank: i + 1,
     }));
 
     if (existing) {
->>>>>>> 48bd77d4fd932f5f42a682bc8865030cfe5bd4ba
       await db
         .update(applications)
         .set({ motivation: seed.motivation })
         .where(eq(applications.id, existing.id));
-<<<<<<< HEAD
-=======
 
       await db
         .delete(applicationChoices)
@@ -205,7 +174,6 @@ async function main() {
           applicationId: existing.id,
         })),
       );
->>>>>>> 48bd77d4fd932f5f42a682bc8865030cfe5bd4ba
       continue;
     }
 
