@@ -12,7 +12,7 @@ import { getSession } from "@/lib/api-client"
 import { getToken, setToken } from "@/lib/auth"
 
 const pageClasses =
-  "relative flex min-h-[calc(100svh-4.5rem)] flex-1 flex-col items-center justify-center px-4 py-12 md:py-16"
+  "relative flex min-h-svh flex-1 flex-col items-center justify-center px-4 py-12 md:py-16"
 const dotConstellationLayerClasses =
   "pointer-events-none absolute inset-0 z-0 overflow-hidden text-blue-chalk/35 [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_76%)]"
 const dotConstellationSvgClasses =

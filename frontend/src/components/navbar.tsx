@@ -52,32 +52,8 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", updateScrolled)
   }, [])
 
-  if (pathname.startsWith("/admin")) {
+  if (pathname.startsWith("/admin") || pathname === "/login") {
     return null
-  }
-
-  if (pathname === "/login") {
-    return (
-      <header className={headerClasses}>
-        <nav
-          aria-label="Primary"
-          className={cn(barClasses, scrolledBarClasses)}
-        >
-          <div className={barInnerClasses}>
-            <Link href="/" className="flex items-center gap-2 font-bold">
-              <Image
-                src="/aws-logo.png"
-                alt="AWS Builders – UST"
-                width={117}
-                height={66}
-                className="h-8 w-auto"
-              />
-              <span className="hidden sm:inline">AWS Builders – UST</span>
-            </Link>
-          </div>
-        </nav>
-      </header>
-    )
   }
 
   return (
