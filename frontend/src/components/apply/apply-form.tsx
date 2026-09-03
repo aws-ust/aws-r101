@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { Button } from "@/components/ui/button"
 import { ApplyStepper } from "@/components/apply/stepper"
 import { GeneralInfoStep } from "@/components/apply/general-info-step"
@@ -36,12 +37,33 @@ import {
 } from "@/lib/surface"
 
 const panelClasses = `mx-auto mt-10 w-full max-w-2xl ${glassPanelClasses} px-6 py-8 md:px-10`
+const stepStageClasses = "relative overflow-hidden"
 const actionsClasses = "mt-8 flex items-center justify-between gap-4"
 const nextButtonClasses = "h-10 px-5 text-xs"
 const errorClasses = "mt-4 text-sm text-aquamarine"
 
+const slideSpring = { type: "spring" as const, stiffness: 400, damping: 35 }
+const slideSnap = { duration: 0 }
+
+function stepVariants(reducedMotion: boolean) {
+  if (reducedMotion) {
+    return {
+      enter: { x: 0, opacity: 1 },
+      center: { x: 0, opacity: 1 },
+      exit: { x: 0, opacity: 1 },
+    }
+  }
+  return {
+    enter: (direction: number) => ({ x: direction * 40, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (direction: number) => ({ x: direction * -40, opacity: 0 }),
+  }
+}
+
 export function ApplyForm() {
+  const reducedMotion = useReducedMotion() ?? false
   const [step, setStep] = useState<1 | 2 | 3 | "success">(1)
+  const [direction, setDirection] = useState(1)
   const [general, setGeneral] = useState(emptyGeneral)
   const [committee, setCommittee] = useState(emptyCommittee)
   const [upload, setUpload] = useState(emptyUpload)
@@ -86,8 +108,15 @@ export function ApplyForm() {
       setError(committeeStepError(committee))
       return
     }
+    setDirection(1)
     if (step === 1) setStep(2)
     if (step === 2) setStep(3)
+  }
+
+  function goBack() {
+    setError("")
+    setDirection(-1)
+    setStep(step === 3 ? 2 : 1)
   }
 
   async function submit() {
@@ -127,6 +156,9 @@ export function ApplyForm() {
     )
   }
 
+  const variants = stepVariants(reducedMotion)
+  const transition = reducedMotion ? slideSnap : slideSpring
+
   return (
     <main className={pageShellClasses}>
       <SectionHeader
@@ -139,28 +171,53 @@ export function ApplyForm() {
         <ApplyStepper current={step} />
       </div>
       <div className={panelClasses}>
-        {step === 1 && (
-          <GeneralInfoStep
-            values={general}
-            onChange={(patch) => setGeneral((current) => ({ ...current, ...patch }))}
-          />
-        )}
-        {step === 2 && (
-          <CommitteeStep
-            values={committee}
-            onChange={(patch) => setCommittee((current) => ({ ...current, ...patch }))}
-          />
-        )}
-        {step === 3 && (
-          <UploadStep
-            values={upload}
-            onChange={(patch) => setUpload((current) => ({ ...current, ...patch }))}
-          />
-        )}
-        {error ? <p className={errorClasses}>{error}</p> : null}
+        <div className={stepStageClasses}>
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={step}
+              custom={direction}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={transition}
+            >
+              {step === 1 ? (
+                <GeneralInfoStep
+                  values={general}
+                  onChange={(patch) =>
+                    setGeneral((current) => ({ ...current, ...patch }))
+                  }
+                />
+              ) : null}
+              {step === 2 ? (
+                <CommitteeStep
+                  values={committee}
+                  onChange={(patch) =>
+                    setCommittee((current) => ({ ...current, ...patch }))
+                  }
+                />
+              ) : null}
+              {step === 3 ? (
+                <UploadStep
+                  values={upload}
+                  onChange={(patch) =>
+                    setUpload((current) => ({ ...current, ...patch }))
+                  }
+                />
+              ) : null}
+              {error ? <p className={errorClasses}>{error}</p> : null}
+            </motion.div>
+          </AnimatePresence>
+        </div>
         <div className={actionsClasses}>
           {step === 1 ? (
-            <Button color="purple" className={ghostPillButtonClasses} nativeButton={false} render={<Link href="/" />}>
+            <Button
+              color="purple"
+              className={ghostPillButtonClasses}
+              nativeButton={false}
+              render={<Link href="/" />}
+            >
               ← Back
             </Button>
           ) : (
@@ -168,10 +225,7 @@ export function ApplyForm() {
               type="button"
               color="purple"
               className={ghostPillButtonClasses}
-              onClick={() => {
-                setError("")
-                setStep(step === 3 ? 2 : 1)
-              }}
+              onClick={goBack}
             >
               ← Back
             </Button>
@@ -187,7 +241,12 @@ export function ApplyForm() {
               Submit Application
             </Button>
           ) : (
-            <Button type="button" color="cyan" className={nextButtonClasses} onClick={goNext}>
+            <Button
+              type="button"
+              color="cyan"
+              className={nextButtonClasses}
+              onClick={goNext}
+            >
               {step === 1 ? "Next → Step 2" : "Next → Step 3"}
             </Button>
           )}
