@@ -13,7 +13,6 @@ const paginationLinkActiveClasses =
 function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
   return (
     <nav
-      role="navigation"
       aria-label="pagination"
       data-slot="pagination"
       className={cn("flex w-full justify-center", className)}
