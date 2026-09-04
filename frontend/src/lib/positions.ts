@@ -33,17 +33,24 @@ export function groupPositionsByOfficeHierarchy(positions: Position[]) {
     }
   }
 
-  return COMMITTEE_OFFICE_GROUPS
-    .map((group) => ({
-      office: group.office,
-      committees: group.committees
-        .map((committee) => ({
-          committee,
-          positions: byCommittee.get(committee) ?? [],
-        }))
-        .filter((entry) => entry.positions.length > 0),
-    }))
-    .filter((group) => group.committees.length > 0)
+  const groups: PositionOfficeGroup[] = []
+
+  for (const group of COMMITTEE_OFFICE_GROUPS) {
+    const committees: PositionCommitteeGroup[] = []
+
+    for (const committee of group.committees) {
+      const committeePositions = byCommittee.get(committee) ?? []
+      if (committeePositions.length > 0) {
+        committees.push({ committee, positions: committeePositions })
+      }
+    }
+
+    if (committees.length > 0) {
+      groups.push({ office: group.office, committees })
+    }
+  }
+
+  return groups
 }
 
 /** @deprecated Use groupPositionsByOfficeHierarchy for the positions browser. */
