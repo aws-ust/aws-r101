@@ -115,8 +115,9 @@ export function DesktopNavLinks({ items, pathname }: DesktopNavLinksProps) {
       {activeRect ? (
         <m.span
           className={activePillClasses}
+          style={{ width: 1, transformOrigin: "left center" }}
           initial={false}
-          animate={{ left: activeRect.left, width: activeRect.width }}
+          animate={{ x: activeRect.left, scaleX: activeRect.width }}
           transition={transition}
           aria-hidden="true"
         />
@@ -125,8 +126,9 @@ export function DesktopNavLinks({ items, pathname }: DesktopNavLinksProps) {
       {showHoverPill && hoverRect ? (
         <m.span
           className={hoverPillClasses}
+          style={{ width: 1, transformOrigin: "left center" }}
           initial={false}
-          animate={{ left: hoverRect.left, width: hoverRect.width }}
+          animate={{ x: hoverRect.left, scaleX: hoverRect.width }}
           transition={transition}
           aria-hidden="true"
         />
