@@ -1,7 +1,7 @@
 "use client"
 
 import { Check } from "lucide-react"
-import { motion, useReducedMotion } from "motion/react"
+import { m, useReducedMotion } from "motion/react"
 import { cn } from "@/lib/utils"
 
 const STEPS = [
@@ -48,7 +48,7 @@ export function ApplyStepper({ current }: StepperProps) {
         return (
           <li key={step.n} className="flex min-w-0 flex-1 items-start">
             {index > 0 ? (
-              <motion.div
+              <m.div
                 className={connectorClasses}
                 aria-hidden="true"
                 initial={false}
@@ -57,7 +57,7 @@ export function ApplyStepper({ current }: StepperProps) {
               />
             ) : null}
             <div className="flex flex-col items-center px-2">
-              <motion.span
+              <m.span
                 className={cn(
                   state === "current" && currentCircle,
                   state === "complete" && completeCircle,
@@ -68,7 +68,7 @@ export function ApplyStepper({ current }: StepperProps) {
                 transition={transition}
               >
                 {state === "complete" ? (
-                  <motion.span
+                  <m.span
                     key="check"
                     initial={
                       reducedMotion ? false : { scale: 0.6, opacity: 0 }
@@ -78,12 +78,12 @@ export function ApplyStepper({ current }: StepperProps) {
                     className="inline-flex"
                   >
                     <Check className="size-4" strokeWidth={3} />
-                  </motion.span>
+                  </m.span>
                 ) : (
                   step.n
                 )}
-              </motion.span>
-              <motion.span
+              </m.span>
+              <m.span
                 className={cn(
                   state === "current" && currentLabel,
                   state === "complete" && completeLabel,
@@ -94,10 +94,10 @@ export function ApplyStepper({ current }: StepperProps) {
                 transition={transition}
               >
                 {step.label}
-              </motion.span>
+              </m.span>
             </div>
             {index < STEPS.length - 1 ? (
-              <motion.div
+              <m.div
                 className={connectorClasses}
                 aria-hidden="true"
                 initial={false}

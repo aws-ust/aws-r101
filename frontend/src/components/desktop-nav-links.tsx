@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { motion } from "motion/react"
+import { LazyMotion, domAnimation, m } from "motion/react"
 import { useCallback, useEffect, useRef, useState } from "react"
 
 import { cn } from "@/lib/utils"
@@ -103,6 +103,7 @@ export function DesktopNavLinks({ items, pathname }: DesktopNavLinksProps) {
     hoverRect !== null && hoveredHref !== null && hoveredHref !== pathname
 
   return (
+    <LazyMotion features={domAnimation}>
     <div
       ref={rowRef}
       className={linksRowClasses}
@@ -112,7 +113,7 @@ export function DesktopNavLinks({ items, pathname }: DesktopNavLinksProps) {
       }}
     >
       {activeRect ? (
-        <motion.span
+        <m.span
           className={activePillClasses}
           initial={false}
           animate={{ left: activeRect.left, width: activeRect.width }}
@@ -122,7 +123,7 @@ export function DesktopNavLinks({ items, pathname }: DesktopNavLinksProps) {
       ) : null}
 
       {showHoverPill && hoverRect ? (
-        <motion.span
+        <m.span
           className={hoverPillClasses}
           initial={false}
           animate={{ left: hoverRect.left, width: hoverRect.width }}
@@ -159,5 +160,6 @@ export function DesktopNavLinks({ items, pathname }: DesktopNavLinksProps) {
         )
       })}
     </div>
+    </LazyMotion>
   )
 }

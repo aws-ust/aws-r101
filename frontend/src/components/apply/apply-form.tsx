@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { AnimatePresence, motion, useReducedMotion } from "motion/react"
+import { AnimatePresence, LazyMotion, domAnimation, m, useReducedMotion } from "motion/react"
 import { Button } from "@/components/ui/button"
 import { ApplyStepper } from "@/components/apply/stepper"
 import { GeneralInfoStep } from "@/components/apply/general-info-step"
@@ -175,6 +175,7 @@ export function ApplyForm() {
 
   return (
     <main className={pageShellClasses}>
+      <LazyMotion features={domAnimation}>
       <SectionHeader
         eyebrow="// RECRUITMENT 101"
         title="Apply to AWS Builders – UST"
@@ -187,7 +188,7 @@ export function ApplyForm() {
       <div className={panelClasses}>
         <div className={stepStageClasses}>
           <AnimatePresence mode="wait" custom={direction}>
-            <motion.div
+            <m.div
               key={step}
               custom={direction}
               variants={variants}
@@ -227,7 +228,7 @@ export function ApplyForm() {
                 />
               ) : null}
               {error ? <p className={errorClasses}>{error}</p> : null}
-            </motion.div>
+            </m.div>
           </AnimatePresence>
         </div>
         <div className={actionsClasses}>
@@ -277,6 +278,7 @@ export function ApplyForm() {
           View all open positions →
         </Link>
       </p>
+      </LazyMotion>
     </main>
   )
 }
