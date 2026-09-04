@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ApiError, login } from "@/lib/api"
 import { getSession } from "@/lib/api-client"
-import { getToken, setToken } from "@/lib/auth"
 
 const pageClasses =
   "relative flex min-h-svh flex-1 flex-col items-center justify-center px-4 py-12 md:py-16"
@@ -45,15 +44,13 @@ export default function LoginPage() {
   const hasError = error !== null
 
   useEffect(() => {
-    if (!getToken()) return
-
     let cancelled = false
     getSession()
       .then(() => {
         if (!cancelled) router.replace("/admin/hr")
       })
       .catch(() => {
-        // Fake or expired token: stay on login.
+        // No active session: stay on login.
       })
 
     return () => {
@@ -66,8 +63,7 @@ export default function LoginPage() {
     setError(null)
     setPending(true)
     try {
-      const result = await login(email, password)
-      setToken(result.token)
+      await login(email, password)
       router.push("/admin/hr")
     } catch (err) {
       setError(
