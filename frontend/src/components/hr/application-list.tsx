@@ -6,11 +6,11 @@ import {
   ApplicationFilters,
   type HrFilters,
 } from "@/components/hr/application-filters"
+import { ApplicationPagination } from "@/components/hr/application-pagination"
 import {
-  ApplicationPagination,
   pageCount,
   pageSlice,
-} from "@/components/hr/application-pagination"
+} from "@/components/hr/application-pagination-utils"
 import { ApplicationRow } from "@/components/hr/application-row"
 import { fullName, hasCommittee, useApplications } from "@/lib/api"
 import { pageShellClasses } from "@/lib/surface"
