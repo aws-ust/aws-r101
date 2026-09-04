@@ -25,7 +25,7 @@ const titleClasses = "mt-1 font-sans text-2xl font-bold text-blue-chalk md:text-
 const subtitleClasses = "mt-2 font-sans text-sm leading-relaxed text-prelude"
 const fieldClasses = "flex flex-col gap-2"
 const passwordWrapClasses = "relative"
-const passwordToggleClasses =
+const visibilityToggleClasses =
   "absolute top-1/2 right-3 inline-flex -translate-y-1/2 cursor-pointer items-center justify-center rounded-md p-1 text-prelude transition-colors hover:text-blue-chalk focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-aquamarine/40"
 const passwordInputClasses = "pr-10"
 const errorPanelClasses =
@@ -151,7 +151,7 @@ export default function LoginPage() {
             />
             <button
               type="button"
-              className={passwordToggleClasses}
+              className={visibilityToggleClasses}
               onClick={() => setShowPassword((visible) => !visible)}
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
