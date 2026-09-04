@@ -5,7 +5,7 @@ import type {
   Position,
 } from "./application-types"
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787"
+const API_BASE = "/api"
 
 export class ApiError extends Error {
   readonly status: number
