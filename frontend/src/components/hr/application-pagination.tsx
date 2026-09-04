@@ -25,15 +25,18 @@ export function pageSlice<T>(items: T[], page: number) {
   return items.slice(start, start + PAGE_SIZE)
 }
 
-function buildPageList(current: number, total: number): (number | "ellipsis")[] {
+function buildPageList(
+  current: number,
+  total: number
+): (number | "ellipsis-leading" | "ellipsis-trailing")[] {
   if (total <= 7) {
     return Array.from({ length: total }, (_, index) => index + 1)
   }
 
-  const pages: (number | "ellipsis")[] = [1]
+  const pages: (number | "ellipsis-leading" | "ellipsis-trailing")[] = [1]
 
   if (current > 3) {
-    pages.push("ellipsis")
+    pages.push("ellipsis-leading")
   }
 
   const start = Math.max(2, current - 1)
@@ -44,7 +47,7 @@ function buildPageList(current: number, total: number): (number | "ellipsis")[] 
   }
 
   if (current < total - 2) {
-    pages.push("ellipsis")
+    pages.push("ellipsis-trailing")
   }
 
   pages.push(total)
@@ -88,9 +91,9 @@ export function ApplicationPagination({
               />
             </PaginationItem>
 
-            {pages.map((entry, index) =>
-              entry === "ellipsis" ? (
-                <PaginationItem key={`ellipsis-${index}`}>
+            {pages.map((entry) =>
+              typeof entry === "string" ? (
+                <PaginationItem key={entry}>
                   <PaginationEllipsis />
                 </PaginationItem>
               ) : (
