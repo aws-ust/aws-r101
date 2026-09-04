@@ -8,6 +8,9 @@ import { ApplyStepper } from "@/components/apply/stepper"
 import { GeneralInfoStep } from "@/components/apply/general-info-step"
 import { CommitteeStep } from "@/components/apply/committee-step"
 import { UploadStep } from "@/components/apply/upload-step"
+import type { CommitteeValues } from "@/components/apply/committee-step"
+import type { GeneralInfoValues } from "@/components/apply/general-info-step"
+import type { UploadValues } from "@/components/apply/upload-step"
 import { SuccessPanel } from "@/components/apply/success-panel"
 import {
   clearApplyFormDraft,
@@ -60,6 +63,22 @@ function stepVariants(reducedMotion: boolean) {
   }
 }
 
+function persistDraft(
+  draftStep: 1 | 2 | 3,
+  draftGeneral: GeneralInfoValues,
+  draftCommittee: CommitteeValues,
+  draftUpload: UploadValues,
+) {
+  saveApplyFormDraft({
+    step: draftStep,
+    general: draftGeneral,
+    committee: draftCommittee,
+    resumeName: draftUpload.resume?.name ?? draftUpload.resumeDisplayName,
+    transcriptName:
+      draftUpload.transcript?.name ?? draftUpload.transcriptDisplayName,
+  })
+}
+
 export function ApplyForm() {
   const reducedMotion = useReducedMotion() ?? false
   const [step, setStep] = useState<1 | 2 | 3 | "success">(1)
@@ -69,7 +88,6 @@ export function ApplyForm() {
   const [upload, setUpload] = useState(emptyUpload)
   const [error, setError] = useState("")
   const [submitting, setSubmitting] = useState(false)
-  const [draftReady, setDraftReady] = useState(false)
 
   useEffect(() => {
     const draft = loadApplyFormDraft()
@@ -84,19 +102,7 @@ export function ApplyForm() {
         transcriptDisplayName: draft.transcriptName,
       })
     }
-    setDraftReady(true)
   }, [])
-
-  useEffect(() => {
-    if (!draftReady || step === "success") return
-    saveApplyFormDraft({
-      step,
-      general,
-      committee,
-      resumeName: upload.resume?.name ?? upload.resumeDisplayName,
-      transcriptName: upload.transcript?.name ?? upload.transcriptDisplayName,
-    })
-  }, [draftReady, step, general, committee, upload])
 
   function goNext() {
     setError("")
@@ -109,14 +115,22 @@ export function ApplyForm() {
       return
     }
     setDirection(1)
-    if (step === 1) setStep(2)
-    if (step === 2) setStep(3)
+    if (step === 1) {
+      setStep(2)
+      persistDraft(2, general, committee, upload)
+    }
+    if (step === 2) {
+      setStep(3)
+      persistDraft(3, general, committee, upload)
+    }
   }
 
   function goBack() {
     setError("")
     setDirection(-1)
-    setStep(step === 3 ? 2 : 1)
+    const prevStep = step === 3 ? 2 : 1
+    setStep(prevStep)
+    persistDraft(prevStep, general, committee, upload)
   }
 
   async function submit() {
@@ -185,25 +199,31 @@ export function ApplyForm() {
               {step === 1 ? (
                 <GeneralInfoStep
                   values={general}
-                  onChange={(patch) =>
-                    setGeneral((current) => ({ ...current, ...patch }))
-                  }
+                  onChange={(patch) => {
+                    const next = { ...general, ...patch }
+                    setGeneral(next)
+                    if (step === 1) persistDraft(1, next, committee, upload)
+                  }}
                 />
               ) : null}
               {step === 2 ? (
                 <CommitteeStep
                   values={committee}
-                  onChange={(patch) =>
-                    setCommittee((current) => ({ ...current, ...patch }))
-                  }
+                  onChange={(patch) => {
+                    const next = { ...committee, ...patch }
+                    setCommittee(next)
+                    if (step === 2) persistDraft(2, general, next, upload)
+                  }}
                 />
               ) : null}
               {step === 3 ? (
                 <UploadStep
                   values={upload}
-                  onChange={(patch) =>
-                    setUpload((current) => ({ ...current, ...patch }))
-                  }
+                  onChange={(patch) => {
+                    const next = { ...upload, ...patch }
+                    setUpload(next)
+                    if (step === 3) persistDraft(3, general, committee, next)
+                  }}
                 />
               ) : null}
               {error ? <p className={errorClasses}>{error}</p> : null}
