@@ -30,7 +30,7 @@ import {
   toCreateApplicationInput,
 } from "@/components/apply/form-model"
 import { SectionHeader } from "@/components/section-header"
-import { createApplication } from "@/lib/api"
+import { createApplication, createUploadSession } from "@/lib/api"
 import { UST_EMAIL_DOMAIN } from "@/lib/constants"
 import {
   glassPanelClasses,
@@ -44,6 +44,12 @@ const stepStageClasses = "relative overflow-hidden"
 const actionsClasses = "mt-8 flex items-center justify-between gap-4"
 const nextButtonClasses = "h-10 px-5 text-xs"
 const errorClasses = "mt-4 text-sm text-aquamarine"
+
+type CompletedUploadSession = {
+  fingerprint: string
+  id: string
+  expiresAt: string
+}
 
 const slideSpring = { type: "spring" as const, stiffness: 400, damping: 35 }
 const slideSnap = { duration: 0 }
@@ -79,6 +85,18 @@ function persistDraft(
   })
 }
 
+function toBase64(bytes: ArrayBuffer): string {
+  const values = new Uint8Array(bytes)
+  let result = ""
+  for (const value of values) result += String.fromCharCode(value)
+  return btoa(result)
+}
+
+async function fileChecksum(file: File): Promise<string> {
+  const content = await file.arrayBuffer()
+  return toBase64(await crypto.subtle.digest("SHA-256", content))
+}
+
 export function ApplyForm() {
   const reducedMotion = useReducedMotion() ?? false
   const [step, setStep] = useState<1 | 2 | 3 | "success">(1)
@@ -88,6 +106,7 @@ export function ApplyForm() {
   const [upload, setUpload] = useState(emptyUpload)
   const [error, setError] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [completedUpload, setCompletedUpload] = useState<CompletedUploadSession | null>(null)
 
   useEffect(() => {
     const draft = loadApplyFormDraft()
@@ -142,8 +161,55 @@ export function ApplyForm() {
     }
     setSubmitting(true)
     try {
+      const files = [
+        { documentType: "resume" as const, file: upload.resume! },
+        { documentType: "transcript" as const, file: upload.transcript! },
+      ]
+      const documents = await Promise.all(
+        files.map(async ({ documentType, file }) => ({
+          documentType,
+          fileName: file.name,
+          sizeBytes: file.size,
+          checksumSha256: await fileChecksum(file),
+        }))
+      )
+      const fingerprint = JSON.stringify(documents)
+      let uploadSessionId = completedUpload?.id
+      if (
+        !completedUpload ||
+        completedUpload.fingerprint !== fingerprint ||
+        new Date(completedUpload.expiresAt) <= new Date()
+      ) {
+        const session = await createUploadSession({ documents })
+        await Promise.all(
+          session.uploads.map(async (signedUpload) => {
+            const file = files.find(
+              (candidate) => candidate.documentType === signedUpload.documentType
+            )!.file
+            const form = new FormData()
+            Object.entries(signedUpload.fields).forEach(([name, value]) => {
+              form.append(name, value)
+            })
+            form.append("file", file)
+            const response = await fetch(signedUpload.url, { method: "POST", body: form })
+            if (!response.ok) throw new Error("Could not upload the PDF files.")
+          })
+        )
+        uploadSessionId = session.uploadSessionId
+        setCompletedUpload({
+          fingerprint,
+          id: session.uploadSessionId,
+          expiresAt: session.sessionExpiresAt,
+        })
+      }
       await createApplication(
-        toCreateApplicationInput(general, committee, upload, UST_EMAIL_DOMAIN)
+        toCreateApplicationInput(
+          general,
+          committee,
+          upload,
+          UST_EMAIL_DOMAIN,
+          uploadSessionId!
+        )
       )
       clearApplyFormDraft()
       setStep("success")

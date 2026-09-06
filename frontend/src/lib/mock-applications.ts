@@ -104,8 +104,8 @@ export const SEED_APPLICATIONS: Application[] = [
       },
     ],
     documents: [
-      { documentType: "resume", fileName: "Escosia_Resume", s3Key: "mock/Escosia_Resume.pdf" },
-      { documentType: "transcript", fileName: "Escosia_TRS", s3Key: "mock/Escosia_TRS.pdf" },
+      { documentType: "resume", fileName: "Escosia_Resume.pdf", fileSizeBytes: 1000000, uploadedAt: "2026-01-01T00:00:00.000Z", availableUntil: "2026-12-31T00:00:00.000Z" },
+      { documentType: "transcript", fileName: "Escosia_TRS.pdf", fileSizeBytes: 1000000, uploadedAt: "2026-01-01T00:00:00.000Z", availableUntil: "2026-12-31T00:00:00.000Z" },
     ],
   },
   {
@@ -133,8 +133,8 @@ export const SEED_APPLICATIONS: Application[] = [
       },
     ],
     documents: [
-      { documentType: "resume", fileName: "Casihan_Resume", s3Key: "mock/Casihan_Resume.pdf" },
-      { documentType: "transcript", fileName: "Casihan_TRS", s3Key: "mock/Casihan_TRS.pdf" },
+      { documentType: "resume", fileName: "Casihan_Resume.pdf", fileSizeBytes: 1000000, uploadedAt: "2026-01-01T00:00:00.000Z", availableUntil: "2026-12-31T00:00:00.000Z" },
+      { documentType: "transcript", fileName: "Casihan_TRS.pdf", fileSizeBytes: 1000000, uploadedAt: "2026-01-01T00:00:00.000Z", availableUntil: "2026-12-31T00:00:00.000Z" },
     ],
   },
   {
@@ -162,8 +162,8 @@ export const SEED_APPLICATIONS: Application[] = [
       },
     ],
     documents: [
-      { documentType: "resume", fileName: "Rosales_Resume", s3Key: "mock/Rosales_Resume.pdf" },
-      { documentType: "transcript", fileName: "Rosales_TRS", s3Key: "mock/Rosales_TRS.pdf" },
+      { documentType: "resume", fileName: "Rosales_Resume.pdf", fileSizeBytes: 1000000, uploadedAt: "2026-01-01T00:00:00.000Z", availableUntil: "2026-12-31T00:00:00.000Z" },
+      { documentType: "transcript", fileName: "Rosales_TRS.pdf", fileSizeBytes: 1000000, uploadedAt: "2026-01-01T00:00:00.000Z", availableUntil: "2026-12-31T00:00:00.000Z" },
     ],
   },
   {
@@ -191,8 +191,8 @@ export const SEED_APPLICATIONS: Application[] = [
       },
     ],
     documents: [
-      { documentType: "resume", fileName: "Grimaldo_Resume", s3Key: "mock/Grimaldo_Resume.pdf" },
-      { documentType: "transcript", fileName: "Grimaldo_TRS", s3Key: "mock/Grimaldo_TRS.pdf" },
+      { documentType: "resume", fileName: "Grimaldo_Resume.pdf", fileSizeBytes: 1000000, uploadedAt: "2026-01-01T00:00:00.000Z", availableUntil: "2026-12-31T00:00:00.000Z" },
+      { documentType: "transcript", fileName: "Grimaldo_TRS.pdf", fileSizeBytes: 1000000, uploadedAt: "2026-01-01T00:00:00.000Z", availableUntil: "2026-12-31T00:00:00.000Z" },
     ],
   },
 ]

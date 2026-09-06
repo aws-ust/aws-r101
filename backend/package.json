@@ -9,25 +9,28 @@
     "cdk": "cdk",
     "deploy": "cdk deploy",
     "synth": "cdk synth",
-    "db:push": "node --env-file=../.env ./node_modules/drizzle-kit/bin.cjs push",
+    "db:push": "node --env-file-if-exists=../.env ./node_modules/drizzle-kit/bin.cjs push",
     "db:seed": "tsx --env-file=../.env src/db/seed.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "hono": "^4.13.3",
+    "@aws-sdk/client-s3": "^3.1126.0",
+    "@aws-sdk/s3-presigned-post": "^3.1126.0",
+    "@aws-sdk/s3-request-presigner": "^3.1126.0",
     "@hono/node-server": "^1.14.0",
     "drizzle-orm": "^0.44.0",
+    "hono": "^4.13.3",
     "postgres": "^3.4.5"
   },
   "devDependencies": {
+    "@types/aws-lambda": "^8.10.145",
+    "@types/node": "^24.0.0",
     "aws-cdk": "^2.1118.2",
     "aws-cdk-lib": "^2.266.0",
     "constructs": "^10.4.2",
     "drizzle-kit": "^0.31.0",
     "esbuild": "^0.25.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.7.0",
-    "@types/node": "^24.0.0",
-    "@types/aws-lambda": "^8.10.145"
+    "typescript": "^5.7.0"
   }
 }

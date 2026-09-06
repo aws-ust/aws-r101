@@ -19,7 +19,9 @@ export type ApplicationChoice = {
 export type ApplicationDocument = {
   documentType: DocumentType
   fileName: string
-  s3Key: string | null
+  fileSizeBytes: number
+  uploadedAt: string
+  availableUntil: string
 }
 
 export type Application = {
@@ -44,5 +46,5 @@ export type CreateApplicationInput = {
   section: string
   motivation: string
   choices: { positionId: string; preferenceRank: 1 | 2 }[]
-  documents: { documentType: DocumentType; fileName: string; s3Key: string }[]
+  uploadSessionId: string
 }

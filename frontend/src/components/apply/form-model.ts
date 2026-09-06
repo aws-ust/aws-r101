@@ -1,7 +1,7 @@
 import type { GeneralInfoValues } from "@/components/apply/general-info-step"
 import type { CommitteeValues } from "@/components/apply/committee-step"
 import type { UploadValues } from "@/components/apply/upload-step"
-import type { CreateApplicationInput, DocumentType } from "@/lib/application-types"
+import type { CreateApplicationInput } from "@/lib/application-types"
 
 export const emptyGeneral: GeneralInfoValues = {
   firstName: "",
@@ -86,10 +86,9 @@ export function toCreateApplicationInput(
   general: GeneralInfoValues,
   committee: CommitteeValues,
   upload: UploadValues,
-  emailDomain: string
-): Omit<CreateApplicationInput, "documents"> & {
-  documents: { documentType: DocumentType; fileName: string }[]
-} {
+  emailDomain: string,
+  uploadSessionId: string
+): CreateApplicationInput {
   return {
     firstName: general.firstName.trim(),
     lastName: general.lastName.trim(),
@@ -101,10 +100,7 @@ export function toCreateApplicationInput(
       { positionId: committee.firstPositionId, preferenceRank: 1 },
       { positionId: committee.secondPositionId, preferenceRank: 2 },
     ],
-    documents: [
-      { documentType: "resume", fileName: upload.resume!.name },
-      { documentType: "transcript", fileName: upload.transcript!.name },
-    ],
+    uploadSessionId,
   }
 }
 
@@ -117,7 +113,14 @@ export function submitBlockedMessage(
   if (!upload.resume || !upload.transcript) {
     return uploadStepError
   }
-  if (upload.resume.type !== "application/pdf" || upload.transcript.type !== "application/pdf") {
+  if (
+    !upload.resume.name.toLowerCase().endsWith(".pdf") ||
+    !upload.transcript.name.toLowerCase().endsWith(".pdf") ||
+    upload.resume.size < 1 ||
+    upload.transcript.size < 1 ||
+    upload.resume.size > 10_000_000 ||
+    upload.transcript.size > 10_000_000
+  ) {
     return uploadPdfStepError
   }
   if (!generalValid(general)) {

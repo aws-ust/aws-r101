@@ -1,4 +1,5 @@
 import { and, desc, eq, exists, inArray } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
 import { db } from "../db";
 import {
   applicants,
@@ -7,7 +8,16 @@ import {
   applications,
   committees,
   positions,
+  uploadSessions,
 } from "../db/schema";
+import {
+  applicationKey,
+  copyIncomingDocuments,
+  deleteKeys,
+  incomingKey,
+  validateIncomingDocument,
+} from "./documents";
+import { freePlanEndDate } from "./free-plan";
 
 export type ApplicationStatus = "pending" | "approved" | "rejected";
 export type DocumentType = "resume" | "transcript";
@@ -22,7 +32,9 @@ export type ApplicationChoiceJson = {
 export type ApplicationDocumentJson = {
   documentType: DocumentType;
   fileName: string;
-  s3Key: string;
+  fileSizeBytes: number;
+  uploadedAt: string;
+  availableUntil: string;
 };
 
 export type ApplicationJson = {
@@ -47,7 +59,7 @@ export type CreateApplicationInput = {
   section: string;
   motivation: string;
   choices: { positionId: string; preferenceRank: 1 | 2 }[];
-  documents: { documentType: DocumentType; fileName: string; s3Key: string }[];
+  uploadSessionId: string;
 };
 
 export type ListFilters = {
@@ -97,7 +109,9 @@ async function attachRelations(
       applicationId: applicationDocuments.applicationId,
       documentType: applicationDocuments.documentType,
       fileName: applicationDocuments.fileName,
-      s3Key: applicationDocuments.s3Key,
+      fileSizeBytes: applicationDocuments.fileSizeBytes,
+      uploadedAt: applicationDocuments.uploadedAt,
+      availableUntil: applicationDocuments.availableUntil,
     })
     .from(applicationDocuments)
     .where(inArray(applicationDocuments.applicationId, ids));
@@ -120,7 +134,9 @@ async function attachRelations(
     list.push({
       documentType: doc.documentType,
       fileName: doc.fileName,
-      s3Key: doc.s3Key,
+      fileSizeBytes: doc.fileSizeBytes,
+      uploadedAt: iso(doc.uploadedAt),
+      availableUntil: iso(doc.availableUntil ?? freePlanEndDate() ?? new Date(0)),
     });
     documentsByApp.set(doc.applicationId, list);
   }
@@ -167,6 +183,31 @@ export async function getApplicationById(
   if (rows.length === 0) return null;
   const [mapped] = await attachRelations(rows);
   return mapped;
+}
+
+export async function getApplicationDocument(
+  applicationId: string,
+  type: DocumentType,
+): Promise<{
+  fileName: string;
+  s3Key: string;
+  availableUntil: Date | null;
+} | null> {
+  const [document] = await db
+    .select({
+      fileName: applicationDocuments.fileName,
+      s3Key: applicationDocuments.s3Key,
+      availableUntil: applicationDocuments.availableUntil,
+    })
+    .from(applicationDocuments)
+    .where(
+      and(
+        eq(applicationDocuments.applicationId, applicationId),
+        eq(applicationDocuments.documentType, type),
+      ),
+    )
+    .limit(1);
+  return document ?? null;
 }
 
 export async function listApplications(filters: ListFilters): Promise<{
@@ -235,8 +276,53 @@ export async function positionsExist(positionIds: string[]): Promise<boolean> {
 
 export async function createApplication(
   input: CreateApplicationInput,
-): Promise<ApplicationJson> {
-  const id = await db.transaction(async (tx) => {
+): Promise<{ application: ApplicationJson; created: boolean }> {
+  let copiedApplicationId: string | null = null;
+  let transactionComplete = false;
+  try {
+    const result = await db.transaction(async (tx) => {
+      const [session] = await tx
+        .select()
+        .from(uploadSessions)
+        .where(eq(uploadSessions.id, input.uploadSessionId))
+        .for("update");
+
+      if (!session) throw new Error("Upload session was not found.");
+      if (session.status === "consumed" && session.applicationId) {
+        return { id: session.applicationId, created: false };
+      }
+      if (session.status !== "active" || session.expiresAt <= new Date()) {
+        if (session.status === "active") {
+          await tx
+            .update(uploadSessions)
+            .set({ status: "expired" })
+            .where(eq(uploadSessions.id, session.id));
+        }
+        throw new Error("Upload session has expired.");
+      }
+
+      const documents = [
+        {
+          documentType: "resume" as const,
+          fileName: session.resumeFileName,
+          sizeBytes: session.resumeSizeBytes,
+          checksumSha256: session.resumeChecksumSha256,
+        },
+        {
+          documentType: "transcript" as const,
+          fileName: session.transcriptFileName,
+          sizeBytes: session.transcriptSizeBytes,
+          checksumSha256: session.transcriptChecksumSha256,
+        },
+      ];
+      await Promise.all(
+        documents.map((document) => validateIncomingDocument(session.id, document)),
+      );
+
+      const applicationId = randomUUID();
+      copiedApplicationId = applicationId;
+      await copyIncomingDocuments(session.id, applicationId);
+
     const existing = await tx
       .select({ id: applicants.id })
       .from(applicants)
@@ -260,7 +346,12 @@ export async function createApplication(
 
     const [application] = await tx
       .insert(applications)
-      .values({ applicantId, status: "pending", motivation: input.motivation })
+      .values({
+        id: applicationId,
+        applicantId,
+        status: "pending",
+        motivation: input.motivation,
+      })
       .returning({ id: applications.id });
 
     await tx.insert(applicationChoices).values(
@@ -272,22 +363,47 @@ export async function createApplication(
     );
 
     await tx.insert(applicationDocuments).values(
-      input.documents.map((doc) => ({
+      documents.map((doc) => ({
         applicationId: application.id,
         documentType: doc.documentType,
         fileName: doc.fileName,
-        s3Key: doc.s3Key,
+        fileSizeBytes: doc.sizeBytes,
+        s3Key: applicationKey(application.id, doc.documentType),
+        availableUntil: freePlanEndDate(),
       })),
     );
 
-    return application.id;
-  });
+      await tx
+        .update(uploadSessions)
+        .set({
+          status: "consumed",
+          applicationId: application.id,
+          consumedAt: new Date(),
+        })
+        .where(eq(uploadSessions.id, session.id));
 
-  const created = await getApplicationById(id);
-  if (!created) {
-    throw new Error("Created application could not be loaded");
+      return { id: application.id, created: true };
+    });
+    transactionComplete = true;
+
+    if (result.created) {
+      await deleteKeys([
+        incomingKey(input.uploadSessionId, "resume"),
+        incomingKey(input.uploadSessionId, "transcript"),
+      ]).catch((error) => console.error("Could not remove incoming documents", error));
+    }
+    const application = await getApplicationById(result.id);
+    if (!application) throw new Error("Created application could not be loaded.");
+    return { application, created: result.created };
+  } catch (error) {
+    if (!transactionComplete && copiedApplicationId) {
+      await deleteKeys([
+        applicationKey(copiedApplicationId, "resume"),
+        applicationKey(copiedApplicationId, "transcript"),
+      ]).catch(() => undefined);
+    }
+    throw error;
   }
-  return created;
 }
 
 export async function updateApplicationStatus(
@@ -305,6 +421,11 @@ export async function updateApplicationStatus(
 }
 
 export async function deleteApplication(id: string): Promise<boolean> {
+  const documents = await db
+    .select({ s3Key: applicationDocuments.s3Key })
+    .from(applicationDocuments)
+    .where(eq(applicationDocuments.applicationId, id));
+  if (documents.length > 0) await deleteKeys(documents.map((document) => document.s3Key));
   const deleted = await db
     .delete(applications)
     .where(eq(applications.id, id))

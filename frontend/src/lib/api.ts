@@ -3,7 +3,6 @@ import type {
   Application,
   ApplicationStatus,
   CreateApplicationInput,
-  DocumentType,
   Position,
 } from "./application-types"
 import {
@@ -13,6 +12,8 @@ import {
   listOpenPositions,
   patchApplicationStatusRequest,
   postApplication,
+  postUploadPresign,
+  type UploadPresignRequest,
 } from "./api-client"
 
 export { ApiError, getSession, login, logout } from "./api-client"
@@ -126,26 +127,13 @@ export function useOpenPositions() {
 }
 
 export async function createApplication(
-  input: Omit<CreateApplicationInput, "documents"> & {
-    documents: { documentType: DocumentType; fileName: string }[]
-  }
+  input: CreateApplicationInput
 ): Promise<Application> {
-  const payload: CreateApplicationInput = {
-    firstName: input.firstName,
-    lastName: input.lastName,
-    email: input.email,
-    age: input.age,
-    section: input.section,
-    motivation: input.motivation,
-    choices: input.choices,
-    documents: input.documents.map((doc) => ({
-      documentType: doc.documentType,
-      fileName: doc.fileName,
-      // Presign isn't in yet (#10); this string only exists so POST validation passes.
-      s3Key: `dev/uploads/${crypto.randomUUID()}/${doc.fileName}`,
-    })),
-  }
-  return postApplication(payload)
+  return postApplication(input)
+}
+
+export async function createUploadSession(input: UploadPresignRequest) {
+  return postUploadPresign(input)
 }
 
 export function patchApplicationStatus(id: string, status: ApplicationStatus) {

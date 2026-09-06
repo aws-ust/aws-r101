@@ -29,7 +29,6 @@ const whyLabelClasses =
   "mt-8 font-sans text-sm font-semibold text-biloba-flower"
 const whyBodyClasses = "mt-2 font-sans text-sm leading-relaxed text-blue-chalk"
 const downloadsClasses = "mt-8 flex flex-wrap justify-center gap-4"
-const downloadButtonClasses = "h-10 px-5 text-xs"
 const statusRowClasses =
   "mt-8 flex flex-wrap items-center justify-center gap-3 font-mono text-xs uppercase tracking-wide text-prelude"
 const statusActionBaseClasses =
@@ -37,12 +36,67 @@ const statusActionBaseClasses =
 const approveActionClasses = `${statusActionBaseClasses} border-aquamarine/80 text-aquamarine hover:border-aquamarine hover:bg-aquamarine hover:text-haiti`
 const rejectActionClasses = `${statusActionBaseClasses} border-prelude/50 text-prelude hover:border-prelude/80 hover:bg-haiti/80 hover:text-prelude`
 const missingClasses = "font-sans text-sm text-prelude"
+const documentCardClasses =
+  "flex min-w-64 flex-1 flex-col gap-3 rounded-[14px] border border-blue-chalk/20 bg-haiti/35 p-4 text-left"
+const documentNameClasses = "font-sans text-sm font-semibold text-blue-chalk"
+const documentMetaClasses = "font-sans text-xs text-prelude"
+const documentActionsClasses = "flex flex-wrap gap-2"
+const documentButtonClasses = "h-9 px-4 text-xs"
 
 function documentFor(
   application: Application,
   type: ApplicationDocument["documentType"]
 ) {
   return application.documents.find((doc) => doc.documentType === type)
+}
+
+function formatFileSize(bytes: number) {
+  return `${(bytes / 1_000_000).toFixed(bytes < 1_000_000 ? 2 : 1)} MB`
+}
+
+function DocumentActions({ applicationId, document }: { applicationId: string; document: ApplicationDocument | undefined }) {
+  if (!document) {
+    return <p className={missingClasses}>Document metadata is not available.</p>
+  }
+  const expired = new Date(document.availableUntil) <= new Date()
+  const baseUrl = `/api/applications/${applicationId}/documents/${document.documentType}`
+  return (
+    <div className={documentCardClasses}>
+      <p className={documentNameClasses}>{document.fileName}</p>
+      <p className={documentMetaClasses}>{formatFileSize(document.fileSizeBytes)}</p>
+      <p className={documentMetaClasses}>
+        Available until {formatAppliedDate(document.availableUntil)}
+      </p>
+      <div className={documentActionsClasses}>
+        {expired ? (
+          <>
+            <Button color="cyan" className={documentButtonClasses} disabled>View</Button>
+            <Button color="purple" className={documentButtonClasses} disabled>Download</Button>
+          </>
+        ) : (
+          <>
+          <Button
+            color="cyan"
+            className={documentButtonClasses}
+            nativeButton={false}
+            render={<a href={baseUrl} target="_blank" rel="noopener noreferrer" />}
+          >
+            View
+          </Button>
+          <Button
+            color="purple"
+            className={documentButtonClasses}
+            nativeButton={false}
+            render={<a href={`${baseUrl}?disposition=attachment`} />}
+          >
+            Download
+          </Button>
+          </>
+        )}
+      </div>
+      {expired ? <p className={documentMetaClasses}>This file has expired. The application metadata remains available.</p> : null}
+    </div>
+  )
 }
 
 export function HrApplicationDetail() {
@@ -145,16 +199,8 @@ export function HrApplicationDetail() {
         </p>
         <p className={whyBodyClasses}>{application.motivation || "—"}</p>
         <div className={downloadsClasses}>
-          <Button color="cyan" className={downloadButtonClasses} disabled={!resume?.s3Key}>
-            Download Resume ({resume?.fileName ?? "—"})
-          </Button>
-          <Button
-            color="purple"
-            className={downloadButtonClasses}
-            disabled={!transcript?.s3Key}
-          >
-            Download Transcript ({transcript?.fileName ?? "—"})
-          </Button>
+          <DocumentActions applicationId={applicationId} document={resume} />
+          <DocumentActions applicationId={applicationId} document={transcript} />
         </div>
         <div className={statusRowClasses}>
           <span>Applicant Status:</span>

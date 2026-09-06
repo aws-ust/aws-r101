@@ -4,6 +4,7 @@ import { deleteCookie, setCookie } from "hono/cookie";
 import type { LambdaEvent, LambdaContext } from "hono/aws-lambda";
 import { applicationsRoutes } from "./routes/applications";
 import { positionsRoutes } from "./routes/positions";
+import { uploadsRoutes } from "./routes/uploads";
 import {
   AUTH_COOKIE_NAME,
   authCookieOptions,
@@ -77,9 +78,6 @@ app.post("/auth/logout", requireAuth, (c) => {
 app.route("/positions", positionsRoutes);
 
 app.route("/applications", applicationsRoutes);
-
-app.post("/uploads/presign", (c) =>
-  c.json({ error: "not implemented" }, 501)
-);
+app.route("/uploads", uploadsRoutes);
 
 export type AppType = typeof app;
