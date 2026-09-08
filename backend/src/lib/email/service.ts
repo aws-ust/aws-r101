@@ -22,13 +22,16 @@ async function deliverEmail(input: {
     recipient: input.recipient,
   });
 
-  const canSend = emailEnabled() && hasGmailCredentials();
+  const enabled = emailEnabled();
+  const configured = hasGmailCredentials();
+  const canSend = enabled && configured;
   if (!canSend) {
+    const reason = !enabled ? "EMAIL_ENABLED=false" : "missing Gmail credentials";
     console.info(
-      `[email] skipped ${input.messageType} to ${input.recipient}`,
+      `[email] skipped ${input.messageType} to ${input.recipient} (${reason})`,
       input.rendered.subject,
     );
-    await notifications.markFailed(pending.id, "email disabled");
+    await notifications.markFailed(pending.id, reason);
     return;
   }
 
