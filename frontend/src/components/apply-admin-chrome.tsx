@@ -7,11 +7,13 @@ import { logout } from "@/lib/api"
 
 const headerClasses = "border-b border-biloba-flower/35"
 const innerClasses =
-  "mx-auto flex max-w-[1180px] items-center gap-2 px-4 py-5 font-mono text-xs tracking-wide text-prelude md:px-10"
+  "mx-auto flex max-w-[1180px] items-center gap-2 px-4 py-5 md:px-10"
+const topRowClasses =
+  "flex w-full items-center gap-2 font-mono text-xs tracking-wide text-prelude"
 const brandClasses = "font-sans text-sm font-semibold text-blue-chalk"
 const crumbClasses = "text-prelude/70"
 const slashClasses = "text-prelude/40"
-const logoutClasses = "ml-auto"
+const trailingActionClasses = "ml-auto"
 
 function crumbsFor(pathname: string) {
   if (pathname.startsWith("/admin")) return ["admin", "hr"]
@@ -24,6 +26,7 @@ export function ApplyAdminChrome() {
   const router = useRouter()
   const crumbs = crumbsFor(pathname)
   const isAdmin = pathname.startsWith("/admin")
+  const isApplyFlow = pathname.startsWith("/apply")
 
   async function onLogout() {
     await logout()
@@ -33,25 +36,37 @@ export function ApplyAdminChrome() {
   return (
     <header className={headerClasses}>
       <div className={innerClasses}>
-        <Link href="/" className={brandClasses}>
-          AWS Builders - UST
-        </Link>
-        {crumbs.map((crumb) => (
-          <span key={crumb} className={crumbClasses}>
-            <span className={slashClasses}> /</span>
-            {crumb}
-          </span>
-        ))}
-        {isAdmin ? (
-          <Button
-            type="button"
-            color="purple"
-            className={logoutClasses}
-            onClick={onLogout}
-          >
-            Logout
-          </Button>
-        ) : null}
+        <div className={topRowClasses}>
+          <Link href="/" className={brandClasses}>
+            AWS Builders - UST
+          </Link>
+          {crumbs.map((crumb) => (
+            <span key={crumb} className={crumbClasses}>
+              <span className={slashClasses}> /</span>
+              {crumb}
+            </span>
+          ))}
+          {isAdmin ? (
+            <Button
+              type="button"
+              color="purple"
+              className={trailingActionClasses}
+              onClick={onLogout}
+            >
+              Logout
+            </Button>
+          ) : null}
+          {isApplyFlow ? (
+            <Button
+              color="purple"
+              className={trailingActionClasses}
+              nativeButton={false}
+              render={<Link href="/" />}
+            >
+              ← Back to Home
+            </Button>
+          ) : null}
+        </div>
       </div>
     </header>
   )
