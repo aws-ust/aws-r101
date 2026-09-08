@@ -8,7 +8,10 @@ import {
   committees,
   positions,
 } from "../db/schema";
-import { generateApplicationCode } from "./application-code";
+import {
+  generateApplicationCode,
+  recruitmentYearInt,
+} from "./application-code";
 
 export type ApplicationStatus = "pending" | "approved" | "rejected";
 export type DocumentType = "resume" | "transcript";
@@ -271,6 +274,7 @@ export async function createApplication(
             .values({
               applicantId,
               applicationCode: generateApplicationCode(),
+              recruitmentYear: recruitmentYearInt(),
               status: "pending",
               motivation: input.motivation,
             })

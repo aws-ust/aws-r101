@@ -1,5 +1,4 @@
 import { eq, inArray } from "drizzle-orm";
-import { generateApplicationCode } from "../lib/application-code";
 import { db } from "./index";
 import {
   applicants,
@@ -43,6 +42,12 @@ async function main() {
       },
     ])
     .onConflictDoNothing({ target: users.email });
+
+  const [seedReviewer] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, "hr@aws-ust.org"))
+    .limit(1);
 
   const committeeSeeds = new Map(
     POSITION_SEEDS.map((positionSeed) => [
@@ -119,6 +124,8 @@ async function main() {
   const applicationSeeds = [
     {
       email: "ana.cruz@example.com",
+      applicationCode: "AP-2026-SEED0001",
+      recruitmentYear: 2026,
       status: "pending" as const,
       choices: ["Executive Assistant to the CEO", "Finance Committee Staff"],
       motivation:
@@ -126,6 +133,8 @@ async function main() {
     },
     {
       email: "ben.santos@example.com",
+      applicationCode: "AP-2026-SEED0002",
+      recruitmentYear: 2026,
       status: "approved" as const,
       choices: ["Development Committee Staff", "Technicals Committee Staff"],
       motivation:
@@ -133,6 +142,8 @@ async function main() {
     },
     {
       email: "carla.mendoza@example.com",
+      applicationCode: "AP-2026-SEED0003",
+      recruitmentYear: 2026,
       status: "rejected" as const,
       choices: ["Publicity Committee Staff", "Media Committee Staff"],
       motivation:
@@ -140,6 +151,8 @@ async function main() {
     },
     {
       email: "dario.aquino@example.com",
+      applicationCode: "AP-2026-SEED0004",
+      recruitmentYear: 2026,
       status: "pending" as const,
       choices: ["Human Resources Committee Staff", "Secretariat Committee Staff"],
       motivation:
@@ -155,15 +168,32 @@ async function main() {
   for (const seed of applicationSeeds) {
     const applicantId = applicantIdByEmail.get(seed.email)!;
     const existing = applicationByApplicantId.get(applicantId);
+    const decisionStatuses =
+      seed.status === "approved"
+        ? (["approved", "rejected"] as const)
+        : seed.status === "rejected"
+          ? (["rejected", "rejected"] as const)
+          : (["pending", "pending"] as const);
+    const decidedAt = seed.status === "pending" ? null : new Date("2026-08-26T00:00:00.000Z");
     const choices = seed.choices.map((positionName, i) => ({
       positionId: positionIdByName.get(positionName)!,
       preferenceRank: i + 1,
+      decisionStatus: decisionStatuses[i],
+      decidedBy: decidedAt ? seedReviewer.id : null,
+      decidedAt,
     }));
+    const finalPositionId = seed.status === "approved" ? choices[0].positionId : null;
 
     if (existing) {
       await db
         .update(applications)
-        .set({ motivation: seed.motivation })
+        .set({
+          applicationCode: seed.applicationCode,
+          recruitmentYear: seed.recruitmentYear,
+          status: seed.status,
+          motivation: seed.motivation,
+          finalPositionId,
+        })
         .where(eq(applications.id, existing.id));
 
       await db
@@ -182,9 +212,11 @@ async function main() {
       .insert(applications)
       .values({
         applicantId,
-        applicationCode: generateApplicationCode(),
+        applicationCode: seed.applicationCode,
+        recruitmentYear: seed.recruitmentYear,
         status: seed.status,
         motivation: seed.motivation,
+        finalPositionId,
       })
       .returning();
 

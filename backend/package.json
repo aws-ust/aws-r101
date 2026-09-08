@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch --env-file=../.env src/server.ts",
     "test": "./smoke-test.sh",
+    "test:db": "tsx --test --test-concurrency=1 src/db/schema.test.ts",
     "cdk": "cdk",
     "deploy": "cdk deploy",
     "synth": "cdk synth",
@@ -15,7 +16,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.14.0",
-    "drizzle-orm": "^0.44.0",
+    "drizzle-orm": "^0.45.2",
     "google-auth-library": "^11.0.2",
     "hono": "^4.13.3",
     "postgres": "^3.4.5"

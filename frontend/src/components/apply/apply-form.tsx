@@ -91,18 +91,22 @@ export function ApplyForm() {
   const [applicationCode, setApplicationCode] = useState("")
 
   useEffect(() => {
-    const draft = loadApplyFormDraft()
-    if (draft) {
-      setGeneral(draft.general)
-      setCommittee(draft.committee)
-      setStep(draft.step)
-      setUpload({
-        resume: null,
-        transcript: null,
-        resumeDisplayName: draft.resumeName,
-        transcriptDisplayName: draft.transcriptName,
-      })
-    }
+    const frame = window.requestAnimationFrame(() => {
+      const draft = loadApplyFormDraft()
+      if (draft) {
+        setGeneral(draft.general)
+        setCommittee(draft.committee)
+        setStep(draft.step)
+        setUpload({
+          resume: null,
+          transcript: null,
+          resumeDisplayName: draft.resumeName,
+          transcriptDisplayName: draft.transcriptName,
+        })
+      }
+    })
+
+    return () => window.cancelAnimationFrame(frame)
   }, [])
 
   function goNext() {

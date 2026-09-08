@@ -1,11 +1,16 @@
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
-function recruitmentYear(): string {
-  const raw = process.env.RECRUITMENT_YEAR ?? "2026";
-  return /^\d{4}$/.test(raw) ? raw : "2026";
+function recruitmentYearString(): string {
+  return String(recruitmentYearInt());
 }
 
-export function generateApplicationCodeSuffix(length = 6): string {
+export function recruitmentYearInt(): number {
+  const raw = process.env.RECRUITMENT_YEAR ?? "2026";
+  const year = Number(raw);
+  return Number.isInteger(year) && year >= 2000 && year <= 9999 ? year : 2026;
+}
+
+export function generateApplicationCodeSuffix(length = 8): string {
   let suffix = "";
   for (let i = 0; i < length; i++) {
     const index = Math.floor(Math.random() * CODE_ALPHABET.length);
@@ -15,7 +20,7 @@ export function generateApplicationCodeSuffix(length = 6): string {
 }
 
 export function formatApplicationCode(suffix: string): string {
-  return `AP-${recruitmentYear()}-${suffix}`;
+  return `AP-${recruitmentYearString()}-${suffix}`;
 }
 
 export function generateApplicationCode(): string {
