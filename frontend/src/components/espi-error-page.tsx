@@ -43,7 +43,7 @@ export function EspiErrorPage({ code, retry }: EspiErrorPageProps) {
       <div className={rowClasses}>
         <div className={imageWrapClasses}>
           <Image
-            src="/error/espi.png"
+            src="/espi.png"
             alt="Espi, the AWS Builders – UST mascot"
             fill
             sizes="(min-width: 768px) 16rem, 14rem"
