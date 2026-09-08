@@ -153,14 +153,14 @@ const COMMITTEE_DIRECTOR_SEATS: Array<{ rank: number; title: string; name: strin
   { rank: 3, title: "External Affairs Committee Director", name: "Nicole Alcantara" },
   { rank: 4, title: "Logistics Committee Director", name: "Jaren Maxene Ladia" },
   { rank: 5, title: "Secretariat Committee Director", name: "Angeline Alby de Mesa" },
-  { rank: 6, title: "Finance Committee Director", name: "Paulyn Gumban" },
+  { rank: 6, title: "Finance Committee Director", name: "Paulyn Gamban" },
   { rank: 7, title: "Community Development Committee Director", name: "Christian Gabriel Mariveles" },
   { rank: 8, title: "Human Resources Committee Director", name: "Lorraine Alexandra Tamondong" },
   { rank: 9, title: "Technical Committee Director", name: "Pete Andrei Lapuebla" },
   { rank: 10, title: "Development Committee Director", name: "Juan Marcus Ferrer" },
   { rank: 11, title: "Documentation Committee Director", name: "Aldrhey Jave Agsunod" },
   { rank: 12, title: "Media Committee Director", name: "Zander Belen Estuista" },
-  { rank: 13, title: "Publication Committee Director", name: "Erich Orejola Jarina" },
+  { rank: 13, title: "Publication Committee Director", name: "Elleinrich Jarina" },
 ]
 
 const DIRECTOR_MEMES = [
