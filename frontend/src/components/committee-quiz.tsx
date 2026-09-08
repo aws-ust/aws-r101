@@ -12,7 +12,7 @@ const sectionClasses = "flex w-full flex-col gap-[clamp(2rem,4vw,3.5rem)]"
 const headerWidthClasses = "[&>h2]:max-w-[46rem] [&>p:last-child]:max-w-[60rem]"
 const bodyClasses =
   "grid grid-cols-1 items-start gap-[clamp(2rem,5vw,4rem)] lg:grid-cols-2"
-const figureClasses = "flex flex-col items-center gap-5 lg:sticky lg:top-28"
+const figureClasses = "flex flex-col items-center gap-5"
 const imageWrapperClasses =
   "relative aspect-square w-full max-w-[22rem] drop-shadow-[0_0_48px_rgba(183,140,240,0.28)]"
 const captionClasses =
