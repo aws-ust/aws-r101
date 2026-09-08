@@ -8,6 +8,8 @@ BASE_URL="${BASE_URL%/}"
 UNKNOWN_ID="00000000-0000-4000-8000-000000000000"
 HR_EMAIL="${HR_EMAIL:-hr@aws-ust.org}"
 HR_PASSWORD="${HR_PASSWORD:-changeme}"
+EMAIL_ENABLED="${EMAIL_ENABLED:-false}"
+export EMAIL_ENABLED
 
 pass=0
 fail=0
@@ -32,8 +34,6 @@ expect() {
   else
     echo "FAIL  $desc (expected $expected, got $LAST_STATUS)"
     echo "      body: $LAST_BODY"
-<<<<<<< HEAD
-=======
     fail=$((fail + 1))
   fi
 }
@@ -89,31 +89,26 @@ check_positions_contract() {
   else
     echo "FAIL  GET /positions contract"
     echo "      body: $LAST_BODY"
->>>>>>> 48bd77d4fd932f5f42a682bc8865030cfe5bd4ba
     fail=$((fail + 1))
   fi
 }
 
-json_field() {
-  local field="$1"
+has_email_notification() {
+  local app_id="$1" recipient="$2"
   printf '%s' "$LAST_BODY" | node -e "
     const fs = require('fs');
+    const appId = process.argv[1];
+    const recipient = process.argv[2];
     const data = JSON.parse(fs.readFileSync(0, 'utf8'));
-    const value = data[process.argv[1]];
-    if (value === undefined || value === null) process.exit(1);
-    process.stdout.write(String(value));
-  " "$field"
-}
-
-contains_id() {
-  local id="$1"
-  printf '%s' "$LAST_BODY" | node -e "
-    const fs = require('fs');
-    const id = process.argv[1];
-    const data = JSON.parse(fs.readFileSync(0, 'utf8'));
-    const apps = Array.isArray(data.applications) ? data.applications : [];
-    process.exit(apps.some((app) => app.id === id) ? 0 : 1);
-  " "$id"
+    const rows = Array.isArray(data.notifications) ? data.notifications : [];
+    const ok = rows.some(
+      (row) =>
+        row.applicationId === appId &&
+        row.messageType === 'application_submitted' &&
+        row.recipient === recipient,
+    );
+    process.exit(ok ? 0 : 1);
+  " "$app_id" "$recipient"
 }
 
 echo "Smoke testing $BASE_URL"
@@ -124,11 +119,6 @@ expect "GET  /health" 200
 
 request GET "/positions"
 expect "GET  /positions" 200
-<<<<<<< HEAD
-
-POS1=""
-POS2=""
-=======
 check_positions_contract
 
 positions_count=$(printf '%s' "$LAST_BODY" | node -e "
@@ -150,23 +140,11 @@ committee_id=""
 smoke_position_id=""
 smoke_position_title=""
 smoke_position_committee_id=""
->>>>>>> 48bd77d4fd932f5f42a682bc8865030cfe5bd4ba
 if [[ "$LAST_STATUS" == "200" ]]; then
   POS_IDS=$(printf '%s' "$LAST_BODY" | node -e "
     const fs = require('fs');
     const rows = JSON.parse(fs.readFileSync(0, 'utf8'));
     if (!Array.isArray(rows) || rows.length < 2) process.exit(1);
-<<<<<<< HEAD
-    console.log(rows[0].id);
-    console.log(rows[1].id);
-  ") || true
-  POS1=$(printf '%s\n' "$POS_IDS" | sed -n '1p')
-  POS2=$(printf '%s\n' "$POS_IDS" | sed -n '2p')
-fi
-
-if [[ -z "$POS1" || -z "$POS2" ]]; then
-  echo "FAIL  need two open positions from GET /positions to exercise applications"
-=======
     const smokePosition =
       rows.find((row) => row.title === 'Smoke Test Role Updated') ??
       rows.find((row) => row.title === 'Smoke Test Role');
@@ -255,7 +233,6 @@ fi
 
 if [[ -z "$POS1" || -z "$POS2" ]]; then
   echo "FAIL  need two positions from GET /positions to exercise applications"
->>>>>>> 48bd77d4fd932f5f42a682bc8865030cfe5bd4ba
   echo "      body: $LAST_BODY"
   fail=$((fail + 1))
 else
@@ -269,8 +246,19 @@ EOF
   request POST "/applications" "$CREATE_BODY"
   expect "POST /applications" 201
   APP_ID=""
+  APP_CODE=""
   if [[ "$LAST_STATUS" == "201" ]]; then
     APP_ID=$(json_field id || true)
+    APP_CODE=$(json_field applicationCode || true)
+  fi
+
+  if [[ -n "$APP_CODE" ]]; then
+    echo "PASS  POST /applications returns applicationCode"
+    pass=$((pass + 1))
+  else
+    echo "FAIL  POST /applications returns applicationCode"
+    echo "      body: $LAST_BODY"
+    fail=$((fail + 1))
   fi
 
   request POST "/applications" '{"name":"Test Applicant"}'
@@ -308,6 +296,31 @@ EOF
 
   request GET "/applications/$UNKNOWN_ID" "" "$token"
   expect "GET  /applications/:id unknown" 404
+
+  request GET "/applications/$APP_ID/email-notifications"
+  expect "GET  /applications/:id/email-notifications (no token)" 401
+
+  if [[ -n "$APP_ID" ]]; then
+    request GET "/applications/$APP_ID/email-notifications" "" "$token"
+    expect "GET  /applications/:id/email-notifications" 200
+    if has_email_notification "$APP_ID" "$EMAIL"; then
+      echo "PASS  GET  /applications/:id/email-notifications logs submission row"
+      pass=$((pass + 1))
+    else
+      echo "FAIL  GET  /applications/:id/email-notifications logs submission row"
+      echo "      body: $LAST_BODY"
+      fail=$((fail + 1))
+    fi
+  else
+    echo "FAIL  GET  /applications/:id/email-notifications (no created id)"
+    fail=$((fail + 1))
+  fi
+
+  request GET "/applications/not-a-uuid/email-notifications" "" "$token"
+  expect "GET  /applications/:id/email-notifications malformed id" 400
+
+  request GET "/applications/$UNKNOWN_ID/email-notifications" "" "$token"
+  expect "GET  /applications/:id/email-notifications unknown app" 404
 
   if [[ -n "$APP_ID" ]]; then
     request PATCH "/applications/$APP_ID/status" '{"status":"approved"}' "$token"
