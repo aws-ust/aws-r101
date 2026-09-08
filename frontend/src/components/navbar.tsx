@@ -15,9 +15,8 @@ const NAV_ITEMS = [
   { label: "Home", href: "/" },
   { label: "About", href: "/about" },
   { label: "People", href: "/people" },
-  { label: "Careers", href: "/apply/positions" },
+  { label: "Careers", href: "/careers" },
   { label: "Events", href: "/events" },
-  { label: "Shop", href: "/shop" },
 ]
 
 const headerClasses = "fixed inset-x-0 top-0 z-50"

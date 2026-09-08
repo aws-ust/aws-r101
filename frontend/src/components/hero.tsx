@@ -236,9 +236,9 @@ export function Hero() {
                 color="cyan"
                 className={`${buttonClasses} ${cyanButtonEffectClasses}`}
                 nativeButton={false}
-                render={<Link href="/apply/positions" />}
+                render={<Link href="/careers" />}
               >
-                See open positions
+                Explore careers
               </Button>
               <Button
                 color="purple"

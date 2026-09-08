@@ -46,7 +46,7 @@ const FAQ_ITEMS = [
   {
     question: "How do I apply?",
     answer:
-      'Hit the "Apply now!" button, browse open positions, then fill out the short form.',
+      'Hit "Apply now!" or "Start application" on the Careers page, then browse open positions and fill out the short form.',
   },
 ]
 
