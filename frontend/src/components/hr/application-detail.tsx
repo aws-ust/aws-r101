@@ -123,6 +123,10 @@ export function HrApplicationDetail() {
       <div className={panelClasses}>
         <div className={metaRowClasses}>
           <p>
+            <span className={metaLabelClasses}>Application ID:</span>
+            {application.applicationCode}
+          </p>
+          <p>
             <span className={metaLabelClasses}>Year & Section:</span>
             {application.section ?? "—"}
           </p>

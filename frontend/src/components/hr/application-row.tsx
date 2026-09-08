@@ -8,7 +8,9 @@ import type { Application } from "@/lib/application-types"
 const rowClasses =
   "glass flex items-center justify-between gap-4 rounded-pill border border-blue-chalk/20 bg-meteorite/40 px-5 py-3.5 transition-colors hover:border-biloba-flower/70"
 const firstRowClasses = "border-biloba-flower/70"
+const nameBlockClasses = "flex flex-col gap-0.5"
 const nameClasses = "font-sans text-base font-semibold text-blue-chalk"
+const codeClasses = "font-mono text-xs text-prelude"
 const metaClasses = "flex items-center gap-3 font-sans text-sm text-prelude"
 
 type ApplicationRowProps = {
@@ -22,7 +24,10 @@ export function ApplicationRow({ application, emphasized }: ApplicationRowProps)
       href={`/admin/hr/${application.id}`}
       className={cn(rowClasses, emphasized && firstRowClasses)}
     >
-      <span className={nameClasses}>{fullName(application)}</span>
+      <div className={nameBlockClasses}>
+        <span className={nameClasses}>{fullName(application)}</span>
+        <span className={codeClasses}>{application.applicationCode}</span>
+      </div>
       <span className={metaClasses}>
         <span>{firstChoiceCommittee(application)}</span>
         <StatusPill status={application.status} />
