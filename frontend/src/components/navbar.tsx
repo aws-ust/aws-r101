@@ -38,6 +38,19 @@ const mobileCloseButtonClasses =
 const mobileNavLinkClasses =
   "rounded-pill px-5 py-2 transition-colors hover:bg-biloba-flower/15 hover:text-blue-chalk"
 const activeNavLinkClasses = "bg-aquamarine text-haiti hover:text-haiti"
+const logoLinkClasses = "flex items-center gap-2 font-bold"
+
+function scrollToHero() {
+  const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ? "instant"
+    : "smooth"
+  const hero = document.getElementById("hero")
+  if (hero) {
+    hero.scrollIntoView({ behavior, block: "start" })
+    return
+  }
+  window.scrollTo({ top: 0, behavior })
+}
 
 export function Navbar() {
   const [open, setOpen] = useState(false)
@@ -63,7 +76,15 @@ export function Navbar() {
         className={cn(barClasses, scrolled ? scrolledBarClasses : topBarClasses)}
       >
         <div className={barInnerClasses}>
-          <Link href="/" className="flex items-center gap-2 font-bold">
+          <Link
+            href="/"
+            className={logoLinkClasses}
+            onClick={(event) => {
+              if (pathname !== "/") return
+              event.preventDefault()
+              scrollToHero()
+            }}
+          >
             <Image src="/aws-logo.png" alt="AWS Builders – UST" width={117} height={66} className="h-8 w-auto" />
             <span className="hidden sm:inline">AWS Builders – UST</span>
           </Link>
