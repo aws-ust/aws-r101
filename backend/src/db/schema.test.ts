@@ -109,7 +109,7 @@ test("application foundation database constraints", async (t) => {
     assert.equal(rows.length, 2);
     assert.notEqual(rows[0].applicationCode, rows[1].applicationCode);
     for (const row of rows) {
-      assert.match(row.applicationCode, /^AP-[0-9]{4}-[A-Z0-9]{8}$/);
+      assert.match(row.applicationCode, /^AP-[0-9]{4}-[0-9]{6}$/);
       assert.equal(
         row.applicationCode.slice(3, 7),
         String(row.recruitmentYear),
@@ -118,7 +118,7 @@ test("application foundation database constraints", async (t) => {
   });
 
   await t.test("rejects duplicate application codes", async () => {
-    const applicationCode = "AP-2026-DUPL0001";
+    const applicationCode = "AP-2026-100001";
     await createApplication({ applicationCode, recruitmentYear: 2026 });
 
     await assert.rejects(async () => {
@@ -130,21 +130,21 @@ test("application foundation database constraints", async (t) => {
     const applicantId = await createApplicant();
     await createApplication({
       applicantId,
-      applicationCode: "AP-2026-CYCLE001",
+      applicationCode: "AP-2026-200001",
       recruitmentYear: 2026,
     });
 
     await assert.rejects(async () => {
       await createApplication({
         applicantId,
-        applicationCode: "AP-2026-CYCLE002",
+        applicationCode: "AP-2026-200002",
         recruitmentYear: 2026,
       });
     });
 
     await createApplication({
       applicantId,
-      applicationCode: "AP-2027-CYCLE003",
+      applicationCode: "AP-2027-200003",
       recruitmentYear: 2027,
     });
   });
@@ -152,14 +152,14 @@ test("application foundation database constraints", async (t) => {
   await t.test("rejects invalid or mismatched recruitment years", async () => {
     await assert.rejects(async () => {
       await createApplication({
-        applicationCode: "AP-1999-YEAR0001",
+        applicationCode: "AP-1999-300001",
         recruitmentYear: 1999,
       });
     });
 
     await assert.rejects(async () => {
       await createApplication({
-        applicationCode: "AP-2027-YEAR0002",
+        applicationCode: "AP-2027-300002",
         recruitmentYear: 2026,
       });
     });

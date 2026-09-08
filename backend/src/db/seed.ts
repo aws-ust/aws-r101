@@ -124,7 +124,7 @@ async function main() {
   const applicationSeeds = [
     {
       email: "ana.cruz@example.com",
-      applicationCode: "AP-2026-SEED0001",
+      applicationCode: "AP-2026-742819",
       recruitmentYear: 2026,
       status: "pending" as const,
       choices: ["Executive Assistant to the CEO", "Finance Committee Staff"],
@@ -133,7 +133,7 @@ async function main() {
     },
     {
       email: "ben.santos@example.com",
-      applicationCode: "AP-2026-SEED0002",
+      applicationCode: "AP-2026-183506",
       recruitmentYear: 2026,
       status: "approved" as const,
       choices: ["Development Committee Staff", "Technicals Committee Staff"],
@@ -142,7 +142,7 @@ async function main() {
     },
     {
       email: "carla.mendoza@example.com",
-      applicationCode: "AP-2026-SEED0003",
+      applicationCode: "AP-2026-905214",
       recruitmentYear: 2026,
       status: "rejected" as const,
       choices: ["Publicity Committee Staff", "Media Committee Staff"],
@@ -151,7 +151,7 @@ async function main() {
     },
     {
       email: "dario.aquino@example.com",
-      applicationCode: "AP-2026-SEED0004",
+      applicationCode: "AP-2026-460873",
       recruitmentYear: 2026,
       status: "pending" as const,
       choices: ["Human Resources Committee Staff", "Secretariat Committee Staff"],

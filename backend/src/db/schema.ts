@@ -132,7 +132,7 @@ export const applications = pgTable(
       .notNull()
       .unique()
       .default(
-        sql`'AP-' || extract(year from current_date)::text || '-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 8))`,
+        sql`'AP-' || extract(year from current_date)::text || '-' || lpad((floor(random() * 1000000))::text, 6, '0')`,
       ),
     recruitmentYear: integer("recruitment_year")
       .notNull()
@@ -174,7 +174,7 @@ export const applications = pgTable(
   (t) => [
     check(
       "applications_application_code_format_check",
-      sql`${t.applicationCode} ~ '^AP-[0-9]{4}-[A-Z0-9]{6,12}$'`,
+      sql`${t.applicationCode} ~ '^AP-[0-9]{4}-[0-9]{6}$'`,
     ),
     check(
       "applications_application_code_year_check",
