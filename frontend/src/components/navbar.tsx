@@ -8,16 +8,11 @@ import Hamburger from "hamburger-react"
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DesktopNavLinks } from "@/components/desktop-nav-links"
+import { SITE_NAV_ITEMS } from "@/lib/site-nav"
 import { chromeBarClasses } from "@/lib/surface"
 import { cn } from "@/lib/utils"
 
-const NAV_ITEMS = [
-  { label: "Home", href: "/" },
-  { label: "About", href: "/about" },
-  { label: "People", href: "/people" },
-  { label: "Careers", href: "/careers" },
-  { label: "Events", href: "/events" },
-]
+const NAV_ITEMS = SITE_NAV_ITEMS
 
 const headerClasses = "fixed inset-x-0 top-0 z-50"
 const barInnerClasses =
