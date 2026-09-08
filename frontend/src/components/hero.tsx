@@ -233,6 +233,14 @@ export function Hero() {
 
             <div className={buttonRowClasses}>
               <Button
+                color="cyan"
+                className={`${buttonClasses} ${cyanButtonEffectClasses}`}
+                nativeButton={false}
+                render={<Link href="/apply/positions" />}
+              >
+                See open positions
+              </Button>
+              <Button
                 color="purple"
                 render={<a href="#committees" aria-label="Find your committee" />}
                 nativeButton={false}
@@ -241,14 +249,11 @@ export function Hero() {
                 Find your committee
               </Button>
               <Button
-                color="cyan"
-                className={`${buttonClasses} ${cyanButtonEffectClasses}`}
+                color="purple"
+                className={`${buttonClasses} ${purpleButtonEffectClasses}`}
                 nativeButton={false}
-                render={<Link href="/apply" />}
+                render={<Link href="/about" />}
               >
-                Apply now!
-              </Button>
-              <Button color="purple" className={`${buttonClasses} ${purpleButtonEffectClasses}`}>
                 Know more about us!
               </Button>
             </div>

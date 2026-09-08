@@ -14,7 +14,7 @@ const NAV_ITEMS = [
   { label: "Home", href: "/" },
   { label: "About", href: "/about" },
   { label: "People", href: "/people" },
-  { label: "Careers", href: "/careers" },
+  { label: "Careers", href: "/apply/positions" },
   { label: "Events", href: "/events" },
   { label: "Shop", href: "/shop" },
 ]
@@ -92,7 +92,7 @@ export function Navbar() {
           <DesktopNavLinks items={NAV_ITEMS} pathname={pathname} />
 
           <div className="hidden md:block">
-            <Button color="cyan" nativeButton={false} render={<Link href="/apply" />}>
+            <Button color="cyan" nativeButton={false} render={<Link href="/apply/form" />}>
               Apply now!
             </Button>
           </div>
@@ -145,7 +145,14 @@ export function Navbar() {
               {item.label}
             </Link>
           ))}
-          <Button color="cyan" className="mt-2" onClick={() => setOpen(false)}>
+          <Button
+            color="cyan"
+            className="mt-2"
+            nativeButton={false}
+            render={
+              <Link href="/apply/form" onClick={() => setOpen(false)} />
+            }
+          >
             Apply now!
           </Button>
         </div>

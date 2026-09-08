@@ -76,7 +76,7 @@ export function QuizResults({ result, onRetake }: QuizResultsProps) {
           color="cyan"
           className={buttonClasses}
           nativeButton={false}
-          render={<Link href="/apply" />}
+          render={<Link href="/apply/form" />}
         >
           Apply now
         </Button>
