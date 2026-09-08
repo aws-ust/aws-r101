@@ -4,6 +4,9 @@ export const pageShellClasses =
 export const glassPanelClasses =
   "glass rounded-[28px] border border-biloba-flower/35 bg-meteorite/45"
 
+export const chromeBarClasses =
+  "glass border-b border-blue-chalk/15 bg-haiti/70"
+
 export const fieldLabelClasses =
   "font-sans text-sm font-medium text-blue-chalk"
 

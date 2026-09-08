@@ -4,8 +4,9 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { logout } from "@/lib/api"
+import { chromeBarClasses } from "@/lib/surface"
 
-const headerClasses = "border-b border-biloba-flower/35"
+const headerClasses = `sticky top-0 z-50 ${chromeBarClasses}`
 const innerClasses =
   "mx-auto flex max-w-[1180px] items-center gap-2 px-4 py-5 md:px-10"
 const topRowClasses =

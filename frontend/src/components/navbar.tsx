@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -8,6 +8,7 @@ import Hamburger from "hamburger-react"
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DesktopNavLinks } from "@/components/desktop-nav-links"
+import { chromeBarClasses } from "@/lib/surface"
 import { cn } from "@/lib/utils"
 
 const NAV_ITEMS = [
@@ -20,10 +21,6 @@ const NAV_ITEMS = [
 ]
 
 const headerClasses = "fixed inset-x-0 top-0 z-50"
-const barClasses =
-  "border-b transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300"
-const topBarClasses = "border-transparent bg-transparent"
-const scrolledBarClasses = "glass border-blue-chalk/15 bg-haiti/70"
 const barInnerClasses =
   "mx-auto flex max-w-[1180px] items-center justify-between gap-4 px-4 py-2.5"
 const mobileOverlayClasses =
@@ -54,16 +51,7 @@ function scrollToHero() {
 
 export function Navbar() {
   const [open, setOpen] = useState(false)
-  const [scrolled, setScrolled] = useState(false)
   const pathname = usePathname()
-
-  useEffect(() => {
-    const updateScrolled = () => setScrolled(window.scrollY > 20)
-
-    updateScrolled()
-    window.addEventListener("scroll", updateScrolled, { passive: true })
-    return () => window.removeEventListener("scroll", updateScrolled)
-  }, [])
 
   if (pathname.startsWith("/admin") || pathname === "/login") {
     return null
@@ -71,10 +59,7 @@ export function Navbar() {
 
   return (
     <header className={headerClasses}>
-      <nav
-        aria-label="Primary"
-        className={cn(barClasses, scrolled ? scrolledBarClasses : topBarClasses)}
-      >
+      <nav aria-label="Primary" className={chromeBarClasses}>
         <div className={barInnerClasses}>
           <Link
             href="/"
