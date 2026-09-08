@@ -13,20 +13,18 @@ export type DesktopNavItem = {
 
 type PillRect = {
   left: number
+  top: number
   width: number
+  height: number
 }
 
 const linksRowClasses =
   "relative hidden items-center gap-1 rounded-pill font-mono text-sm md:flex"
-const navLinkClasses =
-  "relative z-10 rounded-pill px-3 py-1.5 transition-colors"
-const activeTextClasses = "text-haiti"
-const inactiveTextClasses = "text-prelude"
-const hoveredTextClasses = "text-blue-chalk"
-const pillBaseClasses =
-  "pointer-events-none absolute top-0 bottom-0 z-0 rounded-pill"
-const activePillClasses = `${pillBaseClasses} bg-aquamarine`
-const hoverPillClasses = `${pillBaseClasses} glass border border-aquamarine/35 bg-aquamarine/22`
+const navLinkClasses = "relative z-10 rounded-pill px-3 py-1.5 transition-colors"
+const inactiveNavLinkClasses = "text-prelude hover:text-blue-chalk"
+const activeNavLinkClasses = "bg-aquamarine text-haiti hover:text-haiti"
+const hoverPillClasses =
+  "pointer-events-none absolute z-0 rounded-pill bg-aquamarine/20"
 
 const layoutSpring = { type: "spring" as const, stiffness: 400, damping: 35 }
 const snapTransition = { duration: 0 }
@@ -41,14 +39,18 @@ function measureLink(
   row: HTMLElement | null
 ): PillRect | null {
   if (!link || !row) return null
-  return { left: link.offsetLeft, width: link.offsetWidth }
+  return {
+    left: link.offsetLeft,
+    top: link.offsetTop,
+    width: link.offsetWidth,
+    height: link.offsetHeight,
+  }
 }
 
 export function DesktopNavLinks({ items, pathname }: DesktopNavLinksProps) {
   const rowRef = useRef<HTMLDivElement>(null)
   const linkRefs = useRef<Map<string, HTMLAnchorElement>>(new Map())
   const [hoveredHref, setHoveredHref] = useState<string | null>(null)
-  const [activeRect, setActiveRect] = useState<PillRect | null>(null)
   const [hoverRect, setHoverRect] = useState<PillRect | null>(null)
   const [reducedMotion, setReducedMotion] = useState(false)
 
@@ -60,21 +62,15 @@ export function DesktopNavLinks({ items, pathname }: DesktopNavLinksProps) {
     []
   )
 
-  const measureActive = useCallback(() => {
-    setActiveRect(
-      measureLink(linkRefs.current.get(pathname) ?? null, rowRef.current)
-    )
-  }, [pathname])
-
   const measureHover = useCallback((href: string | null) => {
-    if (!href) {
+    if (!href || href === pathname) {
       setHoverRect(null)
       return
     }
     setHoverRect(
       measureLink(linkRefs.current.get(href) ?? null, rowRef.current)
     )
-  }, [])
+  }, [pathname])
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
@@ -86,15 +82,13 @@ export function DesktopNavLinks({ items, pathname }: DesktopNavLinksProps) {
   }, [])
 
   useEffect(() => {
-    measureActive()
-
-    const frame = window.requestAnimationFrame(measureActive)
-    window.addEventListener("resize", measureActive)
-    return () => {
-      window.cancelAnimationFrame(frame)
-      window.removeEventListener("resize", measureActive)
+    const remeasure = () => {
+      if (hoveredHref) measureHover(hoveredHref)
     }
-  }, [measureActive])
+
+    window.addEventListener("resize", remeasure)
+    return () => window.removeEventListener("resize", remeasure)
+  }, [hoveredHref, measureHover])
 
   const transition = reducedMotion ? snapTransition : layoutSpring
   const showHoverPill =
@@ -102,64 +96,57 @@ export function DesktopNavLinks({ items, pathname }: DesktopNavLinksProps) {
 
   return (
     <LazyMotion features={domAnimation}>
-    <div
-      ref={rowRef}
-      className={linksRowClasses}
-      onPointerLeave={() => {
-        setHoveredHref(null)
-        setHoverRect(null)
-      }}
-    >
-      {activeRect ? (
-        <m.span
-          className={activePillClasses}
-          style={{ width: 1, transformOrigin: "left center" }}
-          initial={false}
-          animate={{ x: activeRect.left, scaleX: activeRect.width }}
-          transition={transition}
-          aria-hidden="true"
-        />
-      ) : null}
-
-      {showHoverPill && hoverRect ? (
-        <m.span
-          className={hoverPillClasses}
-          style={{ width: 1, transformOrigin: "left center" }}
-          initial={false}
-          animate={{ x: hoverRect.left, scaleX: hoverRect.width }}
-          transition={transition}
-          aria-hidden="true"
-        />
-      ) : null}
-
-      {items.map((item) => {
-        const isActive = pathname === item.href
-        const isHovered = hoveredHref === item.href
-
-        return (
-          <Link
-            key={item.href}
-            ref={setLinkRef(item.href)}
-            href={item.href}
-            className={cn(
-              navLinkClasses,
-              isActive
-                ? activeTextClasses
-                : isHovered
-                  ? hoveredTextClasses
-                  : inactiveTextClasses
-            )}
-            onPointerEnter={() => {
-              setHoveredHref(item.href)
-              if (item.href !== pathname) measureHover(item.href)
-              else setHoverRect(null)
+      <div
+        ref={rowRef}
+        className={linksRowClasses}
+        onPointerLeave={() => {
+          setHoveredHref(null)
+          setHoverRect(null)
+        }}
+      >
+        {showHoverPill && hoverRect ? (
+          <m.span
+            className={hoverPillClasses}
+            initial={false}
+            animate={{
+              left: hoverRect.left,
+              top: hoverRect.top,
+              width: hoverRect.width,
+              height: hoverRect.height,
+              opacity: 1,
             }}
-          >
-            {item.label}
-          </Link>
-        )
-      })}
-    </div>
+            exit={{ opacity: 0 }}
+            transition={transition}
+            aria-hidden="true"
+          />
+        ) : null}
+
+        {items.map((item) => {
+          const isActive = pathname === item.href
+          const isHovered = hoveredHref === item.href
+
+          return (
+            <Link
+              key={item.href}
+              ref={setLinkRef(item.href)}
+              href={item.href}
+              className={cn(
+                navLinkClasses,
+                isActive
+                  ? activeNavLinkClasses
+                  : inactiveNavLinkClasses,
+                !isActive && isHovered && "text-blue-chalk"
+              )}
+              onPointerEnter={() => {
+                setHoveredHref(item.href)
+                measureHover(item.href)
+              }}
+            >
+              {item.label}
+            </Link>
+          )
+        })}
+      </div>
     </LazyMotion>
   )
 }
