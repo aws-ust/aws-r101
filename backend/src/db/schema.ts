@@ -20,6 +20,18 @@ export const applicationStatus = pgEnum("application_status", [
   "rejected",
 ]);
 export const documentType = pgEnum("document_type", ["resume", "transcript"]);
+export const emailMessageType = pgEnum("email_message_type", [
+  "application_submitted",
+  "applicant_otp",
+  "interview_booking",
+  "result_accepted",
+  "result_rejected",
+]);
+export const emailDeliveryStatus = pgEnum("email_delivery_status", [
+  "pending",
+  "sent",
+  "failed",
+]);
 
 export const users = pgTable(
   "users",
@@ -114,6 +126,7 @@ export const applications = pgTable(
     applicantId: uuid("applicant_id")
       .notNull()
       .references(() => applicants.id, { onDelete: "cascade" }),
+    applicationCode: varchar("application_code", { length: 20 }).notNull().unique(),
     status: applicationStatus().notNull().default("pending"),
     // Apply-form "Why do you want to join AWS Builders - UST?" — on the application, not the applicant.
     // default("") is for drizzle-kit push against existing rows; seed and POST always send a real answer.
@@ -135,6 +148,31 @@ export const applications = pgTable(
     index("idx_applications_status").on(t.status),
     index("idx_applications_submitted_at").on(t.submittedAt),
     index("idx_applications_reviewed_by").on(t.reviewedBy),
+    index("idx_applications_code").on(t.applicationCode),
+  ],
+);
+
+export const emailNotifications = pgTable(
+  "email_notifications",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    applicationId: uuid("application_id").references(() => applications.id, {
+      onDelete: "cascade",
+    }),
+    messageType: emailMessageType("message_type").notNull(),
+    recipient: varchar({ length: 255 }).notNull(),
+    status: emailDeliveryStatus().notNull().default("pending"),
+    attempts: integer().notNull().default(0),
+    providerMessageId: text("provider_message_id"),
+    lastError: text("last_error"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+  },
+  (t) => [
+    index("idx_email_notifications_application").on(t.applicationId),
+    index("idx_email_notifications_status_created").on(t.status, t.createdAt),
   ],
 );
 
