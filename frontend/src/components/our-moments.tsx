@@ -2,6 +2,7 @@
 
 import { LazyMotion, domAnimation, m, useReducedMotion } from "motion/react"
 import { SectionHeader } from "@/components/section-header"
+import { cn } from "@/lib/utils"
 
 type Moment = {
   id: string
@@ -19,17 +20,24 @@ const MOMENTS: Moment[] = [
 ]
 
 const sectionClasses = "flex w-full flex-col gap-[clamp(2rem,4vw,3.5rem)]"
-const timelineShellClasses = "relative"
-const timelineClasses = "flex flex-col gap-14 md:gap-16"
+const timelineShellClasses = "relative mx-auto w-full max-w-5xl"
 const lineClasses =
-  "pointer-events-none absolute top-3 bottom-3 left-[0.34375rem] w-px bg-biloba-flower/25 md:left-[0.4375rem]"
-const entryClasses = "relative pl-8 md:pl-10"
-const dotClasses =
-  "absolute top-1.5 left-0 size-3 rounded-full border-2 bg-haiti"
+  "pointer-events-none absolute top-2 bottom-2 left-1/2 w-px -translate-x-1/2 bg-biloba-flower/25"
+const timelineClasses = "flex flex-col"
+const entryClasses = "relative pb-14 last:pb-0 md:pb-16"
+const dotShellClasses =
+  "absolute top-1.5 left-1/2 z-10 -translate-x-1/2"
+const dotClasses = "size-3 rounded-full border-2 bg-haiti"
+const cardClasses = cn(
+  "relative pt-9 md:max-w-[calc(50%-1.5rem)]",
+  "md:pt-0"
+)
+const cardRightClasses = "md:ml-[calc(50%+1.25rem)]"
+const cardLeftClasses = "md:mr-[calc(50%+1.25rem)] md:text-right"
 const dateClasses = "font-mono text-sm font-medium text-aquamarine"
-const labelClasses = "mt-1 max-w-md font-sans text-sm leading-relaxed text-prelude"
+const labelClasses = "mt-1 font-sans text-sm leading-relaxed text-prelude"
 const mediaClasses =
-  "glass mt-4 aspect-[4/3] w-full max-w-xl rounded-[14px] border border-blue-chalk/20 bg-meteorite/45"
+  "glass mt-4 aspect-[4/3] w-full rounded-[14px] border border-blue-chalk/20 bg-meteorite/45"
 
 const revealSnap = { duration: 0 }
 const revealEase = { duration: 0.5, ease: [0.22, 1, 0.36, 1] as const }
@@ -52,37 +60,49 @@ const dotActive = {
 
 type TimelineEntryProps = {
   moment: Moment
+  index: number
   reducedMotion: boolean | null
 }
 
-function TimelineEntry({ moment, reducedMotion }: TimelineEntryProps) {
+function TimelineEntry({ moment, index, reducedMotion }: TimelineEntryProps) {
+  const onRight = index % 2 === 0
+  const enterX = onRight ? 28 : -28
+
   return (
-    <m.article
-      className={entryClasses}
-      initial={reducedMotion ? false : { opacity: 0, y: 28 }}
-      whileInView={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.45 }}
-      transition={reducedMotion ? revealSnap : revealEase}
-    >
-      <m.div
-        className={dotClasses}
-        initial={reducedMotion ? false : dotRest}
-        whileInView={reducedMotion ? undefined : dotActive}
-        viewport={{ once: true, amount: 0.45 }}
-        transition={reducedMotion ? revealSnap : { ...revealEase, delay: 0.08 }}
-        aria-hidden
-      />
-      <time dateTime={moment.date} className={dateClasses}>{moment.date}</time>
-      <p className={labelClasses}>{moment.label}</p>
-      <m.div
-        className={mediaClasses}
-        initial={reducedMotion ? false : { opacity: 0, scale: 0.98 }}
-        whileInView={reducedMotion ? undefined : { opacity: 1, scale: 1 }}
-        viewport={{ once: true, amount: 0.45 }}
-        transition={reducedMotion ? revealSnap : { ...revealEase, delay: 0.14 }}
-        aria-hidden
-      />
-    </m.article>
+    <li className={entryClasses}>
+      <div className={dotShellClasses}>
+        <m.div
+          className={dotClasses}
+          initial={reducedMotion ? false : dotRest}
+          whileInView={reducedMotion ? undefined : dotActive}
+          viewport={{ once: true, amount: 0.45 }}
+          transition={reducedMotion ? revealSnap : { ...revealEase, delay: 0.08 }}
+          aria-hidden
+        />
+      </div>
+
+      <m.article
+        className={cn(
+          cardClasses,
+          onRight ? cardRightClasses : cardLeftClasses
+        )}
+        initial={reducedMotion ? false : { opacity: 0, y: 24, x: enterX }}
+        whileInView={reducedMotion ? undefined : { opacity: 1, y: 0, x: 0 }}
+        viewport={{ once: true, amount: 0.4 }}
+        transition={reducedMotion ? revealSnap : revealEase}
+      >
+        <time dateTime={moment.date} className={dateClasses}>{moment.date}</time>
+        <p className={labelClasses}>{moment.label}</p>
+        <m.div
+          className={mediaClasses}
+          initial={reducedMotion ? false : { opacity: 0, scale: 0.98 }}
+          whileInView={reducedMotion ? undefined : { opacity: 1, scale: 1 }}
+          viewport={{ once: true, amount: 0.4 }}
+          transition={reducedMotion ? revealSnap : { ...revealEase, delay: 0.12 }}
+          aria-hidden
+        />
+      </m.article>
+    </li>
   )
 }
 
@@ -108,10 +128,13 @@ export function OurMoments() {
         <div className={timelineShellClasses}>
           <div className={lineClasses} aria-hidden />
           <ol className={timelineClasses}>
-            {MOMENTS.map((moment) => (
-              <li key={moment.id}>
-                <TimelineEntry moment={moment} reducedMotion={reducedMotion} />
-              </li>
+            {MOMENTS.map((moment, index) => (
+              <TimelineEntry
+                key={moment.id}
+                moment={moment}
+                index={index}
+                reducedMotion={reducedMotion}
+              />
             ))}
           </ol>
         </div>
