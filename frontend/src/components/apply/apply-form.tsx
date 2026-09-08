@@ -88,6 +88,7 @@ export function ApplyForm() {
   const [upload, setUpload] = useState(emptyUpload)
   const [error, setError] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [applicationCode, setApplicationCode] = useState("")
 
   useEffect(() => {
     const draft = loadApplyFormDraft()
@@ -142,10 +143,11 @@ export function ApplyForm() {
     }
     setSubmitting(true)
     try {
-      await createApplication(
+      const created = await createApplication(
         toCreateApplicationInput(general, committee, upload, UST_EMAIL_DOMAIN)
       )
       clearApplyFormDraft()
+      setApplicationCode(created.applicationCode)
       setStep("success")
     } catch (err) {
       const message =
@@ -165,7 +167,7 @@ export function ApplyForm() {
           title="AWS Builders – UST"
           titleClassName="max-w-none whitespace-nowrap"
         />
-        <SuccessPanel />
+        <SuccessPanel applicationCode={applicationCode} />
       </main>
     )
   }

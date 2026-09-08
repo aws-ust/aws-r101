@@ -1,4 +1,5 @@
 import { eq, inArray } from "drizzle-orm";
+import { generateApplicationCode } from "../lib/application-code";
 import { db } from "./index";
 import {
   applicants,
@@ -179,7 +180,12 @@ async function main() {
 
     const [application] = await db
       .insert(applications)
-      .values({ applicantId, status: seed.status, motivation: seed.motivation })
+      .values({
+        applicantId,
+        applicationCode: generateApplicationCode(),
+        status: seed.status,
+        motivation: seed.motivation,
+      })
       .returning();
 
     await db.insert(applicationChoices).values(

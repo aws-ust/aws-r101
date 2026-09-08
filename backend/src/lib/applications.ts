@@ -8,6 +8,7 @@ import {
   committees,
   positions,
 } from "../db/schema";
+import { generateApplicationCode } from "./application-code";
 
 export type ApplicationStatus = "pending" | "approved" | "rejected";
 export type DocumentType = "resume" | "transcript";
@@ -27,6 +28,7 @@ export type ApplicationDocumentJson = {
 
 export type ApplicationJson = {
   id: string;
+  applicationCode: string;
   status: ApplicationStatus;
   submittedAt: string;
   firstName: string;
@@ -58,6 +60,7 @@ export type ListFilters = {
 
 type ApplicationRow = {
   id: string;
+  applicationCode: string;
   status: ApplicationStatus;
   submittedAt: Date;
   firstName: string;
@@ -127,6 +130,7 @@ async function attachRelations(
 
   return rows.map((row) => ({
     id: row.id,
+    applicationCode: row.applicationCode,
     status: row.status,
     submittedAt: iso(row.submittedAt),
     firstName: row.firstName,
@@ -144,6 +148,7 @@ async function attachRelations(
 
 const applicationSelect = {
   id: applications.id,
+  applicationCode: applications.applicationCode,
   status: applications.status,
   submittedAt: applications.submittedAt,
   firstName: applicants.firstName,
@@ -258,10 +263,27 @@ export async function createApplication(
       applicantId = inserted.id;
     }
 
-    const [application] = await tx
-      .insert(applications)
-      .values({ applicantId, status: "pending", motivation: input.motivation })
-      .returning({ id: applications.id });
+    const [application] = await (async () => {
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          return await tx
+            .insert(applications)
+            .values({
+              applicantId,
+              applicationCode: generateApplicationCode(),
+              status: "pending",
+              motivation: input.motivation,
+            })
+            .returning({ id: applications.id });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          if (!message.includes("unique") && !message.includes("duplicate")) {
+            throw err;
+          }
+        }
+      }
+      throw new Error("Could not generate a unique application code");
+    })();
 
     await tx.insert(applicationChoices).values(
       input.choices.map((choice) => ({
