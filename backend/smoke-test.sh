@@ -261,6 +261,9 @@ EOF
     fail=$((fail + 1))
   fi
 
+  request POST "/applications" "$CREATE_BODY"
+  expect "POST /applications duplicate cycle" 409
+
   request POST "/applications" '{"name":"Test Applicant"}'
   expect "POST /applications invalid body" 400
 

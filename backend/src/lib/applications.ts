@@ -61,6 +61,47 @@ export type ListFilters = {
   section?: string;
 };
 
+export class ApplicationAlreadySubmittedError extends Error {
+  constructor() {
+    super(
+      "You already submitted an application for this recruitment cycle. Only one application per year is allowed.",
+    );
+    this.name = "ApplicationAlreadySubmittedError";
+  }
+}
+
+function isApplicationCodeCollision(err: unknown): boolean {
+  const inspect = (value: unknown): boolean => {
+    if (!value || typeof value !== "object") return false;
+    const record = value as Record<string, unknown>;
+    if (
+      record.constraint_name === "applications_application_code_key" ||
+      record.constraint_name === "applications_application_code_unique"
+    ) {
+      return true;
+    }
+    if (typeof record.message === "string") {
+      const message = record.message.toLowerCase();
+      return (
+        message.includes("application_code") &&
+        (message.includes("unique") || message.includes("duplicate"))
+      );
+    }
+    return false;
+  };
+
+  if (inspect(err)) return true;
+  if (err instanceof Error) {
+    if (inspect(err.cause)) return true;
+    const message = err.message.toLowerCase();
+    return (
+      message.includes("application_code") &&
+      (message.includes("unique") || message.includes("duplicate"))
+    );
+  }
+  return false;
+}
+
 type ApplicationRow = {
   id: string;
   applicationCode: string;
@@ -266,6 +307,22 @@ export async function createApplication(
       applicantId = inserted.id;
     }
 
+    const recruitmentYear = recruitmentYearInt();
+    const [existingForCycle] = await tx
+      .select({ id: applications.id })
+      .from(applications)
+      .where(
+        and(
+          eq(applications.applicantId, applicantId),
+          eq(applications.recruitmentYear, recruitmentYear),
+        ),
+      )
+      .limit(1);
+
+    if (existingForCycle) {
+      throw new ApplicationAlreadySubmittedError();
+    }
+
     const [application] = await (async () => {
       for (let attempt = 0; attempt < 5; attempt++) {
         try {
@@ -274,14 +331,13 @@ export async function createApplication(
             .values({
               applicantId,
               applicationCode: generateApplicationCode(),
-              recruitmentYear: recruitmentYearInt(),
+              recruitmentYear,
               status: "pending",
               motivation: input.motivation,
             })
             .returning({ id: applications.id });
         } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
-          if (!message.includes("unique") && !message.includes("duplicate")) {
+          if (!isApplicationCodeCollision(err)) {
             throw err;
           }
         }

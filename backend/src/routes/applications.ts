@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import {
+  ApplicationAlreadySubmittedError,
   createApplication,
   deleteApplication,
   getApplicationById,
@@ -170,11 +171,18 @@ applicationsRoutes.post("/", async (c) => {
     return c.json({ error: "One or more positions do not exist." }, 400);
   }
 
-  const created = await createApplication(parsed.value);
-  void sendApplicationSubmitted(created).catch((err) => {
-    console.error("submission email failed", err);
-  });
-  return c.json(created, 201);
+  try {
+    const created = await createApplication(parsed.value);
+    void sendApplicationSubmitted(created).catch((err) => {
+      console.error("submission email failed", err);
+    });
+    return c.json(created, 201);
+  } catch (err) {
+    if (err instanceof ApplicationAlreadySubmittedError) {
+      return c.json({ error: err.message }, 409);
+    }
+    throw err;
+  }
 });
 
 applicationsRoutes.patch("/:id/status", requireAuth, async (c) => {
