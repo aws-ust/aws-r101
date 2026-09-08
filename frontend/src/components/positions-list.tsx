@@ -40,7 +40,7 @@ export function PositionsList({
   const officeGroups = groupPositionsByOfficeHierarchy(positions)
 
   return (
-    <nav aria-label="Open positions" className={listClasses}>
+    <nav aria-label="Open positions" className={cn(listClasses, "reveal")}>
       {officeGroups.map((officeGroup) => (
         <div key={officeGroup.office} className="flex flex-col gap-3">
           <p className={officeHeaderClasses}>{officeGroup.office}</p>
