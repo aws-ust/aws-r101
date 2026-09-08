@@ -10,6 +10,10 @@ import {
   type DocumentType,
 } from "../lib/applications";
 import { requireAuth } from "../auth";
+import {
+  listEmailNotificationsByApplicationId,
+  sendApplicationSubmitted,
+} from "../lib/email/service";
 
 export const applicationsRoutes = new Hono();
 
@@ -167,6 +171,9 @@ applicationsRoutes.post("/", async (c) => {
   }
 
   const created = await createApplication(parsed.value);
+  void sendApplicationSubmitted(created).catch((err) => {
+    console.error("submission email failed", err);
+  });
   return c.json(created, 201);
 });
 
@@ -190,6 +197,21 @@ applicationsRoutes.patch("/:id/status", requireAuth, async (c) => {
     return c.json({ error: "Application not found." }, 404);
   }
   return c.json(updated);
+});
+
+applicationsRoutes.get("/:id/email-notifications", requireAuth, async (c) => {
+  const id = c.req.param("id");
+  if (!isUuid(id)) {
+    return c.json({ error: "Invalid application id." }, 400);
+  }
+
+  const application = await getApplicationById(id);
+  if (!application) {
+    return c.json({ error: "Application not found." }, 404);
+  }
+
+  const notifications = await listEmailNotificationsByApplicationId(id);
+  return c.json({ notifications });
 });
 
 applicationsRoutes.get("/:id", requireAuth, async (c) => {
