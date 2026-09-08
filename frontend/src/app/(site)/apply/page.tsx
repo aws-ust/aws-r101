@@ -1,5 +1,5 @@
-import { ApplyForm } from "@/components/apply/apply-form"
+import { redirect } from "next/navigation"
 
 export default function ApplyPage() {
-  return <ApplyForm />
+  redirect("/apply/positions")
 }

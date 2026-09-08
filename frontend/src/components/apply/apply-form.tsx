@@ -30,13 +30,12 @@ import {
   toCreateApplicationInput,
 } from "@/components/apply/form-model"
 import { SectionHeader } from "@/components/section-header"
-import { createApplication } from "@/lib/api"
+import { createApplication, listOpenPositions } from "@/lib/api"
 import { UST_EMAIL_DOMAIN } from "@/lib/constants"
 import {
   glassPanelClasses,
   ghostPillButtonClasses,
   pageShellClasses,
-  positionsLinkClasses,
 } from "@/lib/surface"
 
 const panelClasses = `mx-auto mt-10 w-full max-w-2xl ${glassPanelClasses} px-6 py-8 md:px-10`
@@ -79,7 +78,11 @@ function persistDraft(
   })
 }
 
-export function ApplyForm() {
+type ApplyFormProps = {
+  initialPositionId?: string
+}
+
+export function ApplyForm({ initialPositionId }: ApplyFormProps) {
   const reducedMotion = useReducedMotion() ?? false
   const [step, setStep] = useState<1 | 2 | 3 | "success">(1)
   const [direction, setDirection] = useState(1)
@@ -89,6 +92,7 @@ export function ApplyForm() {
   const [error, setError] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [applicationCode, setApplicationCode] = useState("")
+  const [draftReady, setDraftReady] = useState(false)
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -104,10 +108,43 @@ export function ApplyForm() {
           transcriptDisplayName: draft.transcriptName,
         })
       }
+      setDraftReady(true)
     })
 
     return () => window.cancelAnimationFrame(frame)
   }, [])
+
+  useEffect(() => {
+    if (!draftReady || !initialPositionId) return
+
+    let cancelled = false
+    listOpenPositions()
+      .then((rows) => {
+        if (cancelled) return
+        const position = rows.find((row) => row.id === initialPositionId)
+        if (!position) return
+        setCommittee((current) => {
+          if (
+            current.firstPositionId === position.id &&
+            current.firstCommittee === position.committee
+          ) {
+            return current
+          }
+          return {
+            ...current,
+            firstCommittee: position.committee,
+            firstPositionId: position.id,
+          }
+        })
+      })
+      .catch(() => {
+        // Step 2 still loads positions; the applicant can pick manually.
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [draftReady, initialPositionId])
 
   function goNext() {
     setError("")
@@ -243,7 +280,7 @@ export function ApplyForm() {
               color="purple"
               className={ghostPillButtonClasses}
               nativeButton={false}
-              render={<Link href="/" />}
+              render={<Link href="/apply/positions" />}
             >
               ← Back
             </Button>
@@ -279,11 +316,6 @@ export function ApplyForm() {
           )}
         </div>
       </div>
-      <p className="mt-8 text-center">
-        <Link href="/apply/positions" className={positionsLinkClasses}>
-          View all open positions →
-        </Link>
-      </p>
       </LazyMotion>
     </main>
   )
