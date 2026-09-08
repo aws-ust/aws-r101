@@ -1,6 +1,7 @@
 import type { RenderedEmail } from "./types";
 import { appBaseUrl, messengerGcLink, signatoryName } from "./config";
 import {
+  applicantOtpSubject,
   applicationSubmittedSubject,
   resultAcceptedSubject,
   resultRejectedSubject,
@@ -16,6 +17,49 @@ function escapeHtml(value: string): string {
 
 function wrapHtml(body: string): string {
   return `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;line-height:1.6;color:#111">${body.replace(/\n/g, "<br>")}</body></html>`;
+}
+
+export function applicantOtpTemplate(input: {
+  firstName: string;
+  applicationCode: string;
+  code: string;
+  expiresInMinutes: number;
+}): RenderedEmail {
+  const signatory = signatoryName();
+  const subject = applicantOtpSubject(input.applicationCode);
+  const text = `Hi ${input.firstName},
+
+Use this verification code to securely access your AWS Builders - UST application:
+
+${input.code}
+
+This code expires in ${input.expiresInMinutes} minutes and can only be used once. For your security, do not share it with anyone.
+
+Application ID: ${input.applicationCode}
+
+If you did not request this code, you can safely ignore this email.
+
+Best regards,
+
+${signatory}
+AWS Builders - UST Recruitment Team`;
+
+  const html = wrapHtml(
+    `Hi ${escapeHtml(input.firstName)},<br><br>
+Use this verification code to securely access your AWS Builders - UST application:<br><br>
+<div style="display:inline-block;border:1px solid #d8d0ef;border-radius:12px;background:#f6f2ff;padding:18px 24px;text-align:center">
+<strong style="font-size:30px;letter-spacing:6px;color:#201047">${escapeHtml(input.code)}</strong><br>
+<span style="font-size:12px;color:#655c78">Expires in ${input.expiresInMinutes} minutes</span>
+</div><br><br>
+This code can only be used once. For your security, do not share it with anyone.<br><br>
+<strong>Application ID:</strong> ${escapeHtml(input.applicationCode)}<br><br>
+If you did not request this code, you can safely ignore this email.<br><br>
+Best regards,<br><br>
+${escapeHtml(signatory)}<br>
+AWS Builders - UST Recruitment Team`,
+  );
+
+  return { subject, text, html };
 }
 
 export function applicationSubmittedTemplate(input: {
