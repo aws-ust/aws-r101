@@ -56,6 +56,24 @@ function toPositionResponse(row: PositionRow): PositionResponse {
   };
 }
 
+async function selectAllPositions() {
+  return db
+    .select({
+      id: positions.id,
+      title: positions.name,
+      committeeId: positions.committeeId,
+      office: positions.office,
+      committee: committees.name,
+      committeeDescription: committees.description,
+      description: positions.description,
+      responsibilities: positions.responsibilities,
+      isOpen: positions.isOpen,
+    })
+    .from(positions)
+    .innerJoin(committees, eq(positions.committeeId, committees.id))
+    .orderBy(asc(positions.office), asc(positions.name));
+}
+
 async function selectOpenPositions() {
   return db
     .select({
@@ -182,7 +200,9 @@ async function hasDuplicateTitle(committeeId: string, title: string, excludeId?:
 export const positionsRoutes = new Hono();
 
 positionsRoutes.get("/", async (c) => {
-  const rows = await selectOpenPositions();
+  const scope = c.req.query("scope");
+  const rows =
+    scope === "all" ? await selectAllPositions() : await selectOpenPositions();
   return c.json(rows.map(toPositionResponse));
 });
 
