@@ -51,7 +51,7 @@ const FAQ_ITEMS = [
 ]
 
 const sectionClasses =
-  "flex flex-col gap-8 pt-[clamp(3rem,7vw,5.625rem)] md:gap-10"
+  "faq-section flex flex-col gap-8 pt-[clamp(3rem,7vw,5.625rem)] md:gap-10"
 const headerClasses = "[&>h2]:max-w-[720px] [&>p:last-child]:max-w-[1080px]"
 const headingClasses =
   "text-5xl leading-[1.02] sm:text-6xl lg:text-[3.75rem]"

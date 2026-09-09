@@ -119,7 +119,7 @@ export function Committees() {
         </Button>
       </div>
 
-      {quizOpen ? <CommitteeQuiz /> : null}
+      {quizOpen ? <CommitteeQuiz className="-mt-2" /> : null}
     </section>
   )
 }
