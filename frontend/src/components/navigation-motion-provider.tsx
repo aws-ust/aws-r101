@@ -4,8 +4,10 @@ import { usePathname } from "next/navigation"
 import { useReducedMotion } from "motion/react"
 import {
   createContext,
+  useCallback,
   useContext,
   useRef,
+  useState,
   type ReactNode,
 } from "react"
 import type { Transition } from "motion/react"
@@ -19,6 +21,8 @@ type NavigationMotionContextValue = {
   direction: NavigationDirection
   transition: Transition
   reducedMotion: boolean
+  animatePage: boolean
+  clearPageAnimation: () => void
 }
 
 const NavigationMotionContext =
@@ -30,6 +34,8 @@ export function NavigationMotionProvider({ children }: { children: ReactNode }) 
   const historyStackRef = useRef<string[]>([pathname])
   const previousPathRef = useRef(pathname)
   const directionRef = useRef<NavigationDirection>(1)
+  const animatePageRef = useRef(false)
+  const [, setAnimationEpoch] = useState(0)
 
   if (previousPathRef.current !== pathname) {
     directionRef.current = resolveNavigationDirection(
@@ -53,8 +59,15 @@ export function NavigationMotionProvider({ children }: { children: ReactNode }) 
       historyStackRef.current = [...historyStackRef.current, pathname]
     }
 
+    animatePageRef.current = !reducedMotion
     previousPathRef.current = pathname
   }
+
+  const clearPageAnimation = useCallback(() => {
+    if (!animatePageRef.current) return
+    animatePageRef.current = false
+    setAnimationEpoch((epoch) => epoch + 1)
+  }, [])
 
   const transition = getNavigationTransition(reducedMotion)
 
@@ -64,6 +77,8 @@ export function NavigationMotionProvider({ children }: { children: ReactNode }) 
         direction: directionRef.current,
         transition,
         reducedMotion,
+        animatePage: animatePageRef.current,
+        clearPageAnimation,
       }}
     >
       {children}

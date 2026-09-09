@@ -15,9 +15,10 @@ type PageTransitionProps = {
 
 export function PageTransition({ children }: PageTransitionProps) {
   const pathname = usePathname()
-  const { direction, transition, reducedMotion } = useNavigationMotion()
+  const { direction, transition, animatePage, clearPageAnimation } =
+    useNavigationMotion()
 
-  if (reducedMotion) {
+  if (!animatePage) {
     return <div className={pageClasses}>{children}</div>
   }
 
@@ -29,6 +30,7 @@ export function PageTransition({ children }: PageTransitionProps) {
         animate={{ x: 0 }}
         transition={transition}
         className={pageClasses}
+        onAnimationComplete={clearPageAnimation}
       >
         {children}
       </m.div>
