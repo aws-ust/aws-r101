@@ -13,7 +13,7 @@ export default function Home() {
       <Committees />
       <FAQSection />
       <div className="flex flex-wrap items-center gap-4">
-        <Button color="cyan" nativeButton={false} render={<Link href="/apply/form" />}>
+        <Button color="cyan" nativeButton={false} render={<Link href="/apply/positions" />}>
           Apply now!
         </Button>
         <Button color="purple">Committee Directors</Button>
