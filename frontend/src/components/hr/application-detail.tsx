@@ -2,16 +2,18 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { StatusPill } from "@/components/hr/status-pill"
 import { ChoiceCards } from "@/components/hr/choice-cards"
+import { HrDeleteApplicantDialog } from "@/components/hr/hr-delete-applicant-dialog"
 import {
   formatAppliedDate,
   patchApplicationStatus,
   useApplication,
 } from "@/lib/api"
 import { glassPanelClasses, pageShellClasses } from "@/lib/surface"
+import { deleteOutlineActionClasses } from "@/lib/delete-button-classes"
 import type { Application, ApplicationDocument } from "@/lib/application-types"
 
 const eyebrowClasses =
@@ -47,12 +49,14 @@ function documentFor(
 
 export function HrApplicationDetail() {
   const { id } = useParams<{ id: string }>()
+  const router = useRouter()
   const { application, setApplication, loading, error, notFound } =
     useApplication(id)
   const [actionError, setActionError] = useState("")
   const [pendingStatus, setPendingStatus] = useState<"approved" | "rejected" | null>(
     null
   )
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   if (loading) {
     return (
@@ -178,9 +182,24 @@ export function HrApplicationDetail() {
           >
             Reject
           </Button>
+          <Button
+            color="danger"
+            className={deleteOutlineActionClasses}
+            disabled={pendingStatus !== null}
+            onClick={() => setDeleteOpen(true)}
+          >
+            Delete
+          </Button>
         </div>
         {actionError ? <p className={missingClasses}>{actionError}</p> : null}
       </div>
+      <HrDeleteApplicantDialog
+        application={deleteOpen ? application : null}
+        onOpenChange={setDeleteOpen}
+        onDeleted={() => {
+          router.replace("/admin/hr")
+        }}
+      />
     </main>
   )
 }

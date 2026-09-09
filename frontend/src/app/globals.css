@@ -18,6 +18,9 @@
   --color-biloba-flower: var(--biloba-flower);
   --color-prelude: var(--prelude);
   --color-blue-chalk: var(--blue-chalk);
+  --color-rose-blush: var(--rose-blush);
+  --color-rose-deep: var(--rose-deep);
+  --color-rose-glow: var(--rose-glow);
   --radius-pill: 100px;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -66,6 +69,9 @@
   --biloba-flower: #b78cf0;
   --prelude: #c6b8e8;
   --blue-chalk: #f3eeff;
+  --rose-blush: #e88898;
+  --rose-deep: #6b2238;
+  --rose-glow: #f5b8c2;
   --glass-blur: 12px;
 
   --background: var(--jacarta);
@@ -82,7 +88,7 @@
   --muted-foreground: var(--prelude);
   --accent: var(--biloba-flower);
   --accent-foreground: var(--haiti);
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: var(--rose-blush);
   --border: color-mix(in oklch, var(--blue-chalk) 15%, transparent);
   --input: color-mix(in oklch, var(--blue-chalk) 15%, transparent);
   --ring: var(--biloba-flower);

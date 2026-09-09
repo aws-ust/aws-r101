@@ -12,8 +12,11 @@ import {
   pageSlice,
 } from "@/components/hr/application-pagination-utils"
 import { ApplicationRow } from "@/components/hr/application-row"
+import { HrDeleteApplicantDialog } from "@/components/hr/hr-delete-applicant-dialog"
+import { HrRecruitmentWindow } from "@/components/hr/hr-recruitment-window"
 import { fullName, hasCommittee, useApplications } from "@/lib/api"
 import { pageShellClasses } from "@/lib/surface"
+import type { Application } from "@/lib/application-types"
 
 const listClasses = "mt-8 flex flex-col gap-3"
 const emptyClasses = "mt-8 font-sans text-sm text-prelude"
@@ -25,9 +28,10 @@ const emptyFilters: HrFilters = {
 }
 
 export function HrApplicationList() {
-  const { applications, loading, error } = useApplications()
+  const { applications, loading, error, removeApplication } = useApplications()
   const [filters, setFilters] = useState(emptyFilters)
   const [page, setPage] = useState(1)
+  const [deleteTarget, setDeleteTarget] = useState<Application | null>(null)
 
   const visible = useMemo(() => {
     const query = filters.query.trim().toLowerCase()
@@ -57,6 +61,7 @@ export function HrApplicationList() {
         title="Applications Results"
         subtitle="Every R101 application so far."
       />
+      <HrRecruitmentWindow />
       <div className="mt-8">
         <ApplicationFilters value={filters} onChange={onFiltersChange} />
       </div>
@@ -74,6 +79,7 @@ export function HrApplicationList() {
                 <ApplicationRow
                   application={application}
                   emphasized={safePage === 1 && index === 0}
+                  onDelete={setDeleteTarget}
                 />
               </li>
             ))}
@@ -85,6 +91,13 @@ export function HrApplicationList() {
           />
         </>
       )}
+      <HrDeleteApplicantDialog
+        application={deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null)
+        }}
+        onDeleted={removeApplication}
+      />
     </main>
   )
 }

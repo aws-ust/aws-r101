@@ -28,7 +28,10 @@ export function ApplyFlowTabs() {
           const isActive =
             tab.href === "/apply/positions"
               ? pathname === "/apply" || pathname.startsWith("/apply/positions")
-              : pathname.startsWith(tab.href)
+              : tab.href === "/apply/status"
+                ? pathname.startsWith("/apply/status") ||
+                  pathname.startsWith("/apply/dashboard")
+                : pathname.startsWith(tab.href)
           return (
             <Link
               key={tab.href}
