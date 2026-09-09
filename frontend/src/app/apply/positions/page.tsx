@@ -3,7 +3,7 @@ import { PositionsBrowser } from "@/components/positions-browser"
 import type { Position } from "@/lib/positions"
 
 const apiBaseUrl =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787"
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8787"
 
 type PositionResponse = {
   id: string
