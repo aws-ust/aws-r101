@@ -25,6 +25,8 @@ const footerHintClasses = "hidden font-mono text-xs text-prelude sm:block"
 const applyLinkClasses =
   "glass inline-flex w-fit items-center justify-center rounded-[14px] border border-aquamarine/40 bg-aquamarine/85 px-5 py-3 font-mono text-sm text-haiti transition-shadow hover:bg-aquamarine/95 hover:shadow-[0_0_24px_rgba(90,240,192,0.45)]"
 
+const closedHintClasses = "font-mono text-xs text-prelude"
+
 type PositionDetailProps = {
   position: Position
 }
@@ -32,6 +34,7 @@ type PositionDetailProps = {
 export function PositionDetail({ position }: PositionDetailProps) {
   const assistant = isAssistantRole(position)
   const spots = openSpots(position)
+  const showApplyAction = position.isOpen
 
   return (
     <article className={articleClasses}>
@@ -45,23 +48,25 @@ export function PositionDetail({ position }: PositionDetailProps) {
                 {assistant ? "executive assistant" : "committee staff"}
               </span>
               <span className={cn(pillClasses, assistantPillClasses)}>
-                {spots} {spots === 1 ? "spot" : "spots"} available
+                {position.isOpen
+                  ? `${spots} ${spots === 1 ? "spot" : "spots"} available`
+                  : "not open"}
               </span>
             </div>
           </div>
 
           <section className="flex flex-col gap-2">
-            <h2 className={labelClasses}>// committee</h2>
+            <h2 className={labelClasses}>{"// committee"}</h2>
             <p className={copyClasses}>{position.committeeDescription}</p>
           </section>
 
           <section className="flex flex-col gap-2">
-            <h2 className={labelClasses}>// role</h2>
+            <h2 className={labelClasses}>{"// role"}</h2>
             <p className={copyClasses}>{position.description}</p>
           </section>
 
           <section className="flex flex-col gap-3">
-            <h2 className={labelClasses}>// responsibilities</h2>
+            <h2 className={labelClasses}>{"// responsibilities"}</h2>
             <ol className="flex flex-col gap-2.5">
               {position.responsibilities.map((duty, index) => (
                 <li key={duty} className={dutyRowClasses}>
@@ -76,10 +81,21 @@ export function PositionDetail({ position }: PositionDetailProps) {
         </div>
 
         <div className={footerClasses}>
-          <p className={footerHintClasses}>Ready to ship with us?</p>
-          <Link href="/apply" className={applyLinkClasses}>
-            Apply now →
-          </Link>
+          <p className={footerHintClasses}>
+            {showApplyAction
+              ? "Ready to ship with us?"
+              : "This role is part of the org chart but is not accepting applications."}
+          </p>
+          {showApplyAction ? (
+            <Link
+              href={`/apply/form?position=${position.id}`}
+              className={applyLinkClasses}
+            >
+              Apply now →
+            </Link>
+          ) : (
+            <span className={closedHintClasses}>Applications closed</span>
+          )}
         </div>
       </div>
     </article>

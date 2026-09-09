@@ -39,6 +39,55 @@ class BackendStack extends cdk.Stack {
       environment: {
         DATABASE_URL: databaseUrl,
         CORS_ORIGIN: corsOrigin,
+        ...(process.env.HR_EMAIL ? { HR_EMAIL: process.env.HR_EMAIL } : {}),
+        ...(process.env.HR_PASSWORD
+          ? { HR_PASSWORD: process.env.HR_PASSWORD }
+          : {}),
+        ...(process.env.JWT_SECRET
+          ? { JWT_SECRET: process.env.JWT_SECRET }
+          : {}),
+        ...(process.env.JWT_EXPIRES_IN
+          ? { JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN }
+          : {}),
+        ...(process.env.APPLICANT_AUTH_SECRET
+          ? { APPLICANT_AUTH_SECRET: process.env.APPLICANT_AUTH_SECRET }
+          : {}),
+        ...(process.env.GOOGLE_CLIENT_ID
+          ? { GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID }
+          : {}),
+        ...(process.env.GOOGLE_CLIENT_SECRET
+          ? { GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET }
+          : {}),
+        ...(process.env.GOOGLE_REFRESH_TOKEN
+          ? { GOOGLE_REFRESH_TOKEN: process.env.GOOGLE_REFRESH_TOKEN }
+          : {}),
+        ...(process.env.GOOGLE_SENDER_NAME
+          ? { GOOGLE_SENDER_NAME: process.env.GOOGLE_SENDER_NAME }
+          : {}),
+        ...(process.env.GOOGLE_SENDER_EMAIL
+          ? { GOOGLE_SENDER_EMAIL: process.env.GOOGLE_SENDER_EMAIL }
+          : {}),
+        ...(process.env.GOOGLE_REPLY_TO_EMAIL
+          ? { GOOGLE_REPLY_TO_EMAIL: process.env.GOOGLE_REPLY_TO_EMAIL }
+          : {}),
+        ...(process.env.GOOGLE_SIGNATORY_NAME
+          ? { GOOGLE_SIGNATORY_NAME: process.env.GOOGLE_SIGNATORY_NAME }
+          : {}),
+        ...(process.env.MESSENGER_GC_LINK
+          ? { MESSENGER_GC_LINK: process.env.MESSENGER_GC_LINK }
+          : {}),
+        ...(process.env.APP_BASE_URL
+          ? { APP_BASE_URL: process.env.APP_BASE_URL }
+          : {}),
+        ...(process.env.EMAIL_ENABLED
+          ? { EMAIL_ENABLED: process.env.EMAIL_ENABLED }
+          : {}),
+        ...(process.env.RECRUITMENT_YEAR
+          ? { RECRUITMENT_YEAR: process.env.RECRUITMENT_YEAR }
+          : {}),
+        ...(process.env.APPLICATION_EDIT_DEADLINE
+          ? { APPLICATION_EDIT_DEADLINE: process.env.APPLICATION_EDIT_DEADLINE }
+          : {}),
       },
     });
 
@@ -49,9 +98,11 @@ class BackendStack extends cdk.Stack {
         allowMethods: [
           CorsHttpMethod.GET,
           CorsHttpMethod.POST,
+          CorsHttpMethod.PUT,
           CorsHttpMethod.PATCH,
+          CorsHttpMethod.DELETE,
         ],
-        allowHeaders: ["content-type"],
+        allowHeaders: ["content-type", "authorization"],
       },
     });
 

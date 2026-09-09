@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import {
+  ApplicationAlreadySubmittedError,
   createApplication,
   deleteApplication,
   getApplicationById,
@@ -9,6 +10,11 @@ import {
   type CreateApplicationInput,
   type DocumentType,
 } from "../lib/applications";
+import { requireAuth } from "../auth";
+import {
+  listEmailNotificationsByApplicationId,
+  sendApplicationSubmitted,
+} from "../lib/email/service";
 
 export const applicationsRoutes = new Hono();
 
@@ -131,7 +137,7 @@ function parseCreateBody(
   };
 }
 
-applicationsRoutes.get("/", async (c) => {
+applicationsRoutes.get("/", requireAuth, async (c) => {
   const committee = c.req.query("committee") ?? "";
   const position = c.req.query("position") ?? "";
   const section = c.req.query("section") ?? "";
@@ -165,11 +171,21 @@ applicationsRoutes.post("/", async (c) => {
     return c.json({ error: "One or more positions do not exist." }, 400);
   }
 
-  const created = await createApplication(parsed.value);
-  return c.json(created, 201);
+  try {
+    const created = await createApplication(parsed.value);
+    void sendApplicationSubmitted(created).catch((err) => {
+      console.error("submission email failed", err);
+    });
+    return c.json(created, 201);
+  } catch (err) {
+    if (err instanceof ApplicationAlreadySubmittedError) {
+      return c.json({ error: err.message }, 409);
+    }
+    throw err;
+  }
 });
 
-applicationsRoutes.patch("/:id/status", async (c) => {
+applicationsRoutes.patch("/:id/status", requireAuth, async (c) => {
   const id = c.req.param("id");
   if (!isUuid(id)) {
     return c.json({ error: "Invalid application id." }, 400);
@@ -191,7 +207,22 @@ applicationsRoutes.patch("/:id/status", async (c) => {
   return c.json(updated);
 });
 
-applicationsRoutes.get("/:id", async (c) => {
+applicationsRoutes.get("/:id/email-notifications", requireAuth, async (c) => {
+  const id = c.req.param("id");
+  if (!isUuid(id)) {
+    return c.json({ error: "Invalid application id." }, 400);
+  }
+
+  const application = await getApplicationById(id);
+  if (!application) {
+    return c.json({ error: "Application not found." }, 404);
+  }
+
+  const notifications = await listEmailNotificationsByApplicationId(id);
+  return c.json({ notifications });
+});
+
+applicationsRoutes.get("/:id", requireAuth, async (c) => {
   const id = c.req.param("id");
   if (!isUuid(id)) {
     return c.json({ error: "Invalid application id." }, 400);
@@ -204,7 +235,7 @@ applicationsRoutes.get("/:id", async (c) => {
   return c.json(application);
 });
 
-applicationsRoutes.delete("/:id", async (c) => {
+applicationsRoutes.delete("/:id", requireAuth, async (c) => {
   const id = c.req.param("id");
   if (!isUuid(id)) {
     return c.json({ error: "Invalid application id." }, 400);

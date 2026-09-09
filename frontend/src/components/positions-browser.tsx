@@ -5,7 +5,7 @@ import { SectionHeader } from "@/components/section-header"
 import { PositionsList } from "@/components/positions-list"
 import { PositionDetail } from "@/components/position-detail"
 import type { Position } from "@/lib/positions"
-import { groupPositionsByOffice } from "@/lib/positions"
+import { groupPositionsByOfficeHierarchy } from "@/lib/positions"
 
 const shellClasses = "relative flex flex-col gap-8"
 const glowLeftClasses =
@@ -30,7 +30,7 @@ export function PositionsBrowser({
   positions,
   loadError = false,
 }: PositionsBrowserProps) {
-  const officeCount = groupPositionsByOffice(positions).length
+  const officeCount = groupPositionsByOfficeHierarchy(positions).length
   const [selectedId, setSelectedId] = useState(positions[0]?.id ?? "")
   const selected =
     positions.find((position) => position.id === selectedId) ?? positions[0]
@@ -53,7 +53,7 @@ export function PositionsBrowser({
             Find a role that <span className={accentClasses}>fits</span>.
           </>
         }
-        subtitle="Browse executive assistant and committee staff openings. Pick a role on the left, read it on the right, then apply."
+        subtitle="Browse open executive assistant and committee staff roles. Pick a role on the left, read it on the right, then apply."
       />
 
       <p className={metaClasses}>
