@@ -1,6 +1,6 @@
 "use client"
 
-import { type FormEvent, useState } from "react"
+import { useState } from "react"
 import { Field } from "@/components/field"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -46,8 +46,7 @@ export function ApplicantCodeForm({
     APPLICANT_OTP_RESEND_SECONDS
   )
 
-  async function verifyCode(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  async function verifyCode() {
     setError("")
     setPending(true)
     try {
@@ -82,7 +81,13 @@ export function ApplicantCodeForm({
 
   return (
     <section className={panelClasses}>
-      <form className={formClasses} onSubmit={verifyCode}>
+      <form
+        className={formClasses}
+        onSubmit={(event) => {
+          event.preventDefault()
+          void verifyCode()
+        }}
+      >
         <div>
           <h2 className="text-xl font-bold text-blue-chalk">
             Check your UST email
@@ -92,7 +97,6 @@ export function ApplicantCodeForm({
         <Field label="Six-digit verification code" htmlFor="otp" required>
           <Input
             id="otp"
-            name="otp"
             type="text"
             inputMode="numeric"
             autoComplete="one-time-code"
@@ -113,10 +117,11 @@ export function ApplicantCodeForm({
           </p>
         ) : null}
         <Button
-          type="submit"
+          type="button"
           color="cyan"
           className={submitClasses}
           disabled={pending || code.length !== 6}
+          onClick={() => void verifyCode()}
         >
           {pending ? "Verifying…" : "Verify code"}
         </Button>

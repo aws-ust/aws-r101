@@ -1,6 +1,6 @@
 "use client"
 
-import { type FormEvent, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { ApplicantCodeForm } from "@/components/apply/applicant-code-form"
 import { Field } from "@/components/field"
@@ -43,8 +43,7 @@ export function ApplicantAccessForm() {
     email: `${emailLocal.trim().toLowerCase()}${UST_EMAIL_DOMAIN}`,
   }
 
-  async function requestCode(event?: FormEvent<HTMLFormElement>) {
-    event?.preventDefault()
+  async function requestCode() {
     setError("")
     setPending(true)
     try {
@@ -78,11 +77,16 @@ export function ApplicantAccessForm() {
 
   return (
     <section className={panelClasses}>
-      <form className={formClasses} onSubmit={requestCode}>
+      <form
+        className={formClasses}
+        onSubmit={(event) => {
+          event.preventDefault()
+          void requestCode()
+        }}
+      >
         <Field label="Application ID" htmlFor="applicationCode" required>
           <Input
             id="applicationCode"
-            name="applicationCode"
             autoComplete="off"
             required
             pattern="AP-[0-9]{4}-[0-9]{6}"
@@ -99,7 +103,6 @@ export function ApplicantAccessForm() {
           <div className={emailWrapClasses}>
             <Input
               id="applicantEmail"
-              name="applicantEmail"
               autoComplete="email"
               required
               placeholder="juan.delacruz"
@@ -118,10 +121,11 @@ export function ApplicantAccessForm() {
           </p>
         ) : null}
         <Button
-          type="submit"
+          type="button"
           color="cyan"
           className={submitClasses}
           disabled={pending}
+          onClick={() => void requestCode()}
         >
           {pending ? "Sending…" : "Send verification code"}
         </Button>
