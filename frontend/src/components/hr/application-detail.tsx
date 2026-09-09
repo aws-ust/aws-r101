@@ -12,7 +12,11 @@ import {
   patchApplicationStatus,
   useApplication,
 } from "@/lib/api"
-import { glassPanelClasses, pageShellClasses } from "@/lib/surface"
+import {
+  displayTitleLeadingClasses,
+  glassPanelClasses,
+  pageShellClasses,
+} from "@/lib/surface"
 import { deleteOutlineActionClasses } from "@/lib/delete-button-classes"
 import type { Application, ApplicationDocument } from "@/lib/application-types"
 
@@ -21,8 +25,7 @@ const eyebrowClasses =
 const backClasses =
   "mb-3 mt-3 inline-flex font-mono text-xs text-prelude hover:text-blue-chalk"
 const headingRowClasses = "flex flex-wrap items-center gap-3"
-const titleClasses =
-  "max-w-[640px] font-sans text-4xl font-bold text-blue-chalk md:text-5xl"
+const titleClasses = `max-w-[640px] font-sans text-4xl font-bold text-blue-chalk md:text-5xl ${displayTitleLeadingClasses}`
 const panelClasses = `${glassPanelClasses} mt-8 px-6 py-8 md:px-10`
 const metaRowClasses =
   "flex flex-wrap gap-x-8 gap-y-3 font-sans text-sm text-blue-chalk"

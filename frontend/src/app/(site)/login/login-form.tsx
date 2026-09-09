@@ -72,12 +72,7 @@ export function LoginForm() {
         </svg>
       </div>
 
-      <form
-        action={formAction}
-        method="post"
-        className={cardClasses}
-        noValidate
-      >
+      <form action={formAction} className={cardClasses} noValidate>
         <p className={eyebrowClasses}>$ auth login</p>
         <h1 className={titleClasses}>HR Sign In</h1>
         <p className={subtitleClasses}>
