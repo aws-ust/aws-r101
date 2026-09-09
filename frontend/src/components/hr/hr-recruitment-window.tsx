@@ -1,19 +1,18 @@
 "use client"
 
 import { type FormEvent, useEffect, useState } from "react"
+import { ActionFeedback } from "@/components/action-feedback"
 import { Button } from "@/components/ui/button"
+import { DatetimePicker } from "@/components/ui/datetime-picker"
 import { Field } from "@/components/field"
-import { Input } from "@/components/ui/input"
 import {
   getRecruitmentWindow,
   patchRecruitmentWindow,
 } from "@/lib/api"
-import { fieldControlClasses, glassPanelClasses } from "@/lib/surface"
+import { glassPanelClasses } from "@/lib/surface"
 
 const panelClasses = `${glassPanelClasses} mt-8 px-5 py-5`
 const formClasses = "mt-4 grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end"
-const messageClasses = "mt-3 font-sans text-sm text-prelude"
-const errorClasses = "mt-3 font-sans text-sm text-aquamarine"
 
 function toDatetimeLocal(iso: string | null) {
   if (!iso) return ""
@@ -87,35 +86,28 @@ export function HrRecruitmentWindow() {
       </p>
       <form className={formClasses} onSubmit={onSubmit}>
         <Field label="Starts" htmlFor="recruitment-start" required>
-          <Input
+          <DatetimePicker
             id="recruitment-start"
-            type="datetime-local"
             required
             value={startsAt}
-            onChange={(event) => setStartsAt(event.target.value)}
-            className={fieldControlClasses}
+            onChange={setStartsAt}
           />
         </Field>
         <Field label="Ends" htmlFor="recruitment-end" required>
-          <Input
+          <DatetimePicker
             id="recruitment-end"
-            type="datetime-local"
             required
             value={endsAt}
-            onChange={(event) => setEndsAt(event.target.value)}
-            className={fieldControlClasses}
+            onChange={setEndsAt}
           />
         </Field>
         <Button type="submit" color="cyan" disabled={pending}>
           {pending ? "Saving…" : "Save dates"}
         </Button>
       </form>
-      {error ? (
-        <p className={errorClasses} role="alert">
-          {error}
-        </p>
-      ) : message ? (
-        <p className={messageClasses}>{message}</p>
+      {error ? <ActionFeedback type="error" message={error} /> : null}
+      {!error && message ? (
+        <ActionFeedback type="success" message={message} />
       ) : null}
     </section>
   )
