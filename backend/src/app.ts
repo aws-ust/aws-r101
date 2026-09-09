@@ -8,6 +8,7 @@ import { applicantApplicationRoutes } from "./routes/applicant-application";
 import { applicantInterviewRoutes } from "./routes/applicant-interview";
 import { interviewSlotsRoutes } from "./routes/interview-slots";
 import { positionsRoutes } from "./routes/positions";
+import { recruitmentWindowRoutes } from "./routes/recruitment-window";
 import {
   AUTH_COOKIE_NAME,
   authCookieOptions,
@@ -86,6 +87,7 @@ app.route("/applicant", applicantInterviewRoutes);
 
 app.route("/applications", applicationsRoutes);
 app.route("/interview-slots", interviewSlotsRoutes);
+app.route("/recruitment-window", recruitmentWindowRoutes);
 
 app.post("/uploads/presign", (c) =>
   c.json({ error: "not implemented" }, 501)
