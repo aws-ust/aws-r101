@@ -29,6 +29,7 @@ export function ApplicantDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [saveError, setSaveError] = useState("")
+  const [saveSuccess, setSaveSuccess] = useState("")
   const [pending, setPending] = useState(false)
 
   useEffect(() => {
@@ -62,9 +63,11 @@ export function ApplicantDashboard() {
     slotId?: string
   }) {
     setSaveError("")
+    setSaveSuccess("")
     setPending(true)
     try {
       setApplication(await updateApplicantChoices(input))
+      setSaveSuccess("Committee choices saved.")
     } catch (err: unknown) {
       if (err instanceof ApiError && err.status === 401) {
         router.replace("/apply/status")
@@ -135,6 +138,7 @@ export function ApplicantDashboard() {
           application={application}
           pending={pending}
           error={saveError}
+          success={saveSuccess}
           onSave={onSave}
         />
       ) : null}

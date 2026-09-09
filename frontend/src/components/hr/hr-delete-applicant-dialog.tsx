@@ -13,7 +13,7 @@ import {
 import { deleteApplication, fullName } from "@/lib/api"
 import type { Application } from "@/lib/application-types"
 
-const errorClasses = "text-sm text-prelude"
+const errorClasses = "text-sm text-rose-glow"
 
 type HrDeleteApplicantDialogProps = {
   application: Application | null

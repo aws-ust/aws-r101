@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { ActionFeedback } from "@/components/action-feedback"
 import { SectionHeader } from "@/components/section-header"
 import {
   ApplicationFilters,
@@ -27,11 +28,24 @@ const emptyFilters: HrFilters = {
   status: "",
 }
 
+export const HR_DELETE_NOTICE_KEY = "hr-notice-applicant-deleted"
+
+function readDeleteNotice() {
+  if (typeof window === "undefined") return null
+  if (sessionStorage.getItem(HR_DELETE_NOTICE_KEY) !== "1") return null
+  sessionStorage.removeItem(HR_DELETE_NOTICE_KEY)
+  return { type: "success" as const, message: "Applicant deleted." }
+}
+
 export function HrApplicationList() {
   const { applications, loading, error, removeApplication } = useApplications()
   const [filters, setFilters] = useState(emptyFilters)
   const [page, setPage] = useState(1)
   const [deleteTarget, setDeleteTarget] = useState<Application | null>(null)
+  const [feedback, setFeedback] = useState<{
+    type: "success" | "error"
+    message: string
+  } | null>(readDeleteNotice)
 
   const visible = useMemo(() => {
     const query = filters.query.trim().toLowerCase()
@@ -62,6 +76,9 @@ export function HrApplicationList() {
         subtitle="Every R101 application so far."
       />
       <HrRecruitmentWindow />
+      {feedback ? (
+        <ActionFeedback type={feedback.type} message={feedback.message} />
+      ) : null}
       <div className="mt-8">
         <ApplicationFilters value={filters} onChange={onFiltersChange} />
       </div>
@@ -96,7 +113,10 @@ export function HrApplicationList() {
         onOpenChange={(open) => {
           if (!open) setDeleteTarget(null)
         }}
-        onDeleted={removeApplication}
+        onDeleted={(id) => {
+          removeApplication(id)
+          setFeedback({ type: "success", message: "Applicant deleted." })
+        }}
       />
     </main>
   )

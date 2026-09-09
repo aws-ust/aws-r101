@@ -3,10 +3,12 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
+import { ActionFeedback } from "@/components/action-feedback"
 import { Button } from "@/components/ui/button"
 import { StatusPill } from "@/components/hr/status-pill"
 import { ChoiceCards } from "@/components/hr/choice-cards"
 import { HrDeleteApplicantDialog } from "@/components/hr/hr-delete-applicant-dialog"
+import { HR_DELETE_NOTICE_KEY } from "@/components/hr/application-list"
 import {
   formatAppliedDate,
   patchApplicationStatus,
@@ -56,6 +58,7 @@ export function HrApplicationDetail() {
   const { application, setApplication, loading, error, notFound } =
     useApplication(id)
   const [actionError, setActionError] = useState("")
+  const [actionSuccess, setActionSuccess] = useState("")
   const [pendingStatus, setPendingStatus] = useState<"approved" | "rejected" | null>(
     null
   )
@@ -102,10 +105,14 @@ export function HrApplicationDetail() {
 
   async function setStatus(status: "approved" | "rejected") {
     setActionError("")
+    setActionSuccess("")
     setPendingStatus(status)
     try {
       const updated = await patchApplicationStatus(applicationId, status)
       setApplication(updated)
+      setActionSuccess(
+        status === "approved" ? "Application approved." : "Application rejected."
+      )
     } catch (err) {
       setActionError(
         err instanceof Error ? err.message : "Could not update status."
@@ -194,12 +201,16 @@ export function HrApplicationDetail() {
             Delete
           </Button>
         </div>
-        {actionError ? <p className={missingClasses}>{actionError}</p> : null}
+        {actionSuccess ? (
+          <ActionFeedback type="success" message={actionSuccess} />
+        ) : null}
+        {actionError ? <ActionFeedback type="error" message={actionError} /> : null}
       </div>
       <HrDeleteApplicantDialog
         application={deleteOpen ? application : null}
         onOpenChange={setDeleteOpen}
         onDeleted={() => {
+          sessionStorage.setItem(HR_DELETE_NOTICE_KEY, "1")
           router.replace("/admin/hr")
         }}
       />

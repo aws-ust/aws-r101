@@ -23,12 +23,14 @@ import { fieldControlClasses } from "@/lib/surface"
 
 const stackClasses = "mt-6 flex flex-col gap-4"
 const triggerClasses = `${fieldControlClasses} justify-between`
-const errorClasses = "text-sm text-aquamarine"
+const errorClasses = "text-sm text-rose-glow"
+const successClasses = "text-sm text-aquamarine"
 
 type ApplicantChoiceEditorProps = {
   application: ApplicantApplication
   pending: boolean
   error: string
+  success?: string
   onSave: (input: {
     choices: { positionId: string; preferenceRank: 1 | 2 }[]
     slotId?: string
@@ -46,6 +48,7 @@ export function ApplicantChoiceEditor({
   application,
   pending,
   error,
+  success = "",
   onSave,
 }: ApplicantChoiceEditorProps) {
   const first = application.choices.find((choice) => choice.preferenceRank === 1)
@@ -239,6 +242,8 @@ export function ApplicantChoiceEditor({
         <p className={errorClasses} role="alert">
           {error || slotsError}
         </p>
+      ) : success ? (
+        <p className={successClasses} role="status">{success}</p>
       ) : null}
       <Button type="submit" color="cyan" disabled={pending || !canSubmit}>
         {pending ? "Saving…" : "Save committee choices"}
