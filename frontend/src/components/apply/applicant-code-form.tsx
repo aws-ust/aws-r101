@@ -9,19 +9,22 @@ import {
   verifyApplicantCode,
   type ApplicantIdentity,
 } from "@/lib/applicant-auth-api"
+import { APPLICANT_OTP_RESEND_SECONDS } from "@/lib/constants"
 import {
   fieldControlClasses,
   glassPanelClasses,
   ghostPillButtonClasses,
 } from "@/lib/surface"
+import { useOtpResendCooldown } from "@/lib/use-otp-resend-cooldown"
 
 const panelClasses = `mx-auto mt-10 w-full max-w-xl ${glassPanelClasses} px-6 py-8 md:px-10`
 const formClasses = "flex flex-col gap-5"
 const submitClasses = "mt-2 h-10 px-5 text-xs"
 const messageClasses = "text-sm leading-relaxed text-prelude"
-const errorClasses = "text-sm text-aquamarine"
+const errorClasses = "text-sm text-rose-glow"
 const resendButtonClasses =
   "h-auto px-0 text-xs text-prelude hover:text-blue-chalk"
+const resendCooldownClasses = "text-xs text-prelude/70"
 
 type ApplicantCodeFormProps = {
   identity: ApplicantIdentity
@@ -39,6 +42,9 @@ export function ApplicantCodeForm({
   const [code, setCode] = useState("")
   const [error, setError] = useState("")
   const [pending, setPending] = useState(false)
+  const { remaining, canResend, restart } = useOtpResendCooldown(
+    APPLICANT_OTP_RESEND_SECONDS
+  )
 
   async function verifyCode(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -57,10 +63,12 @@ export function ApplicantCodeForm({
   }
 
   async function requestAnotherCode() {
+    if (!canResend) return
     setError("")
     setPending(true)
     try {
       await requestApplicantCode(identity)
+      restart()
     } catch (err) {
       setError(
         err instanceof Error
@@ -121,16 +129,22 @@ export function ApplicantCodeForm({
           >
             Change details
           </Button>
-          <Button
-            type="button"
-            variant="link"
-            color={null}
-            className={resendButtonClasses}
-            onClick={() => void requestAnotherCode()}
-            disabled={pending}
-          >
-            Request another code
-          </Button>
+          {canResend ? (
+            <Button
+              type="button"
+              variant="link"
+              color={null}
+              className={resendButtonClasses}
+              onClick={() => void requestAnotherCode()}
+              disabled={pending}
+            >
+              Request another code
+            </Button>
+          ) : (
+            <p className={resendCooldownClasses} aria-live="polite">
+              Request another code in {remaining}s
+            </p>
+          )}
         </div>
       </form>
     </section>

@@ -22,7 +22,7 @@ const emailInputClasses =
 const domainClasses = "flex shrink-0 items-center pr-4 text-sm text-prelude"
 const submitClasses = "mt-2 h-10 px-5 text-xs"
 const messageClasses = "text-sm leading-relaxed text-prelude"
-const errorClasses = "text-sm text-aquamarine"
+const errorClasses = "text-sm text-rose-glow"
 
 type Identity = {
   applicationCode: string

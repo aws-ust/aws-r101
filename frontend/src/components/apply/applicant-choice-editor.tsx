@@ -63,6 +63,14 @@ export function ApplicantChoiceEditor({
 
   const firstPositions = positions.filter((p) => p.committee === firstCommittee)
   const secondPositions = positions.filter((p) => p.committee === secondCommittee)
+  const firstSelectedTitle =
+    firstPositions.find((position) => position.id === firstPositionId)?.title ??
+    application.choices.find((choice) => choice.positionId === firstPositionId)
+      ?.title
+  const secondSelectedTitle =
+    secondPositions.find((position) => position.id === secondPositionId)?.title ??
+    application.choices.find((choice) => choice.positionId === secondPositionId)
+      ?.title
   const committeeChanged =
     Boolean(first?.committee) && firstCommittee !== first.committee
   const needsSlot = committeeChanged && Boolean(firstPositionId)
@@ -146,7 +154,9 @@ export function ApplicantChoiceEditor({
           onValueChange={(value: string | null) => setFirstPositionId(value ?? "")}
         >
           <SelectTrigger id="dash-first-position" className={triggerClasses}>
-            <SelectValue placeholder="Select a position" />
+            <span className="flex flex-1 truncate text-left">
+              {firstSelectedTitle ?? "Select a position"}
+            </span>
           </SelectTrigger>
           <SelectContent>
             {firstPositions.map((position) => (
@@ -192,7 +202,9 @@ export function ApplicantChoiceEditor({
           }
         >
           <SelectTrigger id="dash-second-position" className={triggerClasses}>
-            <SelectValue placeholder="Select a position" />
+            <span className="flex flex-1 truncate text-left">
+              {secondSelectedTitle ?? "Select a position"}
+            </span>
           </SelectTrigger>
           <SelectContent>
             {secondPositions.map((position) => (

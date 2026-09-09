@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Poppins, JetBrains_Mono } from "next/font/google";
 import { ScrollToTop } from "@/components/scroll-to-top";
-import { SiteFooter } from "@/components/site-footer";
+import { SiteFooterGate } from "@/components/site-footer-gate";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -29,7 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col overflow-x-clip bg-background text-foreground">
         <ScrollToTop />
         <div className="flex flex-1 flex-col">{children}</div>
-        <SiteFooter />
+        <SiteFooterGate />
       </body>
     </html>
   );

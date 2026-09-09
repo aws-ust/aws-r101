@@ -2,18 +2,16 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
 import { ApplicantChoiceCards } from "@/components/apply/applicant-choice-cards"
 import { ApplicantChoiceEditor } from "@/components/apply/applicant-choice-editor"
 import { ApplicantEditBanner } from "@/components/apply/applicant-edit-banner"
 import { ApiError } from "@/lib/api-client"
 import {
   getApplicantApplication,
-  logoutApplicant,
   updateApplicantChoices,
   type ApplicantApplication,
 } from "@/lib/applicant-api"
-import { glassPanelClasses, ghostPillButtonClasses } from "@/lib/surface"
+import { glassPanelClasses } from "@/lib/surface"
 
 const panelClasses = `${glassPanelClasses} mt-8 px-6 py-8 md:px-10`
 const headingClasses = "font-sans text-3xl font-bold text-blue-chalk md:text-4xl"
@@ -25,8 +23,6 @@ const whyLabelClasses = "mt-8 font-sans text-sm font-semibold text-biloba-flower
 const whyBodyClasses = "mt-2 font-sans text-sm leading-relaxed text-pretty text-justify text-blue-chalk"
 const docsClasses = "mt-8 font-sans text-sm text-prelude"
 const missingClasses = "mt-8 font-sans text-sm text-prelude"
-const actionsClasses = "mt-8 flex flex-wrap gap-3"
-
 export function ApplicantDashboard() {
   const router = useRouter()
   const [application, setApplication] = useState<ApplicantApplication | null>(null)
@@ -80,11 +76,6 @@ export function ApplicantDashboard() {
     } finally {
       setPending(false)
     }
-  }
-
-  async function onSignOut() {
-    await logoutApplicant()
-    router.replace("/apply/status")
   }
 
   if (loading) {
@@ -151,17 +142,6 @@ export function ApplicantDashboard() {
       <div className={docsClasses}>
         <p>Resume: {resume?.fileName ?? "—"}</p>
         <p className="mt-1">Transcript: {transcript?.fileName ?? "—"}</p>
-      </div>
-
-      <div className={actionsClasses}>
-        <Button
-          type="button"
-          color="purple"
-          className={ghostPillButtonClasses}
-          onClick={() => void onSignOut()}
-        >
-          Sign out
-        </Button>
       </div>
     </section>
   )
