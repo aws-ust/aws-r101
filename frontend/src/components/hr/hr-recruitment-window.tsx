@@ -11,7 +11,7 @@ import {
 } from "@/lib/api"
 import { glassPanelClasses } from "@/lib/surface"
 
-const panelClasses = `${glassPanelClasses} mt-8 px-5 py-5`
+const panelClasses = `${glassPanelClasses} px-5 py-5`
 const formClasses = "mt-4 grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end"
 
 function toDatetimeLocal(iso: string | null) {
@@ -79,7 +79,7 @@ export function HrRecruitmentWindow() {
   return (
     <section className={panelClasses}>
       <h2 className="font-sans text-lg font-semibold text-blue-chalk">
-        Recruitment week
+        Recruitment Week
       </h2>
       <p className="mt-1 font-sans text-sm text-prelude">
         Applicants can change committees only between these dates.
