@@ -38,5 +38,19 @@ await sql`
   ON interview_bookings (application_id)
 `;
 
+await sql`
+  CREATE TABLE IF NOT EXISTS interview_windows (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    singleton integer DEFAULT 1 NOT NULL,
+    starts_at timestamptz NOT NULL,
+    ends_at timestamptz NOT NULL,
+    updated_by uuid REFERENCES users(id) ON DELETE set null,
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT interview_windows_singleton_unique UNIQUE (singleton),
+    CONSTRAINT interview_windows_singleton_check CHECK (singleton = 1),
+    CONSTRAINT interview_windows_range_check CHECK (ends_at > starts_at)
+  )
+`;
+
 console.log("Interview scheduling tables are ready.");
 await sql.end();

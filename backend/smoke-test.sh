@@ -175,6 +175,8 @@ request GET "/interview-slots"
 expect "GET  /interview-slots (no token)" 401
 request POST "/interview-slots" '{"committeeId":"00000000-0000-4000-8000-000000000000","startsAt":"2099-01-01T00:00:00.000Z"}'
 expect "POST /interview-slots (no token)" 401
+request DELETE "/interview-slots?committeeId=00000000-0000-4000-8000-000000000000"
+expect "DELETE /interview-slots (no token)" 401
 
 request GET "/applicant-auth/me"
 expect "GET  /applicant-auth/me (no session)" 401
@@ -186,6 +188,10 @@ request GET "/recruitment-window"
 expect "GET  /recruitment-window (no token)" 401
 request PATCH "/recruitment-window" '{"startsAt":"2099-01-01T00:00:00.000Z","endsAt":"2099-01-08T00:00:00.000Z"}'
 expect "PATCH /recruitment-window (no token)" 401
+request GET "/interview-window"
+expect "GET  /interview-window (no token)" 200
+request PATCH "/interview-window" '{"startsAt":"2099-01-01T00:00:00.000Z","endsAt":"2099-01-08T00:00:00.000Z"}'
+expect "PATCH /interview-window (no token)" 401
 request GET "/applicant/interview-slots"
 expect "GET  /applicant/interview-slots (no session)" 401
 request PUT "/applicant/interview-booking" '{"slotId":"00000000-0000-4000-8000-000000000000"}'
@@ -202,7 +208,7 @@ expect "POST /applicant-auth/logout" 204
 request POST "/auth/login" '{"email":"wrong@example.com","password":"nope"}'
 expect "POST /auth/login (bad credentials)" 401
 request POST "/auth/logout"
-expect "POST /auth/logout (no token)" 401
+expect "POST /auth/logout (no token)" 204
 
 login_json="{\"email\":\"${HR_EMAIL}\",\"password\":\"${HR_PASSWORD}\"}"
 request POST "/auth/login" "$login_json"
@@ -269,8 +275,8 @@ if [[ -z "$POS1" || -z "$POS2" ]]; then
   echo "      body: $LAST_BODY"
   fail=$((fail + 1))
 else
-  SECTION="SMOKE-$(date +%s)"
-  EMAIL="smoke.$SECTION@example.com"
+  SECTION="4SMK"
+  EMAIL="smoke.$(date +%s)@example.com"
   SLOT_ID=""
   if [[ -n "$token" && -n "$committee_id" ]]; then
     SLOT_START=$(node -e "
@@ -295,7 +301,7 @@ else
   fi
 
   CREATE_BODY=$(cat <<EOF
-{"firstName":"Smoke","lastName":"Test","email":"$EMAIL","age":21,"birthday":"2005-04-12","gender":"male","section":"$SECTION","motivation":"Smoke test why join.","slotId":"$SLOT_ID","choices":[{"positionId":"$POS1","preferenceRank":1},{"positionId":"$POS2","preferenceRank":2}],"documents":[{"documentType":"resume","fileName":"resume.pdf","s3Key":"dev/resume.pdf"},{"documentType":"transcript","fileName":"tor.pdf","s3Key":"dev/transcript.pdf"}]}
+{"firstName":"Smoke","lastName":"Test","email":"$EMAIL","age":21,"birthday":"2005-04-12","gender":"male","section":"$SECTION","studentNumber":"2026123456","contactNumber":"+639171234567","facebookUrl":"https://facebook.com/smoke.test","dataPrivacyAgreed":true,"motivation":"Smoke test why join.","slotId":"$SLOT_ID","choices":[{"positionId":"$POS1","preferenceRank":1},{"positionId":"$POS2","preferenceRank":2}],"documents":[{"documentType":"resume","fileName":"CV_Test.pdf","s3Key":"dev/cv.pdf"},{"documentType":"transcript","fileName":"TOR_Test.pdf","s3Key":"dev/tor.pdf"},{"documentType":"registration","fileName":"RegForm_Test.pdf","s3Key":"dev/reg.pdf"}]}
 EOF
 )
 

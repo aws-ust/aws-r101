@@ -7,6 +7,7 @@ import {
   committees,
   positions,
   recruitmentWindows,
+  interviewWindows,
   users,
 } from "./schema";
 import { POSITION_SEEDS } from "./position-seeds";
@@ -52,6 +53,21 @@ async function main() {
     .onConflictDoUpdate({
       target: recruitmentWindows.singleton,
       set: { startsAt, endsAt },
+    });
+
+  const interviewStartsAt = new Date(startsAt);
+  interviewStartsAt.setMonth(interviewStartsAt.getMonth() + 1);
+  const interviewEndsAt = new Date(interviewStartsAt.getTime() + 45 * 24 * 60 * 60 * 1000);
+  await db
+    .insert(interviewWindows)
+    .values({
+      singleton: 1,
+      startsAt: interviewStartsAt,
+      endsAt: interviewEndsAt,
+    })
+    .onConflictDoUpdate({
+      target: interviewWindows.singleton,
+      set: { startsAt: interviewStartsAt, endsAt: interviewEndsAt },
     });
 
   const [seedReviewer] = await db
@@ -123,7 +139,10 @@ async function main() {
       age: 20,
       birthday: "2006-03-14",
       gender: "female" as const,
-      section: "BSCS-3A",
+      section: "3CSC",
+      studentNumber: "2023001001",
+      contactNumber: "+639171000001",
+      facebookUrl: "https://facebook.com/ana.cruz",
     },
     {
       firstName: "Ben",
@@ -132,7 +151,10 @@ async function main() {
       age: 21,
       birthday: "2005-07-22",
       gender: "male" as const,
-      section: "BSIT-3B",
+      section: "3ITB",
+      studentNumber: "2023001002",
+      contactNumber: "+639171000002",
+      facebookUrl: "https://facebook.com/ben.santos",
     },
     {
       firstName: "Carla",
@@ -141,7 +163,10 @@ async function main() {
       age: 19,
       birthday: "2007-01-08",
       gender: "female" as const,
-      section: "BSCS-2A",
+      section: "2CSC",
+      studentNumber: "2024001003",
+      contactNumber: "+639171000003",
+      facebookUrl: "https://facebook.com/carla.mendoza",
     },
     {
       firstName: "Dario",
@@ -150,7 +175,10 @@ async function main() {
       age: 22,
       birthday: "2004-11-30",
       gender: "male" as const,
-      section: "BSIT-4A",
+      section: "4ITA",
+      studentNumber: "2022001004",
+      contactNumber: "+639171000004",
+      facebookUrl: "https://facebook.com/dario.aquino",
     },
   ];
 
@@ -168,6 +196,10 @@ async function main() {
         birthday: seed.birthday,
         age: seed.age,
         gender: seed.gender,
+        section: seed.section,
+        studentNumber: seed.studentNumber,
+        contactNumber: seed.contactNumber,
+        facebookUrl: seed.facebookUrl,
       })
       .where(eq(applicants.email, seed.email));
   }
