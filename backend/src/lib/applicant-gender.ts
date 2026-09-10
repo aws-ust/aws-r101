@@ -1,9 +1,4 @@
-export const APPLICANT_GENDER_VALUES = [
-  "male",
-  "female",
-  "non_binary",
-  "prefer_not_to_say",
-] as const;
+export const APPLICANT_GENDER_VALUES = ["male", "female"] as const;
 
 export type ApplicantGender = (typeof APPLICANT_GENDER_VALUES)[number];
 

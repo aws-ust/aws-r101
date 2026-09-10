@@ -9,6 +9,7 @@ import { applicantInterviewRoutes } from "./routes/applicant-interview";
 import { interviewSlotsRoutes } from "./routes/interview-slots";
 import { positionsRoutes } from "./routes/positions";
 import { recruitmentWindowRoutes } from "./routes/recruitment-window";
+import { interviewWindowRoutes } from "./routes/interview-window";
 import {
   AUTH_COOKIE_NAME,
   authCookieOptions,
@@ -83,8 +84,11 @@ app.get("/auth/me", requireAuth, (c) => {
   return c.json({ email });
 });
 
-app.post("/auth/logout", requireAuth, (c) => {
-  deleteCookie(c, AUTH_COOKIE_NAME, { path: "/" });
+app.post("/auth/logout", (c) => {
+  deleteCookie(c, AUTH_COOKIE_NAME, {
+    ...authCookieOptions(0),
+    maxAge: 0,
+  });
   return c.body(null, 204);
 });
 
@@ -97,6 +101,7 @@ app.route("/applicant", applicantInterviewRoutes);
 app.route("/applications", applicationsRoutes);
 app.route("/interview-slots", interviewSlotsRoutes);
 app.route("/recruitment-window", recruitmentWindowRoutes);
+app.route("/interview-window", interviewWindowRoutes);
 
 app.post("/uploads/presign", (c) =>
   c.json({ error: "not implemented" }, 501)
