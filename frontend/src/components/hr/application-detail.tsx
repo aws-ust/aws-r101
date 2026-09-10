@@ -7,6 +7,7 @@ import { ActionFeedback } from "@/components/action-feedback"
 import { Button } from "@/components/ui/button"
 import { StatusPill } from "@/components/hr/status-pill"
 import { ChoiceCards } from "@/components/hr/choice-cards"
+import { HrApplicationDetailSkeleton } from "@/components/hr/application-detail-skeleton"
 import { HrDeleteApplicantDialog } from "@/components/hr/hr-delete-applicant-dialog"
 import { HR_DELETE_NOTICE_KEY } from "@/components/hr/application-list"
 import {
@@ -70,14 +71,7 @@ export function HrApplicationDetail() {
   const [deleteOpen, setDeleteOpen] = useState(false)
 
   if (loading) {
-    return (
-      <main className={pageShellClasses}>
-        <Link href="/admin/hr" className={backClasses}>
-          ← Back to Applications
-        </Link>
-        <p className={missingClasses}>Loading application…</p>
-      </main>
-    )
+    return <HrApplicationDetailSkeleton />
   }
 
   if (error) {
