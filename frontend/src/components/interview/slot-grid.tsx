@@ -1,5 +1,6 @@
 "use client"
 
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   interviewTimeLabels,
   INTERVIEW_GRID_END_HOUR,
@@ -63,7 +64,6 @@ const currentClasses = "cursor-pointer bg-aquamarine/50 ring-2 ring-aquamarine"
 const hiddenClasses = "bg-transparent border-transparent"
 const legendClasses = "mt-3 flex flex-wrap gap-4 font-sans text-xs text-prelude"
 const legendSwatchClasses = "mr-2 inline-block size-3 rounded-sm align-middle"
-const skeletonClasses = "h-48 animate-pulse rounded-[20px] bg-haiti/40"
 const emptyClasses = "px-4 py-8 text-center font-sans text-sm text-prelude"
 
 function cellClasses(state: SlotGridCellState, scrollable: boolean): string {
@@ -106,7 +106,14 @@ export function SlotGrid({
     (INTERVIEW_GRID_END_HOUR - INTERVIEW_GRID_START_HOUR) * 2
 
   if (loading) {
-    return <div className={skeletonClasses} aria-busy="true" />
+    return (
+      <Skeleton
+        className="h-48 rounded-[20px]"
+        role="status"
+        aria-busy="true"
+        aria-label="Loading interview slots"
+      />
+    )
   }
 
   if (days.length === 0) {
