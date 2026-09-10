@@ -9,6 +9,7 @@ import {
   getRecruitmentWindow,
   patchRecruitmentWindow,
 } from "@/lib/api"
+import { DatetimeFieldsSkeleton } from "@/components/hr/datetime-fields-skeleton"
 import { glassPanelClasses } from "@/lib/surface"
 
 const panelClasses = `${glassPanelClasses} px-5 py-5`
@@ -32,6 +33,7 @@ export function HrRecruitmentWindow() {
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
   const [pending, setPending] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
@@ -48,6 +50,9 @@ export function HrRecruitmentWindow() {
             ? err.message
             : "Could not load the recruitment window."
         )
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
       })
     return () => {
       cancelled = true
@@ -84,27 +89,31 @@ export function HrRecruitmentWindow() {
       <p className="mt-1 font-sans text-sm text-prelude">
         Applicants can change committees only between these dates.
       </p>
-      <form className={formClasses} onSubmit={onSubmit}>
-        <Field label="Starts" htmlFor="recruitment-start" required>
-          <DatetimePicker
-            id="recruitment-start"
-            required
-            value={startsAt}
-            onChange={setStartsAt}
-          />
-        </Field>
-        <Field label="Ends" htmlFor="recruitment-end" required>
-          <DatetimePicker
-            id="recruitment-end"
-            required
-            value={endsAt}
-            onChange={setEndsAt}
-          />
-        </Field>
-        <Button type="submit" color="cyan" disabled={pending}>
-          {pending ? "Saving…" : "Save dates"}
-        </Button>
-      </form>
+      {loading ? (
+        <DatetimeFieldsSkeleton />
+      ) : (
+        <form className={formClasses} onSubmit={onSubmit}>
+          <Field label="Starts" htmlFor="recruitment-start" required>
+            <DatetimePicker
+              id="recruitment-start"
+              required
+              value={startsAt}
+              onChange={setStartsAt}
+            />
+          </Field>
+          <Field label="Ends" htmlFor="recruitment-end" required>
+            <DatetimePicker
+              id="recruitment-end"
+              required
+              value={endsAt}
+              onChange={setEndsAt}
+            />
+          </Field>
+          <Button type="submit" color="cyan" disabled={pending}>
+            {pending ? "Saving…" : "Save dates"}
+          </Button>
+        </form>
+      )}
       {error ? <ActionFeedback type="error" message={error} /> : null}
       {!error && message ? (
         <ActionFeedback type="success" message={message} />

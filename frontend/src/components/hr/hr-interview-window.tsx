@@ -8,6 +8,7 @@ import { Field } from "@/components/field"
 import { patchInterviewWindow } from "@/lib/api"
 import type { InterviewWindow } from "@/lib/api-client"
 import type { InterviewSeasonBounds } from "@/lib/interview-season"
+import { DatetimeFieldsSkeleton } from "@/components/hr/datetime-fields-skeleton"
 import { glassPanelClasses } from "@/lib/surface"
 
 const panelClasses = `${glassPanelClasses} px-5 py-5`
@@ -89,27 +90,31 @@ export function HrInterviewWindow({
       <p className="mt-1 font-sans text-sm text-prelude">
         Applicant and HR interview grids only show weeks inside these dates.
       </p>
-      <form className={formClasses} onSubmit={onSubmit}>
-        <Field label="Starts" htmlFor="interview-start" required>
-          <DatetimePicker
-            id="interview-start"
-            required
-            value={startsAt}
-            onChange={setStartsAt}
-          />
-        </Field>
-        <Field label="Ends" htmlFor="interview-end" required>
-          <DatetimePicker
-            id="interview-end"
-            required
-            value={endsAt}
-            onChange={setEndsAt}
-          />
-        </Field>
-        <Button type="submit" color="cyan" disabled={pending || seasonLoading}>
-          {pending ? "Saving…" : "Save dates"}
-        </Button>
-      </form>
+      {seasonLoading ? (
+        <DatetimeFieldsSkeleton />
+      ) : (
+        <form className={formClasses} onSubmit={onSubmit}>
+          <Field label="Starts" htmlFor="interview-start" required>
+            <DatetimePicker
+              id="interview-start"
+              required
+              value={startsAt}
+              onChange={setStartsAt}
+            />
+          </Field>
+          <Field label="Ends" htmlFor="interview-end" required>
+            <DatetimePicker
+              id="interview-end"
+              required
+              value={endsAt}
+              onChange={setEndsAt}
+            />
+          </Field>
+          <Button type="submit" color="cyan" disabled={pending}>
+            {pending ? "Saving…" : "Save dates"}
+          </Button>
+        </form>
+      )}
       {displayLoadError ? (
         <ActionFeedback type="error" message={displayLoadError} />
       ) : null}
