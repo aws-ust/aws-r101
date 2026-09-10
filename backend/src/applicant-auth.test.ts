@@ -147,7 +147,7 @@ test("applicant OTP verification", async (t) => {
       email,
     });
     assert.equal(first.status, 202);
-    assert.equal(second.status, 202);
+    assert.equal(second.status, 429);
 
     const rows = await db
       .select({ id: applicantOtpChallenges.id })
@@ -170,7 +170,7 @@ test("applicant OTP verification", async (t) => {
       applicationCode,
       email,
     });
-    assert.equal(limited.status, 202);
+    assert.equal(limited.status, 429);
 
     const rows = await db
       .select({ id: applicantOtpChallenges.id })

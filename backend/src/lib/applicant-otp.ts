@@ -51,13 +51,18 @@ function generateOtp(): string {
   return randomInt(0, 1_000_000).toString().padStart(6, "0");
 }
 
+export type IssueApplicantOtpResult =
+  | { status: "issued" }
+  | { status: "unknown_identity" }
+  | { status: "throttled"; reason: "cooldown" | "hourly" };
+
 export async function issueApplicantOtp(
   applicationCode: string,
   email: string,
   now = new Date(),
-): Promise<boolean> {
+): Promise<IssueApplicantOtpResult> {
   const identity = await findApplicantIdentity(applicationCode, email);
-  if (!identity) return false;
+  if (!identity) return { status: "unknown_identity" };
 
   const windowStart = new Date(
     now.getTime() - OTP_REQUEST_WINDOW_SECONDS * 1000,
@@ -75,11 +80,11 @@ export async function issueApplicantOtp(
     .limit(OTP_MAX_REQUESTS_PER_WINDOW);
 
   const cooldownStart = new Date(now.getTime() - OTP_RESEND_SECONDS * 1000);
-  if (
-    recent.length >= OTP_MAX_REQUESTS_PER_WINDOW ||
-    (recent[0] && recent[0].createdAt > cooldownStart)
-  ) {
-    return false;
+  if (recent.length >= OTP_MAX_REQUESTS_PER_WINDOW) {
+    return { status: "throttled", reason: "hourly" };
+  }
+  if (recent[0] && recent[0].createdAt > cooldownStart) {
+    return { status: "throttled", reason: "cooldown" };
   }
 
   await db
@@ -114,7 +119,7 @@ export async function issueApplicantOtp(
   } catch (err) {
     console.error("applicant OTP email failed", err);
   }
-  return true;
+  return { status: "issued" };
 }
 
 export async function verifyApplicantOtp(
