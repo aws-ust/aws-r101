@@ -23,6 +23,7 @@ import { deleteOutlineActionClasses } from "@/lib/delete-button-classes"
 import type { Application, ApplicationDocument } from "@/lib/application-types"
 import { formatApplicantGender } from "@/lib/applicant-gender"
 import { formatDateDisplay } from "@/lib/date-local"
+import { safeExternalHref } from "@/lib/safe-external-href"
 
 const eyebrowClasses =
   "w-fit font-mono text-xs font-medium uppercase tracking-wide text-aquamarine"
@@ -46,6 +47,8 @@ const statusActionBaseClasses =
 const approveActionClasses = `${statusActionBaseClasses} border-aquamarine/80 text-aquamarine hover:border-aquamarine hover:bg-aquamarine hover:text-haiti`
 const rejectActionClasses = `${statusActionBaseClasses} border-prelude/50 text-prelude hover:border-prelude/80 hover:bg-haiti/80 hover:text-prelude`
 const missingClasses = "font-sans text-sm text-prelude"
+const linkClasses =
+  "text-aquamarine underline-offset-2 hover:text-blue-chalk hover:underline"
 
 function documentFor(
   application: Application,
@@ -104,6 +107,10 @@ export function HrApplicationDetail() {
   const second = application.choices.find((choice) => choice.preferenceRank === 2)
   const resume = documentFor(application, "resume")
   const transcript = documentFor(application, "transcript")
+  const registration = documentFor(application, "registration")
+  const facebookHref = safeExternalHref(application.facebookUrl, "facebook")
+  const portfolioHref = safeExternalHref(application.portfolioUrl, "portfolio")
+  const githubHref = safeExternalHref(application.githubUrl, "github")
 
   async function setStatus(status: "approved" | "rejected") {
     setActionError("")
@@ -165,6 +172,55 @@ export function HrApplicationDetail() {
             {application.email}
           </p>
           <p>
+            <span className={metaLabelClasses}>Student No.:</span>
+            {application.studentNumber ?? "—"}
+          </p>
+          <p>
+            <span className={metaLabelClasses}>Contact:</span>
+            {application.contactNumber ?? "—"}
+          </p>
+          <p>
+            <span className={metaLabelClasses}>Facebook:</span>
+            {facebookHref ? (
+              <a
+                href={facebookHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={linkClasses}
+              >
+                Profile
+              </a>
+            ) : (
+              "—"
+            )}
+          </p>
+          {portfolioHref ? (
+            <p>
+              <span className={metaLabelClasses}>Portfolio:</span>
+              <a
+                href={portfolioHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={linkClasses}
+              >
+                Google Drive
+              </a>
+            </p>
+          ) : null}
+          {githubHref ? (
+            <p>
+              <span className={metaLabelClasses}>GitHub:</span>
+              <a
+                href={githubHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={linkClasses}
+              >
+                Profile
+              </a>
+            </p>
+          ) : null}
+          <p>
             <span className={metaLabelClasses}>Applied:</span>
             {formatAppliedDate(application.submittedAt)}
           </p>
@@ -176,14 +232,21 @@ export function HrApplicationDetail() {
         <p className={whyBodyClasses}>{application.motivation || "—"}</p>
         <div className={downloadsClasses}>
           <Button color="cyan" className={downloadButtonClasses} disabled={!resume?.s3Key}>
-            Download Resume ({resume?.fileName ?? "—"})
+            Download CV ({resume?.fileName ?? "—"})
           </Button>
           <Button
             color="purple"
             className={downloadButtonClasses}
             disabled={!transcript?.s3Key}
           >
-            Download Transcript ({transcript?.fileName ?? "—"})
+            Download TOR ({transcript?.fileName ?? "—"})
+          </Button>
+          <Button
+            color="purple"
+            className={downloadButtonClasses}
+            disabled={!registration?.s3Key}
+          >
+            Download RegForm ({registration?.fileName ?? "—"})
           </Button>
         </div>
         <div className={statusRowClasses}>
