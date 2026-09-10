@@ -1,4 +1,8 @@
 import { ApiError } from "./api-client"
+import {
+  readApiErrorMessage,
+  userFacingApiError,
+} from "./api-error-message"
 
 const API_BASE = "/api/applicant-auth"
 
@@ -19,21 +23,17 @@ async function applicantAuthFetch<T>(
   })
 
   if (!response.ok) {
-    let message = `Request failed (${response.status})`
-    try {
-      const payload: unknown = await response.json()
-      if (
-        payload &&
-        typeof payload === "object" &&
-        "error" in payload &&
-        typeof payload.error === "string"
-      ) {
-        message = payload.error
-      }
-    } catch {
-      // Keep the status fallback when the API does not return JSON.
-    }
-    throw new ApiError(response.status, message)
+    const serverMessage = await readApiErrorMessage(response)
+    throw new ApiError(
+      response.status,
+      userFacingApiError(
+        response.status,
+        serverMessage,
+        response.status === 401
+          ? "The verification code is invalid or expired."
+          : "Could not verify your code. Try again in a moment."
+      )
+    )
   }
 
   return response.json() as Promise<T>

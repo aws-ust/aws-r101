@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import { PositionsBrowser } from "@/components/positions-browser"
 import type { Position } from "@/lib/positions"
 
@@ -83,10 +84,14 @@ export default async function PositionsPage() {
     loadError = true
     console.error("Unable to load open positions", error)
   }
+=======
+import { PositionsPageClient } from "@/components/positions-page-client"
+>>>>>>> Stashed changes
 
+export default function PositionsPage() {
   return (
     <main className="mx-auto flex w-full max-w-[1180px] flex-1 flex-col gap-10 px-4 pb-16 pt-4 md:px-10">
-      <PositionsBrowser positions={positions} loadError={loadError} />
+      <PositionsPageClient />
     </main>
   )
 }

@@ -5,6 +5,8 @@ export type DocumentType = "resume" | "transcript"
 export type Position = {
   id: string
   committee: string
+  /** Present on API rows; omitted in legacy mock fixtures. */
+  committee_id?: string
   title: string
   description: string
 }
@@ -31,6 +33,8 @@ export type Application = {
   lastName: string
   email: string
   age: number | null
+  birthday: string | null
+  gender: string | null
   section: string | null
   motivation: string
   choices: ApplicationChoice[]
@@ -42,8 +46,11 @@ export type CreateApplicationInput = {
   lastName: string
   email: string
   age: number
+  birthday: string
+  gender: string
   section: string
   motivation: string
+  slotId: string
   choices: { positionId: string; preferenceRank: 1 | 2 }[]
   documents: { documentType: DocumentType; fileName: string; s3Key: string }[]
 }

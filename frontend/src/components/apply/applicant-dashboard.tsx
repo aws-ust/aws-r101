@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ApplicantChoiceCards } from "@/components/apply/applicant-choice-cards"
+import { ApplicantInterviewScheduler } from "@/components/apply/applicant-interview-scheduler"
+import { formatDateDisplay } from "@/lib/date-local"
+import { formatApplicantGender } from "@/lib/applicant-gender"
 import { ApplicantChoiceEditor } from "@/components/apply/applicant-choice-editor"
 import { ApplicantEditBanner } from "@/components/apply/applicant-edit-banner"
 import { ApiError } from "@/lib/api-client"
@@ -121,6 +124,16 @@ export function ApplicantDashboard() {
           {application.age ?? "—"}
         </p>
         <p>
+          <span className={metaLabelClasses}>Birthday</span>
+          {application.birthday
+            ? formatDateDisplay(application.birthday, "—")
+            : "—"}
+        </p>
+        <p>
+          <span className={metaLabelClasses}>Gender</span>
+          {formatApplicantGender(application.gender)}
+        </p>
+        <p>
           <span className={metaLabelClasses}>Section</span>
           {application.section ?? "—"}
         </p>
@@ -132,6 +145,8 @@ export function ApplicantDashboard() {
       <div className="mt-8">
         <ApplicantChoiceCards first={first} second={second} />
       </div>
+
+      <ApplicantInterviewScheduler />
 
       {application.canEdit ? (
         <ApplicantChoiceEditor

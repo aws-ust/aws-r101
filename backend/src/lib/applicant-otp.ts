@@ -82,6 +82,16 @@ export async function issueApplicantOtp(
     return false;
   }
 
+  await db
+    .update(applicantOtpChallenges)
+    .set({ consumedAt: now })
+    .where(
+      and(
+        eq(applicantOtpChallenges.applicationId, identity.applicationId),
+        isNull(applicantOtpChallenges.consumedAt),
+      ),
+    );
+
   const challengeId = randomUUID();
   const code = generateOtp();
   await db.insert(applicantOtpChallenges).values({
@@ -116,33 +126,35 @@ export async function verifyApplicantOtp(
   const identity = await findApplicantIdentity(applicationCode, email);
   if (!identity) return null;
 
-  const [challenge] = await db
+  const challenges = await db
     .select()
     .from(applicantOtpChallenges)
     .where(
       and(
         eq(applicantOtpChallenges.applicationId, identity.applicationId),
         isNull(applicantOtpChallenges.consumedAt),
+        gt(applicantOtpChallenges.expiresAt, now),
+        lt(applicantOtpChallenges.attempts, OTP_MAX_ATTEMPTS),
       ),
     )
-    .orderBy(desc(applicantOtpChallenges.createdAt))
-    .limit(1);
+    .orderBy(desc(applicantOtpChallenges.createdAt));
 
-  if (
-    !challenge ||
-    challenge.expiresAt <= now ||
-    challenge.attempts >= OTP_MAX_ATTEMPTS
-  ) {
+  if (challenges.length === 0) {
     return null;
   }
 
-  if (!applicantOtpMatches(challenge.id, code, challenge.codeHash)) {
+  const matched = challenges.find((challenge) =>
+    applicantOtpMatches(challenge.id, code, challenge.codeHash),
+  );
+
+  if (!matched) {
+    const [latest] = challenges;
     await db
       .update(applicantOtpChallenges)
       .set({ attempts: sql`${applicantOtpChallenges.attempts} + 1` })
       .where(
         and(
-          eq(applicantOtpChallenges.id, challenge.id),
+          eq(applicantOtpChallenges.id, latest.id),
           isNull(applicantOtpChallenges.consumedAt),
           lt(applicantOtpChallenges.attempts, OTP_MAX_ATTEMPTS),
         ),
@@ -155,7 +167,7 @@ export async function verifyApplicantOtp(
     .set({ consumedAt: now })
     .where(
       and(
-        eq(applicantOtpChallenges.id, challenge.id),
+        eq(applicantOtpChallenges.id, matched.id),
         isNull(applicantOtpChallenges.consumedAt),
         lt(applicantOtpChallenges.attempts, OTP_MAX_ATTEMPTS),
         gt(applicantOtpChallenges.expiresAt, now),

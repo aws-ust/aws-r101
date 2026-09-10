@@ -16,6 +16,7 @@ import {
   type CommitteeOfficeGroup,
 } from "@/lib/committee-groups"
 import { fieldControlClasses } from "@/lib/surface"
+import { ApplyInterviewSlotPicker } from "@/components/apply/apply-interview-slot-picker"
 import { useOpenPositions } from "@/lib/api"
 import type { Position } from "@/lib/application-types"
 
@@ -29,6 +30,7 @@ export type CommitteeValues = {
   secondCommittee: string
   secondPositionId: string
   motivation: string
+  slotId: string
 }
 
 type CommitteeStepProps = {
@@ -136,7 +138,7 @@ export function CommitteeStep({ values, onChange }: CommitteeStepProps) {
         groups={committeeGroups}
         disabled={loading}
         onValueChange={(firstCommittee) =>
-          onChange({ firstCommittee, firstPositionId: "" })
+          onChange({ firstCommittee, firstPositionId: "", slotId: "" })
         }
       />
       <PositionSelect
@@ -146,8 +148,17 @@ export function CommitteeStep({ values, onChange }: CommitteeStepProps) {
         value={values.firstPositionId}
         positions={positions}
         disabled={loading}
-        onValueChange={(firstPositionId) => onChange({ firstPositionId })}
+        onValueChange={(firstPositionId) =>
+          onChange({ firstPositionId, slotId: "" })
+        }
       />
+      {values.firstPositionId ? (
+        <ApplyInterviewSlotPicker
+          positionId={values.firstPositionId}
+          selectedSlotId={values.slotId}
+          onSelectedSlotIdChange={(slotId) => onChange({ slotId })}
+        />
+      ) : null}
       <CommitteeSelect
         id="secondCommittee"
         label="Second Choice - Committee"

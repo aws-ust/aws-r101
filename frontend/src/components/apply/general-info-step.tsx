@@ -1,13 +1,23 @@
 "use client"
 
 import { Input } from "@/components/ui/input"
+import { DatePicker } from "@/components/ui/date-picker"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Field } from "@/components/field"
-import { cn } from "@/lib/utils"
+import { APPLICANT_GENDER_OPTIONS } from "@/lib/applicant-gender"
 import { fieldControlClasses } from "@/lib/surface"
 import { UST_EMAIL_DOMAIN } from "@/lib/constants"
 
 const gridClasses = "grid gap-5 sm:grid-cols-2"
-const ageRowClasses = "grid gap-5 sm:grid-cols-[5.5rem_1fr_1.4fr]"
+const personalRowClasses = "grid gap-5 sm:col-span-2 sm:grid-cols-3"
+const sectionEmailRowClasses = "grid gap-5 sm:grid-cols-2 sm:col-span-2"
+const selectTriggerClasses = `${fieldControlClasses} justify-between`
 const emailWrapClasses =
   "flex h-12 overflow-hidden rounded-[20px] bg-haiti/70 focus-within:ring-2 focus-within:ring-aquamarine/30"
 const emailInputClasses =
@@ -19,6 +29,8 @@ export type GeneralInfoValues = {
   firstName: string
   lastName: string
   age: string
+  birthday: string
+  gender: string
   section: string
   emailLocal: string
 }
@@ -65,7 +77,7 @@ export function GeneralInfoStep({ values, onChange }: GeneralInfoStepProps) {
           className={fieldControlClasses}
         />
       </Field>
-      <div className={cn(ageRowClasses, "sm:col-span-2")}>
+      <div className={personalRowClasses}>
         <Field label="Age" htmlFor="age" required>
           <Input
             id="age"
@@ -80,6 +92,36 @@ export function GeneralInfoStep({ values, onChange }: GeneralInfoStepProps) {
             className={fieldControlClasses}
           />
         </Field>
+        <Field label="Birthday" htmlFor="birthday" required>
+          <DatePicker
+            id="birthday"
+            required
+            value={values.birthday}
+            onChange={(birthday) => onChange({ birthday })}
+            placeholder="Select birthday"
+          />
+        </Field>
+        <Field label="Gender" htmlFor="gender" required>
+          <Select
+            value={values.gender || null}
+            onValueChange={(gender: string | null) =>
+              onChange({ gender: gender ?? "" })
+            }
+          >
+            <SelectTrigger id="gender" className={selectTriggerClasses}>
+              <SelectValue placeholder="Select gender" />
+            </SelectTrigger>
+            <SelectContent>
+              {APPLICANT_GENDER_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+      </div>
+      <div className={sectionEmailRowClasses}>
         <Field label="Year & Section" htmlFor="section" required>
           <Input
             id="section"

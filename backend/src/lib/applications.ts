@@ -12,6 +12,8 @@ import {
   generateApplicationCode,
   recruitmentYearInt,
 } from "./application-code";
+import { bookInterviewSlotForApplication } from "./interview-scheduling";
+import type { ApplicantGender } from "./applicant-gender";
 
 export type ApplicationStatus = "pending" | "approved" | "rejected";
 export type DocumentType = "resume" | "transcript";
@@ -38,6 +40,8 @@ export type ApplicationJson = {
   lastName: string;
   email: string;
   age: number | null;
+  birthday: string | null;
+  gender: ApplicantGender | null;
   section: string | null;
   motivation: string;
   choices: ApplicationChoiceJson[];
@@ -49,8 +53,11 @@ export type CreateApplicationInput = {
   lastName: string;
   email: string;
   age: number;
+  birthday: string;
+  gender: ApplicantGender;
   section: string;
   motivation: string;
+  slotId: string;
   choices: { positionId: string; preferenceRank: 1 | 2 }[];
   documents: { documentType: DocumentType; fileName: string; s3Key: string }[];
 };
@@ -111,12 +118,23 @@ type ApplicationRow = {
   lastName: string;
   email: string;
   age: number | null;
+  birthday: string | Date | null;
+  gender: ApplicantGender | null;
   section: string | null;
   motivation: string;
 };
 
 function iso(value: Date): string {
   return value.toISOString();
+}
+
+export function formatBirthday(value: string | Date | null): string | null {
+  if (value == null) return null;
+  if (typeof value === "string") return value;
+  const year = value.getUTCFullYear();
+  const month = String(value.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(value.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 async function attachRelations(
@@ -181,6 +199,8 @@ async function attachRelations(
     lastName: row.lastName,
     email: row.email,
     age: row.age,
+    birthday: formatBirthday(row.birthday),
+    gender: row.gender,
     section: row.section,
     motivation: row.motivation,
     choices: (choicesByApp.get(row.id) ?? []).sort(
@@ -199,6 +219,8 @@ const applicationSelect = {
   lastName: applicants.lastName,
   email: applicants.email,
   age: applicants.age,
+  birthday: applicants.birthday,
+  gender: applicants.gender,
   section: applicants.section,
   motivation: applications.motivation,
 };
@@ -301,6 +323,8 @@ export async function createApplication(
           lastName: input.lastName,
           email: input.email,
           age: input.age,
+          birthday: input.birthday,
+          gender: input.gender,
           section: input.section,
         })
         .returning({ id: applicants.id });
@@ -360,6 +384,17 @@ export async function createApplication(
         fileName: doc.fileName,
         s3Key: doc.s3Key,
       })),
+    );
+
+    const firstChoice = input.choices.find((choice) => choice.preferenceRank === 1);
+    if (!firstChoice) {
+      throw new Error("Application is missing a first-choice position.");
+    }
+    await bookInterviewSlotForApplication(
+      tx,
+      application.id,
+      firstChoice.positionId,
+      input.slotId,
     );
 
     return application.id;

@@ -17,6 +17,7 @@ import {
   requireAuth,
   signToken,
 } from "./auth";
+import { logApiError } from "./lib/api-errors";
 
 type Bindings = {
   event: LambdaEvent;
@@ -24,6 +25,14 @@ type Bindings = {
 };
 
 export const app = new Hono<{ Bindings: Bindings }>();
+
+app.onError((err, c) => {
+  logApiError(c, err);
+  return c.json(
+    { error: "Something went wrong. Please try again." },
+    500,
+  );
+});
 
 app.use(
   "*",

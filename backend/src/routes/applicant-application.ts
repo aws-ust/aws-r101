@@ -31,6 +31,8 @@ function parseEditBody(
     "firstName" in input ||
     "lastName" in input ||
     "age" in input ||
+    "birthday" in input ||
+    "gender" in input ||
     "section" in input ||
     "motivation" in input
   ) {

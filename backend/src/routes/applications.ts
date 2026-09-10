@@ -15,8 +15,30 @@ import {
   listEmailNotificationsByApplicationId,
   sendApplicationSubmitted,
 } from "../lib/email/service";
+import { parseApplicantGender } from "../lib/applicant-gender";
 
 export const applicationsRoutes = new Hono();
+
+const BIRTHDAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function parseBirthday(value: unknown): string | null {
+  if (!isNonEmptyString(value)) return null;
+  const trimmed = value.trim();
+  if (!BIRTHDAY_RE.test(trimmed)) return null;
+  const [year, month, day] = trimmed.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (date > today) return null;
+  return trimmed;
+}
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -52,6 +74,23 @@ function parseCreateBody(
 
   if (!Number.isInteger(input.age) || (input.age as number) <= 0) {
     return { ok: false, error: "age must be a positive integer." };
+  }
+
+  const birthday = parseBirthday(input.birthday);
+  if (!birthday) {
+    return {
+      ok: false,
+      error: "birthday must be a valid date (YYYY-MM-DD) that is not in the future.",
+    };
+  }
+
+  const gender = parseApplicantGender(input.gender);
+  if (!gender) {
+    return {
+      ok: false,
+      error:
+        "gender must be one of: male, female, non_binary, prefer_not_to_say.",
+    };
   }
 
   if (!Array.isArray(input.choices) || input.choices.length !== 2) {
@@ -122,6 +161,10 @@ function parseCreateBody(
     };
   }
 
+  if (!isNonEmptyString(input.slotId) || !isUuid(input.slotId as string)) {
+    return { ok: false, error: "slotId must be a UUID." };
+  }
+
   return {
     ok: true,
     value: {
@@ -129,8 +172,11 @@ function parseCreateBody(
       lastName: input.lastName.trim(),
       email: input.email.trim(),
       age: input.age as number,
+      birthday,
+      gender,
       section: input.section.trim(),
       motivation: input.motivation.trim(),
+      slotId: (input.slotId as string).trim(),
       choices,
       documents,
     },

@@ -14,7 +14,6 @@ import {
 } from "@/components/hr/application-pagination-utils"
 import { ApplicationRow } from "@/components/hr/application-row"
 import { HrDeleteApplicantDialog } from "@/components/hr/hr-delete-applicant-dialog"
-import { HrRecruitmentWindow } from "@/components/hr/hr-recruitment-window"
 import { fullName, hasCommittee, useApplications } from "@/lib/api"
 import { pageShellClasses } from "@/lib/surface"
 import type { Application } from "@/lib/application-types"
@@ -75,7 +74,6 @@ export function HrApplicationList() {
         title="Applications Results"
         subtitle="Every R101 application so far."
       />
-      <HrRecruitmentWindow />
       {feedback ? (
         <ActionFeedback type={feedback.type} message={feedback.message} />
       ) : null}

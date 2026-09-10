@@ -9,6 +9,7 @@ import {
   requireApplicantAuth,
   signApplicantToken,
 } from "../applicant-auth";
+import { unavailableApiError } from "../lib/api-errors";
 import { issueApplicantOtp, verifyApplicantOtp } from "../lib/applicant-otp";
 
 export const applicantAuthRoutes = new Hono();
@@ -56,8 +57,12 @@ applicantAuthRoutes.post("/request-code", async (c) => {
     await issueApplicantOtp(identity.applicationCode, identity.email);
     return c.json({ message: REQUEST_MESSAGE }, 202);
   } catch (err) {
-    console.error("applicant OTP request failed", err);
-    return c.json({ error: "Applicant verification is unavailable." }, 503);
+    return unavailableApiError(
+      c,
+      err,
+      "applicant OTP request",
+      "Applicant verification is unavailable. Try again in a moment.",
+    );
   }
 });
 
@@ -95,8 +100,12 @@ applicantAuthRoutes.post("/verify-code", async (c) => {
       expiresAt: signed.expiresAt,
     });
   } catch (err) {
-    console.error("applicant OTP verification failed", err);
-    return c.json({ error: "Applicant verification is unavailable." }, 503);
+    return unavailableApiError(
+      c,
+      err,
+      "applicant OTP verify",
+      "Applicant verification is unavailable. Try again in a moment.",
+    );
   }
 });
 

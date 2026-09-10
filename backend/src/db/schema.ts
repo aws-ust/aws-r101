@@ -7,6 +7,7 @@ import {
   text,
   integer,
   boolean,
+  date,
   timestamp,
   check,
   unique,
@@ -36,6 +37,12 @@ export const emailDeliveryStatus = pgEnum("email_delivery_status", [
   "pending",
   "sent",
   "failed",
+]);
+export const applicantGender = pgEnum("applicant_gender", [
+  "male",
+  "female",
+  "non_binary",
+  "prefer_not_to_say",
 ]);
 
 export const users = pgTable(
@@ -67,6 +74,8 @@ export const applicants = pgTable(
     lastName: varchar("last_name", { length: 100 }).notNull(),
     email: varchar({ length: 255 }).notNull(),
     age: integer(),
+    birthday: date("birthday"),
+    gender: applicantGender("gender"),
     section: varchar({ length: 50 }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

@@ -21,6 +21,8 @@ import {
 } from "@/lib/surface"
 import { deleteOutlineActionClasses } from "@/lib/delete-button-classes"
 import type { Application, ApplicationDocument } from "@/lib/application-types"
+import { formatApplicantGender } from "@/lib/applicant-gender"
+import { formatDateDisplay } from "@/lib/date-local"
 
 const eyebrowClasses =
   "w-fit font-mono text-xs font-medium uppercase tracking-wide text-aquamarine"
@@ -147,6 +149,16 @@ export function HrApplicationDetail() {
           <p>
             <span className={metaLabelClasses}>Age:</span>
             {application.age ?? "—"}
+          </p>
+          <p>
+            <span className={metaLabelClasses}>Birthday:</span>
+            {application.birthday
+              ? formatDateDisplay(application.birthday, "—")
+              : "—"}
+          </p>
+          <p>
+            <span className={metaLabelClasses}>Gender:</span>
+            {formatApplicantGender(application.gender)}
           </p>
           <p>
             <span className={metaLabelClasses}>Email:</span>

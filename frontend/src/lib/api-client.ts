@@ -3,7 +3,15 @@ import type {
   ApplicationStatus,
   CreateApplicationInput,
   Position,
+<<<<<<< Updated upstream
 } from "./application-types";
+=======
+} from "./application-types"
+import {
+  readApiErrorMessage,
+  userFacingApiError,
+} from "./api-error-message"
+>>>>>>> Stashed changes
 
 const API_BASE = "/api";
 
@@ -37,6 +45,7 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     if (response.status === 401 && path !== "/auth/login") {
       redirectToLogin();
     }
+<<<<<<< Updated upstream
     let message = `Request failed (${response.status})`;
     try {
       const body: unknown = await response.json();
@@ -52,6 +61,13 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
       // keep the status fallback
     }
     throw new ApiError(response.status, message);
+=======
+    const serverMessage = await readApiErrorMessage(response)
+    throw new ApiError(
+      response.status,
+      userFacingApiError(response.status, serverMessage)
+    )
+>>>>>>> Stashed changes
   }
 
   if (response.status === 204) return undefined as T;
@@ -89,8 +105,151 @@ export function deleteApplicationRequest(id: string) {
   return apiFetch<void>(`/applications/${id}`, { method: "DELETE" });
 }
 
+type PositionApiRow = {
+  id: string
+  title: string
+  office: string
+  committee: string
+  committee_id: string
+  committeeDescription: string
+  description: string
+  responsibilities: string
+  isOpen: boolean
+}
+
+export type BrowserPosition = {
+  id: string
+  title: string
+  office: string
+  committee: string
+  committeeDescription: string
+  description: string
+  responsibilities: string[]
+  isOpen: boolean
+}
+
+let openPositionsCache: Position[] | null = null
+let browserPositionsCache: BrowserPosition[] | null = null
+let positionsInflight: Promise<void> | null = null
+
+function mapOpenPosition(row: PositionApiRow): Position {
+  return {
+    id: row.id,
+    committee: row.committee,
+    committee_id: row.committee_id,
+    title: row.title,
+    description: row.description ?? "",
+  }
+}
+
+function mapBrowserPosition(row: PositionApiRow): BrowserPosition {
+  return {
+    id: row.id,
+    title: row.title,
+    office: row.office,
+    committee: row.committee,
+    committeeDescription: row.committeeDescription,
+    description: row.description,
+    responsibilities: row.responsibilities
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean),
+    isOpen: row.isOpen,
+  }
+}
+
+function ensurePositionsLoaded() {
+  if (openPositionsCache && browserPositionsCache) {
+    return Promise.resolve()
+  }
+  if (positionsInflight) return positionsInflight
+  positionsInflight = apiFetch<PositionApiRow[]>("/positions")
+    .then((rows) => {
+      openPositionsCache = rows.map(mapOpenPosition)
+      browserPositionsCache = rows.map(mapBrowserPosition)
+    })
+    .finally(() => {
+      positionsInflight = null
+    })
+  return positionsInflight
+}
+
+export function peekOpenPositions() {
+  return openPositionsCache
+}
+
+export function peekBrowserPositions() {
+  return browserPositionsCache
+}
+
 export function listOpenPositions() {
+<<<<<<< Updated upstream
   return apiFetch<Position[]>("/positions");
+=======
+  return ensurePositionsLoaded().then(() => openPositionsCache ?? [])
+}
+
+export function listBrowserPositions() {
+  return ensurePositionsLoaded().then(() => browserPositionsCache ?? [])
+}
+
+export type PositionInterviewSlots = {
+  committee: { id: string; name: string }
+  slots: { id: string; startsAt: string; endsAt: string }[]
+}
+
+export function listPositionInterviewSlots(positionId: string) {
+  return apiFetch<PositionInterviewSlots>(
+    `/positions/${encodeURIComponent(positionId)}/interview-slots`
+  )
+}
+
+export type HrInterviewSlotBooking = {
+  id: string
+  applicationId: string
+  applicationCode: string
+  applicantName: string
+}
+
+export type HrInterviewSlot = {
+  id: string
+  committeeId: string
+  committeeName: string
+  startsAt: string
+  endsAt: string
+  isOpen: boolean
+  isAvailable: boolean
+  booking: HrInterviewSlotBooking | null
+}
+
+export function listInterviewSlots(params: {
+  committeeId: string
+  from: string
+  to: string
+}) {
+  const query = new URLSearchParams({
+    committeeId: params.committeeId,
+    from: params.from,
+    to: params.to,
+  })
+  return apiFetch<{ slots: HrInterviewSlot[] }>(
+    `/interview-slots?${query.toString()}`
+  ).then((body) => body.slots)
+}
+
+export function createInterviewSlot(committeeId: string, startsAt: string) {
+  return apiFetch<HrInterviewSlot>("/interview-slots", {
+    method: "POST",
+    body: JSON.stringify({ committeeId, startsAt }),
+  })
+}
+
+export function patchInterviewSlotOpen(id: string, isOpen: boolean) {
+  return apiFetch<HrInterviewSlot>(`/interview-slots/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ isOpen }),
+  })
+>>>>>>> Stashed changes
 }
 
 export type RecruitmentWindow = {

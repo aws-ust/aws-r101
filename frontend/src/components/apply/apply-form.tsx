@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useState } from "react"
 import Link from "next/link"
 import { AnimatePresence, LazyMotion, domAnimation, m, useReducedMotion } from "motion/react"
 import { Button } from "@/components/ui/button"
@@ -94,24 +94,20 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
   const [applicationCode, setApplicationCode] = useState("")
   const [draftReady, setDraftReady] = useState(false)
 
-  useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      const draft = loadApplyFormDraft()
-      if (draft) {
-        setGeneral(draft.general)
-        setCommittee(draft.committee)
-        setStep(draft.step)
-        setUpload({
-          resume: null,
-          transcript: null,
-          resumeDisplayName: draft.resumeName,
-          transcriptDisplayName: draft.transcriptName,
-        })
-      }
-      setDraftReady(true)
-    })
-
-    return () => window.cancelAnimationFrame(frame)
+  useLayoutEffect(() => {
+    const draft = loadApplyFormDraft()
+    if (draft) {
+      setGeneral(draft.general)
+      setCommittee(draft.committee)
+      setStep(draft.step)
+      setUpload({
+        resume: null,
+        transcript: null,
+        resumeDisplayName: draft.resumeName,
+        transcriptDisplayName: draft.transcriptName,
+      })
+    }
+    setDraftReady(true)
   }, [])
 
   useEffect(() => {

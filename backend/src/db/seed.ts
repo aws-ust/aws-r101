@@ -116,10 +116,42 @@ async function main() {
   const positionIdByName = new Map(positionRows.map((p) => [p.name, p.id]));
 
   const applicantSeeds = [
-    { firstName: "Ana", lastName: "Cruz", email: "ana.cruz@example.com", age: 20, section: "BSCS-3A" },
-    { firstName: "Ben", lastName: "Santos", email: "ben.santos@example.com", age: 21, section: "BSIT-3B" },
-    { firstName: "Carla", lastName: "Mendoza", email: "carla.mendoza@example.com", age: 19, section: "BSCS-2A" },
-    { firstName: "Dario", lastName: "Aquino", email: "dario.aquino@example.com", age: 22, section: "BSIT-4A" },
+    {
+      firstName: "Ana",
+      lastName: "Cruz",
+      email: "ana.cruz@example.com",
+      age: 20,
+      birthday: "2006-03-14",
+      gender: "female" as const,
+      section: "BSCS-3A",
+    },
+    {
+      firstName: "Ben",
+      lastName: "Santos",
+      email: "ben.santos@example.com",
+      age: 21,
+      birthday: "2005-07-22",
+      gender: "male" as const,
+      section: "BSIT-3B",
+    },
+    {
+      firstName: "Carla",
+      lastName: "Mendoza",
+      email: "carla.mendoza@example.com",
+      age: 19,
+      birthday: "2007-01-08",
+      gender: "female" as const,
+      section: "BSCS-2A",
+    },
+    {
+      firstName: "Dario",
+      lastName: "Aquino",
+      email: "dario.aquino@example.com",
+      age: 22,
+      birthday: "2004-11-30",
+      gender: "male" as const,
+      section: "BSIT-4A",
+    },
   ];
 
   const existingApplicants = await db.select().from(applicants);
@@ -127,6 +159,17 @@ async function main() {
   const newApplicantSeeds = applicantSeeds.filter((a) => !existingEmails.has(a.email));
   if (newApplicantSeeds.length > 0) {
     await db.insert(applicants).values(newApplicantSeeds);
+  }
+
+  for (const seed of applicantSeeds) {
+    await db
+      .update(applicants)
+      .set({
+        birthday: seed.birthday,
+        age: seed.age,
+        gender: seed.gender,
+      })
+      .where(eq(applicants.email, seed.email));
   }
 
   const applicantRows = await db.select().from(applicants);

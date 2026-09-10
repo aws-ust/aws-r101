@@ -223,6 +223,121 @@ export async function setInterviewSlotOpen(id: string, isOpen: boolean) {
   });
 }
 
+export async function listOpenInterviewSlotsForPosition(positionId: string) {
+  const [position] = await db
+    .select({
+      isOpen: positions.isOpen,
+      committeeId: committees.id,
+      committeeName: committees.name,
+    })
+    .from(positions)
+    .innerJoin(committees, eq(positions.committeeId, committees.id))
+    .where(eq(positions.id, positionId))
+    .limit(1);
+
+  if (!position || !position.isOpen) {
+    throw new InterviewScheduleError(
+      "position_not_found",
+      "The selected position is not available.",
+    );
+  }
+
+  const slots = await db
+    .select({
+      id: interviewSlots.id,
+      startsAt: interviewSlots.startsAt,
+    })
+    .from(interviewSlots)
+    .leftJoin(
+      interviewBookings,
+      eq(interviewBookings.slotId, interviewSlots.id),
+    )
+    .where(
+      and(
+        eq(interviewSlots.committeeId, position.committeeId),
+        eq(interviewSlots.isOpen, true),
+        gt(interviewSlots.startsAt, new Date()),
+        isNull(interviewBookings.id),
+      ),
+    )
+    .orderBy(asc(interviewSlots.startsAt));
+
+  return {
+    committee: {
+      id: position.committeeId,
+      name: position.committeeName,
+    },
+    slots: slots.map((slot) => ({
+      id: slot.id,
+      startsAt: slot.startsAt.toISOString(),
+      endsAt: endAt(slot.startsAt),
+    })),
+  };
+}
+
+type DbExecutor = Pick<typeof db, "select" | "insert">;
+
+export async function bookInterviewSlotForApplication(
+  tx: DbExecutor,
+  applicationId: string,
+  firstChoicePositionId: string,
+  slotId: string,
+) {
+  const [position] = await tx
+    .select({ committeeId: positions.committeeId })
+    .from(positions)
+    .where(eq(positions.id, firstChoicePositionId))
+    .limit(1);
+
+  if (!position) {
+    throw new InterviewScheduleError(
+      "position_not_found",
+      "The first-choice position is not available.",
+    );
+  }
+
+  const [slot] = await tx
+    .select({
+      id: interviewSlots.id,
+      committeeId: interviewSlots.committeeId,
+      startsAt: interviewSlots.startsAt,
+      isOpen: interviewSlots.isOpen,
+    })
+    .from(interviewSlots)
+    .where(eq(interviewSlots.id, slotId))
+    .limit(1);
+
+  if (!slot) {
+    throw new InterviewScheduleError("slot_not_found", "Slot not found.");
+  }
+  if (slot.committeeId !== position.committeeId) {
+    throw new InterviewScheduleError(
+      "wrong_committee",
+      "Choose a slot for your first-choice committee.",
+    );
+  }
+  if (!slot.isOpen || slot.startsAt.getTime() <= Date.now()) {
+    throw new InterviewScheduleError(
+      "slot_unavailable",
+      "This interview slot is no longer available.",
+    );
+  }
+
+  const [occupied] = await tx
+    .select({ id: interviewBookings.id })
+    .from(interviewBookings)
+    .where(eq(interviewBookings.slotId, slotId))
+    .limit(1);
+  if (occupied) {
+    throw new InterviewScheduleError(
+      "slot_unavailable",
+      "This interview slot was already booked.",
+    );
+  }
+
+  await tx.insert(interviewBookings).values({ applicationId, slotId });
+}
+
 export async function getApplicantInterviewSchedule(
   applicationId: string,
   positionId?: string,

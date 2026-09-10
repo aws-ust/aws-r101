@@ -271,11 +271,35 @@ if [[ -z "$POS1" || -z "$POS2" ]]; then
 else
   SECTION="SMOKE-$(date +%s)"
   EMAIL="smoke.$SECTION@example.com"
+  SLOT_ID=""
+  if [[ -n "$token" && -n "$committee_id" ]]; then
+    SLOT_START=$(node -e "
+      const d = new Date();
+      d.setDate(d.getDate() + 7);
+      d.setHours(9, 0, 0, 0);
+      console.log(d.toISOString());
+    ")
+    request POST "/interview-slots" "{\"committeeId\":\"$committee_id\",\"startsAt\":\"$SLOT_START\"}" "$token"
+    expect "POST /interview-slots for application smoke" 201
+    if [[ "$LAST_STATUS" == "201" ]]; then
+      SLOT_ID=$(json_field id || true)
+    fi
+  fi
+
+  if [[ -z "$SLOT_ID" ]]; then
+    echo "FAIL  need interview slot id for POST /applications smoke"
+    fail=$((fail + 1))
+  else
+    request GET "/positions/$POS1/interview-slots"
+    expect "GET  /positions/:id/interview-slots" 200
+  fi
+
   CREATE_BODY=$(cat <<EOF
-{"firstName":"Smoke","lastName":"Test","email":"$EMAIL","age":21,"section":"$SECTION","motivation":"Smoke test why join.","choices":[{"positionId":"$POS1","preferenceRank":1},{"positionId":"$POS2","preferenceRank":2}],"documents":[{"documentType":"resume","fileName":"resume.pdf","s3Key":"dev/resume.pdf"},{"documentType":"transcript","fileName":"tor.pdf","s3Key":"dev/transcript.pdf"}]}
+{"firstName":"Smoke","lastName":"Test","email":"$EMAIL","age":21,"birthday":"2005-04-12","gender":"male","section":"$SECTION","motivation":"Smoke test why join.","slotId":"$SLOT_ID","choices":[{"positionId":"$POS1","preferenceRank":1},{"positionId":"$POS2","preferenceRank":2}],"documents":[{"documentType":"resume","fileName":"resume.pdf","s3Key":"dev/resume.pdf"},{"documentType":"transcript","fileName":"tor.pdf","s3Key":"dev/transcript.pdf"}]}
 EOF
 )
 
+  if [[ -n "$SLOT_ID" ]]; then
   request POST "/applications" "$CREATE_BODY"
   expect "POST /applications" 201
   APP_ID=""
@@ -381,6 +405,7 @@ EOF
 
   request DELETE "/applications/$UNKNOWN_ID" "" "$token"
   expect "DELETE /applications/:id unknown" 404
+  fi
 fi
 
 request POST "/uploads/presign"

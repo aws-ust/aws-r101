@@ -159,6 +159,8 @@ test("interview scheduling backend", async (t) => {
       lastName: "Applicant",
       email: `schedule-${runId}-${index + 1}@ust.edu.ph`,
       age: 20,
+      birthday: "2005-06-15",
+      gender: "male" as const,
       section: "TEST-1",
     })),
   );

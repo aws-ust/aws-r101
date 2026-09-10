@@ -22,6 +22,8 @@ function isGeneral(values: unknown): values is GeneralInfoValues {
     typeof v.firstName === "string" &&
     typeof v.lastName === "string" &&
     typeof v.age === "string" &&
+    typeof (v.birthday ?? "") === "string" &&
+    typeof (v.gender ?? "") === "string" &&
     typeof v.section === "string" &&
     typeof v.emailLocal === "string"
   )
@@ -35,7 +37,8 @@ function isCommittee(values: unknown): values is CommitteeValues {
     typeof v.firstPositionId === "string" &&
     typeof v.secondCommittee === "string" &&
     typeof v.secondPositionId === "string" &&
-    typeof v.motivation === "string"
+    typeof v.motivation === "string" &&
+    (typeof v.slotId === "string" || v.slotId === undefined)
   )
 }
 
@@ -54,8 +57,15 @@ export function loadApplyFormDraft(): ApplyFormDraft | null {
     }
     return {
       step: parsed.step,
-      general: parsed.general,
-      committee: parsed.committee,
+      general: {
+        ...parsed.general,
+        birthday: parsed.general.birthday ?? "",
+        gender: parsed.general.gender ?? "",
+      },
+      committee: {
+        ...parsed.committee,
+        slotId: parsed.committee.slotId ?? "",
+      },
       resumeName:
         typeof parsed.resumeName === "string" ? parsed.resumeName : undefined,
       transcriptName:

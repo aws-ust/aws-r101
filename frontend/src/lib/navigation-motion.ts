@@ -61,3 +61,18 @@ export function pageEnterOffset(
   if (reducedMotion) return 0
   return direction * NAV_SLIDE_DISTANCE
 }
+
+const APPLY_FLOW_TAB_PREFIXES = [
+  "/apply/positions",
+  "/apply/form",
+  "/apply/status",
+]
+
+export function isApplyFlowTabPath(pathname: string) {
+  if (pathname === "/apply") return true
+  return APPLY_FLOW_TAB_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+}
+
+export function isApplyFlowTabSwitch(previousPath: string, nextPath: string) {
+  return isApplyFlowTabPath(previousPath) && isApplyFlowTabPath(nextPath)
+}

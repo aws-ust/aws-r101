@@ -12,6 +12,7 @@ import {
   getApplicationById,
   listApplications,
   listOpenPositions,
+  peekOpenPositions,
   patchApplicationStatusRequest,
   postApplication,
 } from "./api-client"
@@ -22,10 +23,21 @@ export {
   login,
   logout,
   listOpenPositions,
+  listBrowserPositions,
+  listPositionInterviewSlots,
+  peekOpenPositions,
+  peekBrowserPositions,
   getRecruitmentWindow,
   patchRecruitmentWindow,
+  listInterviewSlots,
+  createInterviewSlot,
+  patchInterviewSlotOpen,
 } from "./api-client"
-export type { RecruitmentWindow } from "./api-client"
+export type {
+  RecruitmentWindow,
+  HrInterviewSlot,
+  HrInterviewSlotBooking,
+} from "./api-client"
 
 export function useApplications() {
   const [applications, setApplications] = useState<Application[]>([])
@@ -110,8 +122,9 @@ export function useApplication(id: string | undefined) {
 }
 
 export function useOpenPositions() {
-  const [positions, setPositions] = useState<Position[]>([])
-  const [loading, setLoading] = useState(true)
+  const cached = peekOpenPositions()
+  const [positions, setPositions] = useState<Position[]>(cached ?? [])
+  const [loading, setLoading] = useState(!cached)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -141,6 +154,7 @@ export function useOpenPositions() {
 
 export async function createApplication(
   input: Omit<CreateApplicationInput, "documents"> & {
+    slotId: string
     documents: { documentType: DocumentType; fileName: string }[]
   }
 ): Promise<Application> {
@@ -149,8 +163,11 @@ export async function createApplication(
     lastName: input.lastName,
     email: input.email,
     age: input.age,
+    birthday: input.birthday,
+    gender: input.gender,
     section: input.section,
     motivation: input.motivation,
+    slotId: input.slotId,
     choices: input.choices,
     documents: input.documents.map((doc) => ({
       documentType: doc.documentType,

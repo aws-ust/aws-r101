@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Field } from "@/components/field"
 import {
@@ -14,11 +14,8 @@ import {
 } from "@/components/ui/select"
 import { groupedCommitteesForPicker } from "@/lib/committee-groups"
 import { useOpenPositions } from "@/lib/api"
-import {
-  getApplicantInterviewSlots,
-  type ApplicantApplication,
-  type ApplicantInterviewSlot,
-} from "@/lib/applicant-api"
+import { ApplicantInterviewScheduler } from "@/components/apply/applicant-interview-scheduler"
+import type { ApplicantApplication } from "@/lib/applicant-api"
 import { fieldControlClasses } from "@/lib/surface"
 
 const stackClasses = "mt-6 flex flex-col gap-4"
@@ -35,13 +32,6 @@ type ApplicantChoiceEditorProps = {
     choices: { positionId: string; preferenceRank: 1 | 2 }[]
     slotId?: string
   }) => void
-}
-
-function formatSlot(slot: ApplicantInterviewSlot) {
-  return new Date(slot.startsAt).toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  })
 }
 
 export function ApplicantChoiceEditor({
@@ -61,7 +51,6 @@ export function ApplicantChoiceEditor({
   const [secondCommittee, setSecondCommittee] = useState(second?.committee ?? "")
   const [secondPositionId, setSecondPositionId] = useState(second?.positionId ?? "")
   const [slotId, setSlotId] = useState("")
-  const [slots, setSlots] = useState<ApplicantInterviewSlot[]>([])
   const [slotsError, setSlotsError] = useState("")
 
   const firstPositions = positions.filter((p) => p.committee === firstCommittee)
@@ -75,30 +64,8 @@ export function ApplicantChoiceEditor({
     application.choices.find((choice) => choice.positionId === secondPositionId)
       ?.title
   const committeeChanged =
-    Boolean(first?.committee) && firstCommittee !== first.committee
+    Boolean(first?.committee) && firstCommittee !== first?.committee
   const needsSlot = committeeChanged && Boolean(firstPositionId)
-
-  useEffect(() => {
-    if (!needsSlot || !firstPositionId) return
-
-    let cancelled = false
-    getApplicantInterviewSlots(firstPositionId)
-      .then((schedule) => {
-        if (cancelled) return
-        setSlots(schedule.slots)
-        setSlotsError(schedule.lockReason ?? "")
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return
-        setSlots([])
-        setSlotsError(
-          err instanceof Error ? err.message : "Could not load interview slots."
-        )
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [needsSlot, firstPositionId])
 
   const canSubmit = useMemo(() => {
     if (!firstPositionId || !secondPositionId) return false
@@ -129,7 +96,6 @@ export function ApplicantChoiceEditor({
             setFirstCommittee(value ?? "")
             setFirstPositionId("")
             setSlotId("")
-            setSlots([])
             setSlotsError("")
           }}
         >
@@ -219,23 +185,21 @@ export function ApplicantChoiceEditor({
         </Select>
       </Field>
       {needsSlot ? (
-        <Field label="Interview slot for new first-choice committee" htmlFor="dash-slot">
-          <Select
-            value={slotId || null}
-            disabled={slots.length === 0}
-            onValueChange={(value: string | null) => setSlotId(value ?? "")}
-          >
-            <SelectTrigger id="dash-slot" className={triggerClasses}>
-              <SelectValue placeholder="Select a slot" />
-            </SelectTrigger>
-            <SelectContent>
-              {slots.map((slot) => (
-                <SelectItem key={slot.id} value={slot.id}>
-                  {formatSlot(slot)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <Field label="Interview slot for new first-choice committee">
+          <ApplicantInterviewScheduler
+            compact
+            previewMode
+            positionId={firstPositionId}
+            selectedSlotId={slotId}
+            onSelectedSlotIdChange={setSlotId}
+            onScheduleLoaded={(schedule) => {
+              setSlotsError(
+                schedule.canSchedule
+                  ? ""
+                  : schedule.lockReason ?? "Pick an open interview slot."
+              )
+            }}
+          />
         </Field>
       ) : null}
       {error || (needsSlot ? slotsError : "") ? (

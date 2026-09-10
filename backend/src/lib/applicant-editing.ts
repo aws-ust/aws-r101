@@ -11,6 +11,7 @@ import {
   positions,
 } from "../db/schema";
 import { resolveApplicantEditEligibility } from "./applicant-edit-policy";
+import { formatBirthday } from "./applications";
 
 export type ApplicantChoiceInput = {
   positionId: string;
@@ -64,6 +65,8 @@ export async function getApplicantEditableApplication(applicationId: string) {
       lastName: applicants.lastName,
       email: applicants.email,
       age: applicants.age,
+      birthday: applicants.birthday,
+      gender: applicants.gender,
       section: applicants.section,
       motivation: applications.motivation,
     })
@@ -104,6 +107,8 @@ export async function getApplicantEditableApplication(applicationId: string) {
     lastName: application.lastName,
     email: application.email,
     age: application.age,
+    birthday: formatBirthday(application.birthday),
+    gender: application.gender,
     section: application.section,
     motivation: application.motivation,
     choices: choices
