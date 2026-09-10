@@ -26,17 +26,18 @@ import {
   createInterviewSlot,
   listInterviewSlots,
   patchInterviewSlotOpen,
+  resetInterviewSchedule,
   useOpenPositions,
   type HrInterviewSlot,
 } from "@/lib/api"
 import { groupedCommitteesForPicker } from "@/lib/committee-groups"
+import type { InterviewSeasonBounds } from "@/lib/interview-season"
 import {
   addDays,
   canGoNextWeek,
   canGoPrevWeek,
   clampWeekStart,
   formatWeekRange,
-  getInterviewSeasonBounds,
   slotKey,
   slotKeyFromIso,
   slotStartsAt,
@@ -48,18 +49,13 @@ import {
 } from "@/lib/interview-season"
 import { fieldControlClasses, glassPanelClasses } from "@/lib/surface"
 
-const panelClasses = `${glassPanelClasses} mt-8 px-5 py-5`
+const panelClasses = `${glassPanelClasses} px-5 py-5`
 const toolbarClasses = "mt-4 flex flex-wrap items-end justify-between gap-4"
 const weekNavClasses = "flex flex-wrap items-center gap-2"
 const weekLabelClasses = "min-w-[10rem] text-center font-sans text-sm text-blue-chalk"
 const navButtonClasses = "h-9 px-4 text-xs"
 const hintClasses = "mt-2 font-sans text-sm text-prelude"
 const seasonClasses = "font-mono text-xs text-aquamarine"
-
-type CloseTarget = {
-  slot: HrInterviewSlot
-  startsAt: Date
-}
 
 function committeeOptions(
   positions: { committee: string; committee_id?: string }[]
@@ -115,33 +111,57 @@ function buildHrCells(
   return cells
 }
 
-export function HrInterviewGrid() {
+function upsertSlot(slots: HrInterviewSlot[], next: HrInterviewSlot) {
+  const index = slots.findIndex((slot) => slot.id === next.id)
+  if (index === -1) return [...slots, next]
+  const copy = [...slots]
+  copy[index] = next
+  return copy
+}
+
+type HrInterviewGridProps = {
+  seasonBounds: InterviewSeasonBounds
+  seasonLoading: boolean
+  seasonConfigured: boolean
+}
+
+export function HrInterviewGrid({
+  seasonBounds,
+  seasonLoading,
+  seasonConfigured,
+}: HrInterviewGridProps) {
   const { positions, committees, loading: positionsLoading } = useOpenPositions()
   const committeeIds = useMemo(() => committeeOptions(positions), [positions])
   const groups = groupedCommitteesForPicker(committees)
 
   const [committeeName, setCommitteeName] = useState("")
-  const [weekStart, setWeekStart] = useState(() =>
-    clampWeekStart(startOfWeek(new Date()))
-  )
+  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
   const [slots, setSlots] = useState<HrInterviewSlot[]>([])
   const [loading, setLoading] = useState(false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
-  const [closeTarget, setCloseTarget] = useState<CloseTarget | null>(null)
+  const [resetOpen, setResetOpen] = useState(false)
 
   const committeeId = committeeName ? committeeIds.get(committeeName) : undefined
-  const days = useMemo(() => weekDaysInSeason(weekStart), [weekStart])
+  const days = useMemo(
+    () => weekDaysInSeason(weekStart, seasonBounds),
+    [weekStart, seasonBounds]
+  )
   const weekLabel = formatWeekRange(weekStart, days)
   const cells = useMemo(() => buildHrCells(days, slots), [days, slots])
 
+  useEffect(() => {
+    if (!seasonBounds) return
+    setWeekStart((current) => clampWeekStart(current, seasonBounds))
+  }, [seasonBounds])
+
   const loadSlots = useCallback(async () => {
-    if (!committeeId) {
+    if (!committeeId || !seasonConfigured) {
       setSlots([])
       return
     }
-    setLoading(true)
+    if (slots.length === 0) setLoading(true)
     setError("")
     try {
       const range = weekQueryRange(weekStart, days)
@@ -160,7 +180,7 @@ export function HrInterviewGrid() {
     } finally {
       setLoading(false)
     }
-  }, [committeeId, days, weekStart])
+  }, [committeeId, days, seasonConfigured, weekStart])
 
   useEffect(() => {
     void loadSlots()
@@ -170,18 +190,40 @@ export function HrInterviewGrid() {
     if (!committeeId) return
     setPending(true)
     setError("")
-    setSuccess("")
     try {
-      if (existing) {
-        await patchInterviewSlotOpen(existing.id, true)
-        setSuccess("Slot reopened.")
-      } else {
-        await createInterviewSlot(committeeId, startsAt.toISOString())
-        setSuccess("Slot opened.")
-      }
-      await loadSlots()
+      const next = existing
+        ? await patchInterviewSlotOpen(existing.id, true)
+        : await createInterviewSlot(committeeId, startsAt.toISOString())
+      setSlots((current) => upsertSlot(current, next))
+      setSuccess(existing ? "Slot reopened." : "Slot opened.")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not open slot.")
+    } finally {
+      setPending(false)
+    }
+  }
+
+  async function resetSchedule() {
+    if (!committeeId) return
+    setPending(true)
+    setError("")
+    try {
+      const result = await resetInterviewSchedule(committeeId)
+      const parts = [
+        `Removed ${result.deletedSlots} slot${result.deletedSlots === 1 ? "" : "s"}.`,
+      ]
+      if (result.deletedBookings > 0) {
+        parts.push(
+          `${result.deletedBookings} applicant booking${result.deletedBookings === 1 ? "" : "s"} cleared.`
+        )
+      }
+      setSuccess(parts.join(" "))
+      setResetOpen(false)
+      await loadSlots()
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not reset the schedule."
+      )
     } finally {
       setPending(false)
     }
@@ -190,12 +232,10 @@ export function HrInterviewGrid() {
   async function closeSlot(slot: HrInterviewSlot) {
     setPending(true)
     setError("")
-    setSuccess("")
     try {
-      await patchInterviewSlotOpen(slot.id, false)
+      const next = await patchInterviewSlotOpen(slot.id, false)
+      setSlots((current) => upsertSlot(current, next))
       setSuccess("Slot closed.")
-      setCloseTarget(null)
-      await loadSlots()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not close slot.")
     } finally {
@@ -204,7 +244,7 @@ export function HrInterviewGrid() {
   }
 
   function onCellClick(cell: SlotGridCell) {
-    if (pending || !committeeId) return
+    if (pending || !committeeId || !seasonConfigured) return
 
     const slot = cell.slotId
       ? slots.find((row) => row.id === cell.slotId)
@@ -213,7 +253,7 @@ export function HrInterviewGrid() {
     if (cell.state === "booked") return
 
     if (cell.state === "available" && slot) {
-      setCloseTarget({ slot, startsAt: cell.startsAt })
+      void closeSlot(slot)
       return
     }
 
@@ -226,30 +266,44 @@ export function HrInterviewGrid() {
     }
   }
 
-  const seasonBounds = getInterviewSeasonBounds()
-
   return (
     <section className={panelClasses}>
       <h2 className="font-sans text-lg font-semibold text-blue-chalk">
-        Interview slots
+        Interview Slots
       </h2>
       <p className={hintClasses}>
-        Open 30-minute cells when the director or EB is free. Booked slots stay
-        locked until the interview passes.
+        Weeks run Sunday–Saturday; interviews are Monday–Saturday, 7:00 AM–9:30
+        PM. Open 30-minute cells when the director or EB is free. Booked slots
+        stay locked until you close them or reset the committee schedule.
       </p>
       <p className={`${hintClasses} ${seasonClasses}`}>
-        Interview season:{" "}
-        {seasonBounds.startsAt.toLocaleDateString()} –{" "}
-        {seasonBounds.endsAt.toLocaleDateString()} (from{" "}
-        <code className="text-prelude">INTERVIEW_SEASON</code>)
+        Interview Season:{" "}
+        {seasonConfigured ? (
+          <>
+            {seasonBounds!.startsAt.toLocaleDateString()} –{" "}
+            {seasonBounds!.endsAt.toLocaleDateString()}
+          </>
+        ) : seasonLoading ? (
+          "Loading…"
+        ) : (
+          "Not configured — set dates above."
+        )}
       </p>
+
+      {error ? <ActionFeedback type="error" message={error} /> : null}
+      {!error && success ? (
+        <ActionFeedback type="success" message={success} />
+      ) : null}
 
       <div className={toolbarClasses}>
         <Field label="Committee" htmlFor="hr-interview-committee" className="min-w-[14rem] flex-1">
           <Select
             value={committeeName || null}
             disabled={positionsLoading}
-            onValueChange={(value: string | null) => setCommitteeName(value ?? "")}
+            onValueChange={(value: string | null) => {
+              setCommitteeName(value ?? "")
+              setSlots([])
+            }}
           >
             <SelectTrigger id="hr-interview-committee" className={fieldControlClasses}>
               <SelectValue placeholder="Select a committee" />
@@ -274,8 +328,12 @@ export function HrInterviewGrid() {
             type="button"
             color="purple"
             className={navButtonClasses}
-            disabled={!canGoPrevWeek(weekStart)}
-            onClick={() => setWeekStart((current) => clampWeekStart(addDays(current, -7)))}
+            disabled={!seasonConfigured || !canGoPrevWeek(weekStart, seasonBounds)}
+            onClick={() =>
+              setWeekStart((current) =>
+                clampWeekStart(addDays(current, -7), seasonBounds)
+              )
+            }
           >
             ← Prev
           </Button>
@@ -284,15 +342,34 @@ export function HrInterviewGrid() {
             type="button"
             color="purple"
             className={navButtonClasses}
-            disabled={!canGoNextWeek(weekStart)}
-            onClick={() => setWeekStart((current) => clampWeekStart(addDays(current, 7)))}
+            disabled={!seasonConfigured || !canGoNextWeek(weekStart, seasonBounds)}
+            onClick={() =>
+              setWeekStart((current) =>
+                clampWeekStart(addDays(current, 7), seasonBounds)
+              )
+            }
           >
             Next →
           </Button>
         </div>
+
+        <Button
+          type="button"
+          color="danger"
+          className={navButtonClasses}
+          disabled={!committeeId || pending}
+          onClick={() => setResetOpen(true)}
+        >
+          Reset schedule
+        </Button>
       </div>
 
-      {!committeeId ? (
+      {!seasonConfigured && !seasonLoading ? (
+        <p className={`${hintClasses} mt-6`} role="status">
+          Interview season is not configured. Save interview dates above to manage
+          slots.
+        </p>
+      ) : !committeeId ? (
         <p className={`${hintClasses} mt-6`}>Select a committee to manage its weekly grid.</p>
       ) : (
         <div className="mt-6">
@@ -300,27 +377,26 @@ export function HrInterviewGrid() {
             days={days}
             cells={cells}
             loading={loading}
+            scrollable
+            scrollShellClassName="max-h-[min(40rem,calc(100vh-14rem))] overflow-x-hidden overflow-y-auto overscroll-contain"
             onCellClick={onCellClick}
-            emptyMessage="No weekdays fall in this interview week."
+            emptyMessage="No Monday–Saturday days fall in this interview week."
           />
         </div>
       )}
 
-      {error ? <ActionFeedback type="error" message={error} /> : null}
-      {success ? <ActionFeedback type="success" message={success} /> : null}
-
       <Dialog
-        open={closeTarget !== null}
+        open={resetOpen}
         onOpenChange={(open) => {
-          if (!pending && !open) setCloseTarget(null)
+          if (!pending && !open) setResetOpen(false)
         }}
       >
         <DialogContent showCloseButton={false}>
           <DialogHeader>
-            <DialogTitle>Close this slot?</DialogTitle>
+            <DialogTitle>Reset interview schedule?</DialogTitle>
             <DialogDescription>
-              {closeTarget
-                ? `Applicants will no longer be able to book ${closeTarget.startsAt.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}.`
+              {committeeName
+                ? `This removes every open, closed, and booked interview slot for ${committeeName}, including applicant bookings. You cannot undo this.`
                 : null}
             </DialogDescription>
           </DialogHeader>
@@ -329,19 +405,17 @@ export function HrInterviewGrid() {
               type="button"
               color="purple"
               disabled={pending}
-              onClick={() => setCloseTarget(null)}
+              onClick={() => setResetOpen(false)}
             >
               Cancel
             </Button>
             <Button
               type="button"
               color="danger"
-              disabled={pending}
-              onClick={() => {
-                if (closeTarget) void closeSlot(closeTarget.slot)
-              }}
+              disabled={pending || !committeeId}
+              onClick={() => void resetSchedule()}
             >
-              {pending ? "Closing…" : "Close slot"}
+              {pending ? "Resetting…" : "Reset schedule"}
             </Button>
           </DialogFooter>
         </DialogContent>

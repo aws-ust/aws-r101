@@ -29,12 +29,16 @@ export {
   peekBrowserPositions,
   getRecruitmentWindow,
   patchRecruitmentWindow,
+  getInterviewWindow,
+  patchInterviewWindow,
   listInterviewSlots,
   createInterviewSlot,
   patchInterviewSlotOpen,
+  resetInterviewSchedule,
 } from "./api-client"
 export type {
   RecruitmentWindow,
+  InterviewWindow,
   HrInterviewSlot,
   HrInterviewSlotBooking,
 } from "./api-client"
@@ -166,7 +170,13 @@ export async function createApplication(
     birthday: input.birthday,
     gender: input.gender,
     section: input.section,
+    studentNumber: input.studentNumber,
+    contactNumber: input.contactNumber,
+    facebookUrl: input.facebookUrl,
+    dataPrivacyAgreed: input.dataPrivacyAgreed,
     motivation: input.motivation,
+    portfolioUrl: input.portfolioUrl,
+    githubUrl: input.githubUrl,
     slotId: input.slotId,
     choices: input.choices,
     documents: input.documents.map((doc) => ({

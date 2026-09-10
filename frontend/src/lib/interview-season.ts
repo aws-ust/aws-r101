@@ -1,15 +1,24 @@
-import { INTERVIEW_SEASON } from "@/lib/constants"
-
-export const INTERVIEW_GRID_START_HOUR = 9
-export const INTERVIEW_GRID_END_HOUR = 17
+/** Local hours; grid shows 30-minute slots from 7:00 AM through 9:30 PM. */
+export const INTERVIEW_GRID_START_HOUR = 7
+export const INTERVIEW_GRID_END_HOUR = 22
 export const INTERVIEW_SLOT_MINUTES = 30
 
-/** Swap for HR-configured `/interview-window` when the backend supports it. */
-export function getInterviewSeasonBounds() {
-  return {
-    startsAt: new Date(INTERVIEW_SEASON.startsAt),
-    endsAt: new Date(INTERVIEW_SEASON.endsAt),
+export type InterviewSeasonBounds = {
+  startsAt: Date
+  endsAt: Date
+} | null
+
+export function interviewSeasonBoundsFromPayload(payload: {
+  startsAt: string | null
+  endsAt: string | null
+}): InterviewSeasonBounds {
+  if (!payload.startsAt || !payload.endsAt) return null
+  const startsAt = new Date(payload.startsAt)
+  const endsAt = new Date(payload.endsAt)
+  if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
+    return null
   }
+  return { startsAt, endsAt }
 }
 
 export function interviewTimeLabels(): string[] {
@@ -28,12 +37,11 @@ export function interviewTimeLabels(): string[] {
   return labels
 }
 
+/** Sunday 00:00 local — interview weeks run Sunday through Saturday. */
 export function startOfWeek(date: Date): Date {
   const copy = new Date(date)
   copy.setHours(0, 0, 0, 0)
-  const day = copy.getDay()
-  const diff = day === 0 ? -6 : 1 - day
-  copy.setDate(copy.getDate() + diff)
+  copy.setDate(copy.getDate() - copy.getDay())
   return copy
 }
 
@@ -43,13 +51,24 @@ export function addDays(date: Date, days: number): Date {
   return copy
 }
 
-export function weekDaysInSeason(weekStart: Date): Date[] {
-  const { startsAt, endsAt } = getInterviewSeasonBounds()
+export function startOfDay(date: Date): Date {
+  const copy = new Date(date)
+  copy.setHours(0, 0, 0, 0)
+  return copy
+}
+
+/** Monday–Saturday columns for a Sun–Sat week; Sundays are never schedulable. */
+export function weekDaysInSeason(
+  weekStart: Date,
+  bounds: InterviewSeasonBounds
+): Date[] {
+  if (!bounds) return []
+  const seasonStart = startOfDay(bounds.startsAt)
+  const seasonEnd = startOfDay(bounds.endsAt)
   const days: Date[] = []
-  for (let index = 0; index < 5; index += 1) {
-    const day = addDays(weekStart, index)
-    if (day < startsAt || day > endsAt) continue
-    if (day.getDay() === 0 || day.getDay() === 6) continue
+  for (let index = 1; index <= 6; index += 1) {
+    const day = startOfDay(addDays(weekStart, index))
+    if (day < seasonStart || day > seasonEnd) continue
     days.push(day)
   }
   return days
@@ -71,17 +90,18 @@ export function slotKeyFromIso(iso: string): string {
   return String(new Date(iso).getTime())
 }
 
-export function formatWeekRange(weekStart: Date, days: Date[]): string {
+export function formatWeekRange(_weekStart: Date, days: Date[]): string {
   if (days.length === 0) return "No days in season"
   const first = days[0]
   const last = days[days.length - 1]
-  const sameMonth = first.getMonth() === last.getMonth()
   const startLabel = first.toLocaleDateString(undefined, {
+    weekday: "short",
     month: "short",
     day: "numeric",
   })
   const endLabel = last.toLocaleDateString(undefined, {
-    month: sameMonth ? undefined : "short",
+    weekday: "short",
+    month: "short",
     day: "numeric",
     year: "numeric",
   })
@@ -100,21 +120,52 @@ export function weekQueryRange(weekStart: Date, days: Date[]) {
   return { from: from.toISOString(), to: to.toISOString() }
 }
 
-export function clampWeekStart(weekStart: Date): Date {
-  const { startsAt, endsAt } = getInterviewSeasonBounds()
-  const seasonWeekStart = startOfWeek(startsAt)
-  const seasonWeekEnd = startOfWeek(endsAt)
-  if (weekStart < seasonWeekStart) return seasonWeekStart
-  if (weekStart > seasonWeekEnd) return seasonWeekEnd
-  return weekStart
+function seasonWeekStarts(bounds: InterviewSeasonBounds): Date[] {
+  if (!bounds) return []
+  const weeks: Date[] = []
+  let cursor = startOfWeek(bounds.startsAt)
+  const last = startOfWeek(bounds.endsAt)
+  while (cursor.getTime() <= last.getTime()) {
+    if (weekDaysInSeason(cursor, bounds).length > 0) {
+      weeks.push(new Date(cursor))
+    }
+    cursor = addDays(cursor, 7)
+  }
+  return weeks
 }
 
-export function canGoPrevWeek(weekStart: Date): boolean {
-  const { startsAt } = getInterviewSeasonBounds()
-  return addDays(weekStart, -7) >= startOfWeek(startsAt)
+export function clampWeekStart(
+  weekStart: Date,
+  bounds: InterviewSeasonBounds
+): Date {
+  const weeks = seasonWeekStarts(bounds)
+  if (weeks.length === 0) return weekStart
+  const normalized = startOfWeek(weekStart)
+  if (normalized.getTime() < weeks[0].getTime()) return weeks[0]
+  if (normalized.getTime() > weeks[weeks.length - 1].getTime()) {
+    return weeks[weeks.length - 1]
+  }
+  if (weekDaysInSeason(normalized, bounds).length > 0) {
+    return normalized
+  }
+  for (const week of weeks) {
+    if (week.getTime() >= normalized.getTime()) return week
+  }
+  return weeks[weeks.length - 1]
 }
 
-export function canGoNextWeek(weekStart: Date): boolean {
-  const { endsAt } = getInterviewSeasonBounds()
-  return addDays(weekStart, 7) <= startOfWeek(endsAt)
+export function canGoPrevWeek(
+  weekStart: Date,
+  bounds: InterviewSeasonBounds
+): boolean {
+  if (!bounds) return false
+  return weekDaysInSeason(addDays(weekStart, -7), bounds).length > 0
+}
+
+export function canGoNextWeek(
+  weekStart: Date,
+  bounds: InterviewSeasonBounds
+): boolean {
+  if (!bounds) return false
+  return weekDaysInSeason(addDays(weekStart, 7), bounds).length > 0
 }
