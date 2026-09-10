@@ -13,7 +13,7 @@ export type ApplicantChoice = {
 }
 
 export type ApplicantDocument = {
-  documentType: "resume" | "transcript"
+  documentType: "resume" | "transcript" | "registration"
   fileName: string
 }
 
@@ -26,7 +26,12 @@ export type ApplicantApplication = {
   birthday: string | null
   gender: string | null
   section: string | null
+  studentNumber: string | null
+  contactNumber: string | null
+  facebookUrl: string | null
   motivation: string
+  portfolioUrl: string | null
+  githubUrl: string | null
   choices: ApplicantChoice[]
   documents: ApplicantDocument[]
   canEdit: boolean
@@ -36,6 +41,11 @@ export type ApplicantApplication = {
 
 export type ApplicantInterviewSlot = {
   id: string
+  startsAt: string
+  endsAt: string
+}
+
+export type ApplicantInterviewSlotTime = {
   startsAt: string
   endsAt: string
 }
@@ -52,6 +62,7 @@ export type ApplicantInterviewSchedule = {
     bookedAt: string
   } | null
   slots: ApplicantInterviewSlot[]
+  booked: ApplicantInterviewSlotTime[]
 }
 
 async function applicantFetch<T>(
@@ -91,6 +102,21 @@ export function getApplicantApplication() {
 export function updateApplicantChoices(body: {
   choices: { positionId: string; preferenceRank: 1 | 2 }[]
   slotId?: string
+  portfolioUrl?: string
+  githubUrl?: string
+}) {
+  return applicantFetch<ApplicantApplication>("/applicant/application", {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  })
+}
+
+export function updateApplicantDocuments(body: {
+  documents: {
+    documentType: ApplicantDocument["documentType"]
+    fileName: string
+    s3Key: string
+  }[]
 }) {
   return applicantFetch<ApplicantApplication>("/applicant/application", {
     method: "PATCH",
