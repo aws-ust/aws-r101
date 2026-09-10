@@ -14,6 +14,7 @@ import {
   updateApplicantChoices,
   type ApplicantApplication,
 } from "@/lib/applicant-api"
+import { ApplicantDashboardSkeleton } from "@/components/apply/applicant-dashboard-skeleton"
 import { ApplicantDocumentEditor } from "@/components/apply/applicant-document-editor"
 import { glassPanelClasses } from "@/lib/surface"
 import { safeExternalHref } from "@/lib/safe-external-href"
@@ -106,7 +107,7 @@ export function ApplicantDashboard() {
   )
 
   if (loading) {
-    return <p className={missingClasses}>Loading your application…</p>
+    return <ApplicantDashboardSkeleton />
   }
 
   if (error || !application) {
