@@ -29,7 +29,7 @@ const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
-const SIDEBAR_WIDTH_ICON = "3rem"
+const SIDEBAR_WIDTH_ICON = "4rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
 type SidebarContextProps = {
@@ -264,7 +264,10 @@ function SidebarTrigger({
       data-slot="sidebar-trigger"
       variant="ghost"
       size="icon-sm"
-      className={cn("cn-sidebar-trigger", className)}
+      className={cn(
+        "cn-sidebar-trigger border-transparent bg-transparent text-blue-chalk shadow-none hover:bg-meteorite/50 hover:text-aquamarine before:hidden",
+        className
+      )}
       onClick={(event) => {
         onClick?.(event)
         toggleSidebar()

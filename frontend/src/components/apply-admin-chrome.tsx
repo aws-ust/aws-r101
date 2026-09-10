@@ -2,7 +2,6 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { ApplyFlowTabs } from "@/components/apply-flow-tabs"
 import { Button } from "@/components/ui/button"
 import { logoutApplicant } from "@/lib/applicant-api"
 import { chromeBarClasses } from "@/lib/surface"
@@ -68,7 +67,6 @@ export function ApplyAdminChrome() {
           ) : null}
         </div>
       </div>
-      {isApplyFlow ? <ApplyFlowTabs /> : null}
     </header>
   )
 }

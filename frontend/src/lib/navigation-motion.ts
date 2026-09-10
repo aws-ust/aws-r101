@@ -76,3 +76,11 @@ export function isApplyFlowTabPath(pathname: string) {
 export function isApplyFlowTabSwitch(previousPath: string, nextPath: string) {
   return isApplyFlowTabPath(previousPath) && isApplyFlowTabPath(nextPath)
 }
+
+export function isHrDashboardPath(pathname: string) {
+  return pathname.startsWith("/admin/hr")
+}
+
+export function isHrDashboardSwitch(previousPath: string, nextPath: string) {
+  return isHrDashboardPath(previousPath) && isHrDashboardPath(nextPath)
+}

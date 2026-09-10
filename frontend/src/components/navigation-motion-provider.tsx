@@ -14,6 +14,7 @@ import type { Transition } from "motion/react"
 import {
   getNavigationTransition,
   isApplyFlowTabSwitch,
+  isHrDashboardSwitch,
   resolveNavigationDirection,
   type NavigationDirection,
 } from "@/lib/navigation-motion"
@@ -62,7 +63,8 @@ export function NavigationMotionProvider({ children }: { children: ReactNode }) 
 
     animatePageRef.current =
       !reducedMotion &&
-      !isApplyFlowTabSwitch(previousPathRef.current, pathname)
+      !isApplyFlowTabSwitch(previousPathRef.current, pathname) &&
+      !isHrDashboardSwitch(previousPathRef.current, pathname)
     previousPathRef.current = pathname
   }
 
