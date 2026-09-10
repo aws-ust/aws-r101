@@ -2,13 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { PositionsBrowser } from "@/components/positions-browser"
+import { PositionsBrowserSkeleton } from "@/components/positions-browser-skeleton"
 import { listBrowserPositions, peekBrowserPositions } from "@/lib/api-client"
 import type { Position } from "@/lib/positions"
-
-const loadingPanelClasses =
-  "glass flex min-h-72 items-center justify-center rounded-[28px] border border-blue-chalk/20 bg-haiti/30 px-6"
-const loadingTextClasses =
-  "font-mono text-xs uppercase tracking-wide text-aquamarine"
 
 export function PositionsPageClient() {
   const cached = peekBrowserPositions()
@@ -38,11 +34,7 @@ export function PositionsPageClient() {
   }, [])
 
   if (loading && positions.length === 0) {
-    return (
-      <div role="status" className={loadingPanelClasses}>
-        <p className={loadingTextClasses}>Loading open positions…</p>
-      </div>
-    )
+    return <PositionsBrowserSkeleton />
   }
 
   return <PositionsBrowser positions={positions} loadError={loadError} />
