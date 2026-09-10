@@ -13,6 +13,7 @@ import {
   pageSlice,
 } from "@/components/hr/application-pagination-utils"
 import { ApplicationRow } from "@/components/hr/application-row"
+import { ApplicationListSkeleton } from "@/components/hr/application-list-skeleton"
 import { HrDeleteApplicantDialog } from "@/components/hr/hr-delete-applicant-dialog"
 import { fullName, hasCommittee, useApplications } from "@/lib/api"
 import { pageShellClasses } from "@/lib/surface"
@@ -81,7 +82,7 @@ export function HrApplicationList() {
         <ApplicationFilters value={filters} onChange={onFiltersChange} />
       </div>
       {loading ? (
-        <p className={emptyClasses}>Loading applications…</p>
+        <ApplicationListSkeleton />
       ) : error ? (
         <p className={emptyClasses}>{error}</p>
       ) : visible.length === 0 ? (
