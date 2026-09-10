@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { SlotGrid, type SlotGridCell } from "@/components/interview/slot-grid"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Field } from "@/components/field"
 import { useInterviewWindow } from "@/hooks/use-interview-window"
 import { listPositionInterviewSlots } from "@/lib/api-client"
@@ -187,7 +188,9 @@ export function ApplyInterviewSlotPicker({
             {seasonBounds!.endsAt.toLocaleDateString()}.
           </>
         ) : seasonLoading ? (
-          " Loading season dates…"
+          <span className="ml-1 inline-block align-middle">
+            <Skeleton className="inline-block h-4 w-40" />
+          </span>
         ) : (
           " Interview season is not configured yet."
         )}
@@ -236,11 +239,13 @@ export function ApplyInterviewSlotPicker({
             onCellClick={onCellClick}
             emptyMessage="No open interview slots this week. Try another week or check back later."
           />
-        ) : !seasonLoading ? (
+        ) : seasonLoading ? (
+          <SlotGrid days={[]} cells={new Map()} loading scrollable />
+        ) : (
           <p className={errorClasses} role="status">
             Interview season is not configured. You cannot pick a slot yet.
           </p>
-        ) : null}
+        )}
       </div>
 
       {error ? <p className={errorClasses} role="alert">{error}</p> : null}

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { ActionFeedback } from "@/components/action-feedback"
 import { SlotGrid, type SlotGridCell } from "@/components/interview/slot-grid"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Dialog,
   DialogContent,
@@ -284,7 +285,7 @@ export function HrInterviewGrid({
             {seasonBounds!.endsAt.toLocaleDateString()}
           </>
         ) : seasonLoading ? (
-          "Loading…"
+          <Skeleton className="ml-1 inline-block h-4 w-36 align-middle" />
         ) : (
           "Not configured — set dates above."
         )}
