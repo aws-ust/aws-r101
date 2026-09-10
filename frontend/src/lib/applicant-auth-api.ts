@@ -24,19 +24,39 @@ async function applicantAuthFetch<T>(
 
   if (!response.ok) {
     const serverMessage = await readApiErrorMessage(response)
+    const fallback =
+      response.status === 401
+        ? "The verification code is invalid or expired."
+        : response.status === 429
+          ? "Too many code requests. Wait and try again."
+          : "Could not verify your code. Try again in a moment."
+    throw new ApiError(
+      response.status,
+      userFacingApiError(response.status, serverMessage, fallback)
+    )
+  }
+
+  return response.json() as Promise<T>
+}
+
+export async function getApplicantAuthMe() {
+  const response = await fetch(`${API_BASE}/me`, {
+    method: "GET",
+    credentials: "include",
+  })
+  if (response.status === 401) return null
+  if (!response.ok) {
+    const serverMessage = await readApiErrorMessage(response)
     throw new ApiError(
       response.status,
       userFacingApiError(
         response.status,
         serverMessage,
-        response.status === 401
-          ? "The verification code is invalid or expired."
-          : "Could not verify your code. Try again in a moment."
+        "Could not verify your session."
       )
     )
   }
-
-  return response.json() as Promise<T>
+  return response.json() as Promise<{ applicationCode: string }>
 }
 
 export function requestApplicantCode(identity: ApplicantIdentity) {
