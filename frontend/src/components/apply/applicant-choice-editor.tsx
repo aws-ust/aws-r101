@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Field } from "@/components/field"
 import { Input } from "@/components/ui/input"
 import { CommitteeOfficePicker } from "@/components/apply/committee-office-picker"
+import { CommitteePickerSkeleton } from "@/components/apply/committee-picker-skeleton"
 import { groupedCommitteesForPicker } from "@/lib/committee-groups"
 import {
   GITHUB_PROFILE_URL_EXAMPLE,
@@ -133,30 +134,36 @@ export function ApplicantChoiceEditor({
         })
       }}
     >
-      <Field label="First choice" htmlFor="dash-first-choice">
-        <CommitteeOfficePicker
-          id="dash-first-choice"
-          committee={firstCommittee}
-          positionId={firstPositionId}
-          groups={groups}
-          positions={positions}
-          disabled={loading}
-          disabledPositionId={secondPositionId}
-          onSelect={(next) => applyChoice(1, next)}
-        />
-      </Field>
-      <Field label="Second choice" htmlFor="dash-second-choice">
-        <CommitteeOfficePicker
-          id="dash-second-choice"
-          committee={secondCommittee}
-          positionId={secondPositionId}
-          groups={groups}
-          positions={positions}
-          disabled={loading}
-          disabledPositionId={firstPositionId}
-          onSelect={(next) => applyChoice(2, next)}
-        />
-      </Field>
+      {loading ? (
+        <CommitteePickerSkeleton />
+      ) : (
+        <>
+          <Field label="First choice" htmlFor="dash-first-choice">
+            <CommitteeOfficePicker
+              id="dash-first-choice"
+              committee={firstCommittee}
+              positionId={firstPositionId}
+              groups={groups}
+              positions={positions}
+              disabled={loading}
+              disabledPositionId={secondPositionId}
+              onSelect={(next) => applyChoice(1, next)}
+            />
+          </Field>
+          <Field label="Second choice" htmlFor="dash-second-choice">
+            <CommitteeOfficePicker
+              id="dash-second-choice"
+              committee={secondCommittee}
+              positionId={secondPositionId}
+              groups={groups}
+              positions={positions}
+              disabled={loading}
+              disabledPositionId={firstPositionId}
+              onSelect={(next) => applyChoice(2, next)}
+            />
+          </Field>
+        </>
+      )}
       {showPortfolio ? (
         <Field label="Google Drive portfolio" htmlFor="dash-portfolio">
           <Input

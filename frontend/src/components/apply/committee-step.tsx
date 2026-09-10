@@ -6,6 +6,7 @@ import { CommitteeOfficePicker } from "@/components/apply/committee-office-picke
 import { groupedCommitteesForPicker } from "@/lib/committee-groups"
 import { fieldControlClasses } from "@/lib/surface"
 import { ApplyInterviewSlotPicker } from "@/components/apply/apply-interview-slot-picker"
+import { CommitteePickerSkeleton } from "@/components/apply/committee-picker-skeleton"
 import { Input } from "@/components/ui/input"
 import { useOpenPositions } from "@/lib/api"
 import {
@@ -81,37 +82,43 @@ export function CommitteeStep({ values, onChange }: CommitteeStepProps) {
   return (
     <div className={stackClasses}>
       {error ? <p className="text-sm text-aquamarine">{error}</p> : null}
-      <Field label="First choice" htmlFor="firstChoice" required>
-        <CommitteeOfficePicker
-          id="firstChoice"
-          committee={values.firstCommittee}
-          positionId={values.firstPositionId}
-          groups={committeeGroups}
-          positions={positions}
-          disabled={loading}
-          disabledPositionId={values.secondPositionId}
-          onSelect={(next) => applyChoice(1, next)}
-        />
-      </Field>
-      {values.firstPositionId ? (
-        <ApplyInterviewSlotPicker
-          positionId={values.firstPositionId}
-          selectedSlotId={values.slotId}
-          onSelectedSlotIdChange={(slotId) => onChange({ slotId })}
-        />
-      ) : null}
-      <Field label="Second choice" htmlFor="secondChoice" required>
-        <CommitteeOfficePicker
-          id="secondChoice"
-          committee={values.secondCommittee}
-          positionId={values.secondPositionId}
-          groups={committeeGroups}
-          positions={positions}
-          disabled={loading}
-          disabledPositionId={values.firstPositionId}
-          onSelect={(next) => applyChoice(2, next)}
-        />
-      </Field>
+      {loading ? (
+        <CommitteePickerSkeleton />
+      ) : (
+        <>
+          <Field label="First choice" htmlFor="firstChoice" required>
+            <CommitteeOfficePicker
+              id="firstChoice"
+              committee={values.firstCommittee}
+              positionId={values.firstPositionId}
+              groups={committeeGroups}
+              positions={positions}
+              disabled={loading}
+              disabledPositionId={values.secondPositionId}
+              onSelect={(next) => applyChoice(1, next)}
+            />
+          </Field>
+          {values.firstPositionId ? (
+            <ApplyInterviewSlotPicker
+              positionId={values.firstPositionId}
+              selectedSlotId={values.slotId}
+              onSelectedSlotIdChange={(slotId) => onChange({ slotId })}
+            />
+          ) : null}
+          <Field label="Second choice" htmlFor="secondChoice" required>
+            <CommitteeOfficePicker
+              id="secondChoice"
+              committee={values.secondCommittee}
+              positionId={values.secondPositionId}
+              groups={committeeGroups}
+              positions={positions}
+              disabled={loading}
+              disabledPositionId={values.firstPositionId}
+              onSelect={(next) => applyChoice(2, next)}
+            />
+          </Field>
+        </>
+      )}
       {showPortfolio ? (
         <Field
           label="Google Drive Portfolio Link"
