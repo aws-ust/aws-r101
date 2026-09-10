@@ -10,7 +10,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Field } from "@/components/field"
-import { APPLICANT_GENDER_OPTIONS } from "@/lib/applicant-gender"
+import {
+  APPLICANT_GENDER_OPTIONS,
+  formatApplicantGender,
+} from "@/lib/applicant-gender"
+import { sanitizeSectionInput } from "@/lib/apply-field-validation"
 import { fieldControlClasses } from "@/lib/surface"
 import { UST_EMAIL_DOMAIN } from "@/lib/constants"
 
@@ -18,12 +22,14 @@ const gridClasses = "grid gap-5 sm:grid-cols-2"
 const personalRowClasses = "grid gap-5 sm:col-span-2 sm:grid-cols-3"
 const sectionEmailRowClasses = "grid gap-5 sm:grid-cols-2 sm:col-span-2"
 const selectTriggerClasses = `${fieldControlClasses} justify-between`
-const emailWrapClasses =
-  "flex h-12 overflow-hidden rounded-[20px] bg-haiti/70 focus-within:ring-2 focus-within:ring-aquamarine/30"
-const emailInputClasses =
-  "h-full min-w-0 flex-1 rounded-none border-0 bg-transparent px-4 text-sm text-blue-chalk shadow-none focus-visible:ring-0"
-const domainClasses =
-  "flex shrink-0 items-center pr-4 font-sans text-sm text-prelude"
+const composedWrapClasses =
+  "flex h-12 items-center overflow-hidden rounded-[20px] bg-haiti/70 focus-within:ring-2 focus-within:ring-aquamarine/30"
+const composedInputClasses =
+  "h-12 min-h-12 min-w-0 flex-1 rounded-none border-0 bg-transparent px-4 py-0 font-sans text-sm leading-normal text-blue-chalk shadow-none placeholder:text-prelude/60 focus-visible:border-0 focus-visible:ring-0"
+const composedAffixClasses =
+  "flex h-12 shrink-0 items-center font-sans text-sm text-prelude"
+const composedPrefixClasses = `${composedAffixClasses} border-r border-blue-chalk/20 pl-4 pr-3`
+const composedSuffixClasses = `${composedAffixClasses} border-l border-blue-chalk/20 pl-3 pr-4`
 
 export type GeneralInfoValues = {
   firstName: string
@@ -33,6 +39,9 @@ export type GeneralInfoValues = {
   gender: string
   section: string
   emailLocal: string
+  studentNumber: string
+  contactDigits: string
+  facebookUrl: string
 }
 
 type GeneralInfoStepProps = {
@@ -50,6 +59,14 @@ function positiveDigits(value: string) {
   return String(Number(digits))
 }
 
+function studentDigits(value: string) {
+  return value.replace(/\D/g, "").slice(0, 10)
+}
+
+function contactDigitsOnly(value: string) {
+  return value.replace(/\D/g, "").slice(0, 10)
+}
+
 export function GeneralInfoStep({ values, onChange }: GeneralInfoStepProps) {
   return (
     <div className={gridClasses}>
@@ -57,6 +74,7 @@ export function GeneralInfoStep({ values, onChange }: GeneralInfoStepProps) {
         <Input
           id="firstName"
           name="firstName"
+          required
           autoComplete="given-name"
           placeholder="Juan"
           inputMode="text"
@@ -69,6 +87,7 @@ export function GeneralInfoStep({ values, onChange }: GeneralInfoStepProps) {
         <Input
           id="lastName"
           name="lastName"
+          required
           autoComplete="family-name"
           placeholder="Dela Cruz"
           inputMode="text"
@@ -82,6 +101,7 @@ export function GeneralInfoStep({ values, onChange }: GeneralInfoStepProps) {
           <Input
             id="age"
             name="age"
+            required
             type="text"
             inputMode="numeric"
             pattern="[1-9][0-9]*"
@@ -108,8 +128,16 @@ export function GeneralInfoStep({ values, onChange }: GeneralInfoStepProps) {
               onChange({ gender: gender ?? "" })
             }
           >
-            <SelectTrigger id="gender" className={selectTriggerClasses}>
-              <SelectValue placeholder="Select gender" />
+            <SelectTrigger
+              id="gender"
+              className={selectTriggerClasses}
+              aria-required="true"
+            >
+              <SelectValue placeholder="Select gender">
+                {values.gender
+                  ? formatApplicantGender(values.gender)
+                  : null}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {APPLICANT_GENDER_OPTIONS.map((option) => (
@@ -121,22 +149,66 @@ export function GeneralInfoStep({ values, onChange }: GeneralInfoStepProps) {
           </Select>
         </Field>
       </div>
+      <Field label="Student Number" htmlFor="studentNumber" required>
+        <Input
+          id="studentNumber"
+          name="studentNumber"
+          required
+          inputMode="numeric"
+          minLength={10}
+          maxLength={10}
+          placeholder="2023123456"
+          value={values.studentNumber}
+          onChange={(e) =>
+            onChange({ studentNumber: studentDigits(e.target.value) })
+          }
+          className={fieldControlClasses}
+        />
+      </Field>
+      <Field label="Contact Number" htmlFor="contactDigits" required>
+        <div className={composedWrapClasses}>
+          <span className={composedPrefixClasses} aria-hidden="true">
+            +63
+          </span>
+          <Input
+            id="contactDigits"
+            name="contactDigits"
+            required
+            inputMode="numeric"
+            autoComplete="tel-national"
+            minLength={10}
+            maxLength={10}
+            placeholder="9171234567"
+            value={values.contactDigits}
+            onChange={(e) =>
+              onChange({ contactDigits: contactDigitsOnly(e.target.value) })
+            }
+            className={composedInputClasses}
+          />
+        </div>
+      </Field>
       <div className={sectionEmailRowClasses}>
         <Field label="Year & Section" htmlFor="section" required>
           <Input
             id="section"
             name="section"
+            required
             value={values.section}
-            placeholder="3ISB"
-            onChange={(e) => onChange({ section: e.target.value })}
+            placeholder="4CSC"
+            minLength={4}
+            maxLength={4}
+            onChange={(e) =>
+              onChange({ section: sanitizeSectionInput(e.target.value) })
+            }
             className={fieldControlClasses}
           />
         </Field>
         <Field label="UST Email" htmlFor="emailLocal" required>
-          <div className={emailWrapClasses}>
+          <div className={composedWrapClasses}>
             <Input
               id="emailLocal"
               name="emailLocal"
+              required
               autoComplete="username"
               placeholder="juan.delacruz"
               value={values.emailLocal}
@@ -145,12 +217,30 @@ export function GeneralInfoStep({ values, onChange }: GeneralInfoStepProps) {
                   emailLocal: e.target.value.replace(/@.*$/, ""),
                 })
               }
-              className={emailInputClasses}
+              className={composedInputClasses}
             />
-            <span className={domainClasses}>{UST_EMAIL_DOMAIN}</span>
+            <span className={composedSuffixClasses}>{UST_EMAIL_DOMAIN}</span>
           </div>
         </Field>
       </div>
+      <Field
+        label="Facebook Profile Link"
+        htmlFor="facebookUrl"
+        required
+        className="sm:col-span-2"
+      >
+        <Input
+          id="facebookUrl"
+          name="facebookUrl"
+          required
+          type="url"
+          inputMode="url"
+          placeholder="https://facebook.com/your.profile"
+          value={values.facebookUrl}
+          onChange={(e) => onChange({ facebookUrl: e.target.value })}
+          className={fieldControlClasses}
+        />
+      </Field>
     </div>
   )
 }
