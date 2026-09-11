@@ -9,6 +9,7 @@ import { applicantInterviewRoutes } from "./routes/applicant-interview";
 import { interviewSlotsRoutes } from "./routes/interview-slots";
 import { positionsRoutes } from "./routes/positions";
 import { recruitmentWindowRoutes } from "./routes/recruitment-window";
+import { resultsRoutes } from "./routes/results";
 import { interviewWindowRoutes } from "./routes/interview-window";
 import {
   AUTH_COOKIE_NAME,
@@ -101,6 +102,7 @@ app.route("/applicant", applicantInterviewRoutes);
 app.route("/applications", applicationsRoutes);
 app.route("/interview-slots", interviewSlotsRoutes);
 app.route("/recruitment-window", recruitmentWindowRoutes);
+app.route("/results", resultsRoutes);
 app.route("/interview-window", interviewWindowRoutes);
 
 app.post("/uploads/presign", (c) =>

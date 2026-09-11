@@ -633,6 +633,19 @@ export async function bookApplicantInterview(
         );
       }
 
+      const decisions = await tx
+        .select({ decisionStatus: applicationChoices.decisionStatus })
+        .from(applicationChoices)
+        .where(eq(applicationChoices.applicationId, applicationId));
+      const reason = (
+        await resolveApplicantEditEligibility(application, decisions, {
+          database: tx,
+        })
+      ).lockReason;
+      if (reason) {
+        throw new InterviewScheduleError("application_locked", reason);
+      }
+
       const [slot] = await tx
         .select({
           id: interviewSlots.id,
