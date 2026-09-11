@@ -10,11 +10,15 @@ import type { CreateApplicationInput, DocumentType } from "@/lib/application-typ
 
 import {
 
+  applicationDocumentPdfSizeLimitMessage,
+
   documentFileNameMatches,
 
   documentFileNameFormatMessage,
 
   formatContactDigits,
+
+  isApplicationDocumentPdfWithinSizeLimit,
 
   isValidContactNumber,
 
@@ -412,40 +416,51 @@ export function uploadFileNameError() {
   return documentFileNameFormatMessage()
 }
 
+function uploadPdfsWithinSizeLimit(values: UploadValues): boolean {
+  return (
+    isApplicationDocumentPdfWithinSizeLimit(values.resume!) &&
+    isApplicationDocumentPdfWithinSizeLimit(values.transcript!) &&
+    isApplicationDocumentPdfWithinSizeLimit(values.registration!)
+  )
+}
 
-
-export function uploadValid(values: UploadValues, lastName: string) {
-
-  if (!values.resume || !values.transcript || !values.registration) {
-
-    return false
-
+export function uploadDocumentsStepError(
+  values: UploadValues,
+  lastName: string
+): string | null {
+  if (!uploadRequiredFilled(values)) {
+    return uploadStepError
   }
 
   if (
-
-    values.resume.type !== "application/pdf" ||
-
-    values.transcript.type !== "application/pdf" ||
-
-    values.registration.type !== "application/pdf"
-
+    values.resume!.type !== "application/pdf" ||
+    values.transcript!.type !== "application/pdf" ||
+    values.registration!.type !== "application/pdf"
   ) {
-
-    return false
-
+    return uploadPdfStepError
   }
 
-  return (
+  if (!uploadPdfsWithinSizeLimit(values)) {
+    return applicationDocumentPdfSizeLimitMessage()
+  }
 
-    documentFileNameMatches("resume", values.resume.name, lastName) &&
+  if (
+    !documentFileNameMatches("resume", values.resume!.name, lastName) ||
+    !documentFileNameMatches("transcript", values.transcript!.name, lastName) ||
+    !documentFileNameMatches(
+      "registration",
+      values.registration!.name,
+      lastName
+    )
+  ) {
+    return uploadFileNameError()
+  }
 
-    documentFileNameMatches("transcript", values.transcript.name, lastName) &&
+  return null
+}
 
-    documentFileNameMatches("registration", values.registration.name, lastName)
-
-  )
-
+export function uploadValid(values: UploadValues, lastName: string) {
+  return uploadDocumentsStepError(values, lastName) === null
 }
 
 
@@ -576,54 +591,9 @@ export function submitBlockedMessage(
 
   }
 
-  if (!upload.resume || !upload.transcript || !upload.registration) {
-
-    return uploadStepError
-
-  }
-
-  if (
-
-    upload.resume.type !== "application/pdf" ||
-
-    upload.transcript.type !== "application/pdf" ||
-
-    upload.registration.type !== "application/pdf"
-
-  ) {
-
-    return uploadPdfStepError
-
-  }
-
-  if (
-
-    !documentFileNameMatches("resume", upload.resume.name, general.lastName) ||
-
-    !documentFileNameMatches(
-
-      "transcript",
-
-      upload.transcript.name,
-
-      general.lastName
-
-    ) ||
-
-    !documentFileNameMatches(
-
-      "registration",
-
-      upload.registration.name,
-
-      general.lastName
-
-    )
-
-  ) {
-
-    return uploadFileNameError()
-
+  const uploadError = uploadDocumentsStepError(upload, general.lastName)
+  if (uploadError) {
+    return uploadError
   }
 
   if (!generalValid(general)) {

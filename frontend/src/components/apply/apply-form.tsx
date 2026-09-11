@@ -72,9 +72,11 @@ import {
 
   toCreateApplicationInput,
 
-  uploadFileNameError,
+  uploadDocumentsStepError,
 
   uploadRequiredFilled,
+
+  uploadStepError,
 
   uploadValid,
 
@@ -368,12 +370,10 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
 
     } else if (step === 4) {
 
-      if (!uploadReady) {
-
-        setError(uploadFileNameError())
-
+      const uploadError = uploadDocumentsStepError(upload, general.lastName)
+      if (uploadError) {
+        setError(uploadError)
         return
-
       }
 
       setStep(5)
@@ -722,7 +722,8 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
 
               {uploadNameMismatch ? (
                 <p className={errorClasses}>
-                  {uploadFileNameError()}
+                  {uploadDocumentsStepError(upload, general.lastName) ??
+                    uploadStepError}
                 </p>
               ) : null}
 
