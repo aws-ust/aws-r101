@@ -22,9 +22,11 @@ import {
   generateApplicationCode,
   recruitmentYearInt,
 } from "./application-code";
+import { bookInterviewSlotForApplication } from "./interview-scheduling";
+import type { ApplicantGender } from "./applicant-gender";
 
 export type ApplicationStatus = "pending" | "approved" | "rejected";
-export type DocumentType = "resume" | "transcript";
+export type DocumentType = "resume" | "transcript" | "registration";
 
 export type ApplicationChoiceJson = {
   preferenceRank: 1 | 2;
@@ -50,8 +52,15 @@ export type ApplicationJson = {
   lastName: string;
   email: string;
   age: number | null;
+  birthday: string | null;
+  gender: ApplicantGender | null;
   section: string | null;
+  studentNumber: string | null;
+  contactNumber: string | null;
+  facebookUrl: string | null;
   motivation: string;
+  portfolioUrl: string | null;
+  githubUrl: string | null;
   choices: ApplicationChoiceJson[];
   documents: ApplicationDocumentJson[];
 };
@@ -61,8 +70,17 @@ export type CreateApplicationInput = {
   lastName: string;
   email: string;
   age: number;
+  birthday: string;
+  gender: ApplicantGender;
   section: string;
+  studentNumber: string;
+  contactNumber: string;
+  facebookUrl: string;
   motivation: string;
+  dataPrivacyAgreed: true;
+  portfolioUrl?: string;
+  githubUrl?: string;
+  slotId: string;
   choices: { positionId: string; preferenceRank: 1 | 2 }[];
   uploadSessionId: string;
 };
@@ -123,12 +141,28 @@ type ApplicationRow = {
   lastName: string;
   email: string;
   age: number | null;
+  birthday: string | Date | null;
+  gender: ApplicantGender | null;
   section: string | null;
+  studentNumber: string | null;
+  contactNumber: string | null;
+  facebookUrl: string | null;
   motivation: string;
+  portfolioUrl: string | null;
+  githubUrl: string | null;
 };
 
 function iso(value: Date): string {
   return value.toISOString();
+}
+
+export function formatBirthday(value: string | Date | null): string | null {
+  if (value == null) return null;
+  if (typeof value === "string") return value;
+  const year = value.getUTCFullYear();
+  const month = String(value.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(value.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 async function attachRelations(
@@ -197,8 +231,15 @@ async function attachRelations(
     lastName: row.lastName,
     email: row.email,
     age: row.age,
+    birthday: formatBirthday(row.birthday),
+    gender: row.gender,
     section: row.section,
+    studentNumber: row.studentNumber,
+    contactNumber: row.contactNumber,
+    facebookUrl: row.facebookUrl,
     motivation: row.motivation,
+    portfolioUrl: row.portfolioUrl,
+    githubUrl: row.githubUrl,
     choices: (choicesByApp.get(row.id) ?? []).sort(
       (a, b) => a.preferenceRank - b.preferenceRank,
     ),
@@ -215,8 +256,15 @@ const applicationSelect = {
   lastName: applicants.lastName,
   email: applicants.email,
   age: applicants.age,
+  birthday: applicants.birthday,
+  gender: applicants.gender,
   section: applicants.section,
+  studentNumber: applicants.studentNumber,
+  contactNumber: applicants.contactNumber,
+  facebookUrl: applicants.facebookUrl,
   motivation: applications.motivation,
+  portfolioUrl: applications.portfolioUrl,
+  githubUrl: applications.githubUrl,
 };
 
 export async function getApplicationById(
@@ -323,6 +371,18 @@ export async function positionsExist(positionIds: string[]): Promise<boolean> {
   return rows.length === uniqueIds.length;
 }
 
+export async function committeeNamesForPositions(
+  positionIds: string[],
+): Promise<string[]> {
+  if (positionIds.length === 0) return [];
+  const rows = await db
+    .select({ committee: committees.name })
+    .from(positions)
+    .innerJoin(committees, eq(positions.committeeId, committees.id))
+    .where(inArray(positions.id, positionIds));
+  return rows.map((row) => row.committee);
+}
+
 export async function createApplication(
   input: CreateApplicationInput,
 ): Promise<{ application: ApplicationJson; created: boolean }> {
@@ -379,18 +439,31 @@ export async function createApplication(
       .limit(1);
 
     let applicantId = existing[0]?.id;
+    const applicantProfile = {
+      firstName: input.firstName,
+      lastName: input.lastName,
+      age: input.age,
+      birthday: input.birthday,
+      gender: input.gender,
+      section: input.section,
+      studentNumber: input.studentNumber,
+      contactNumber: input.contactNumber,
+      facebookUrl: input.facebookUrl,
+    };
     if (!applicantId) {
       const [inserted] = await tx
         .insert(applicants)
         .values({
-          firstName: input.firstName,
-          lastName: input.lastName,
+          ...applicantProfile,
           email: input.email,
-          age: input.age,
-          section: input.section,
         })
         .returning({ id: applicants.id });
       applicantId = inserted.id;
+    } else {
+      await tx
+        .update(applicants)
+        .set(applicantProfile)
+        .where(eq(applicants.id, applicantId));
     }
 
     const recruitmentYear = recruitmentYearInt();
@@ -421,6 +494,9 @@ export async function createApplication(
               recruitmentYear,
               status: "pending",
               motivation: input.motivation,
+              dataPrivacyAgreedAt: new Date(),
+              portfolioUrl: input.portfolioUrl?.trim() || null,
+              githubUrl: input.githubUrl?.trim() || null,
             })
             .returning({ id: applications.id });
         } catch (err) {
@@ -451,6 +527,7 @@ export async function createApplication(
       })),
     );
 
+<<<<<<< HEAD
       await tx
         .update(uploadSessions)
         .set({
@@ -459,6 +536,21 @@ export async function createApplication(
           consumedAt: new Date(),
         })
         .where(eq(uploadSessions.id, session.id));
+=======
+    const firstChoice = input.choices.find((choice) => choice.preferenceRank === 1);
+    if (!firstChoice) {
+      throw new Error("Application is missing a first-choice position.");
+    }
+    await bookInterviewSlotForApplication(
+      tx,
+      application.id,
+      firstChoice.positionId,
+      input.slotId,
+    );
+
+    return application.id;
+  });
+>>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
 
       return { id: application.id, created: true };
     });

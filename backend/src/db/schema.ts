@@ -7,6 +7,7 @@ import {
   text,
   integer,
   boolean,
+  date,
   timestamp,
   check,
   unique,
@@ -24,11 +25,18 @@ export const applicationChoiceStatus = pgEnum("application_choice_status", [
   "approved",
   "rejected",
 ]);
+<<<<<<< HEAD
 export const documentType = pgEnum("document_type", ["resume", "transcript"]);
 export const uploadSessionStatus = pgEnum("upload_session_status", [
   "active",
   "consumed",
   "expired",
+=======
+export const documentType = pgEnum("document_type", [
+  "resume",
+  "transcript",
+  "registration",
+>>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
 ]);
 export const emailMessageType = pgEnum("email_message_type", [
   "application_submitted",
@@ -42,6 +50,7 @@ export const emailDeliveryStatus = pgEnum("email_delivery_status", [
   "sent",
   "failed",
 ]);
+export const applicantGender = pgEnum("applicant_gender", ["male", "female"]);
 
 export const users = pgTable(
   "users",
@@ -72,7 +81,12 @@ export const applicants = pgTable(
     lastName: varchar("last_name", { length: 100 }).notNull(),
     email: varchar({ length: 255 }).notNull(),
     age: integer(),
+    birthday: date("birthday"),
+    gender: applicantGender("gender"),
     section: varchar({ length: 50 }),
+    studentNumber: varchar("student_number", { length: 10 }),
+    contactNumber: varchar("contact_number", { length: 14 }),
+    facebookUrl: text("facebook_url"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -149,6 +163,11 @@ export const applications = pgTable(
     // Apply-form "Why do you want to join AWS Builders - UST?" — on the application, not the applicant.
     // default("") is for drizzle-kit push against existing rows; seed and POST always send a real answer.
     motivation: text().notNull().default(""),
+    dataPrivacyAgreedAt: timestamp("data_privacy_agreed_at", {
+      withTimezone: true,
+    }),
+    portfolioUrl: text("portfolio_url"),
+    githubUrl: text("github_url"),
     finalPositionId: uuid("final_position_id").references(() => positions.id, {
       onDelete: "restrict",
     }),
@@ -374,6 +393,31 @@ export const interviewBookings = pgTable(
     unique("interview_bookings_slot_unique").on(t.slotId),
     unique("interview_bookings_application_unique").on(t.applicationId),
     index("idx_interview_bookings_application").on(t.applicationId),
+  ],
+);
+
+export const interviewWindows = pgTable(
+  "interview_windows",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    singleton: integer().notNull().default(1),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+    updatedBy: uuid("updated_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    unique("interview_windows_singleton_unique").on(t.singleton),
+    check("interview_windows_singleton_check", sql`${t.singleton} = 1`),
+    check(
+      "interview_windows_range_check",
+      sql`${t.endsAt} > ${t.startsAt}`,
+    ),
   ],
 );
 

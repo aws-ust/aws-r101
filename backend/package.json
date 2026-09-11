@@ -14,7 +14,12 @@
     "cdk": "cdk",
     "deploy": "cdk deploy",
     "synth": "cdk synth",
+<<<<<<< HEAD
     "db:push": "node --env-file-if-exists=../.env ./node_modules/drizzle-kit/bin.cjs push",
+=======
+    "db:push": "node --env-file=../.env ./node_modules/drizzle-kit/bin.cjs push",
+    "db:sync": "node --env-file=../.env scripts/sync-schema.mjs",
+>>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
     "db:seed": "tsx --env-file=../.env src/db/seed.ts",
     "db:studio": "drizzle-kit studio"
   },

@@ -11,6 +11,7 @@ import {
   getApplicationById,
   listApplications,
   listOpenPositions,
+  peekOpenPositions,
   patchApplicationStatusRequest,
   postApplication,
   postUploadPresign,
@@ -23,10 +24,25 @@ export {
   login,
   logout,
   listOpenPositions,
+  listBrowserPositions,
+  listPositionInterviewSlots,
+  peekOpenPositions,
+  peekBrowserPositions,
   getRecruitmentWindow,
   patchRecruitmentWindow,
+  getInterviewWindow,
+  patchInterviewWindow,
+  listInterviewSlots,
+  createInterviewSlot,
+  patchInterviewSlotOpen,
+  resetInterviewSchedule,
 } from "./api-client"
-export type { RecruitmentWindow } from "./api-client"
+export type {
+  RecruitmentWindow,
+  InterviewWindow,
+  HrInterviewSlot,
+  HrInterviewSlotBooking,
+} from "./api-client"
 
 export function useApplications() {
   const [applications, setApplications] = useState<Application[]>([])
@@ -111,8 +127,9 @@ export function useApplication(id: string | undefined) {
 }
 
 export function useOpenPositions() {
-  const [positions, setPositions] = useState<Position[]>([])
-  const [loading, setLoading] = useState(true)
+  const cached = peekOpenPositions()
+  const [positions, setPositions] = useState<Position[]>(cached ?? [])
+  const [loading, setLoading] = useState(!cached)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -141,6 +158,7 @@ export function useOpenPositions() {
 }
 
 export async function createApplication(
+<<<<<<< HEAD
   input: CreateApplicationInput
 ): Promise<Application> {
   return postApplication(input)
@@ -148,6 +166,38 @@ export async function createApplication(
 
 export async function createUploadSession(input: UploadPresignRequest) {
   return postUploadPresign(input)
+=======
+  input: Omit<CreateApplicationInput, "documents"> & {
+    slotId: string
+    documents: { documentType: DocumentType; fileName: string }[]
+  }
+): Promise<Application> {
+  const payload: CreateApplicationInput = {
+    firstName: input.firstName,
+    lastName: input.lastName,
+    email: input.email,
+    age: input.age,
+    birthday: input.birthday,
+    gender: input.gender,
+    section: input.section,
+    studentNumber: input.studentNumber,
+    contactNumber: input.contactNumber,
+    facebookUrl: input.facebookUrl,
+    dataPrivacyAgreed: input.dataPrivacyAgreed,
+    motivation: input.motivation,
+    portfolioUrl: input.portfolioUrl,
+    githubUrl: input.githubUrl,
+    slotId: input.slotId,
+    choices: input.choices,
+    documents: input.documents.map((doc) => ({
+      documentType: doc.documentType,
+      fileName: doc.fileName,
+      // Presign isn't in yet (#10); this string only exists so POST validation passes.
+      s3Key: `dev/uploads/${crypto.randomUUID()}/${doc.fileName}`,
+    })),
+  }
+  return postApplication(payload)
+>>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
 }
 
 export function patchApplicationStatus(id: string, status: ApplicationStatus) {

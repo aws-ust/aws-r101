@@ -189,6 +189,8 @@ request GET "/interview-slots"
 expect "GET  /interview-slots (no token)" 401
 request POST "/interview-slots" '{"committeeId":"00000000-0000-4000-8000-000000000000","startsAt":"2099-01-01T00:00:00.000Z"}'
 expect "POST /interview-slots (no token)" 401
+request DELETE "/interview-slots?committeeId=00000000-0000-4000-8000-000000000000"
+expect "DELETE /interview-slots (no token)" 401
 
 request GET "/applicant-auth/me"
 expect "GET  /applicant-auth/me (no session)" 401
@@ -200,6 +202,10 @@ request GET "/recruitment-window"
 expect "GET  /recruitment-window (no token)" 401
 request PATCH "/recruitment-window" '{"startsAt":"2099-01-01T00:00:00.000Z","endsAt":"2099-01-08T00:00:00.000Z"}'
 expect "PATCH /recruitment-window (no token)" 401
+request GET "/interview-window"
+expect "GET  /interview-window (no token)" 200
+request PATCH "/interview-window" '{"startsAt":"2099-01-01T00:00:00.000Z","endsAt":"2099-01-08T00:00:00.000Z"}'
+expect "PATCH /interview-window (no token)" 401
 request GET "/applicant/interview-slots"
 expect "GET  /applicant/interview-slots (no session)" 401
 request PUT "/applicant/interview-booking" '{"slotId":"00000000-0000-4000-8000-000000000000"}'
@@ -216,7 +222,7 @@ expect "POST /applicant-auth/logout" 204
 request POST "/auth/login" '{"email":"wrong@example.com","password":"nope"}'
 expect "POST /auth/login (bad credentials)" 401
 request POST "/auth/logout"
-expect "POST /auth/logout (no token)" 401
+expect "POST /auth/logout (no token)" 204
 
 login_json="{\"email\":\"${HR_EMAIL}\",\"password\":\"${HR_PASSWORD}\"}"
 request POST "/auth/login" "$login_json"
@@ -281,13 +287,41 @@ fi
 if [[ -z "$POS1" || -z "$POS2" || -z "${SMOKE_UPLOAD_SESSION_ID:-}" ]]; then
   echo "SKIP  application creation requires two positions and SMOKE_UPLOAD_SESSION_ID"
 else
-  SECTION="SMOKE-$(date +%s)"
-  EMAIL="smoke.$SECTION@example.com"
+  SECTION="4SMK"
+  EMAIL="smoke.$(date +%s)@example.com"
+  SLOT_ID=""
+  if [[ -n "$token" && -n "$committee_id" ]]; then
+    SLOT_START=$(node -e "
+      const d = new Date();
+      d.setDate(d.getDate() + 7);
+      d.setHours(9, 0, 0, 0);
+      console.log(d.toISOString());
+    ")
+    request POST "/interview-slots" "{\"committeeId\":\"$committee_id\",\"startsAt\":\"$SLOT_START\"}" "$token"
+    expect "POST /interview-slots for application smoke" 201
+    if [[ "$LAST_STATUS" == "201" ]]; then
+      SLOT_ID=$(json_field id || true)
+    fi
+  fi
+
+  if [[ -z "$SLOT_ID" ]]; then
+    echo "FAIL  need interview slot id for POST /applications smoke"
+    fail=$((fail + 1))
+  else
+    request GET "/positions/$POS1/interview-slots"
+    expect "GET  /positions/:id/interview-slots" 200
+  fi
+
   CREATE_BODY=$(cat <<EOF
+<<<<<<< HEAD
 {"firstName":"Smoke","lastName":"Test","email":"$EMAIL","age":21,"section":"$SECTION","motivation":"Smoke test why join.","choices":[{"positionId":"$POS1","preferenceRank":1},{"positionId":"$POS2","preferenceRank":2}],"uploadSessionId":"$SMOKE_UPLOAD_SESSION_ID"}
+=======
+{"firstName":"Smoke","lastName":"Test","email":"$EMAIL","age":21,"birthday":"2005-04-12","gender":"male","section":"$SECTION","studentNumber":"2026123456","contactNumber":"+639171234567","facebookUrl":"https://facebook.com/smoke.test","dataPrivacyAgreed":true,"motivation":"Smoke test why join.","slotId":"$SLOT_ID","choices":[{"positionId":"$POS1","preferenceRank":1},{"positionId":"$POS2","preferenceRank":2}],"documents":[{"documentType":"resume","fileName":"CV_Test.pdf","s3Key":"dev/cv.pdf"},{"documentType":"transcript","fileName":"TOR_Test.pdf","s3Key":"dev/tor.pdf"},{"documentType":"registration","fileName":"RegForm_Test.pdf","s3Key":"dev/reg.pdf"}]}
+>>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
 EOF
 )
 
+  if [[ -n "$SLOT_ID" ]]; then
   request POST "/applications" "$CREATE_BODY"
   expect "POST /applications" 201
   APP_ID=""
@@ -393,6 +427,7 @@ EOF
 
   request DELETE "/applications/$UNKNOWN_ID" "" "$token"
   expect "DELETE /applications/:id unknown" 404
+  fi
 fi
 
 if [[ -z "$token" ]]; then
