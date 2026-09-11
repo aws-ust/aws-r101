@@ -53,7 +53,7 @@ export function PositionsBrowser({
             Find a role that <span className={accentClasses}>fits</span>.
           </>
         }
-        subtitle="Browse executive assistant and committee staff openings. Pick a role on the left, read it on the right, then apply."
+        subtitle="Browse open executive assistant and committee staff roles. Pick a role on the left, read it on the right, then apply."
       />
 
       <p className={metaClasses}>

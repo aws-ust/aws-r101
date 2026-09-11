@@ -1,8 +1,14 @@
+/** Multi-line display headings — slightly open so stacked lines don't collide. */
+export const displayTitleLeadingClasses = "leading-[1.15]"
+
 export const pageShellClasses =
   "mx-auto flex w-full max-w-[1180px] flex-1 flex-col px-4 py-10 md:px-10"
 
 export const glassPanelClasses =
   "glass rounded-[28px] border border-biloba-flower/35 bg-meteorite/45"
+
+export const chromeBarClasses =
+  "glass border-b border-blue-chalk/15 bg-haiti/70"
 
 export const fieldLabelClasses =
   "font-sans text-sm font-medium text-blue-chalk"

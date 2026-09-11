@@ -26,6 +26,7 @@ export type ApplicationDocument = {
 
 export type Application = {
   id: string
+  applicationCode: string
   status: ApplicationStatus
   submittedAt: string
   firstName: string

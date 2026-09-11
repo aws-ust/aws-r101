@@ -6,7 +6,7 @@ import { useEffect, useEffectEvent, useRef } from "react"
 import { Button } from "@/components/ui/button"
 
 const heroClasses =
-  "relative left-1/2 -mt-16 mb-[-40px] flex min-h-[calc(100svh-10rem)] w-screen -translate-x-1/2 overflow-hidden bg-cover bg-center text-center"
+  "relative left-1/2 -mt-16 mb-[-40px] flex min-h-[calc(100svh-10rem)] w-screen -translate-x-1/2 scroll-mt-16 overflow-hidden bg-cover bg-center text-center"
 const overlayClasses =
   "absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(23,15,51,0.1),rgba(42,18,89,0.03)_50%,rgba(23,15,51,0.2))]"
 const contentClasses =
@@ -161,6 +161,7 @@ export function Hero() {
   }, [])
   return (
     <section
+      id="hero"
       aria-labelledby="hero-title"
       className={heroClasses}
       style={{ backgroundImage: "url('/hero/hero-background.png')" }}
@@ -232,22 +233,43 @@ export function Hero() {
 
             <div className={buttonRowClasses}>
               <Button
+                color="cyan"
+                className={`${buttonClasses} ${cyanButtonEffectClasses}`}
+                nativeButton={false}
+                render={<Link href="/careers" />}
+              >
+                Explore careers
+              </Button>
+              <Button
                 color="purple"
-                render={<a href="#committees" aria-label="Find your committee" />}
+                render={
+                  <a
+                    href="#committees"
+                    aria-label="Find your committee"
+                    onClick={(event) => {
+                      event.preventDefault()
+                      document.getElementById("committees")?.scrollIntoView({
+                        behavior: window.matchMedia(
+                          "(prefers-reduced-motion: reduce)"
+                        ).matches
+                          ? "instant"
+                          : "smooth",
+                        block: "start",
+                      })
+                    }}
+                  />
+                }
                 nativeButton={false}
                 className={`${buttonClasses} ${purpleButtonEffectClasses}`}
               >
                 Find your committee
               </Button>
               <Button
-                color="cyan"
-                className={`${buttonClasses} ${cyanButtonEffectClasses}`}
+                color="purple"
+                className={`${buttonClasses} ${purpleButtonEffectClasses}`}
                 nativeButton={false}
-                render={<Link href="/apply" />}
+                render={<Link href="/about" />}
               >
-                Apply now!
-              </Button>
-              <Button color="purple" className={`${buttonClasses} ${purpleButtonEffectClasses}`}>
                 Know more about us!
               </Button>
             </div>

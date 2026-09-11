@@ -1,9 +1,10 @@
-import { connection } from "next/server"
 import { PositionsBrowser } from "@/components/positions-browser"
 import type { Position } from "@/lib/positions"
 
+export const dynamic = "force-dynamic"
+
 const apiBaseUrl =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787"
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8787"
 
 type PositionResponse = {
   id: string
@@ -73,8 +74,6 @@ async function getOpenPositions() {
 }
 
 export default async function PositionsPage() {
-  await connection()
-
   let positions: Position[] = []
   let loadError = false
 
@@ -86,7 +85,7 @@ export default async function PositionsPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-[1180px] flex-1 flex-col gap-10 px-4 pb-16 pt-16">
+    <main className="mx-auto flex w-full max-w-[1180px] flex-1 flex-col gap-10 px-4 pb-16 pt-4 md:px-10">
       <PositionsBrowser positions={positions} loadError={loadError} />
     </main>
   )

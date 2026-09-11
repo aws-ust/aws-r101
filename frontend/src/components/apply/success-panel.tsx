@@ -11,7 +11,7 @@ const titleClasses = "font-sans text-2xl font-bold text-blue-chalk md:text-3xl"
 const bodyClasses = "mt-3 max-w-sm font-sans text-sm leading-relaxed text-prelude"
 const buttonClasses = "mt-8 h-10 px-5 text-xs"
 
-export function SuccessPanel() {
+export function SuccessPanel({ applicationCode }: { applicationCode: string }) {
   return (
     <div className={wrapClasses}>
       <div className={panelClasses}>
@@ -20,8 +20,13 @@ export function SuccessPanel() {
         </div>
         <h2 className={titleClasses}>Application submitted!</h2>
         <p className={bodyClasses}>
-          Thanks for applying to AWS Builders - UST! We&apos;ll reach out once
-          R101 review wraps up.
+          Thanks for applying to AWS Builders - UST! Save your Application ID:
+        </p>
+        <p className="mt-2 font-mono text-base font-semibold tracking-wide text-blue-chalk">
+          {applicationCode}
+        </p>
+        <p className="mt-3 max-w-sm font-sans text-sm leading-relaxed text-prelude">
+          We&apos;ll reach out once R101 review wraps up.
         </p>
         <Button color="purple" className={buttonClasses} nativeButton={false} render={<Link href="/apply/positions" />}>
           Browse open positions

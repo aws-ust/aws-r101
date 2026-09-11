@@ -18,6 +18,10 @@ import {
   validateIncomingDocument,
 } from "./documents";
 import { freePlanEndDate } from "./free-plan";
+import {
+  generateApplicationCode,
+  recruitmentYearInt,
+} from "./application-code";
 
 export type ApplicationStatus = "pending" | "approved" | "rejected";
 export type DocumentType = "resume" | "transcript";
@@ -39,6 +43,7 @@ export type ApplicationDocumentJson = {
 
 export type ApplicationJson = {
   id: string;
+  applicationCode: string;
   status: ApplicationStatus;
   submittedAt: string;
   firstName: string;
@@ -68,8 +73,50 @@ export type ListFilters = {
   section?: string;
 };
 
+export class ApplicationAlreadySubmittedError extends Error {
+  constructor() {
+    super(
+      "You already submitted an application for this recruitment cycle. Only one application per year is allowed.",
+    );
+    this.name = "ApplicationAlreadySubmittedError";
+  }
+}
+
+function isApplicationCodeCollision(err: unknown): boolean {
+  const inspect = (value: unknown): boolean => {
+    if (!value || typeof value !== "object") return false;
+    const record = value as Record<string, unknown>;
+    if (
+      record.constraint_name === "applications_application_code_key" ||
+      record.constraint_name === "applications_application_code_unique"
+    ) {
+      return true;
+    }
+    if (typeof record.message === "string") {
+      const message = record.message.toLowerCase();
+      return (
+        message.includes("application_code") &&
+        (message.includes("unique") || message.includes("duplicate"))
+      );
+    }
+    return false;
+  };
+
+  if (inspect(err)) return true;
+  if (err instanceof Error) {
+    if (inspect(err.cause)) return true;
+    const message = err.message.toLowerCase();
+    return (
+      message.includes("application_code") &&
+      (message.includes("unique") || message.includes("duplicate"))
+    );
+  }
+  return false;
+}
+
 type ApplicationRow = {
   id: string;
+  applicationCode: string;
   status: ApplicationStatus;
   submittedAt: Date;
   firstName: string;
@@ -143,6 +190,7 @@ async function attachRelations(
 
   return rows.map((row) => ({
     id: row.id,
+    applicationCode: row.applicationCode,
     status: row.status,
     submittedAt: iso(row.submittedAt),
     firstName: row.firstName,
@@ -160,6 +208,7 @@ async function attachRelations(
 
 const applicationSelect = {
   id: applications.id,
+  applicationCode: applications.applicationCode,
   status: applications.status,
   submittedAt: applications.submittedAt,
   firstName: applicants.firstName,
@@ -344,15 +393,44 @@ export async function createApplication(
       applicantId = inserted.id;
     }
 
-    const [application] = await tx
-      .insert(applications)
-      .values({
-        id: applicationId,
-        applicantId,
-        status: "pending",
-        motivation: input.motivation,
-      })
-      .returning({ id: applications.id });
+    const recruitmentYear = recruitmentYearInt();
+    const [existingForCycle] = await tx
+      .select({ id: applications.id })
+      .from(applications)
+      .where(
+        and(
+          eq(applications.applicantId, applicantId),
+          eq(applications.recruitmentYear, recruitmentYear),
+        ),
+      )
+      .limit(1);
+
+    if (existingForCycle) {
+      throw new ApplicationAlreadySubmittedError();
+    }
+
+    const [application] = await (async () => {
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          return await tx
+            .insert(applications)
+            .values({
+              id: applicationId,
+              applicantId,
+              applicationCode: generateApplicationCode(),
+              recruitmentYear,
+              status: "pending",
+              motivation: input.motivation,
+            })
+            .returning({ id: applications.id });
+        } catch (err) {
+          if (!isApplicationCodeCollision(err)) {
+            throw err;
+          }
+        }
+      }
+      throw new Error("Could not generate a unique application code");
+    })();
 
     await tx.insert(applicationChoices).values(
       input.choices.map((choice) => ({
@@ -425,10 +503,31 @@ export async function deleteApplication(id: string): Promise<boolean> {
     .select({ s3Key: applicationDocuments.s3Key })
     .from(applicationDocuments)
     .where(eq(applicationDocuments.applicationId, id));
-  if (documents.length > 0) await deleteKeys(documents.map((document) => document.s3Key));
-  const deleted = await db
-    .delete(applications)
-    .where(eq(applications.id, id))
-    .returning({ id: applications.id });
-  return deleted.length > 0;
+  const deleted = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .select({
+        id: applications.id,
+        applicantId: applications.applicantId,
+      })
+      .from(applications)
+      .where(eq(applications.id, id))
+      .limit(1);
+    if (!row) return false;
+
+    await tx.delete(applications).where(eq(applications.id, id));
+
+    const remaining = await tx
+      .select({ id: applications.id })
+      .from(applications)
+      .where(eq(applications.applicantId, row.applicantId))
+      .limit(1);
+    if (remaining.length === 0) {
+      await tx.delete(applicants).where(eq(applicants.id, row.applicantId));
+    }
+    return true;
+  });
+  if (deleted && documents.length > 0) {
+    await deleteKeys(documents.map((document) => document.s3Key));
+  }
+  return deleted;
 }

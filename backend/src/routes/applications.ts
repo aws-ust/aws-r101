@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import {
+  ApplicationAlreadySubmittedError,
   createApplication,
   deleteApplication,
   getApplicationDocument,
@@ -12,6 +13,10 @@ import {
 import { requireAuth } from "../auth";
 import { createDocumentDownload } from "../lib/documents";
 import { freePlanEndDate } from "../lib/free-plan";
+import {
+  listEmailNotificationsByApplicationId,
+  sendApplicationSubmitted,
+} from "../lib/email/service";
 
 export const applicationsRoutes = new Hono();
 
@@ -136,8 +141,16 @@ applicationsRoutes.post("/", async (c) => {
 
   try {
     const result = await createApplication(parsed.value);
+    if (result.created) {
+      void sendApplicationSubmitted(result.application).catch((err) => {
+        console.error("submission email failed", err);
+      });
+    }
     return c.json(result.application, result.created ? 201 : 200);
   } catch (error) {
+    if (error instanceof ApplicationAlreadySubmittedError) {
+      return c.json({ error: error.message }, 409);
+    }
     const message = error instanceof Error ? error.message : "Could not create application.";
     if (message.includes("was not found")) return c.json({ error: message }, 404);
     if (message.includes("has expired")) return c.json({ error: message }, 410);
@@ -169,6 +182,21 @@ applicationsRoutes.patch("/:id/status", requireAuth, async (c) => {
     return c.json({ error: "Application not found." }, 404);
   }
   return c.json(updated);
+});
+
+applicationsRoutes.get("/:id/email-notifications", requireAuth, async (c) => {
+  const id = c.req.param("id");
+  if (!isUuid(id)) {
+    return c.json({ error: "Invalid application id." }, 400);
+  }
+
+  const application = await getApplicationById(id);
+  if (!application) {
+    return c.json({ error: "Application not found." }, 404);
+  }
+
+  const notifications = await listEmailNotificationsByApplicationId(id);
+  return c.json({ notifications });
 });
 
 applicationsRoutes.get("/:id", requireAuth, async (c) => {

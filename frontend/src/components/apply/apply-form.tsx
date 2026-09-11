@@ -30,13 +30,16 @@ import {
   toCreateApplicationInput,
 } from "@/components/apply/form-model"
 import { SectionHeader } from "@/components/section-header"
-import { createApplication, createUploadSession } from "@/lib/api"
+import {
+  createApplication,
+  createUploadSession,
+  listOpenPositions,
+} from "@/lib/api"
 import { UST_EMAIL_DOMAIN } from "@/lib/constants"
 import {
   glassPanelClasses,
   ghostPillButtonClasses,
   pageShellClasses,
-  positionsLinkClasses,
 } from "@/lib/surface"
 
 const panelClasses = `mx-auto mt-10 w-full max-w-2xl ${glassPanelClasses} px-6 py-8 md:px-10`
@@ -97,7 +100,11 @@ async function fileChecksum(file: File): Promise<string> {
   return toBase64(await crypto.subtle.digest("SHA-256", content))
 }
 
-export function ApplyForm() {
+type ApplyFormProps = {
+  initialPositionId?: string
+}
+
+export function ApplyForm({ initialPositionId }: ApplyFormProps) {
   const reducedMotion = useReducedMotion() ?? false
   const [step, setStep] = useState<1 | 2 | 3 | "success">(1)
   const [direction, setDirection] = useState(1)
@@ -107,21 +114,60 @@ export function ApplyForm() {
   const [error, setError] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [completedUpload, setCompletedUpload] = useState<CompletedUploadSession | null>(null)
+  const [applicationCode, setApplicationCode] = useState("")
+  const [draftReady, setDraftReady] = useState(false)
 
   useEffect(() => {
-    const draft = loadApplyFormDraft()
-    if (draft) {
-      setGeneral(draft.general)
-      setCommittee(draft.committee)
-      setStep(draft.step)
-      setUpload({
-        resume: null,
-        transcript: null,
-        resumeDisplayName: draft.resumeName,
-        transcriptDisplayName: draft.transcriptName,
-      })
-    }
+    const frame = window.requestAnimationFrame(() => {
+      const draft = loadApplyFormDraft()
+      if (draft) {
+        setGeneral(draft.general)
+        setCommittee(draft.committee)
+        setStep(draft.step)
+        setUpload({
+          resume: null,
+          transcript: null,
+          resumeDisplayName: draft.resumeName,
+          transcriptDisplayName: draft.transcriptName,
+        })
+      }
+      setDraftReady(true)
+    })
+
+    return () => window.cancelAnimationFrame(frame)
   }, [])
+
+  useEffect(() => {
+    if (!draftReady || !initialPositionId) return
+
+    let cancelled = false
+    listOpenPositions()
+      .then((rows) => {
+        if (cancelled) return
+        const position = rows.find((row) => row.id === initialPositionId)
+        if (!position) return
+        setCommittee((current) => {
+          if (
+            current.firstPositionId === position.id &&
+            current.firstCommittee === position.committee
+          ) {
+            return current
+          }
+          return {
+            ...current,
+            firstCommittee: position.committee,
+            firstPositionId: position.id,
+          }
+        })
+      })
+      .catch(() => {
+        // Step 2 still loads positions; the applicant can pick manually.
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [draftReady, initialPositionId])
 
   function goNext() {
     setError("")
@@ -202,7 +248,7 @@ export function ApplyForm() {
           expiresAt: session.sessionExpiresAt,
         })
       }
-      await createApplication(
+      const created = await createApplication(
         toCreateApplicationInput(
           general,
           committee,
@@ -212,6 +258,7 @@ export function ApplyForm() {
         )
       )
       clearApplyFormDraft()
+      setApplicationCode(created.applicationCode)
       setStep("success")
     } catch (err) {
       const message =
@@ -231,7 +278,7 @@ export function ApplyForm() {
           title="AWS Builders – UST"
           titleClassName="max-w-none whitespace-nowrap"
         />
-        <SuccessPanel />
+        <SuccessPanel applicationCode={applicationCode} />
       </main>
     )
   }
@@ -303,7 +350,7 @@ export function ApplyForm() {
               color="purple"
               className={ghostPillButtonClasses}
               nativeButton={false}
-              render={<Link href="/" />}
+              render={<Link href="/apply/positions" />}
             >
               ← Back
             </Button>
@@ -339,11 +386,6 @@ export function ApplyForm() {
           )}
         </div>
       </div>
-      <p className="mt-8 text-center">
-        <Link href="/apply/positions" className={positionsLinkClasses}>
-          View all open positions →
-        </Link>
-      </p>
       </LazyMotion>
     </main>
   )

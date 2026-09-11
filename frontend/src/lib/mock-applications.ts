@@ -81,6 +81,7 @@ const lorem =
 export const SEED_APPLICATIONS: Application[] = [
   {
     id: "app-lyka",
+    applicationCode: "AP-2026-100001",
     status: "pending",
     submittedAt: "2026-08-25T00:00:00.000Z",
     firstName: "Lyka Nicole",
@@ -110,6 +111,7 @@ export const SEED_APPLICATIONS: Application[] = [
   },
   {
     id: "app-carl",
+    applicationCode: "AP-2026-100002",
     status: "rejected",
     submittedAt: "2026-08-24T00:00:00.000Z",
     firstName: "Carl Raymond",
@@ -139,6 +141,7 @@ export const SEED_APPLICATIONS: Application[] = [
   },
   {
     id: "app-benedict",
+    applicationCode: "AP-2026-100003",
     status: "approved",
     submittedAt: "2026-08-22T00:00:00.000Z",
     firstName: "Benedict",
@@ -168,6 +171,7 @@ export const SEED_APPLICATIONS: Application[] = [
   },
   {
     id: "app-halle",
+    applicationCode: "AP-2026-100004",
     status: "pending",
     submittedAt: "2026-08-21T00:00:00.000Z",
     firstName: "Halle Clarice",

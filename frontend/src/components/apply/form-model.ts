@@ -160,5 +160,12 @@ export function mapApplyApiError(message: string): string {
   if (lower.includes("email")) {
     return "Go back to Step 1 and check your UST email."
   }
+  if (
+    lower.includes("already submitted") ||
+    lower.includes("one application per year") ||
+    lower.includes("recruitment cycle")
+  ) {
+    return "You already applied for this recruitment cycle with this UST email. Only one application per year is allowed."
+  }
   return message
 }
