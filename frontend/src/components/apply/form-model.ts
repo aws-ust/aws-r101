@@ -6,7 +6,7 @@ import type { UploadValues } from "@/components/apply/upload-step"
 
 import type { PrivacyValues } from "@/components/apply/privacy-step"
 
-import type { CreateApplicationInput, DocumentType } from "@/lib/application-types"
+import type { CreateApplicationInput } from "@/lib/application-types"
 
 import {
 
@@ -474,15 +474,9 @@ export function toCreateApplicationInput(
   committee: CommitteeValues,
 
   upload: UploadValues,
-
-  emailDomain: string
-
-): Omit<CreateApplicationInput, "documents"> & {
-
-  documents: { documentType: DocumentType; fileName: string }[]
-
-} {
-
+  emailDomain: string,
+  uploadSessionId: string
+): CreateApplicationInput {
   const contactNumber = formatContactDigits(general.contactDigits)
 
   const section = sanitizeSectionInput(general.section)
@@ -502,8 +496,6 @@ export function toCreateApplicationInput(
     committee.secondCommittee
 
   )
-
-
 
   return {
 
@@ -550,23 +542,7 @@ export function toCreateApplicationInput(
       { positionId: committee.secondPositionId, preferenceRank: 2 },
 
     ],
-
-    documents: [
-
-      { documentType: "resume", fileName: upload.resume!.name },
-
-      { documentType: "transcript", fileName: upload.transcript!.name },
-
-      {
-
-        documentType: "registration",
-
-        fileName: upload.registration!.name,
-
-      },
-
-    ],
-
+    uploadSessionId,
   }
 
 }
