@@ -3,14 +3,10 @@ import type { GeneralInfoValues } from "@/components/apply/general-info-step"
 import type { CommitteeValues } from "@/components/apply/committee-step"
 
 import type { UploadValues } from "@/components/apply/upload-step"
-<<<<<<< HEAD
-import type { CreateApplicationInput } from "@/lib/application-types"
-=======
 
 import type { PrivacyValues } from "@/components/apply/privacy-step"
 
-import type { CreateApplicationInput, DocumentType } from "@/lib/application-types"
->>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
+import type { CreateApplicationInput } from "@/lib/application-types"
 
 import {
 
@@ -463,20 +459,9 @@ export function toCreateApplicationInput(
   committee: CommitteeValues,
 
   upload: UploadValues,
-<<<<<<< HEAD
   emailDomain: string,
   uploadSessionId: string
 ): CreateApplicationInput {
-=======
-
-  emailDomain: string
-
-): Omit<CreateApplicationInput, "documents"> & {
-
-  documents: { documentType: DocumentType; fileName: string }[]
-
-} {
-
   const contactNumber = formatContactDigits(general.contactDigits)
 
   const section = sanitizeSectionInput(general.section)
@@ -497,9 +482,6 @@ export function toCreateApplicationInput(
 
   )
 
-
-
->>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
   return {
 
     firstName: general.firstName.trim(),
@@ -545,27 +527,7 @@ export function toCreateApplicationInput(
       { positionId: committee.secondPositionId, preferenceRank: 2 },
 
     ],
-<<<<<<< HEAD
     uploadSessionId,
-=======
-
-    documents: [
-
-      { documentType: "resume", fileName: upload.resume!.name },
-
-      { documentType: "transcript", fileName: upload.transcript!.name },
-
-      {
-
-        documentType: "registration",
-
-        fileName: upload.registration!.name,
-
-      },
-
-    ],
-
->>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
   }
 
 }
@@ -595,26 +557,7 @@ export function submitBlockedMessage(
     return uploadStepError
 
   }
-<<<<<<< HEAD
-  if (
-    !upload.resume.name.toLowerCase().endsWith(".pdf") ||
-    !upload.transcript.name.toLowerCase().endsWith(".pdf") ||
-    upload.resume.size < 1 ||
-    upload.transcript.size < 1 ||
-    upload.resume.size > 10_000_000 ||
-    upload.transcript.size > 10_000_000
-  ) {
-    return uploadPdfStepError
-  }
-  if (!generalValid(general)) {
-    return "Your answers from Step 1 are missing. Go back and complete your name, age, year & section, and UST email."
-  }
-  if (!committee.motivation.trim()) {
-    return "Your answer from Step 2 is missing. Go back and tell us why you want to join AWS Builders - UST."
-  }
-=======
 
->>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
   if (
 
     upload.resume.type !== "application/pdf" ||

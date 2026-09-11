@@ -1,18 +1,21 @@
 import { useEffect, useState } from "react"
 import type {
   Application,
-  ApplicationStatus,
   CreateApplicationInput,
   Position,
 } from "./application-types"
+import type {
+  HrApplication,
+  UpdateApplicationDecisionInput,
+} from "./hr-application-types"
 import {
   ApiError,
-  deleteApplicationRequest,
   getApplicationById,
   listApplications,
   listOpenPositions,
   peekOpenPositions,
-  patchApplicationStatusRequest,
+  patchApplicationArchivedRequest,
+  patchApplicationDecisionRequest,
   postApplication,
   postUploadPresign,
   type UploadPresignRequest,
@@ -45,13 +48,13 @@ export type {
 } from "./api-client"
 
 export function useApplications() {
-  const [applications, setApplications] = useState<Application[]>([])
+  const [applications, setApplications] = useState<HrApplication[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
-    listApplications()
+    listApplications("all")
       .then((rows) => {
         if (cancelled) return
         setApplications(rows)
@@ -70,15 +73,19 @@ export function useApplications() {
     }
   }, [])
 
-  function removeApplication(id: string) {
-    setApplications((current) => current.filter((app) => app.id !== id))
+  function replaceApplication(updated: HrApplication) {
+    setApplications((current) =>
+      current.map((application) =>
+        application.id === updated.id ? updated : application
+      )
+    )
   }
 
-  return { applications, loading, error, removeApplication }
+  return { applications, loading, error, replaceApplication }
 }
 
 export function useApplication(id: string | undefined) {
-  const [application, setApplication] = useState<Application | null>(null)
+  const [application, setApplication] = useState<HrApplication | null>(null)
   const [loading, setLoading] = useState(Boolean(id))
   const [error, setError] = useState<string | null>(null)
   const [notFound, setNotFound] = useState(false)
@@ -158,7 +165,6 @@ export function useOpenPositions() {
 }
 
 export async function createApplication(
-<<<<<<< HEAD
   input: CreateApplicationInput
 ): Promise<Application> {
   return postApplication(input)
@@ -166,46 +172,17 @@ export async function createApplication(
 
 export async function createUploadSession(input: UploadPresignRequest) {
   return postUploadPresign(input)
-=======
-  input: Omit<CreateApplicationInput, "documents"> & {
-    slotId: string
-    documents: { documentType: DocumentType; fileName: string }[]
-  }
-): Promise<Application> {
-  const payload: CreateApplicationInput = {
-    firstName: input.firstName,
-    lastName: input.lastName,
-    email: input.email,
-    age: input.age,
-    birthday: input.birthday,
-    gender: input.gender,
-    section: input.section,
-    studentNumber: input.studentNumber,
-    contactNumber: input.contactNumber,
-    facebookUrl: input.facebookUrl,
-    dataPrivacyAgreed: input.dataPrivacyAgreed,
-    motivation: input.motivation,
-    portfolioUrl: input.portfolioUrl,
-    githubUrl: input.githubUrl,
-    slotId: input.slotId,
-    choices: input.choices,
-    documents: input.documents.map((doc) => ({
-      documentType: doc.documentType,
-      fileName: doc.fileName,
-      // Presign isn't in yet (#10); this string only exists so POST validation passes.
-      s3Key: `dev/uploads/${crypto.randomUUID()}/${doc.fileName}`,
-    })),
-  }
-  return postApplication(payload)
->>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
 }
 
-export function patchApplicationStatus(id: string, status: ApplicationStatus) {
-  return patchApplicationStatusRequest(id, status)
+export function patchApplicationDecision(
+  id: string,
+  input: UpdateApplicationDecisionInput
+) {
+  return patchApplicationDecisionRequest(id, input)
 }
 
-export function deleteApplication(id: string) {
-  return deleteApplicationRequest(id)
+export function setApplicationArchived(id: string, archived: boolean) {
+  return patchApplicationArchivedRequest(id, archived)
 }
 
 export function fullName(app: Application) {

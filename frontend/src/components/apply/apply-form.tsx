@@ -81,17 +81,11 @@ import {
 } from "@/components/apply/form-model"
 
 import { SectionHeader } from "@/components/section-header"
-<<<<<<< HEAD
 import {
   createApplication,
   createUploadSession,
   listOpenPositions,
 } from "@/lib/api"
-=======
-
-import { createApplication, listOpenPositions } from "@/lib/api"
-
->>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
 import { UST_EMAIL_DOMAIN } from "@/lib/constants"
 
 import {
@@ -126,15 +120,11 @@ const nextButtonClasses = "h-10 px-5 text-xs"
 
 const errorClasses = "mt-4 text-sm text-aquamarine"
 
-<<<<<<< HEAD
 type CompletedUploadSession = {
   fingerprint: string
   id: string
   expiresAt: string
 }
-=======
-
->>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
 
 const slideSpring = { type: "spring" as const, stiffness: 400, damping: 35 }
 
@@ -192,7 +182,6 @@ function persistDraft(
 
 }
 
-<<<<<<< HEAD
 function toBase64(bytes: ArrayBuffer): string {
   const values = new Uint8Array(bytes)
   let result = ""
@@ -204,9 +193,6 @@ async function fileChecksum(file: File): Promise<string> {
   const content = await file.arrayBuffer()
   return toBase64(await crypto.subtle.digest("SHA-256", content))
 }
-=======
-
->>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
 
 type ApplyFormProps = {
 
@@ -235,11 +221,7 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
   const [error, setError] = useState("")
 
   const [submitting, setSubmitting] = useState(false)
-<<<<<<< HEAD
   const [completedUpload, setCompletedUpload] = useState<CompletedUploadSession | null>(null)
-=======
-
->>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
   const [applicationCode, setApplicationCode] = useState("")
 
   const [successCommittees, setSuccessCommittees] = useState({
@@ -473,7 +455,6 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
     setSubmitting(true)
 
     try {
-<<<<<<< HEAD
       const files = [
         { documentType: "resume" as const, file: upload.resume! },
         { documentType: "transcript" as const, file: upload.transcript! },
@@ -517,31 +498,13 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
       }
       const created = await createApplication(
         toCreateApplicationInput(
+          privacy,
           general,
           committee,
           upload,
           UST_EMAIL_DOMAIN,
           uploadSessionId!
         )
-=======
-
-      const created = await createApplication(
-
-        toCreateApplicationInput(
-
-          privacy,
-
-          general,
-
-          committee,
-
-          upload,
-
-          UST_EMAIL_DOMAIN
-
-        )
-
->>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
       )
 
       clearApplyFormDraft()

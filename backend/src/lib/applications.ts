@@ -1,4 +1,12 @@
-import { and, desc, eq, exists, inArray } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  exists,
+  inArray,
+  isNotNull,
+  isNull,
+} from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { db } from "../db";
 import {
@@ -9,6 +17,7 @@ import {
   committees,
   positions,
   uploadSessions,
+  users,
 } from "../db/schema";
 import {
   applicationKey,
@@ -33,6 +42,7 @@ export type ApplicationChoiceJson = {
   positionId: string;
   committee: string;
   title: string;
+  decisionStatus: "pending" | "approved" | "rejected";
 };
 
 export type ApplicationDocumentJson = {
@@ -48,6 +58,7 @@ export type ApplicationJson = {
   applicationCode: string;
   status: ApplicationStatus;
   submittedAt: string;
+  archivedAt: string | null;
   firstName: string;
   lastName: string;
   email: string;
@@ -62,6 +73,11 @@ export type ApplicationJson = {
   portfolioUrl: string | null;
   githubUrl: string | null;
   choices: ApplicationChoiceJson[];
+  finalPlacement: {
+    positionId: string;
+    committee: string;
+    title: string;
+  } | null;
   documents: ApplicationDocumentJson[];
 };
 
@@ -89,6 +105,7 @@ export type ListFilters = {
   committee?: string;
   position?: string;
   section?: string;
+  archive?: "active" | "archived" | "all";
 };
 
 export class ApplicationAlreadySubmittedError extends Error {
@@ -137,6 +154,7 @@ type ApplicationRow = {
   applicationCode: string;
   status: ApplicationStatus;
   submittedAt: Date;
+  archivedAt: Date | null;
   firstName: string;
   lastName: string;
   email: string;
@@ -150,6 +168,7 @@ type ApplicationRow = {
   motivation: string;
   portfolioUrl: string | null;
   githubUrl: string | null;
+  finalPositionId: string | null;
 };
 
 function iso(value: Date): string {
@@ -179,6 +198,7 @@ async function attachRelations(
       positionId: applicationChoices.positionId,
       committee: committees.name,
       title: positions.name,
+      decisionStatus: applicationChoices.decisionStatus,
     })
     .from(applicationChoices)
     .innerJoin(positions, eq(applicationChoices.positionId, positions.id))
@@ -205,6 +225,7 @@ async function attachRelations(
       positionId: choice.positionId,
       committee: choice.committee,
       title: choice.title,
+      decisionStatus: choice.decisionStatus,
     });
     choicesByApp.set(choice.applicationId, list);
   }
@@ -222,29 +243,43 @@ async function attachRelations(
     documentsByApp.set(doc.applicationId, list);
   }
 
-  return rows.map((row) => ({
-    id: row.id,
-    applicationCode: row.applicationCode,
-    status: row.status,
-    submittedAt: iso(row.submittedAt),
-    firstName: row.firstName,
-    lastName: row.lastName,
-    email: row.email,
-    age: row.age,
-    birthday: formatBirthday(row.birthday),
-    gender: row.gender,
-    section: row.section,
-    studentNumber: row.studentNumber,
-    contactNumber: row.contactNumber,
-    facebookUrl: row.facebookUrl,
-    motivation: row.motivation,
-    portfolioUrl: row.portfolioUrl,
-    githubUrl: row.githubUrl,
-    choices: (choicesByApp.get(row.id) ?? []).sort(
+  return rows.map((row) => {
+    const choices = (choicesByApp.get(row.id) ?? []).sort(
       (a, b) => a.preferenceRank - b.preferenceRank,
-    ),
-    documents: documentsByApp.get(row.id) ?? [],
-  }));
+    );
+    const finalPlacement = choices.find(
+      (choice) => choice.positionId === row.finalPositionId,
+    );
+    return {
+      id: row.id,
+      applicationCode: row.applicationCode,
+      status: row.status,
+      submittedAt: iso(row.submittedAt),
+      archivedAt: row.archivedAt ? iso(row.archivedAt) : null,
+      firstName: row.firstName,
+      lastName: row.lastName,
+      email: row.email,
+      age: row.age,
+      birthday: formatBirthday(row.birthday),
+      gender: row.gender,
+      section: row.section,
+      studentNumber: row.studentNumber,
+      contactNumber: row.contactNumber,
+      facebookUrl: row.facebookUrl,
+      motivation: row.motivation,
+      portfolioUrl: row.portfolioUrl,
+      githubUrl: row.githubUrl,
+      choices,
+      finalPlacement: finalPlacement
+        ? {
+            positionId: finalPlacement.positionId,
+            committee: finalPlacement.committee,
+            title: finalPlacement.title,
+          }
+        : null,
+      documents: documentsByApp.get(row.id) ?? [],
+    };
+  });
 }
 
 const applicationSelect = {
@@ -252,6 +287,7 @@ const applicationSelect = {
   applicationCode: applications.applicationCode,
   status: applications.status,
   submittedAt: applications.submittedAt,
+  archivedAt: applications.archivedAt,
   firstName: applicants.firstName,
   lastName: applicants.lastName,
   email: applicants.email,
@@ -265,6 +301,7 @@ const applicationSelect = {
   motivation: applications.motivation,
   portfolioUrl: applications.portfolioUrl,
   githubUrl: applications.githubUrl,
+  finalPositionId: applications.finalPositionId,
 };
 
 export async function getApplicationById(
@@ -312,6 +349,12 @@ export async function listApplications(filters: ListFilters): Promise<{
   total: number;
 }> {
   const conditions = [];
+
+  if (filters.archive === "archived") {
+    conditions.push(isNotNull(applications.archivedAt));
+  } else if (filters.archive !== "all") {
+    conditions.push(isNull(applications.archivedAt));
+  }
 
   if (filters.section) {
     conditions.push(eq(applicants.section, filters.section));
@@ -432,102 +475,112 @@ export async function createApplication(
       copiedApplicationId = applicationId;
       await copyIncomingDocuments(session.id, applicationId);
 
-    const existing = await tx
-      .select({ id: applicants.id })
-      .from(applicants)
-      .where(eq(applicants.email, input.email))
-      .limit(1);
+      const existing = await tx
+        .select({ id: applicants.id })
+        .from(applicants)
+        .where(eq(applicants.email, input.email))
+        .limit(1);
 
-    let applicantId = existing[0]?.id;
-    const applicantProfile = {
-      firstName: input.firstName,
-      lastName: input.lastName,
-      age: input.age,
-      birthday: input.birthday,
-      gender: input.gender,
-      section: input.section,
-      studentNumber: input.studentNumber,
-      contactNumber: input.contactNumber,
-      facebookUrl: input.facebookUrl,
-    };
-    if (!applicantId) {
-      const [inserted] = await tx
-        .insert(applicants)
-        .values({
-          ...applicantProfile,
-          email: input.email,
-        })
-        .returning({ id: applicants.id });
-      applicantId = inserted.id;
-    } else {
-      await tx
-        .update(applicants)
-        .set(applicantProfile)
-        .where(eq(applicants.id, applicantId));
-    }
+      let applicantId = existing[0]?.id;
+      const applicantProfile = {
+        firstName: input.firstName,
+        lastName: input.lastName,
+        age: input.age,
+        birthday: input.birthday,
+        gender: input.gender,
+        section: input.section,
+        studentNumber: input.studentNumber,
+        contactNumber: input.contactNumber,
+        facebookUrl: input.facebookUrl,
+      };
+      if (!applicantId) {
+        const [inserted] = await tx
+          .insert(applicants)
+          .values({
+            ...applicantProfile,
+            email: input.email,
+          })
+          .returning({ id: applicants.id });
+        applicantId = inserted.id;
+      } else {
+        await tx
+          .update(applicants)
+          .set(applicantProfile)
+          .where(eq(applicants.id, applicantId));
+      }
 
-    const recruitmentYear = recruitmentYearInt();
-    const [existingForCycle] = await tx
-      .select({ id: applications.id })
-      .from(applications)
-      .where(
-        and(
-          eq(applications.applicantId, applicantId),
-          eq(applications.recruitmentYear, recruitmentYear),
-        ),
-      )
-      .limit(1);
+      const recruitmentYear = recruitmentYearInt();
+      const [existingForCycle] = await tx
+        .select({ id: applications.id })
+        .from(applications)
+        .where(
+          and(
+            eq(applications.applicantId, applicantId),
+            eq(applications.recruitmentYear, recruitmentYear),
+          ),
+        )
+        .limit(1);
 
-    if (existingForCycle) {
-      throw new ApplicationAlreadySubmittedError();
-    }
+      if (existingForCycle) {
+        throw new ApplicationAlreadySubmittedError();
+      }
 
-    const [application] = await (async () => {
-      for (let attempt = 0; attempt < 5; attempt++) {
-        try {
-          return await tx
-            .insert(applications)
-            .values({
-              id: applicationId,
-              applicantId,
-              applicationCode: generateApplicationCode(),
-              recruitmentYear,
-              status: "pending",
-              motivation: input.motivation,
-              dataPrivacyAgreedAt: new Date(),
-              portfolioUrl: input.portfolioUrl?.trim() || null,
-              githubUrl: input.githubUrl?.trim() || null,
-            })
-            .returning({ id: applications.id });
-        } catch (err) {
-          if (!isApplicationCodeCollision(err)) {
-            throw err;
+      const [application] = await (async () => {
+        for (let attempt = 0; attempt < 5; attempt++) {
+          try {
+            return await tx
+              .insert(applications)
+              .values({
+                id: applicationId,
+                applicantId,
+                applicationCode: generateApplicationCode(),
+                recruitmentYear,
+                status: "pending",
+                motivation: input.motivation,
+                dataPrivacyAgreedAt: new Date(),
+                portfolioUrl: input.portfolioUrl?.trim() || null,
+                githubUrl: input.githubUrl?.trim() || null,
+              })
+              .returning({ id: applications.id });
+          } catch (err) {
+            if (!isApplicationCodeCollision(err)) {
+              throw err;
+            }
           }
         }
+        throw new Error("Could not generate a unique application code");
+      })();
+
+      await tx.insert(applicationChoices).values(
+        input.choices.map((choice) => ({
+          applicationId: application.id,
+          positionId: choice.positionId,
+          preferenceRank: choice.preferenceRank,
+        })),
+      );
+
+      await tx.insert(applicationDocuments).values(
+        documents.map((doc) => ({
+          applicationId: application.id,
+          documentType: doc.documentType,
+          fileName: doc.fileName,
+          fileSizeBytes: doc.sizeBytes,
+          s3Key: applicationKey(application.id, doc.documentType),
+          availableUntil: freePlanEndDate(),
+        })),
+      );
+
+      const firstChoice = input.choices.find((choice) => choice.preferenceRank === 1);
+      if (!firstChoice) {
+        throw new Error("Application is missing a first-choice position.");
       }
-      throw new Error("Could not generate a unique application code");
-    })();
+      await bookInterviewSlotForApplication(
+        tx,
+        application.id,
+        firstChoice.positionId,
+        input.slotId,
+      );
 
-    await tx.insert(applicationChoices).values(
-      input.choices.map((choice) => ({
-        applicationId: application.id,
-        positionId: choice.positionId,
-        preferenceRank: choice.preferenceRank,
-      })),
-    );
-
-    await tx.insert(applicationDocuments).values(
-      documents.map((doc) => ({
-        applicationId: application.id,
-        documentType: doc.documentType,
-        fileName: doc.fileName,
-        fileSizeBytes: doc.sizeBytes,
-        s3Key: applicationKey(application.id, doc.documentType),
-        availableUntil: freePlanEndDate(),
-      })),
-    );
-
-<<<<<<< HEAD
       await tx
         .update(uploadSessions)
         .set({
@@ -536,21 +589,6 @@ export async function createApplication(
           consumedAt: new Date(),
         })
         .where(eq(uploadSessions.id, session.id));
-=======
-    const firstChoice = input.choices.find((choice) => choice.preferenceRank === 1);
-    if (!firstChoice) {
-      throw new Error("Application is missing a first-choice position.");
-    }
-    await bookInterviewSlotForApplication(
-      tx,
-      application.id,
-      firstChoice.positionId,
-      input.slotId,
-    );
-
-    return application.id;
-  });
->>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
 
       return { id: application.id, created: true };
     });
@@ -576,50 +614,53 @@ export async function createApplication(
   }
 }
 
-export async function updateApplicationStatus(
+export async function setApplicationArchived(
   id: string,
-  status: "approved" | "rejected",
+  archived: boolean,
+  reviewerEmail?: string,
 ): Promise<ApplicationJson | null> {
-  const [updated] = await db
-    .update(applications)
-    .set({ status, reviewedAt: new Date() })
-    .where(eq(applications.id, id))
-    .returning({ id: applications.id });
-
-  if (!updated) return null;
-  return getApplicationById(updated.id);
-}
-
-export async function deleteApplication(id: string): Promise<boolean> {
-  const documents = await db
-    .select({ s3Key: applicationDocuments.s3Key })
-    .from(applicationDocuments)
-    .where(eq(applicationDocuments.applicationId, id));
-  const deleted = await db.transaction(async (tx) => {
-    const [row] = await tx
-      .select({
-        id: applications.id,
-        applicantId: applications.applicantId,
-      })
+  const found = await db.transaction(async (tx) => {
+    const [application] = await tx
+      .select({ archivedAt: applications.archivedAt })
       .from(applications)
       .where(eq(applications.id, id))
-      .limit(1);
-    if (!row) return false;
+      .limit(1)
+      .for("update");
+    if (!application) return false;
 
-    await tx.delete(applications).where(eq(applications.id, id));
+    const alreadyInRequestedState = archived
+      ? application.archivedAt !== null
+      : application.archivedAt === null;
+    if (alreadyInRequestedState) return true;
 
-    const remaining = await tx
-      .select({ id: applications.id })
-      .from(applications)
-      .where(eq(applications.applicantId, row.applicantId))
-      .limit(1);
-    if (remaining.length === 0) {
-      await tx.delete(applicants).where(eq(applicants.id, row.applicantId));
+    let reviewerId: string | null = null;
+    if (archived && reviewerEmail) {
+      const [reviewer] = await tx
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, reviewerEmail.trim().toLowerCase()))
+        .limit(1);
+      reviewerId = reviewer?.id ?? null;
     }
+
+    await tx
+      .update(applications)
+      .set(
+        archived
+          ? {
+              archivedAt: new Date(),
+              archivedBy: reviewerId,
+              archiveReason: null,
+            }
+          : {
+              archivedAt: null,
+              archivedBy: null,
+              archiveReason: null,
+            },
+      )
+      .where(eq(applications.id, id));
     return true;
   });
-  if (deleted && documents.length > 0) {
-    await deleteKeys(documents.map((document) => document.s3Key));
-  }
-  return deleted;
+
+  return found ? getApplicationById(id) : null;
 }

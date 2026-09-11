@@ -1,10 +1,13 @@
 import type {
   Application,
-  ApplicationStatus,
   CreateApplicationInput,
   DocumentType,
   Position,
 } from "./application-types"
+import type {
+  HrApplication,
+  UpdateApplicationDecisionInput,
+} from "./hr-application-types"
 import {
   readApiErrorMessage,
   userFacingApiError,
@@ -57,14 +60,16 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export function listApplications() {
-  return apiFetch<{ applications: Application[]; total: number }>(
-    "/applications",
+export function listApplications(
+  archive: "active" | "archived" | "all" = "active",
+) {
+  return apiFetch<{ applications: HrApplication[]; total: number }>(
+    `/applications?archive=${archive}`,
   ).then((body) => body.applications);
 }
 
 export function getApplicationById(id: string) {
-  return apiFetch<Application>(`/applications/${id}`);
+  return apiFetch<HrApplication>(`/applications/${id}`);
 }
 
 export function postApplication(body: CreateApplicationInput) {
@@ -101,18 +106,21 @@ export function postUploadPresign(body: UploadPresignRequest) {
   })
 }
 
-export function patchApplicationStatusRequest(
+export function patchApplicationDecisionRequest(
   id: string,
-  status: ApplicationStatus,
+  body: UpdateApplicationDecisionInput,
 ) {
-  return apiFetch<Application>(`/applications/${id}/status`, {
+  return apiFetch<HrApplication>(`/applications/${id}/decisions`, {
     method: "PATCH",
-    body: JSON.stringify({ status }),
+    body: JSON.stringify(body),
   });
 }
 
-export function deleteApplicationRequest(id: string) {
-  return apiFetch<void>(`/applications/${id}`, { method: "DELETE" });
+export function patchApplicationArchivedRequest(id: string, archived: boolean) {
+  return apiFetch<HrApplication>(`/applications/${id}/archive`, {
+    method: "PATCH",
+    body: JSON.stringify({ archived }),
+  });
 }
 
 type PositionApiRow = {
@@ -301,6 +309,73 @@ export function patchInterviewWindow(startsAt: string, endsAt: string) {
     method: "PATCH",
     body: JSON.stringify({ startsAt, endsAt }),
   });
+}
+
+export type ResultClassification = "accepted" | "rejected" | "incomplete";
+
+export type ResultPreviewApplication = {
+  id: string;
+  applicationCode: string;
+  applicant: { fullName: string; email: string };
+  submittedAt: string;
+  classification: ResultClassification;
+  blockingReason: string | null;
+  finalPlacement: {
+    positionId: string;
+    title: string;
+    committeeId: string;
+    committee: string;
+  } | null;
+  choices: {
+    preferenceRank: 1 | 2;
+    positionId: string;
+    title: string;
+    committeeId: string;
+    committee: string;
+    decisionStatus: "pending" | "approved" | "rejected";
+  }[];
+  willGenerateMemberId: boolean;
+  willSendEmail: boolean;
+};
+
+export type ResultsPreview = {
+  recruitmentYear: number;
+  summary: {
+    pendingRelease: number;
+    accepted: number;
+    rejected: number;
+    incomplete: number;
+    alreadyReleased: number;
+    archived: number;
+    canRelease: boolean;
+  };
+  applications: ResultPreviewApplication[];
+};
+
+export type ReleaseResultsResponse = {
+  released: number;
+  accepted: number;
+  rejected: number;
+  memberIdsGenerated: number;
+  releasedAt: string | null;
+  emailDelivery: { queued: number; sent: number; failed: number };
+};
+
+export function getResultsPreview() {
+  return apiFetch<ResultsPreview>("/results/preview");
+}
+
+export function releaseResultsRequest() {
+  return apiFetch<ReleaseResultsResponse>("/results/release", {
+    method: "POST",
+  });
+}
+
+export function retryFailedResultEmailsRequest() {
+  return apiFetch<{ retried: number; sent: number; failed: number }>(
+    "/results/emails/retry-failed",
+    { method: "POST" },
+  );
 }
 
 type LoginResponse = {

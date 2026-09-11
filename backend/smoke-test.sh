@@ -48,6 +48,21 @@ json_field() {
   " "$field"
 }
 
+slot_id_by_start() {
+  local starts_at="$1"
+  printf '%s' "$LAST_BODY" | node -e "
+    const fs = require('fs');
+    const startsAt = process.argv[1];
+    const payload = JSON.parse(fs.readFileSync(0, 'utf8'));
+    const rows = Array.isArray(payload) ? payload : payload.slots;
+    const slot = Array.isArray(rows)
+      ? rows.find((row) => row.startsAt === startsAt)
+      : undefined;
+    if (!slot?.id) process.exit(1);
+    process.stdout.write(String(slot.id));
+  " "$starts_at"
+}
+
 contains_id() {
   local id="$1"
   printf '%s' "$LAST_BODY" | node -e "
@@ -181,6 +196,12 @@ request GET "/auth/me"
 expect "GET  /auth/me (no token)" 401
 request GET "/applications"
 expect "GET  /applications (no token)" 401
+request GET "/results/preview"
+expect "GET  /results/preview (no token)" 401
+request POST "/results/release"
+expect "POST /results/release (no token)" 401
+request POST "/results/emails/retry-failed"
+expect "POST /results/emails/retry-failed (no token)" 401
 request POST "/positions" '{"title":"Unauth","committee_id":"00000000-0000-4000-8000-000000000000"}'
 expect "POST /positions (no token)" 401
 request PATCH "/positions/$UNKNOWN_ID" '{"title":"Ghost"}'
@@ -244,6 +265,12 @@ else
   expect "GET  /auth/me (fake token)" 401
   request GET "/interview-slots" "" "$token"
   expect "GET  /interview-slots" 200
+  request GET "/results/preview" "" "$token"
+  expect "GET  /results/preview" 200
+  request POST "/results/release" "" "$token"
+  expect "POST /results/release incomplete batch" 409
+  request POST "/results/emails/retry-failed" "" "$token"
+  expect "POST /results/emails/retry-failed" 200
   request POST "/interview-slots" '{"committeeId":"not-a-uuid","startsAt":"tomorrow"}' "$token"
   expect "POST /interview-slots invalid body" 400
   request PATCH "/interview-slots/not-a-uuid" '{"isOpen":false}' "$token"
@@ -288,7 +315,7 @@ if [[ -z "$POS1" || -z "$POS2" || -z "${SMOKE_UPLOAD_SESSION_ID:-}" ]]; then
   echo "SKIP  application creation requires two positions and SMOKE_UPLOAD_SESSION_ID"
 else
   SECTION="4SMK"
-  EMAIL="smoke.$(date +%s)@example.com"
+  EMAIL="smoke.$(date +%s)@ust.edu.ph"
   SLOT_ID=""
   if [[ -n "$token" && -n "$committee_id" ]]; then
     SLOT_START=$(node -e "
@@ -297,9 +324,26 @@ else
       d.setHours(9, 0, 0, 0);
       console.log(d.toISOString());
     ")
-    request POST "/interview-slots" "{\"committeeId\":\"$committee_id\",\"startsAt\":\"$SLOT_START\"}" "$token"
-    expect "POST /interview-slots for application smoke" 201
-    if [[ "$LAST_STATUS" == "201" ]]; then
+    WINDOW_START=$(node -e "
+      const d = new Date(process.argv[1]);
+      d.setDate(d.getDate() - 1);
+      console.log(d.toISOString());
+    " "$SLOT_START")
+    WINDOW_END=$(node -e "
+      const d = new Date(process.argv[1]);
+      d.setDate(d.getDate() + 1);
+      console.log(d.toISOString());
+    " "$SLOT_START")
+    request PATCH "/interview-window" "{\"startsAt\":\"$WINDOW_START\",\"endsAt\":\"$WINDOW_END\"}" "$token"
+    expect "PATCH /interview-window for application smoke" 200
+    request GET "/interview-slots?committeeId=$committee_id" "" "$token"
+    expect "GET /interview-slots for application smoke" 200
+    if [[ "$LAST_STATUS" == "200" ]]; then
+      SLOT_ID=$(slot_id_by_start "$SLOT_START" || true)
+    fi
+    if [[ -z "$SLOT_ID" ]]; then
+      request POST "/interview-slots" "{\"committeeId\":\"$committee_id\",\"startsAt\":\"$SLOT_START\"}" "$token"
+      expect "POST /interview-slots for application smoke" 201
       SLOT_ID=$(json_field id || true)
     fi
   fi
@@ -313,11 +357,7 @@ else
   fi
 
   CREATE_BODY=$(cat <<EOF
-<<<<<<< HEAD
-{"firstName":"Smoke","lastName":"Test","email":"$EMAIL","age":21,"section":"$SECTION","motivation":"Smoke test why join.","choices":[{"positionId":"$POS1","preferenceRank":1},{"positionId":"$POS2","preferenceRank":2}],"uploadSessionId":"$SMOKE_UPLOAD_SESSION_ID"}
-=======
-{"firstName":"Smoke","lastName":"Test","email":"$EMAIL","age":21,"birthday":"2005-04-12","gender":"male","section":"$SECTION","studentNumber":"2026123456","contactNumber":"+639171234567","facebookUrl":"https://facebook.com/smoke.test","dataPrivacyAgreed":true,"motivation":"Smoke test why join.","slotId":"$SLOT_ID","choices":[{"positionId":"$POS1","preferenceRank":1},{"positionId":"$POS2","preferenceRank":2}],"documents":[{"documentType":"resume","fileName":"CV_Test.pdf","s3Key":"dev/cv.pdf"},{"documentType":"transcript","fileName":"TOR_Test.pdf","s3Key":"dev/tor.pdf"},{"documentType":"registration","fileName":"RegForm_Test.pdf","s3Key":"dev/reg.pdf"}]}
->>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
+{"firstName":"Smoke","lastName":"Test","email":"$EMAIL","age":21,"birthday":"2005-04-12","gender":"male","section":"$SECTION","studentNumber":"2026123456","contactNumber":"+639171234567","facebookUrl":"https://facebook.com/smoke.test","dataPrivacyAgreed":true,"motivation":"Smoke test why join.","slotId":"$SLOT_ID","choices":[{"positionId":"$POS1","preferenceRank":1},{"positionId":"$POS2","preferenceRank":2}],"uploadSessionId":"$SMOKE_UPLOAD_SESSION_ID"}
 EOF
 )
 
@@ -405,28 +445,52 @@ EOF
   expect "GET  /applications/:id/email-notifications unknown app" 404
 
   if [[ -n "$APP_ID" ]]; then
-    request PATCH "/applications/$APP_ID/status" '{"status":"approved"}' "$token"
-    expect "PATCH /applications/:id/status" 200
+    request PATCH "/applications/$APP_ID/decisions" "{\"positionId\":\"$POS1\",\"decisionStatus\":\"approved\"}" "$token"
+    expect "PATCH /applications/:id/decisions first choice" 200
+    request PATCH "/applications/$APP_ID/decisions" "{\"positionId\":\"$POS2\",\"decisionStatus\":\"rejected\",\"finalPositionId\":\"$POS1\"}" "$token"
+    expect "PATCH /applications/:id/decisions final decision" 200
   else
-    echo "FAIL  PATCH /applications/:id/status (no created id)"
-    fail=$((fail + 1))
+    echo "FAIL  PATCH /applications/:id/decisions (no created id)"
+    fail=$((fail + 2))
   fi
 
-  request PATCH "/applications/$UNKNOWN_ID/status" '{"status":"approved"}' "$token"
-  expect "PATCH /applications/:id/status unknown" 404
+  request PATCH "/applications/$UNKNOWN_ID/decisions" "{\"positionId\":\"$POS1\",\"decisionStatus\":\"approved\"}" "$token"
+  expect "PATCH /applications/:id/decisions unknown" 404
 
   if [[ -n "$APP_ID" ]]; then
-    request DELETE "/applications/$APP_ID" "" "$token"
-    expect "DELETE /applications/:id" 204
+    request PATCH "/applications/$APP_ID/archive" '{"archived":true}'
+    expect "PATCH /applications/:id/archive (no token)" 401
+    request PATCH "/applications/$APP_ID/archive" '{"archived":true}' "$token"
+    expect "PATCH /applications/:id/archive" 200
     request GET "/applications/$APP_ID" "" "$token"
-    expect "GET  /applications/:id after delete" 404
+    expect "GET  /applications/:id after archive" 200
+    request GET "/applications" "" "$token"
+    expect "GET  /applications after archive" 200
+    if contains_id "$APP_ID"; then
+      echo "FAIL  GET  /applications excludes archived row"
+      echo "      body: $LAST_BODY"
+      fail=$((fail + 1))
+    else
+      echo "PASS  GET  /applications excludes archived row"
+      pass=$((pass + 1))
+    fi
+    request GET "/applications?archive=archived" "" "$token"
+    expect "GET  /applications?archive=archived" 200
+    if contains_id "$APP_ID"; then
+      echo "PASS  GET  /applications?archive=archived contains row"
+      pass=$((pass + 1))
+    else
+      echo "FAIL  GET  /applications?archive=archived contains row"
+      echo "      body: $LAST_BODY"
+      fail=$((fail + 1))
+    fi
   else
-    echo "FAIL  DELETE /applications/:id (no created id)"
+    echo "FAIL  PATCH /applications/:id/archive (no created id)"
     fail=$((fail + 1))
   fi
 
-  request DELETE "/applications/$UNKNOWN_ID" "" "$token"
-  expect "DELETE /applications/:id unknown" 404
+  request PATCH "/applications/$UNKNOWN_ID/archive" '{"archived":true}' "$token"
+  expect "PATCH /applications/:id/archive unknown" 404
   fi
 fi
 

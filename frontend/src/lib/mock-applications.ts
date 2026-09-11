@@ -91,7 +91,12 @@ export const SEED_APPLICATIONS: Application[] = [
     birthday: null,
     gender: null,
     section: "3ISB",
+    studentNumber: null,
+    contactNumber: null,
+    facebookUrl: null,
     motivation: lorem,
+    portfolioUrl: null,
+    githubUrl: null,
     choices: [
       {
         preferenceRank: 1,
@@ -123,7 +128,12 @@ export const SEED_APPLICATIONS: Application[] = [
     birthday: null,
     gender: null,
     section: "3ISB",
+    studentNumber: null,
+    contactNumber: null,
+    facebookUrl: null,
     motivation: lorem,
+    portfolioUrl: null,
+    githubUrl: null,
     choices: [
       {
         preferenceRank: 1,
@@ -155,7 +165,12 @@ export const SEED_APPLICATIONS: Application[] = [
     birthday: null,
     gender: null,
     section: "3CSA",
+    studentNumber: null,
+    contactNumber: null,
+    facebookUrl: null,
     motivation: lorem,
+    portfolioUrl: null,
+    githubUrl: null,
     choices: [
       {
         preferenceRank: 1,
@@ -187,7 +202,12 @@ export const SEED_APPLICATIONS: Application[] = [
     birthday: null,
     gender: null,
     section: "2ISB",
+    studentNumber: null,
+    contactNumber: null,
+    facebookUrl: null,
     motivation: lorem,
+    portfolioUrl: null,
+    githubUrl: null,
     choices: [
       {
         preferenceRank: 1,

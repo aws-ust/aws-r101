@@ -9,17 +9,16 @@
     "test:db": "tsx --test --test-concurrency=1 src/db/schema.test.ts",
     "test:email": "tsx --test src/lib/email/templates.test.ts",
     "test:editing": "tsx --test --test-concurrency=1 src/applicant-editing.test.ts",
+    "test:decisions": "tsx --test --test-concurrency=1 src/application-decisions.test.ts",
     "test:otp": "tsx --test --test-concurrency=1 src/applicant-auth.test.ts",
     "test:scheduling": "tsx --test --test-concurrency=1 src/interview-scheduling.test.ts",
+    "test:results": "tsx --test --test-concurrency=1 src/results-preview.test.ts",
+    "test:archive": "tsx --test --test-concurrency=1 src/application-archiving.test.ts",
     "cdk": "cdk",
     "deploy": "cdk deploy",
     "synth": "cdk synth",
-<<<<<<< HEAD
     "db:push": "node --env-file-if-exists=../.env ./node_modules/drizzle-kit/bin.cjs push",
-=======
-    "db:push": "node --env-file=../.env ./node_modules/drizzle-kit/bin.cjs push",
-    "db:sync": "node --env-file=../.env scripts/sync-schema.mjs",
->>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
+    "db:sync": "node --env-file-if-exists=../.env scripts/sync-schema.mjs",
     "db:seed": "tsx --env-file=../.env src/db/seed.ts",
     "db:studio": "drizzle-kit studio"
   },

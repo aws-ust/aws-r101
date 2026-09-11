@@ -25,18 +25,15 @@ export const applicationChoiceStatus = pgEnum("application_choice_status", [
   "approved",
   "rejected",
 ]);
-<<<<<<< HEAD
-export const documentType = pgEnum("document_type", ["resume", "transcript"]);
-export const uploadSessionStatus = pgEnum("upload_session_status", [
-  "active",
-  "consumed",
-  "expired",
-=======
 export const documentType = pgEnum("document_type", [
   "resume",
   "transcript",
   "registration",
->>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
+]);
+export const uploadSessionStatus = pgEnum("upload_session_status", [
+  "active",
+  "consumed",
+  "expired",
 ]);
 export const emailMessageType = pgEnum("email_message_type", [
   "application_submitted",

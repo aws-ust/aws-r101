@@ -10,6 +10,7 @@ import { interviewSlotsRoutes } from "./routes/interview-slots";
 import { positionsRoutes } from "./routes/positions";
 import { uploadsRoutes } from "./routes/uploads";
 import { recruitmentWindowRoutes } from "./routes/recruitment-window";
+import { resultsRoutes } from "./routes/results";
 import { interviewWindowRoutes } from "./routes/interview-window";
 import {
   AUTH_COOKIE_NAME,
@@ -103,6 +104,7 @@ app.route("/applications", applicationsRoutes);
 app.route("/uploads", uploadsRoutes);
 app.route("/interview-slots", interviewSlotsRoutes);
 app.route("/recruitment-window", recruitmentWindowRoutes);
+app.route("/results", resultsRoutes);
 app.route("/interview-window", interviewWindowRoutes);
 
 export type AppType = typeof app;

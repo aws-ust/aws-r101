@@ -3,28 +3,29 @@ import {
   ApplicationAlreadySubmittedError,
   committeeNamesForPositions,
   createApplication,
-  deleteApplication,
   getApplicationDocument,
   getApplicationById,
   listApplications,
   positionsExist,
-  updateApplicationStatus,
+  setApplicationArchived,
   type CreateApplicationInput,
 } from "../lib/applications";
 import {
+  ApplicationDecisionError,
+  updateApplicationDecision,
+  type ChoiceDecisionStatus,
+} from "../lib/application-decisions";
+import {
   canonicalizeHttpsUrl,
-  documentFileNameMatches,
   hasValidLastNameFileToken,
   isValidApplicantName,
   isValidContactNumber,
-  isValidDevUploadS3Key,
   isValidFacebookUrl,
   isValidMotivation,
   isValidSection,
   isValidStudentNumber,
   isValidUstApplicantEmail,
   normalizeSection,
-  REQUIRED_DOCUMENT_TYPES,
   validateChoiceUrls,
 } from "../lib/apply-field-validation";
 import { requireAuth } from "../auth";
@@ -217,81 +218,8 @@ function parseCreateBody(
     return { ok: false, error: "choices must use two different positions." };
   }
 
-<<<<<<< HEAD
   if (!isNonEmptyString(input.uploadSessionId) || !isUuid(input.uploadSessionId)) {
     return { ok: false, error: "uploadSessionId must be a valid UUID." };
-=======
-  if (!Array.isArray(input.documents) || input.documents.length !== 3) {
-    return {
-      ok: false,
-      error: "documents must contain resume, transcript, and registration.",
-    };
-  }
-
-  const documents: CreateApplicationInput["documents"] = [];
-  const types = new Set<DocumentType>();
-  for (const doc of input.documents) {
-    if (!doc || typeof doc !== "object") {
-      return { ok: false, error: "Each document must be an object." };
-    }
-    const row = doc as Record<string, unknown>;
-    if (
-      row.documentType !== "resume" &&
-      row.documentType !== "transcript" &&
-      row.documentType !== "registration"
-    ) {
-      return {
-        ok: false,
-        error: "documentType must be resume, transcript, or registration.",
-      };
-    }
-    if (!isNonEmptyString(row.fileName) || !isNonEmptyString(row.s3Key)) {
-      return {
-        ok: false,
-        error: "Each document needs a fileName and non-empty s3Key.",
-      };
-    }
-    const documentType = row.documentType as DocumentType;
-    const fileName = row.fileName.trim();
-    const s3Key = row.s3Key.trim();
-    if (
-      !documentFileNameMatches(documentType, fileName, lastName)
-    ) {
-      return {
-        ok: false,
-        error: `Document file names must be CV_, TOR_, and RegForm_ followed by your last name and .pdf.`,
-      };
-    }
-    if (!isValidDevUploadS3Key(s3Key, documentType, lastName)) {
-      return {
-        ok: false,
-        error: "Each document s3Key must match the expected upload path and file name.",
-      };
-    }
-    types.add(documentType);
-    documents.push({
-      documentType,
-      fileName,
-      s3Key,
-    });
-  }
-
-  if (types.size !== 3) {
-    return {
-      ok: false,
-      error:
-        "documents must include one resume, one transcript, and one registration.",
-    };
->>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
-  }
-  for (const required of REQUIRED_DOCUMENT_TYPES) {
-    if (!types.has(required)) {
-      return {
-        ok: false,
-        error:
-          "documents must include one resume, one transcript, and one registration.",
-      };
-    }
   }
 
   if (!isNonEmptyString(input.slotId) || !isUuid(input.slotId as string)) {
@@ -326,6 +254,7 @@ applicationsRoutes.get("/", requireAuth, async (c) => {
   const committee = c.req.query("committee") ?? "";
   const position = c.req.query("position") ?? "";
   const section = c.req.query("section") ?? "";
+  const archive = c.req.query("archive") ?? "active";
 
   if (committee && !isUuid(committee)) {
     return c.json({ error: "committee must be a UUID." }, 400);
@@ -333,11 +262,18 @@ applicationsRoutes.get("/", requireAuth, async (c) => {
   if (position && !isUuid(position)) {
     return c.json({ error: "position must be a UUID." }, 400);
   }
+  if (!["active", "archived", "all"].includes(archive)) {
+    return c.json(
+      { error: "archive must be active, archived, or all." },
+      400,
+    );
+  }
 
   const result = await listApplications({
     committee: committee || undefined,
     position: position || undefined,
     section: section || undefined,
+    archive: archive as "active" | "archived" | "all",
   });
   return c.json(result);
 });
@@ -372,11 +308,17 @@ applicationsRoutes.post("/", async (c) => {
         console.error("submission email failed", err);
       });
     }
-<<<<<<< HEAD
     return c.json(result.application, result.created ? 201 : 200);
   } catch (error) {
     if (error instanceof ApplicationAlreadySubmittedError) {
       return c.json({ error: error.message }, 409);
+    }
+    if (error instanceof InterviewScheduleError) {
+      const status =
+        error.code === "slot_not_found" || error.code === "position_not_found"
+          ? 404
+          : 409;
+      return c.json({ error: error.message }, status);
     }
     const message = error instanceof Error ? error.message : "Could not create application.";
     if (message.includes("was not found")) return c.json({ error: message }, 404);
@@ -386,39 +328,99 @@ applicationsRoutes.post("/", async (c) => {
     }
     console.error("Could not create application", error);
     return c.json({ error: "Could not create application." }, 503);
-=======
-    if (err instanceof InterviewScheduleError) {
-      const status =
-        err.code === "slot_not_found" || err.code === "position_not_found"
-          ? 404
-          : 409;
-      return c.json({ error: err.message }, status);
-    }
-    throw err;
->>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
   }
 });
 
-applicationsRoutes.patch("/:id/status", requireAuth, async (c) => {
+applicationsRoutes.patch("/:id/decisions", requireAuth, async (c) => {
   const id = c.req.param("id");
   if (!isUuid(id)) {
     return c.json({ error: "Invalid application id." }, 400);
   }
 
-  const body = await c.req.json().catch(() => null);
-  const status =
-    body && typeof body === "object"
-      ? (body as Record<string, unknown>).status
-      : undefined;
-  if (status !== "approved" && status !== "rejected") {
-    return c.json({ error: "status must be approved or rejected." }, 400);
+  const body = (await c.req.json().catch(() => null)) as
+    | Record<string, unknown>
+    | null;
+  if (!body) {
+    return c.json({ error: "Request body must be a JSON object." }, 400);
   }
 
-  const updated = await updateApplicationStatus(id, status);
-  if (!updated) {
-    return c.json({ error: "Application not found." }, 404);
+  const hasPositionId = Object.hasOwn(body, "positionId");
+  const hasDecisionStatus = Object.hasOwn(body, "decisionStatus");
+  const changesChoice = hasPositionId && hasDecisionStatus;
+  const changesFinalPlacement = Object.hasOwn(body, "finalPositionId");
+  if (hasPositionId !== hasDecisionStatus) {
+    return c.json(
+      { error: "positionId and decisionStatus must be provided together." },
+      400,
+    );
   }
-  return c.json(updated);
+  if (!changesChoice && !changesFinalPlacement) {
+    return c.json(
+      { error: "Provide a committee decision or finalPositionId." },
+      400,
+    );
+  }
+  if (
+    changesChoice &&
+    (!isNonEmptyString(body.positionId) ||
+      !isUuid(body.positionId) ||
+      (body.decisionStatus !== "approved" &&
+        body.decisionStatus !== "rejected"))
+  ) {
+    return c.json(
+      {
+        error:
+          "positionId must be a UUID and decisionStatus must be approved or rejected.",
+      },
+      400,
+    );
+  }
+  if (
+    changesFinalPlacement &&
+    body.finalPositionId !== null &&
+    (!isNonEmptyString(body.finalPositionId) ||
+      !isUuid(body.finalPositionId))
+  ) {
+    return c.json(
+      { error: "finalPositionId must be a UUID or null." },
+      400,
+    );
+  }
+
+  const payload = c.get("jwtPayload") as { sub?: unknown };
+  const reviewerEmail =
+    typeof payload.sub === "string" ? payload.sub : undefined;
+  try {
+    const updated = await updateApplicationDecision(
+      id,
+      {
+        ...(changesChoice
+          ? {
+              positionId: body.positionId as string,
+              decisionStatus: body.decisionStatus as ChoiceDecisionStatus,
+            }
+          : {}),
+        ...(changesFinalPlacement
+          ? { finalPositionId: body.finalPositionId as string | null }
+          : {}),
+      },
+      reviewerEmail,
+    );
+    if (!updated) {
+      return c.json({ error: "Application not found." }, 404);
+    }
+    return c.json(updated);
+  } catch (error) {
+    if (error instanceof ApplicationDecisionError) {
+      const status =
+        error.code === "application_not_found" ||
+        error.code === "choice_not_found"
+          ? 404
+          : 409;
+      return c.json({ error: error.message }, status);
+    }
+    throw error;
+  }
 });
 
 applicationsRoutes.get("/:id/email-notifications", requireAuth, async (c) => {
@@ -434,6 +436,33 @@ applicationsRoutes.get("/:id/email-notifications", requireAuth, async (c) => {
 
   const notifications = await listEmailNotificationsByApplicationId(id);
   return c.json({ notifications });
+});
+
+applicationsRoutes.patch("/:id/archive", requireAuth, async (c) => {
+  const id = c.req.param("id");
+  if (!isUuid(id)) {
+    return c.json({ error: "Invalid application id." }, 400);
+  }
+
+  const body = (await c.req.json().catch(() => null)) as
+    | Record<string, unknown>
+    | null;
+  if (!body || typeof body.archived !== "boolean") {
+    return c.json({ error: "archived must be a boolean." }, 400);
+  }
+
+  const payload = c.get("jwtPayload") as { sub?: unknown };
+  const reviewerEmail =
+    typeof payload.sub === "string" ? payload.sub : undefined;
+  const updated = await setApplicationArchived(
+    id,
+    body.archived,
+    reviewerEmail,
+  );
+  if (!updated) {
+    return c.json({ error: "Application not found." }, 404);
+  }
+  return c.json(updated);
 });
 
 applicationsRoutes.get("/:id", requireAuth, async (c) => {
@@ -453,8 +482,11 @@ applicationsRoutes.get("/:id/documents/:type", requireAuth, async (c) => {
   const id = c.req.param("id");
   const type = c.req.param("type");
   if (!isUuid(id)) return c.json({ error: "Invalid application id." }, 400);
-  if (type !== "resume" && type !== "transcript") {
-    return c.json({ error: "Document type must be resume or transcript." }, 400);
+  if (type !== "resume" && type !== "transcript" && type !== "registration") {
+    return c.json(
+      { error: "Document type must be resume, transcript, or registration." },
+      400,
+    );
   }
   const document = await getApplicationDocument(id, type);
   if (!document) return c.json({ error: "Document not found." }, 404);
@@ -478,17 +510,4 @@ applicationsRoutes.get("/:id/documents/:type", requireAuth, async (c) => {
     console.error("Could not load application document", error);
     return c.json({ error: "Document storage is unavailable." }, 503);
   }
-});
-
-applicationsRoutes.delete("/:id", requireAuth, async (c) => {
-  const id = c.req.param("id");
-  if (!isUuid(id)) {
-    return c.json({ error: "Invalid application id." }, 400);
-  }
-
-  const deleted = await deleteApplication(id);
-  if (!deleted) {
-    return c.json({ error: "Application not found." }, 404);
-  }
-  return c.body(null, 204);
 });

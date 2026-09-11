@@ -66,11 +66,7 @@ export function ApplicantChoiceEditor({
   const showPortfolio = needsCreativesPortfolio(firstCommittee, secondCommittee)
   const showGithub = needsDevelopmentGithub(firstCommittee, secondCommittee)
   const committeeChanged =
-<<<<<<< HEAD
-    first !== undefined && Boolean(first.committee) && firstCommittee !== first.committee
-=======
     Boolean(first?.committee) && firstCommittee !== first?.committee
->>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
   const needsSlot = committeeChanged && Boolean(firstPositionId)
 
   useEffect(() => {

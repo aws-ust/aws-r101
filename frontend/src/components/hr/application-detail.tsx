@@ -3,16 +3,14 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
-import { ActionFeedback } from "@/components/action-feedback"
 import { Button } from "@/components/ui/button"
 import { StatusPill } from "@/components/hr/status-pill"
 import { ChoiceCards } from "@/components/hr/choice-cards"
+import { HrCommitteeDecisionPanel } from "@/components/hr/hr-committee-decision-panel"
 import { HrApplicationDetailSkeleton } from "@/components/hr/application-detail-skeleton"
-import { HrDeleteApplicantDialog } from "@/components/hr/hr-delete-applicant-dialog"
-import { HR_DELETE_NOTICE_KEY } from "@/components/hr/application-list"
+import { HrArchiveApplicantDialog } from "@/components/hr/hr-archive-applicant-dialog"
 import {
   formatAppliedDate,
-  patchApplicationStatus,
   useApplication,
 } from "@/lib/api"
 import {
@@ -20,7 +18,6 @@ import {
   glassPanelClasses,
   pageShellClasses,
 } from "@/lib/surface"
-import { deleteOutlineActionClasses } from "@/lib/delete-button-classes"
 import type { Application, ApplicationDocument } from "@/lib/application-types"
 import { formatApplicantGender } from "@/lib/applicant-gender"
 import { formatDateDisplay } from "@/lib/date-local"
@@ -40,24 +37,21 @@ const whyLabelClasses =
   "mt-8 font-sans text-sm font-semibold text-biloba-flower"
 const whyBodyClasses = "mt-2 font-sans text-sm leading-relaxed text-blue-chalk"
 const downloadsClasses = "mt-8 flex flex-wrap justify-center gap-4"
-const statusRowClasses =
-  "mt-8 flex flex-wrap items-center justify-center gap-3 font-mono text-xs uppercase tracking-wide text-prelude"
-const statusActionBaseClasses =
-  "h-9 rounded-pill border bg-transparent px-5 font-mono text-xs transition-colors"
-const approveActionClasses = `${statusActionBaseClasses} border-aquamarine/80 text-aquamarine hover:border-aquamarine hover:bg-aquamarine hover:text-haiti`
-const rejectActionClasses = `${statusActionBaseClasses} border-prelude/50 text-prelude hover:border-prelude/80 hover:bg-haiti/80 hover:text-prelude`
+const archiveRowClasses = "mt-8 flex justify-center"
+const archiveActionClasses = "h-9 rounded-pill px-5 font-mono text-xs"
+const archivedPillClasses =
+  "rounded-pill bg-daisy-bush/55 px-3 py-1 font-mono text-xs text-blue-chalk"
+const archivedNoticeClasses =
+  "mt-8 rounded-[14px] border border-biloba-flower/35 bg-daisy-bush/20 px-4 py-3 font-sans text-sm text-blue-chalk"
 const missingClasses = "font-sans text-sm text-prelude"
-<<<<<<< HEAD
+const linkClasses =
+  "text-aquamarine underline-offset-2 hover:text-blue-chalk hover:underline"
 const documentCardClasses =
   "flex min-w-64 flex-1 flex-col gap-3 rounded-[14px] border border-blue-chalk/20 bg-haiti/35 p-4 text-left"
 const documentNameClasses = "font-sans text-sm font-semibold text-blue-chalk"
 const documentMetaClasses = "font-sans text-xs text-prelude"
 const documentActionsClasses = "flex flex-wrap gap-2"
 const documentButtonClasses = "h-9 px-4 text-xs"
-=======
-const linkClasses =
-  "text-aquamarine underline-offset-2 hover:text-blue-chalk hover:underline"
->>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
 
 function documentFor(
   application: Application,
@@ -120,12 +114,7 @@ export function HrApplicationDetail() {
   const router = useRouter()
   const { application, setApplication, loading, error, notFound } =
     useApplication(id)
-  const [actionError, setActionError] = useState("")
-  const [actionSuccess, setActionSuccess] = useState("")
-  const [pendingStatus, setPendingStatus] = useState<"approved" | "rejected" | null>(
-    null
-  )
-  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [archiveOpen, setArchiveOpen] = useState(false)
 
   if (loading) {
     return <HrApplicationDetailSkeleton />
@@ -153,7 +142,6 @@ export function HrApplicationDetail() {
     )
   }
 
-  const applicationId = application.id
   const first = application.choices.find((choice) => choice.preferenceRank === 1)
   const second = application.choices.find((choice) => choice.preferenceRank === 2)
   const resume = documentFor(application, "resume")
@@ -162,25 +150,6 @@ export function HrApplicationDetail() {
   const facebookHref = safeExternalHref(application.facebookUrl, "facebook")
   const portfolioHref = safeExternalHref(application.portfolioUrl, "portfolio")
   const githubHref = safeExternalHref(application.githubUrl, "github")
-
-  async function setStatus(status: "approved" | "rejected") {
-    setActionError("")
-    setActionSuccess("")
-    setPendingStatus(status)
-    try {
-      const updated = await patchApplicationStatus(applicationId, status)
-      setApplication(updated)
-      setActionSuccess(
-        status === "approved" ? "Application approved." : "Application rejected."
-      )
-    } catch (err) {
-      setActionError(
-        err instanceof Error ? err.message : "Could not update status."
-      )
-    } finally {
-      setPendingStatus(null)
-    }
-  }
 
   return (
     <main className={pageShellClasses}>
@@ -193,6 +162,9 @@ export function HrApplicationDetail() {
           {application.firstName} {application.lastName}
         </h2>
         <StatusPill status={application.status} />
+        {application.archivedAt ? (
+          <span className={archivedPillClasses}>Archived</span>
+        ) : null}
       </div>
       <div className={panelClasses}>
         <div className={metaRowClasses}>
@@ -277,72 +249,43 @@ export function HrApplicationDetail() {
           </p>
         </div>
         <ChoiceCards first={first} second={second} />
+        {application.archivedAt ? (
+          <p className={archivedNoticeClasses}>
+            This application is archived. Restore it before changing committee
+            decisions.
+          </p>
+        ) : (
+          <HrCommitteeDecisionPanel
+            application={application}
+            onUpdated={setApplication}
+          />
+        )}
         <p className={whyLabelClasses}>
           Why do you want to join AWS Builders - UST?
         </p>
         <p className={whyBodyClasses}>{application.motivation || "—"}</p>
         <div className={downloadsClasses}>
-<<<<<<< HEAD
-          <DocumentActions applicationId={applicationId} document={resume} />
-          <DocumentActions applicationId={applicationId} document={transcript} />
-=======
-          <Button color="cyan" className={downloadButtonClasses} disabled={!resume?.s3Key}>
-            Download CV ({resume?.fileName ?? "—"})
-          </Button>
-          <Button
-            color="purple"
-            className={downloadButtonClasses}
-            disabled={!transcript?.s3Key}
-          >
-            Download TOR ({transcript?.fileName ?? "—"})
-          </Button>
-          <Button
-            color="purple"
-            className={downloadButtonClasses}
-            disabled={!registration?.s3Key}
-          >
-            Download RegForm ({registration?.fileName ?? "—"})
-          </Button>
->>>>>>> 693280c1bb61a5682d90601c11e40ae15fc8763b
+          <DocumentActions applicationId={application.id} document={resume} />
+          <DocumentActions applicationId={application.id} document={transcript} />
+          <DocumentActions applicationId={application.id} document={registration} />
         </div>
-        <div className={statusRowClasses}>
-          <span>Applicant Status:</span>
+        <div className={archiveRowClasses}>
           <Button
-            variant="ghost"
-            className={approveActionClasses}
-            disabled={pendingStatus !== null}
-            onClick={() => setStatus("approved")}
+            color={application.archivedAt ? "cyan" : "purple"}
+            className={archiveActionClasses}
+            onClick={() => setArchiveOpen(true)}
           >
-            Approve
-          </Button>
-          <Button
-            variant="ghost"
-            className={rejectActionClasses}
-            disabled={pendingStatus !== null}
-            onClick={() => setStatus("rejected")}
-          >
-            Reject
-          </Button>
-          <Button
-            color="danger"
-            className={deleteOutlineActionClasses}
-            disabled={pendingStatus !== null}
-            onClick={() => setDeleteOpen(true)}
-          >
-            Delete
+            {application.archivedAt ? "Restore applicant" : "Archive applicant"}
           </Button>
         </div>
-        {actionSuccess ? (
-          <ActionFeedback type="success" message={actionSuccess} />
-        ) : null}
-        {actionError ? <ActionFeedback type="error" message={actionError} /> : null}
       </div>
-      <HrDeleteApplicantDialog
-        application={deleteOpen ? application : null}
-        onOpenChange={setDeleteOpen}
-        onDeleted={() => {
-          sessionStorage.setItem(HR_DELETE_NOTICE_KEY, "1")
-          router.replace("/admin/hr")
+      <HrArchiveApplicantDialog
+        application={archiveOpen ? application : null}
+        onOpenChange={setArchiveOpen}
+        onChanged={(updated) => {
+          router.replace(
+            `/admin/hr?notice=${updated.archivedAt ? "archived" : "restored"}`
+          )
         }}
       />
     </main>
