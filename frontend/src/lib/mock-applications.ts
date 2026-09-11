@@ -19,7 +19,7 @@ export const POSITIONS: Position[] = [
     id: "pos-exec-tech",
     committee: "Technical Committee",
     title: "Executive Associate",
-    description: "Supports the technical committee directors.",
+    description: "Supports the technical Committee Directors.",
   },
   {
     id: "pos-graphic",
@@ -37,7 +37,7 @@ export const POSITIONS: Position[] = [
     id: "pos-exec-creatives",
     committee: "Creatives Committee",
     title: "Executive Associate",
-    description: "Supports the creatives committee directors.",
+    description: "Supports the creatives Committee Directors.",
   },
   {
     id: "pos-docs",
@@ -55,7 +55,7 @@ export const POSITIONS: Position[] = [
     id: "pos-exec-secretariat",
     committee: "Secretariat Committee",
     title: "Executive Associate",
-    description: "Supports the secretariat committee directors.",
+    description: "Supports the secretariat Committee Directors.",
   },
   {
     id: "pos-treasurer",
@@ -67,7 +67,7 @@ export const POSITIONS: Position[] = [
     id: "pos-exec-finance",
     committee: "Finance Committee",
     title: "Executive Associate",
-    description: "Supports the finance committee directors.",
+    description: "Supports the finance Committee Directors.",
   },
 ]
 

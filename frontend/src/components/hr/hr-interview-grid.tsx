@@ -266,7 +266,8 @@ export function HrInterviewGrid({
       </h2>
       <p className={hintClasses}>
         Weeks run Sunday–Saturday; interviews are Monday–Saturday, 7:00 AM–9:30
-        PM. Open 30-minute cells when the director or EB is free. Booked slots
+        PM. Open 30-minute cells when a Director or Executive Boards member is
+        free. Booked slots
         stay locked until you close them or reset the committee schedule.
       </p>
       <div className={`${hintClasses} ${seasonClasses}`}>
