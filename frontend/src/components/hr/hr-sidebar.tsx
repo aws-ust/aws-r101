@@ -87,13 +87,13 @@ const navItems = [
   },
 ] as const
 
+function onLogout() {
+  void logoutHrSession()
+}
+
 export function HrSidebar() {
   const pathname = usePathname()
   const { isMobile } = useSidebar()
-
-  function onLogout() {
-    void logoutHrSession()
-  }
 
   return (
     <Sidebar collapsible="icon" variant="sidebar">
@@ -160,7 +160,7 @@ export function HrSidebar() {
           type="button"
           color="purple"
           className={logoutButtonClasses}
-          onClick={() => void onLogout()}
+          onClick={onLogout}
         >
           <LogOut className="size-4 shrink-0" />
           <span className={logoutLabelClasses}>Logout</span>
