@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ActionFeedback } from "@/components/action-feedback"
 import { SlotGrid, type SlotGridCell } from "@/components/interview/slot-grid"
 import { Button } from "@/components/ui/button"
@@ -125,7 +125,10 @@ export function HrInterviewGrid({
 }: HrInterviewGridProps) {
   const { positions, committees, loading: positionsLoading } = useOpenPositions()
   const committeeIds = useMemo(() => committeeOptions(positions), [positions])
-  const groups = groupedCommitteesForPicker(committees)
+  const groups = useMemo(
+    () => groupedCommitteesForPicker(committees),
+    [committees]
+  )
 
   const [committeeName, setCommitteeName] = useState("")
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
@@ -135,29 +138,30 @@ export function HrInterviewGrid({
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
   const [resetOpen, setResetOpen] = useState(false)
+  const hasLoadedRef = useRef(false)
 
   const committeeId = committeeName ? committeeIds.get(committeeName) : undefined
-  const days = useMemo(
-    () => weekDaysInSeason(weekStart, seasonBounds),
-    [weekStart, seasonBounds]
+  const effectiveWeekStart = useMemo(
+    () => (seasonBounds ? clampWeekStart(weekStart, seasonBounds) : weekStart),
+    [seasonBounds, weekStart]
   )
-  const weekLabel = formatWeekRange(weekStart, days)
+  const days = useMemo(
+    () => weekDaysInSeason(effectiveWeekStart, seasonBounds),
+    [effectiveWeekStart, seasonBounds]
+  )
+  const weekLabel = formatWeekRange(effectiveWeekStart, days)
   const cells = useMemo(() => buildHrCells(days, slots), [days, slots])
-
-  useEffect(() => {
-    if (!seasonBounds) return
-    setWeekStart((current) => clampWeekStart(current, seasonBounds))
-  }, [seasonBounds])
 
   const loadSlots = useCallback(async () => {
     if (!committeeId || !seasonConfigured) {
       setSlots([])
       return
     }
-    if (slots.length === 0) setLoading(true)
+    if (!hasLoadedRef.current) setLoading(true)
+    hasLoadedRef.current = true
     setError("")
     try {
-      const range = weekQueryRange(weekStart, days)
+      const range = weekQueryRange(effectiveWeekStart, days)
       setSlots(
         await listInterviewSlots({
           committeeId,
@@ -173,7 +177,7 @@ export function HrInterviewGrid({
     } finally {
       setLoading(false)
     }
-  }, [committeeId, days, seasonConfigured, weekStart])
+  }, [committeeId, days, effectiveWeekStart, seasonConfigured])
 
   useEffect(() => {
     void loadSlots()
@@ -236,7 +240,7 @@ export function HrInterviewGrid({
     }
   }
 
-  function onCellClick(cell: SlotGridCell) {
+  const onCellClick = useCallback((cell: SlotGridCell) => {
     if (pending || !committeeId || !seasonConfigured) return
 
     const slot = cell.slotId
@@ -257,7 +261,7 @@ export function HrInterviewGrid({
       }
       void openSlot(cell.startsAt)
     }
-  }
+  }, [committeeId, pending, seasonConfigured, slots])
 
   return (
     <section className={panelClasses}>
@@ -300,6 +304,7 @@ export function HrInterviewGrid({
             onSelect={(name) => {
               setCommitteeName(name)
               setSlots([])
+              hasLoadedRef.current = false
             }}
           />
         </Field>
@@ -309,7 +314,7 @@ export function HrInterviewGrid({
             type="button"
             color="purple"
             className={navButtonClasses}
-            disabled={!seasonConfigured || !canGoPrevWeek(weekStart, seasonBounds)}
+            disabled={!seasonConfigured || !canGoPrevWeek(effectiveWeekStart, seasonBounds)}
             onClick={() =>
               setWeekStart((current) =>
                 clampWeekStart(addDays(current, -7), seasonBounds)
@@ -323,7 +328,7 @@ export function HrInterviewGrid({
             type="button"
             color="purple"
             className={navButtonClasses}
-            disabled={!seasonConfigured || !canGoNextWeek(weekStart, seasonBounds)}
+            disabled={!seasonConfigured || !canGoNextWeek(effectiveWeekStart, seasonBounds)}
             onClick={() =>
               setWeekStart((current) =>
                 clampWeekStart(addDays(current, 7), seasonBounds)

@@ -6,6 +6,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -76,15 +77,20 @@ export function NavigationMotionProvider({ children }: { children: ReactNode }) 
 
   const transition = getNavigationTransition(reducedMotion)
 
+  const value = useMemo(
+    () => ({
+      direction: directionRef.current,
+      transition,
+      reducedMotion,
+      animatePage: animatePageRef.current,
+      clearPageAnimation,
+    }),
+    [clearPageAnimation, reducedMotion, transition]
+  )
+
   return (
     <NavigationMotionContext.Provider
-      value={{
-        direction: directionRef.current,
-        transition,
-        reducedMotion,
-        animatePage: animatePageRef.current,
-        clearPageAnimation,
-      }}
+      value={value}
     >
       {children}
     </NavigationMotionContext.Provider>

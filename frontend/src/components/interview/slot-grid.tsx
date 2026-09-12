@@ -1,8 +1,9 @@
 "use client"
 
+import { memo } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
-  interviewTimeLabels,
+  INTERVIEW_TIME_LABELS,
   INTERVIEW_GRID_END_HOUR,
   INTERVIEW_GRID_START_HOUR,
   slotKey,
@@ -91,7 +92,7 @@ function formatDayHeader(day: Date) {
   }
 }
 
-export function SlotGrid({
+export const SlotGrid = memo(function SlotGrid({
   days,
   cells,
   onCellClick,
@@ -101,7 +102,7 @@ export function SlotGrid({
   scrollShellClassName,
   emptyMessage = "No slots to show.",
 }: SlotGridProps) {
-  const timeLabels = interviewTimeLabels()
+  const timeLabels = INTERVIEW_TIME_LABELS
   const rowCount =
     (INTERVIEW_GRID_END_HOUR - INTERVIEW_GRID_START_HOUR) * 2
 
@@ -261,4 +262,4 @@ export function SlotGrid({
       </div>
     </div>
   )
-}
+})

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useDeferredValue, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { ActionFeedback } from "@/components/action-feedback"
 import { SectionHeader } from "@/components/section-header"
@@ -45,6 +45,7 @@ export function HrApplicationList() {
     message: string
   } | null>(null)
   const notice = searchParams.get("notice")
+  const deferredFilters = useDeferredValue(filters)
   const visibleFeedback =
     feedback ??
     (notice === "archived" || notice === "restored"
@@ -58,18 +59,18 @@ export function HrApplicationList() {
       : null)
 
   const visible = useMemo(() => {
-    const query = filters.query.trim().toLowerCase()
+    const query = deferredFilters.query.trim().toLowerCase()
     const committee =
-      filters.committee === "all" ? "" : filters.committee
+      deferredFilters.committee === "all" ? "" : deferredFilters.committee
     return applications.filter((app) => {
       const archived = Boolean(app.archivedAt)
-      if (filters.archive === "archived" ? !archived : archived) return false
+      if (deferredFilters.archive === "archived" ? !archived : archived) return false
       if (query && !fullName(app).toLowerCase().includes(query)) return false
       if (committee && !hasCommittee(app, committee)) return false
-      if (filters.status && app.status !== filters.status) return false
+      if (deferredFilters.status && app.status !== deferredFilters.status) return false
       return true
     })
-  }, [applications, filters])
+  }, [applications, deferredFilters])
 
   const totalPages = pageCount(visible.length)
   const safePage = Math.min(page, totalPages)
