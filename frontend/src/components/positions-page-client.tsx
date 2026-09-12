@@ -9,12 +9,17 @@ import type { Position } from "@/lib/positions"
 
 export function PositionsPageClient() {
   const { applicationsOpen } = useRecruitmentWindow()
-  const cached = peekBrowserPositions()
-  const [positions, setPositions] = useState<Position[]>(cached ?? [])
+  const [positions, setPositions] = useState<Position[]>([])
   const [loadError, setLoadError] = useState(false)
-  const [loading, setLoading] = useState(!cached)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const cached = peekBrowserPositions()
+    if (cached) {
+      setPositions(cached)
+      setLoading(false)
+    }
+
     let cancelled = false
     listBrowserPositions()
       .then((rows) => {
