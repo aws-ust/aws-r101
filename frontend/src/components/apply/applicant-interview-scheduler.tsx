@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useEffect, useEffectEvent, useMemo, useState } from "react"
 import { ActionFeedback } from "@/components/action-feedback"
 import { SlotGrid, type SlotGridCell } from "@/components/interview/slot-grid"
 import { Button } from "@/components/ui/button"
@@ -20,6 +20,7 @@ import {
   slotKeyFromIso,
   startOfWeek,
   weekDaysInSeason,
+  type InterviewSeasonBounds,
 } from "@/lib/interview-season"
 
 const sectionClasses = "mt-8 border-t border-biloba-flower/20 pt-8"
@@ -106,6 +107,35 @@ function slotInWeek(slotIso: string, days: Date[]): boolean {
   return time >= start.getTime() && time < end.getTime()
 }
 
+type ApplyInterviewScheduleContext = {
+  previewMode: boolean
+  selectedSlotId: string
+  seasonBounds: InterviewSeasonBounds
+  onScheduleLoaded?: (schedule: ApplicantInterviewSchedule) => void
+  setSchedule: (schedule: ApplicantInterviewSchedule) => void
+  setSelectedSlotId: (slotId: string) => void
+  setWeekStart: (weekStart: Date) => void
+}
+
+function applyInterviewSchedule(
+  payload: ApplicantInterviewSchedule,
+  ctx: ApplyInterviewScheduleContext,
+) {
+  ctx.setSchedule(payload)
+  ctx.onScheduleLoaded?.(payload)
+  if (ctx.previewMode) return
+  if (!payload.booking || ctx.selectedSlotId) return
+  ctx.setSelectedSlotId(payload.booking.slotId)
+  if (ctx.seasonBounds) {
+    ctx.setWeekStart(
+      clampWeekStart(
+        startOfWeek(new Date(payload.booking.startsAt)),
+        ctx.seasonBounds,
+      ),
+    )
+  }
+}
+
 export function ApplicantInterviewScheduler({
   positionId,
   compact = false,
@@ -139,30 +169,19 @@ export function ApplicantInterviewScheduler({
   )
   const weekLabel = formatWeekRange(displayedWeekStart, days)
 
-  const applySchedule = useCallback(
-    (payload: ApplicantInterviewSchedule) => {
-      setSchedule(payload)
-      onScheduleLoaded?.(payload)
-      if (previewMode) return
-      if (!payload.booking || selectedSlotId) return
-      setSelectedSlotId(payload.booking.slotId)
-      if (seasonBounds) {
-        setWeekStart(
-          clampWeekStart(
-            startOfWeek(new Date(payload.booking.startsAt)),
-            seasonBounds
-          )
-        )
-      }
-    },
-    [
-      onScheduleLoaded,
-      previewMode,
-      seasonBounds,
-      selectedSlotId,
-      setSelectedSlotId,
-    ]
-  )
+  const scheduleContext: ApplyInterviewScheduleContext = {
+    previewMode,
+    selectedSlotId,
+    seasonBounds,
+    onScheduleLoaded,
+    setSchedule,
+    setSelectedSlotId,
+    setWeekStart,
+  }
+
+  const applySchedule = useEffectEvent((payload: ApplicantInterviewSchedule) => {
+    applyInterviewSchedule(payload, scheduleContext)
+  })
 
   useEffect(() => {
     if (previewMode) {
@@ -205,13 +224,16 @@ export function ApplicantInterviewScheduler({
     return () => {
       cancelled = true
     }
-  }, [applySchedule, positionId])
+  }, [positionId])
 
   async function refreshSchedule() {
     setLoading(true)
     setError("")
     try {
-      applySchedule(await getApplicantInterviewSlots(positionId))
+      applyInterviewSchedule(
+        await getApplicantInterviewSlots(positionId),
+        scheduleContext,
+      )
     } catch (err) {
       setSchedule(null)
       setError(
