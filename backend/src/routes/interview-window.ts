@@ -5,15 +5,11 @@ import {
   InterviewWindowError,
   upsertInterviewWindow,
 } from "../lib/interview-window";
-
-function parseTimestamp(value: unknown): Date | null {
-  if (typeof value !== "string") return null;
-  if (!value.includes("T") || !/(Z|[+-][0-9]{2}:[0-9]{2})$/.test(value)) {
-    return null;
-  }
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
+import { logHrAudit } from "../lib/hr-audit";
+import {
+  interviewWindowPatchSchema,
+  zodErrorMessage,
+} from "../lib/hr-schemas";
 
 export const interviewWindowRoutes = new Hono();
 
@@ -22,24 +18,25 @@ interviewWindowRoutes.get("/", async (c) => {
 });
 
 interviewWindowRoutes.patch("/", requireAuth, async (c) => {
-  const body = (await c.req.json().catch(() => null)) as
-    | Record<string, unknown>
-    | null;
-  const startsAt = parseTimestamp(body?.startsAt);
-  const endsAt = parseTimestamp(body?.endsAt);
-  if (!startsAt || !endsAt) {
-    return c.json(
-      {
-        error: "startsAt and endsAt must be ISO timestamps with a timezone.",
-      },
-      400,
-    );
+  const body = await c.req.json().catch(() => null);
+  const parsed = interviewWindowPatchSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: zodErrorMessage(parsed.error) }, 400);
   }
+
+  const startsAt = new Date(parsed.data.startsAt);
+  const endsAt = new Date(parsed.data.endsAt);
 
   try {
     const payload = c.get("jwtPayload") as { sub?: unknown };
     const email = typeof payload.sub === "string" ? payload.sub : undefined;
-    return c.json(await upsertInterviewWindow(startsAt, endsAt, email));
+    const result = await upsertInterviewWindow(startsAt, endsAt, email);
+    logHrAudit({
+      actorEmail: email,
+      action: "interview_window.update",
+      resourceType: "interview_window",
+    });
+    return c.json(result);
   } catch (error) {
     if (error instanceof InterviewWindowError) {
       const status = error.code === "invalid_range" ? 409 : 400;
