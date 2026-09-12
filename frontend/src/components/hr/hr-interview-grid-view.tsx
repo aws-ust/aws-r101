@@ -2,6 +2,7 @@
 
 import { ActionFeedback } from "@/components/action-feedback"
 import { SlotGrid } from "@/components/interview/slot-grid"
+import { InterviewWeekNav } from "@/components/interview/week-nav"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -27,8 +28,6 @@ import type { useHrInterviewGrid } from "@/components/hr/use-hr-interview-grid"
 
 const panelClasses = `${glassPanelClasses} px-5 py-5`
 const toolbarClasses = "mt-4 flex flex-wrap items-end justify-between gap-4"
-const weekNavClasses = "flex flex-wrap items-center gap-2"
-const weekLabelClasses = "min-w-[10rem] text-center font-sans text-sm text-blue-chalk"
 const navButtonClasses = "h-9 px-4 text-xs"
 const hintClasses = "mt-2 font-sans text-sm text-prelude"
 const seasonClasses = "font-mono text-xs text-aquamarine"
@@ -172,39 +171,31 @@ export function HrInterviewGridView({
           />
         </Field>
 
-        <div className={weekNavClasses}>
-          <Button
-            type="button"
-            color="purple"
-            className={navButtonClasses}
-            disabled={!seasonConfigured || !canGoPrevWeek(displayedWeekStart, seasonBounds)}
-            onClick={() => {
-              setLoading(true)
-              setError("")
-              setWeekStart(
-                clampWeekStart(addDays(displayedWeekStart, -7), seasonBounds),
-              )
-            }}
-          >
-            ← Prev
-          </Button>
-          <p className={weekLabelClasses}>{weekLabel}</p>
-          <Button
-            type="button"
-            color="purple"
-            className={navButtonClasses}
-            disabled={!seasonConfigured || !canGoNextWeek(displayedWeekStart, seasonBounds)}
-            onClick={() => {
-              setLoading(true)
-              setError("")
-              setWeekStart(
-                clampWeekStart(addDays(displayedWeekStart, 7), seasonBounds),
-              )
-            }}
-          >
-            Next →
-          </Button>
-        </div>
+        <InterviewWeekNav
+          weekLabel={weekLabel}
+          prevDisabled={
+            !seasonConfigured ||
+            !canGoPrevWeek(displayedWeekStart, seasonBounds)
+          }
+          nextDisabled={
+            !seasonConfigured ||
+            !canGoNextWeek(displayedWeekStart, seasonBounds)
+          }
+          onPrev={() => {
+            setLoading(true)
+            setError("")
+            setWeekStart(
+              clampWeekStart(addDays(displayedWeekStart, -7), seasonBounds),
+            )
+          }}
+          onNext={() => {
+            setLoading(true)
+            setError("")
+            setWeekStart(
+              clampWeekStart(addDays(displayedWeekStart, 7), seasonBounds),
+            )
+          }}
+        />
 
         <Button
           type="button"

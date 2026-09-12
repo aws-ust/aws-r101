@@ -12,7 +12,7 @@ import {
 import { ApplicantDashboardSkeleton } from "@/components/apply/applicant-dashboard-skeleton"
 import { glassPanelClasses } from "@/lib/surface"
 
-const panelClasses = `${glassPanelClasses} mt-8 px-6 py-8 md:px-10`
+const panelClasses = `${glassPanelClasses} min-w-0 w-full max-w-full overflow-x-clip px-4 py-8 md:px-10`
 const missingClasses = "mt-8 font-sans text-sm text-prelude"
 
 export function ApplicantDashboard() {

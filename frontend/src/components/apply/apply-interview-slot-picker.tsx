@@ -2,7 +2,7 @@
 
 import { useEffect, useEffectEvent, useMemo, useState } from "react"
 import { SlotGrid, type SlotGridCell } from "@/components/interview/slot-grid"
-import { Button } from "@/components/ui/button"
+import { InterviewWeekNav } from "@/components/interview/week-nav"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Field } from "@/components/field"
 import { useInterviewWindow } from "@/hooks/use-interview-window"
@@ -24,9 +24,6 @@ import {
 
 const hintClasses = "font-sans text-sm text-prelude"
 const committeeClasses = "mt-1 font-mono text-xs text-aquamarine"
-const weekNavClasses = "mt-4 flex flex-wrap items-center gap-2"
-const weekLabelClasses = "min-w-[10rem] text-center font-sans text-sm text-blue-chalk"
-const navButtonClasses = "h-9 px-4 text-xs"
 const errorClasses = "mt-2 font-sans text-sm text-aquamarine"
 const selectedClasses = "mt-3 font-mono text-xs text-aquamarine"
 
@@ -183,35 +180,28 @@ export function ApplyInterviewSlotPicker({
         <p className={committeeClasses}>{committeeName}</p>
       ) : null}
 
-      <div className={`${weekNavClasses} max-w-full`}>
-        <Button
-          type="button"
-          color="purple"
-          className={navButtonClasses}
-          disabled={!seasonConfigured || !canGoPrevWeek(displayedWeekStart, seasonBounds)}
-          onClick={() =>
-            setWeekStart(
-              clampWeekStart(addDays(displayedWeekStart, -7), seasonBounds)
-            )
-          }
-        >
-          ← Prev
-        </Button>
-        <p className={weekLabelClasses}>{weekLabel}</p>
-        <Button
-          type="button"
-          color="purple"
-          className={navButtonClasses}
-          disabled={!seasonConfigured || !canGoNextWeek(displayedWeekStart, seasonBounds)}
-          onClick={() =>
-            setWeekStart(
-              clampWeekStart(addDays(displayedWeekStart, 7), seasonBounds)
-            )
-          }
-        >
-          Next →
-        </Button>
-      </div>
+      <InterviewWeekNav
+        className="mt-4"
+        weekLabel={weekLabel}
+        prevDisabled={
+          !seasonConfigured ||
+          !canGoPrevWeek(displayedWeekStart, seasonBounds)
+        }
+        nextDisabled={
+          !seasonConfigured ||
+          !canGoNextWeek(displayedWeekStart, seasonBounds)
+        }
+        onPrev={() =>
+          setWeekStart(
+            clampWeekStart(addDays(displayedWeekStart, -7), seasonBounds),
+          )
+        }
+        onNext={() =>
+          setWeekStart(
+            clampWeekStart(addDays(displayedWeekStart, 7), seasonBounds),
+          )
+        }
+      />
 
       <div className="mt-4 min-w-0 w-full max-w-full">
         {seasonConfigured ? (
