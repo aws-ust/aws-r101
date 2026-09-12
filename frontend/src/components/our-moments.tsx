@@ -3,6 +3,7 @@
 import Image from "next/image"
 import { LazyMotion, domAnimation, m, useReducedMotion } from "motion/react"
 import { SectionHeader } from "@/components/section-header"
+import { ImageLightbox } from "@/components/image-lightbox"
 import { ABOUT_EVENTS, type AboutEvent } from "@/lib/about-events"
 import { cn } from "@/lib/utils"
 
@@ -115,13 +116,21 @@ function TimelineEntry({ event, index, reducedMotion }: TimelineEntryProps) {
               reducedMotion ? revealSnap : { ...revealEase, delay: 0.12 }
             }
           >
-            <Image
+            <ImageLightbox
               src={event.imageSrc}
               alt={event.title}
-              fill
-              className={mediaImageClasses}
-              sizes="(max-width: 768px) 100vw, min(40rem, 45vw)"
-            />
+              title={event.title}
+              triggerAriaLabel={`View full photo of ${event.title}`}
+              triggerClassName="relative block size-full"
+            >
+              <Image
+                src={event.imageSrc}
+                alt=""
+                fill
+                className={mediaImageClasses}
+                sizes="(max-width: 768px) 100vw, min(40rem, 45vw)"
+              />
+            </ImageLightbox>
           </m.div>
         </m.article>
       </div>

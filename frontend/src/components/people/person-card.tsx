@@ -4,6 +4,7 @@ import { useRef, useState } from "react"
 import Image from "next/image"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import { AnimatePresence, LazyMotion, domAnimation, m, useReducedMotion } from "motion/react"
+import { ImageLightbox } from "@/components/image-lightbox"
 import { PERSON_AVATAR_PLACEHOLDER, type PersonTerm } from "@/lib/people"
 import { cn } from "@/lib/utils"
 
@@ -62,6 +63,8 @@ export function PersonCard({ terms, showPager = false }: PersonCardProps) {
   const swipeStart = useRef<{ x: number; y: number } | null>(null)
 
   const person = terms[termIndex] ?? terms[0]
+  const photoSrc = person.photo ?? PERSON_AVATAR_PLACEHOLDER
+  const canExpandPhoto = Boolean(person.photo)
   const termCount = terms.length
   const atStart = termIndex <= 0
   const atEnd = termIndex >= termCount - 1
@@ -128,16 +131,34 @@ export function PersonCard({ terms, showPager = false }: PersonCardProps) {
               className={contentClasses}
             >
               <div className={avatarClasses}>
-                <Image
-                  src={person.photo ?? PERSON_AVATAR_PLACEHOLDER}
-                  alt=""
-                  width={96}
-                  height={96}
-                  className="size-full object-cover"
-                  unoptimized={
-                    !person.photo || person.photo.startsWith("/people/current-ebs/")
-                  }
-                />
+                {canExpandPhoto ? (
+                  <ImageLightbox
+                    src={photoSrc}
+                    alt={person.name}
+                    title={person.name}
+                    triggerAriaLabel={`View full photo of ${person.name}`}
+                    unoptimized={photoSrc.startsWith("/people/current-ebs/")}
+                    onTriggerPointerDown={(event) => event.stopPropagation()}
+                    triggerClassName="size-full"
+                  >
+                    <Image
+                      src={photoSrc}
+                      alt=""
+                      width={96}
+                      height={96}
+                      className="size-full object-cover"
+                      unoptimized={photoSrc.startsWith("/people/current-ebs/")}
+                    />
+                  </ImageLightbox>
+                ) : (
+                  <Image
+                    src={photoSrc}
+                    alt=""
+                    width={96}
+                    height={96}
+                    className="size-full object-cover"
+                  />
+                )}
               </div>
               <h3 className={nameClasses}>{person.name}</h3>
               <p className={titleClasses}>{person.title}</p>
