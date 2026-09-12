@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useLayoutEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -92,18 +92,25 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
   const committee = watch("committee")
   const upload = watch("upload")
 
-  useLayoutEffect(() => {
-    const draft = loadApplyFormDraft()
-    if (draft) {
-      reset({
-        privacy: draft.privacy,
-        general: draft.general,
-        committee: draft.committee,
-        upload: { resume: null, transcript: null, registration: null, ...draft.upload },
-      })
-      setStep(draft.step)
+  useEffect(() => {
+    let cancelled = false
+    queueMicrotask(() => {
+      if (cancelled) return
+      const draft = loadApplyFormDraft()
+      if (draft) {
+        reset({
+          privacy: draft.privacy,
+          general: draft.general,
+          committee: draft.committee,
+          upload: { resume: null, transcript: null, registration: null, ...draft.upload },
+        })
+        setStep(draft.step)
+      }
+      setDraftReady(true)
+    })
+    return () => {
+      cancelled = true
     }
-    setDraftReady(true)
   }, [reset])
 
   useEffect(() => {

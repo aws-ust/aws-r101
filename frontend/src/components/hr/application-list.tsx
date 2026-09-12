@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useSearchParams } from "next/navigation"
 import { ActionFeedback } from "@/components/action-feedback"
 import { SectionHeader } from "@/components/section-header"
 import {
@@ -34,8 +33,7 @@ const emptyFilters: HrFilters = {
   archive: "active",
 }
 
-export function HrApplicationList() {
-  const searchParams = useSearchParams()
+export function HrApplicationList({ notice }: { notice?: string }) {
   const [filters, setFilters] = useState(emptyFilters)
   const [page, setPage] = useState(1)
   const { applications, total, loading, error, refreshApplications } =
@@ -52,7 +50,6 @@ export function HrApplicationList() {
     type: "success" | "error"
     message: string
   } | null>(null)
-  const notice = searchParams.get("notice")
   const visibleFeedback =
     feedback ??
     (notice === "archived" || notice === "restored"

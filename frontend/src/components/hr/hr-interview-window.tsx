@@ -1,6 +1,6 @@
 "use client"
 
-import { type FormEvent, useEffect, useState } from "react"
+import { type FormEvent, useState } from "react"
 import { ActionFeedback } from "@/components/action-feedback"
 import { Button } from "@/components/ui/button"
 import { Field } from "@/components/field"
@@ -40,18 +40,13 @@ export function HrInterviewWindow({
   loadError,
   onSaved,
 }: HrInterviewWindowProps) {
-  const [startYmd, setStartYmd] = useState("")
-  const [endYmd, setEndYmd] = useState("")
+  const initialBounds = boundsToYmd(seasonBounds)
+  const [startYmd, setStartYmd] = useState(initialBounds.startYmd)
+  const [endYmd, setEndYmd] = useState(initialBounds.endYmd)
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
   const [pending, setPending] = useState(false)
 
-  useEffect(() => {
-    if (seasonLoading) return
-    const { startYmd: nextStart, endYmd: nextEnd } = boundsToYmd(seasonBounds)
-    setStartYmd(nextStart)
-    setEndYmd(nextEnd)
-  }, [seasonBounds, seasonLoading])
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
