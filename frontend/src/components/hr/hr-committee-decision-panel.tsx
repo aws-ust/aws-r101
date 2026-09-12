@@ -25,9 +25,7 @@ const choiceClasses = "mt-1 font-sans text-sm font-medium text-blue-chalk"
 const actionsClasses = "flex flex-wrap items-center gap-2"
 const actionButtonClasses = "h-8 px-4 text-[11px]"
 const placementClasses =
-  "mt-5 border-t border-blue-chalk/15 pt-5"
-const placementButtonsClasses = "mt-3 flex flex-wrap gap-2"
-const warningClasses = "mt-3 font-sans text-sm text-rose-glow"
+  "mt-5 border-t border-blue-chalk/15 pt-5 font-sans text-sm text-prelude"
 
 type Props = {
   application: HrApplication
@@ -43,13 +41,6 @@ export function HrCommitteeDecisionPanel({
     type: "success" | "error"
     message: string
   } | null>(null)
-
-  const approvedChoices = application.choices.filter(
-    (choice) => choice.decisionStatus === "approved"
-  )
-  const allDecided = application.choices.every(
-    (choice) => choice.decisionStatus !== "pending"
-  )
 
   async function save(
     key: string,
@@ -76,20 +67,21 @@ export function HrCommitteeDecisionPanel({
     positionId: string,
     decisionStatus: Exclude<ChoiceDecisionStatus, "pending">
   ) {
-    const label = decisionStatus === "approved" ? "approved" : "rejected"
-    void save(
-      `${positionId}:${decisionStatus}`,
-      { positionId, decisionStatus },
-      `Committee decision ${label}.`
-    )
+    const choice = application.choices.find((item) => item.positionId === positionId)
+    const message =
+      decisionStatus === "approved"
+        ? `Applicant approved for ${choice?.title ?? "this position"}.`
+        : "Committee decision rejected."
+    void save(`${positionId}:${decisionStatus}`, { positionId, decisionStatus }, message)
   }
 
   return (
     <section className={panelClasses}>
       <h3 className={headerClasses}>Committee decisions</h3>
       <p className={helpClasses}>
-        Saving the first decision locks applicant editing. Complete both
-        committee decisions, then select the final placement if approved.
+        Saving the first decision locks applicant editing. You may approve only
+        one choice—approving sets final placement and marks the applicant
+        approved. Approving another choice moves placement. You may reject both.
       </p>
       <div className={listClasses}>
         {application.choices.map((choice) => (
@@ -129,41 +121,12 @@ export function HrCommitteeDecisionPanel({
           </div>
         ))}
       </div>
-      {approvedChoices.length > 0 ? (
+      {application.finalPlacement ? (
         <div className={placementClasses}>
-          <h3 className={headerClasses}>Final placement</h3>
-          <div className={placementButtonsClasses}>
-            {approvedChoices.map((choice) => (
-              <Button
-                key={choice.positionId}
-                color={
-                  application.finalPlacement?.positionId === choice.positionId
-                    ? "cyan"
-                    : "purple"
-                }
-                disabled={
-                  pending !== null ||
-                  application.finalPlacement?.positionId === choice.positionId
-                }
-                onClick={() =>
-                  void save(
-                    `placement:${choice.positionId}`,
-                    { finalPositionId: choice.positionId },
-                    `Final placement set to ${choice.title}.`
-                  )
-                }
-              >
-                {pending === `placement:${choice.positionId}`
-                  ? "Saving…"
-                  : choice.title}
-              </Button>
-            ))}
-          </div>
-          {allDecided && !application.finalPlacement ? (
-            <p className={warningClasses}>
-              Select the final placement to complete this review.
-            </p>
-          ) : null}
+          <p>
+            <span className="font-medium text-blue-chalk">Final placement:</span>{" "}
+            {application.finalPlacement.title} ({application.finalPlacement.committee})
+          </p>
         </div>
       ) : null}
       {feedback ? (
