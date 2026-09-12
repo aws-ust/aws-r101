@@ -8,6 +8,8 @@ import { scrollToSection } from "@/lib/scroll-to-section"
 
 const heroClasses =
   "relative left-1/2 -mt-16 mb-[-40px] flex min-h-[calc(100svh-10rem)] w-screen -translate-x-1/2 scroll-mt-16 overflow-hidden bg-cover bg-center text-center"
+const backgroundClasses =
+  "hero-cloud-drift -z-20 object-cover object-center"
 const overlayClasses =
   "absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(23,15,51,0.1),rgba(42,18,89,0.03)_50%,rgba(23,15,51,0.2))]"
 const contentClasses =
@@ -17,7 +19,7 @@ const artworkClasses =
 const titleClasses =
   "z-10 h-[clamp(190px,34vw,340px)] w-[min(100vw,1040px)] overflow-visible max-md:h-[clamp(175px,32vh,235px)] max-[700px]:h-[clamp(155px,34vw,205px)]"
 const cloudClasses =
-  "relative z-20 -mt-[clamp(5rem,12vw,10rem)] aspect-square w-[clamp(260px,30vw,400px)] max-md:w-[clamp(210px,58vw,320px)] max-[700px]:-mt-[clamp(4rem,12vw,5.5rem)] max-[700px]:w-[clamp(190px,56vw,280px)]"
+  "hero-cloud-float relative z-20 -mt-[clamp(5rem,12vw,10rem)] aspect-square w-[clamp(260px,30vw,400px)] max-md:w-[clamp(210px,58vw,320px)] max-[700px]:-mt-[clamp(4rem,12vw,5.5rem)] max-[700px]:w-[clamp(190px,56vw,280px)]"
 const cloudImageClasses = "absolute inset-0 h-full w-full object-contain"
 const lowerContentClasses =
   "z-30 flex w-[min(94vw,720px)] flex-col items-center pb-[clamp(1.125rem,2.5vh,1.75rem)]"
@@ -173,7 +175,7 @@ export function Hero() {
         priority
         quality={80}
         sizes="100vw"
-        className="-z-20 object-cover object-center"
+        className={backgroundClasses}
       />
       <div aria-hidden="true" className={overlayClasses} />
       <div className={contentClasses}>

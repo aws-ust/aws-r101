@@ -211,6 +211,47 @@
   }
 }
 
+@utility hero-cloud-drift {
+  animation: hero-cloud-drift 30s ease-in-out infinite alternate;
+  transform-origin: center;
+  will-change: transform;
+}
+
+@utility hero-cloud-float {
+  animation: hero-cloud-float 6s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes hero-cloud-drift {
+  0% {
+    transform: translate3d(-1.5%, -0.75%, 0) scale(1.08);
+  }
+  50% {
+    transform: translate3d(1%, 0.5%, 0) scale(1.1);
+  }
+  100% {
+    transform: translate3d(1.5%, -0.5%, 0) scale(1.08);
+  }
+}
+
+@keyframes hero-cloud-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -10px, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-cloud-drift,
+  .hero-cloud-float {
+    animation: none;
+    transform: none;
+  }
+}
+
 main:has(#committee-quiz) .faq-section {
   padding-top: clamp(1.25rem, 2.5vw, 2rem);
 }
