@@ -13,6 +13,12 @@ export function isDevelopmentCommittee(name: string): boolean {
   return name === "Development Committee"
 }
 
+export const CTO_EA_POSITION_TITLE = "Executive Assistant to the CTO"
+
+export function isCtoExecutiveAssistant(title: string): boolean {
+  return title === CTO_EA_POSITION_TITLE
+}
+
 export function needsCreativesPortfolio(
   firstCommittee: string,
   secondCommittee: string
@@ -25,10 +31,30 @@ export function needsCreativesPortfolio(
 
 export function needsDevelopmentGithub(
   firstCommittee: string,
-  secondCommittee: string
+  secondCommittee: string,
+  firstTitle = "",
+  secondTitle = ""
 ): boolean {
   return (
     isDevelopmentCommittee(firstCommittee) ||
-    isDevelopmentCommittee(secondCommittee)
+    isDevelopmentCommittee(secondCommittee) ||
+    isCtoExecutiveAssistant(firstTitle) ||
+    isCtoExecutiveAssistant(secondTitle)
   )
+}
+
+export function needsDevExamSuccessCopy(
+  firstCommittee: string,
+  secondCommittee: string,
+  firstTitle = "",
+  secondTitle = ""
+): { development: boolean; ctoEa: boolean } {
+  return {
+    development:
+      isDevelopmentCommittee(firstCommittee) ||
+      isDevelopmentCommittee(secondCommittee),
+    ctoEa:
+      isCtoExecutiveAssistant(firstTitle) ||
+      isCtoExecutiveAssistant(secondTitle),
+  }
 }

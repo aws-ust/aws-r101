@@ -24,6 +24,8 @@ export function toCreateApplicationInput(
   const needsGithub = needsDevelopmentGithub(
     committee.firstCommittee,
     committee.secondCommittee,
+    committee.firstPositionTitle,
+    committee.secondPositionTitle,
   )
 
   return {

@@ -16,8 +16,16 @@ function validForm() {
       facebookUrl: "https://facebook.com/juan.delacruz",
     },
     committee: {
-      firstCommittee: "Development Committee", firstPositionId: "first", secondCommittee: "Logistics Committee",
-      secondPositionId: "second", motivation: "I want to join.", slotId: "slot", portfolioUrl: "", githubUrl: "",
+      firstCommittee: "Development Committee",
+      firstPositionId: "first",
+      firstPositionTitle: "Development Committee Staff",
+      secondCommittee: "Logistics Committee",
+      secondPositionId: "second",
+      secondPositionTitle: "Logistics Committee Staff",
+      motivation: "I want to join.",
+      slotId: "slot",
+      portfolioUrl: "",
+      githubUrl: "",
     },
     upload: {
       resume: file("CV_delacruz.pdf"), transcript: file("TOR_delacruz.pdf"), registration: file("RegForm_delacruz.pdf"),
