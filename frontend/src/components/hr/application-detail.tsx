@@ -89,7 +89,14 @@ function DocumentActions({ applicationId, document }: { applicationId: string; d
             color="cyan"
             className={documentButtonClasses}
             nativeButton={false}
-            render={<a href={baseUrl} target="_blank" rel="noopener noreferrer" />}
+            render={
+              <a
+                href={baseUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`View ${document.fileName}`}
+              />
+            }
           >
             View
           </Button>
@@ -97,7 +104,12 @@ function DocumentActions({ applicationId, document }: { applicationId: string; d
             color="purple"
             className={documentButtonClasses}
             nativeButton={false}
-            render={<a href={`${baseUrl}?disposition=attachment`} />}
+            render={
+              <a
+                href={`${baseUrl}?disposition=attachment`}
+                aria-label={`Download ${document.fileName}`}
+              />
+            }
           >
             Download
           </Button>

@@ -269,7 +269,16 @@ export function Hero() {
                 color="purple"
                 className={`${buttonClasses} ${purpleButtonEffectClasses}`}
                 nativeButton={false}
-                render={<a href="#about-us" onClick={(event) => { event.preventDefault(); scrollToSection("about-us") }} />}
+                render={
+                  <a
+                    href="#about-us"
+                    aria-label="Know more about us"
+                    onClick={(event) => {
+                      event.preventDefault()
+                      scrollToSection("about-us")
+                    }}
+                  />
+                }
               >
                 Know more about us!
               </Button>
