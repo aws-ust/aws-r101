@@ -7,21 +7,15 @@ import {
   ApplicationFilters,
   type HrFilters,
 } from "@/components/hr/application-filters"
-import { ApplicationPagination } from "@/components/hr/application-pagination"
-import {
-  APPLICATION_PAGE_SIZE,
-  pageCount,
-} from "@/components/hr/application-pagination-utils"
-import { ApplicationRow } from "@/components/hr/application-row"
-import { ApplicationListSkeleton } from "@/components/hr/application-list-skeleton"
+import { APPLICATION_PAGE_SIZE } from "@/components/hr/application-pagination-utils"
+import { ApplicationListResults } from "@/components/hr/application-list-results"
+import { hrApplicationListNoticeFeedback } from "@/components/hr/application-list-feedback"
 import { ApplicationExportButton } from "@/components/hr/application-export-button"
 import { HrArchiveApplicantDialog } from "@/components/hr/hr-archive-applicant-dialog"
 import { useApplications } from "@/lib/api"
 import { pageShellClasses } from "@/lib/surface"
 import type { HrApplication } from "@/lib/hr-application-types"
 
-const listClasses = "mt-8 flex flex-col gap-3"
-const emptyClasses = "mt-8 font-sans text-sm text-prelude"
 const toolbarClasses =
   "mt-8 flex flex-col gap-3 xl:flex-row xl:items-center"
 const filtersClasses = "min-w-0 flex-1"
@@ -50,20 +44,7 @@ export function HrApplicationList({ notice }: { notice?: string }) {
     type: "success" | "error"
     message: string
   } | null>(null)
-  const visibleFeedback =
-    feedback ??
-    (notice === "archived" || notice === "restored"
-      ? {
-          type: "success" as const,
-          message:
-            notice === "archived"
-              ? "Applicant archived."
-              : "Applicant restored.",
-        }
-      : null)
-
-  const totalPages = pageCount(total)
-  const safePage = Math.min(page, totalPages)
+  const visibleFeedback = feedback ?? hrApplicationListNoticeFeedback(notice)
 
   function onFiltersChange(patch: Partial<HrFilters>) {
     setFilters((current) => ({ ...current, ...patch }))
@@ -98,32 +79,15 @@ export function HrApplicationList({ notice }: { notice?: string }) {
           onError={(message) => setFeedback({ type: "error", message })}
         />
       </div>
-      {loading ? (
-        <ApplicationListSkeleton />
-      ) : error ? (
-        <p className={emptyClasses}>{error}</p>
-      ) : applications.length === 0 ? (
-        <p className={emptyClasses}>No applications match those filters.</p>
-      ) : (
-        <>
-          <ul className={listClasses}>
-            {applications.map((application, index) => (
-              <li key={application.id}>
-                <ApplicationRow
-                  application={application}
-                  emphasized={safePage === 1 && index === 0}
-                  onArchive={setArchiveTarget}
-                />
-              </li>
-            ))}
-          </ul>
-          <ApplicationPagination
-            total={total}
-            page={safePage}
-            onPageChange={setPage}
-          />
-        </>
-      )}
+      <ApplicationListResults
+        loading={loading}
+        error={error}
+        applications={applications}
+        total={total}
+        page={page}
+        onPageChange={setPage}
+        onArchive={setArchiveTarget}
+      />
       <HrArchiveApplicantDialog
         application={archiveTarget}
         onOpenChange={(open) => {
