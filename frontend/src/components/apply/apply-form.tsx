@@ -252,7 +252,7 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
         <SectionHeader eyebrow="// RECRUITMENT 101" title="Apply to AWS Builders – UST" titleClassName="max-w-none whitespace-nowrap" subtitle="Every member lands on a committee that fits how they like to build, organize, or create." />
         <div className="mt-10"><ApplyStepper current={step} /></div>
         <div className={cn(panelShellClasses, panelWidth)}>
-          <div className="relative overflow-hidden">
+          <div className="relative min-w-0 overflow-x-clip">
             <ApplyFormSteps
               step={step}
               direction={direction}
