@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useEffectEvent, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { ActionFeedback } from "@/components/action-feedback"
 import { SlotGrid, type SlotGridCell } from "@/components/interview/slot-grid"
 import { Button } from "@/components/ui/button"
@@ -139,21 +139,30 @@ export function ApplicantInterviewScheduler({
   )
   const weekLabel = formatWeekRange(displayedWeekStart, days)
 
-  const applySchedule = useEffectEvent((payload: ApplicantInterviewSchedule) => {
-    setSchedule(payload)
-    onScheduleLoaded?.(payload)
-    if (previewMode) return
-    if (!payload.booking || selectedSlotId) return
-    setSelectedSlotId(payload.booking.slotId)
-    if (seasonBounds) {
-      setWeekStart(
-        clampWeekStart(
-          startOfWeek(new Date(payload.booking.startsAt)),
-          seasonBounds
+  const applySchedule = useCallback(
+    (payload: ApplicantInterviewSchedule) => {
+      setSchedule(payload)
+      onScheduleLoaded?.(payload)
+      if (previewMode) return
+      if (!payload.booking || selectedSlotId) return
+      setSelectedSlotId(payload.booking.slotId)
+      if (seasonBounds) {
+        setWeekStart(
+          clampWeekStart(
+            startOfWeek(new Date(payload.booking.startsAt)),
+            seasonBounds
+          )
         )
-      )
-    }
-  })
+      }
+    },
+    [
+      onScheduleLoaded,
+      previewMode,
+      seasonBounds,
+      selectedSlotId,
+      setSelectedSlotId,
+    ]
+  )
 
   useEffect(() => {
     if (previewMode) {
