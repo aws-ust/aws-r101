@@ -72,8 +72,6 @@ class BackendStack extends cdk.Stack {
       FREE_PLAN_END_DATE: freePlanEnd.toISOString(),
       S3_BUCKET: documentBucket.bucketName,
       S3_REGION: this.region,
-      ...(process.env.HR_EMAIL ? { HR_EMAIL: process.env.HR_EMAIL } : {}),
-      ...(process.env.HR_PASSWORD ? { HR_PASSWORD: process.env.HR_PASSWORD } : {}),
       ...(process.env.JWT_SECRET ? { JWT_SECRET: process.env.JWT_SECRET } : {}),
       ...(process.env.JWT_EXPIRES_IN ? { JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN } : {}),
       ...(process.env.APPLICANT_AUTH_SECRET ? { APPLICANT_AUTH_SECRET: process.env.APPLICANT_AUTH_SECRET } : {}),
