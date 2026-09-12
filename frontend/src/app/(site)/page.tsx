@@ -4,6 +4,9 @@ import { MissionVision } from "@/components/mission-vision"
 import { OurMoments } from "@/components/our-moments"
 import { Committees } from "@/components/committees"
 import { StackSection } from "@/components/stack-section"
+import { PeopleDirectory } from "@/components/people/people-directory"
+import { FAQSection } from "@/components/faq-section"
+import { CareersSection } from "@/components/careers-section"
 
 export default function Home() {
   return (
@@ -14,6 +17,9 @@ export default function Home() {
       <OurMoments />
       <StackSection />
       <Committees />
+      <PeopleDirectory />
+      <FAQSection />
+      <CareersSection />
     </main>
   )
 }

@@ -36,7 +36,7 @@ export function PeopleDirectory() {
   const [view, setView] = useState<PeopleView>("executive-board")
 
   return (
-    <div className={shellClasses}>
+    <section id="people" className={`${shellClasses} scroll-mt-20`}>
       <SectionHeader
         eyebrow="// THE PEOPLE"
         title="Meet the People behind our org!"
@@ -62,6 +62,6 @@ export function PeopleDirectory() {
             ))
           : COMMITTEE_DIRECTORS.map(renderDirectorCard)}
       </div>
-    </div>
+    </section>
   )
 }
