@@ -7,10 +7,74 @@ export type RecruitmentWindow = {
   endsAt: Date;
 };
 
-export type RecruitmentWindowPayload = {
+export type RecruitmentSeasonCode =
+  | "not_configured"
+  | "recruitment_not_started"
+  | "deadline_passed";
+
+export type RecruitmentSeasonStatus = {
+  open: boolean;
+  code: RecruitmentSeasonCode | null;
+  message: string | null;
   startsAt: string | null;
   endsAt: string | null;
 };
+
+export type RecruitmentWindowPayload = RecruitmentSeasonStatus;
+
+export function getRecruitmentSeasonStatus(
+  window: RecruitmentWindow | null,
+  now = new Date(),
+): RecruitmentSeasonStatus {
+  const startsAt = window?.startsAt.toISOString() ?? null;
+  const endsAt = window?.endsAt.toISOString() ?? null;
+  if (!window) {
+    return {
+      open: false,
+      code: "not_configured",
+      message: "Applications are not open yet.",
+      startsAt,
+      endsAt,
+    };
+  }
+  if (now.getTime() < window.startsAt.getTime()) {
+    return {
+      open: false,
+      code: "recruitment_not_started",
+      message: "Recruitment has not started.",
+      startsAt,
+      endsAt,
+    };
+  }
+  if (now.getTime() >= window.endsAt.getTime()) {
+    return {
+      open: false,
+      code: "deadline_passed",
+      message: "Recruitment week has ended. New applications are closed.",
+      startsAt,
+      endsAt,
+    };
+  }
+  return {
+    open: true,
+    code: null,
+    message: null,
+    startsAt,
+    endsAt,
+  };
+}
+
+export async function resolveRecruitmentSeasonStatus(
+  options: {
+    database?: RecruitmentWindowDatabase;
+    now?: Date;
+  } = {},
+): Promise<RecruitmentSeasonStatus> {
+  return getRecruitmentSeasonStatus(
+    await getRecruitmentWindow(options.database),
+    options.now,
+  );
+}
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type RecruitmentWindowDatabase = typeof db | DbTransaction;
@@ -41,11 +105,7 @@ export async function getRecruitmentWindow(
 }
 
 export async function getRecruitmentWindowPayload(): Promise<RecruitmentWindowPayload> {
-  const window = await getRecruitmentWindow();
-  return {
-    startsAt: window?.startsAt.toISOString() ?? null,
-    endsAt: window?.endsAt.toISOString() ?? null,
-  };
+  return resolveRecruitmentSeasonStatus();
 }
 
 export async function upsertRecruitmentWindow(

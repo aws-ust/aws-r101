@@ -29,12 +29,16 @@ const closedHintClasses = "font-mono text-xs text-prelude"
 
 type PositionDetailProps = {
   position: Position
+  applicationsOpen?: boolean
 }
 
-export function PositionDetail({ position }: PositionDetailProps) {
+export function PositionDetail({
+  position,
+  applicationsOpen = true,
+}: PositionDetailProps) {
   const assistant = isAssistantRole(position)
   const spots = openSpots(position)
-  const showApplyAction = position.isOpen
+  const showApplyAction = position.isOpen && applicationsOpen
 
   return (
     <article className={articleClasses}>
@@ -84,7 +88,9 @@ export function PositionDetail({ position }: PositionDetailProps) {
           <p className={footerHintClasses}>
             {showApplyAction
               ? "Ready to ship with us?"
-              : "This role is part of the org chart but is not accepting applications."}
+              : !applicationsOpen
+                ? "Applications are not open yet."
+                : "This role is part of the org chart but is not accepting applications."}
           </p>
           {showApplyAction ? (
             <Link
@@ -94,7 +100,9 @@ export function PositionDetail({ position }: PositionDetailProps) {
               Apply now →
             </Link>
           ) : (
-            <span className={closedHintClasses}>Applications closed</span>
+            <span className={closedHintClasses}>
+              {!applicationsOpen ? "Applications not open" : "Applications closed"}
+            </span>
           )}
         </div>
       </div>

@@ -80,3 +80,33 @@ export function officeForCommittee(committee: string) {
     )?.office ?? ""
   )
 }
+
+/** Landing-page committee card titles keyed by seeded committee name. */
+const LANDING_COMMITTEE_TITLE_BY_SEED: Record<string, string> = {
+  "Sponsorship Committee": "Sponsorships",
+  "Marketing Committee": "Marketing",
+  "External Affairs Committee": "External Affairs",
+  "Logistics Committee": "Logistics",
+  "Community Development Committee": "Community Development",
+  "Secretariat Committee": "Secretariat",
+  "Technicals Committee": "Technical",
+  "Development Committee": "Development",
+  "Finance Committee": "Finance",
+  "Human Resources Committee": "Human Resources",
+  "Documentation Committee": "Documentation",
+  "Media Committee": "Media",
+  "Publicity Committee": "Publication",
+}
+
+/** Staff committee card titles in executive-office hierarchy (CEO → CCO). */
+export function landingCommitteeCardOrder(): string[] {
+  const titles: string[] = []
+  for (const group of COMMITTEE_OFFICE_GROUPS) {
+    for (const committee of group.committees) {
+      if (committee.startsWith("Office of the ")) continue
+      const title = LANDING_COMMITTEE_TITLE_BY_SEED[committee]
+      if (title) titles.push(title)
+    }
+  }
+  return titles
+}

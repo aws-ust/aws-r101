@@ -164,6 +164,20 @@ export function sanitizeFileName(fileName: string): string {
   return (clean || "document.pdf").slice(0, 255);
 }
 
+export async function fetchObjectBytes(key: string): Promise<Buffer | null> {
+  try {
+    const client = s3Client();
+    const bucket = configuredBucket();
+    const object = await client.send(
+      new GetObjectCommand({ Bucket: bucket, Key: key }),
+    );
+    const bytes = await object.Body?.transformToByteArray();
+    return bytes ? Buffer.from(bytes) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function deleteAllDocumentObjects(): Promise<void> {
   const bucket = configuredBucket();
   const client = s3Client();

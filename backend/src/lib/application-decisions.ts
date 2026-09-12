@@ -99,6 +99,26 @@ export async function updateApplicationDecision(
           "Position is not one of this applicant's choices.",
         );
       }
+
+      if (input.decisionStatus === "approved") {
+        for (const other of choices) {
+          if (
+            other.positionId !== input.positionId &&
+            other.decisionStatus === "approved"
+          ) {
+            await tx
+              .update(applicationChoices)
+              .set({
+                decisionStatus: "pending",
+                decidedBy: null,
+                decidedAt: null,
+              })
+              .where(eq(applicationChoices.id, other.id));
+            other.decisionStatus = "pending";
+          }
+        }
+      }
+
       await tx
         .update(applicationChoices)
         .set({
@@ -115,16 +135,19 @@ export async function updateApplicationDecision(
       choice.decisionStatus = input.decisionStatus;
     }
 
-    const changesFinalPlacement = Object.hasOwn(
-      input,
-      "finalPositionId",
-    );
-    let finalPositionId = changesFinalPlacement
-      ? (input.finalPositionId ?? null)
-      : application.finalPositionId;
+    const changesFinalPlacement = Object.hasOwn(input, "finalPositionId");
     const approvedChoices = choices.filter(
       (choice) => choice.decisionStatus === "approved",
     );
+
+    let finalPositionId = application.finalPositionId;
+    if (changesFinalPlacement) {
+      finalPositionId = input.finalPositionId ?? null;
+    } else if (approvedChoices.length === 1) {
+      finalPositionId = approvedChoices[0].positionId;
+    } else if (approvedChoices.length === 0) {
+      finalPositionId = null;
+    }
 
     if (
       finalPositionId &&
@@ -136,17 +159,18 @@ export async function updateApplicationDecision(
           "Final placement must be one of the applicant's approved choices.",
         );
       }
-      finalPositionId = null;
+      finalPositionId =
+        approvedChoices.length === 1 ? approvedChoices[0].positionId : null;
     }
 
     const allDecided = choices.every(
       (choice) => choice.decisionStatus !== "pending",
     );
     const status =
-      allDecided && approvedChoices.length === 0
-        ? "rejected"
-        : allDecided && finalPositionId
-          ? "approved"
+      approvedChoices.length === 1 && finalPositionId
+        ? "approved"
+        : allDecided && approvedChoices.length === 0
+          ? "rejected"
           : "pending";
 
     await tx

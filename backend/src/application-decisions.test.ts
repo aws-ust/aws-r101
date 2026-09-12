@@ -153,8 +153,10 @@ test("HR committee decisions", async (t) => {
     const payload = (await response.json()) as {
       status: string;
       choices: { positionId: string; decisionStatus: string }[];
+      finalPlacement: { positionId: string } | null;
     };
-    assert.equal(payload.status, "pending");
+    assert.equal(payload.status, "approved");
+    assert.equal(payload.finalPlacement?.positionId, positionIds[0]);
     assert.equal(
       payload.choices.find((choice) => choice.positionId === positionIds[0])
         ?.decisionStatus,
@@ -185,9 +187,34 @@ test("HR committee decisions", async (t) => {
     assert.ok(applicationAudit.reviewedAt instanceof Date);
   });
 
+  await t.test("allows only one approved choice at a time", async () => {
+    const response = await decisionRequest({
+      positionId: positionIds[1],
+      decisionStatus: "approved",
+    });
+    assert.equal(response.status, 200);
+    const payload = (await response.json()) as {
+      status: string;
+      choices: { positionId: string; decisionStatus: string }[];
+      finalPlacement: { positionId: string } | null;
+    };
+    assert.equal(payload.status, "approved");
+    assert.equal(
+      payload.choices.find((choice) => choice.positionId === positionIds[0])
+        ?.decisionStatus,
+      "pending",
+    );
+    assert.equal(
+      payload.choices.find((choice) => choice.positionId === positionIds[1])
+        ?.decisionStatus,
+      "approved",
+    );
+    assert.equal(payload.finalPlacement?.positionId, positionIds[1]);
+  });
+
   await t.test("requires an approved choice for final placement", async () => {
     const response = await decisionRequest({
-      finalPositionId: positionIds[1],
+      finalPositionId: positionIds[0],
     });
     assert.equal(response.status, 409);
     assert.match(
@@ -196,22 +223,23 @@ test("HR committee decisions", async (t) => {
     );
   });
 
-  await t.test("derives pending until final placement is selected", async () => {
+  await t.test("stays approved after rejecting the other choice", async () => {
+    const approveFirst = await decisionRequest({
+      positionId: positionIds[0],
+      decisionStatus: "approved",
+    });
+    assert.equal(approveFirst.status, 200);
+    assert.equal(
+      ((await approveFirst.json()) as { status: string }).status,
+      "approved",
+    );
+
     const decision = await decisionRequest({
       positionId: positionIds[1],
       decisionStatus: "rejected",
     });
     assert.equal(decision.status, 200);
-    assert.equal(
-      ((await decision.json()) as { status: string }).status,
-      "pending",
-    );
-
-    const placement = await decisionRequest({
-      finalPositionId: positionIds[0],
-    });
-    assert.equal(placement.status, 200);
-    const payload = (await placement.json()) as {
+    const payload = (await decision.json()) as {
       status: string;
       finalPlacement: { positionId: string };
     };

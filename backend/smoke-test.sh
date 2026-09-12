@@ -220,7 +220,7 @@ expect "GET  /applicant/application (no session)" 401
 request PATCH "/applicant/application" '{}'
 expect "PATCH /applicant/application (no session)" 401
 request GET "/recruitment-window"
-expect "GET  /recruitment-window (no token)" 401
+expect "GET  /recruitment-window (no token)" 200
 request PATCH "/recruitment-window" '{"startsAt":"2099-01-01T00:00:00.000Z","endsAt":"2099-01-08T00:00:00.000Z"}'
 expect "PATCH /recruitment-window (no token)" 401
 request GET "/interview-window"

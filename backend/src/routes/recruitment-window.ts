@@ -17,13 +17,11 @@ function parseTimestamp(value: unknown): Date | null {
 
 export const recruitmentWindowRoutes = new Hono();
 
-recruitmentWindowRoutes.use("*", requireAuth);
-
 recruitmentWindowRoutes.get("/", async (c) => {
   return c.json(await getRecruitmentWindowPayload());
 });
 
-recruitmentWindowRoutes.patch("/", async (c) => {
+recruitmentWindowRoutes.patch("/", requireAuth, async (c) => {
   const body = (await c.req.json().catch(() => null)) as
     | Record<string, unknown>
     | null;

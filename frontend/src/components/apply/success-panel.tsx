@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { isDevelopmentCommittee } from "@/lib/committee-apply"
+import { needsDevExamSuccessCopy } from "@/lib/committee-apply"
 
 const contentClasses =
   "flex flex-col items-center px-4 py-6 text-center md:px-8 md:py-8"
@@ -19,16 +19,23 @@ type SuccessPanelProps = {
   applicationCode: string
   firstChoiceCommittee?: string
   secondChoiceCommittee?: string
+  firstChoiceTitle?: string
+  secondChoiceTitle?: string
 }
 
 export function SuccessPanel({
   applicationCode,
   firstChoiceCommittee = "",
   secondChoiceCommittee = "",
+  firstChoiceTitle = "",
+  secondChoiceTitle = "",
 }: SuccessPanelProps) {
-  const devExam =
-    isDevelopmentCommittee(firstChoiceCommittee) ||
-    isDevelopmentCommittee(secondChoiceCommittee)
+  const examCopy = needsDevExamSuccessCopy(
+    firstChoiceCommittee,
+    secondChoiceCommittee,
+    firstChoiceTitle,
+    secondChoiceTitle,
+  )
 
   return (
     <div className={contentClasses}>
@@ -43,14 +50,27 @@ export function SuccessPanel({
         {applicationCode}
       </p>
       <p className={bodyClasses}>
+        Check your <span className={emphasisClasses}>UST email</span> for a
+        confirmation of your application.
+      </p>
+      <p className={bodyClasses}>
         Please prepare <span className={emphasisClasses}>₱250</span> for the
         membership fee when you join.
       </p>
-      {devExam ? (
+      {examCopy.development ? (
         <p className={bodyClasses}>
           Because you applied to the{" "}
           <span className={emphasisClasses}>Development Committee</span>, you
           will undergo a{" "}
+          <span className={emphasisClasses}>special exam</span> as part of
+          recruitment.
+        </p>
+      ) : null}
+      {examCopy.ctoEa ? (
+        <p className={bodyClasses}>
+          Because you applied as the{" "}
+          <span className={emphasisClasses}>Executive Assistant to the CTO</span>
+          , you will undergo a{" "}
           <span className={emphasisClasses}>special exam</span> as part of
           recruitment.
         </p>

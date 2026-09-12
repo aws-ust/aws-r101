@@ -24,6 +24,8 @@ export function toCreateApplicationInput(
   const needsGithub = needsDevelopmentGithub(
     committee.firstCommittee,
     committee.secondCommittee,
+    committee.firstPositionTitle,
+    committee.secondPositionTitle,
   )
 
   return {
@@ -63,6 +65,9 @@ export function mapApplyApiError(message: string): string {
   }
   if (lower.includes("already submitted") || lower.includes("one application per year") || lower.includes("recruitment cycle")) {
     return "You already applied for this recruitment cycle with this UST email. Only one application per year is allowed."
+  }
+  if (lower.includes("failed to fetch")) {
+    return "Could not upload your PDFs. Make sure LocalStack is running (pnpm db:up), then run pnpm s3:cors and try again. Using http://localhost:3000/apply also avoids LAN upload issues."
   }
   return message
 }

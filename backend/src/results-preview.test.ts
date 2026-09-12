@@ -276,7 +276,7 @@ test("results release preview", async (t) => {
     assert.equal(byId.get(applicationIds[1])?.willSendEmail, true);
     assert.match(
       byId.get(applicationIds[2])?.blockingReason ?? "",
-      /decisions must be completed/i,
+      /final placement is required/i,
     );
     assert.match(
       byId.get(applicationIds[3])?.blockingReason ?? "",

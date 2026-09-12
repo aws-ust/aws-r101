@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { formatDisplayDate } from "@/lib/display-datetime"
 import { cn } from "@/lib/utils"
 import {
   DayPicker,
@@ -256,7 +257,11 @@ function CalendarDayButton({
     <button
       type="button"
       ref={ref}
-      data-day={day.date.toLocaleDateString()}
+      data-day={formatDisplayDate(day.date, {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      })}
       data-selected-single={
         modifiers.selected &&
         !modifiers.range_start &&

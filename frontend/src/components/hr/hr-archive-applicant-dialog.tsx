@@ -81,7 +81,7 @@ export function HrArchiveApplicantDialog({
             Cancel
           </Button>
           <Button
-            color={restoring ? "cyan" : "purple"}
+            color={restoring ? "cyan" : "danger"}
             disabled={pending}
             onClick={confirm}
           >

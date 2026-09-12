@@ -73,7 +73,7 @@ export function InterviewSeasonDatePicker({
           startMonth={startMonth}
           endMonth={endMonth}
           selected={selected}
-          defaultMonth={selected ?? new Date()}
+          defaultMonth={selected ?? startMonth}
           onSelect={(date) => {
             if (!date) return
             onChange(

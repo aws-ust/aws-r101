@@ -1,7 +1,8 @@
 import type { DocumentType } from "./documents";
 import {
+  type ChoiceRef,
   isCreativesCommittee,
-  isDevelopmentCommittee,
+  needsGithubForChoice,
 } from "./committee-apply";
 
 const SECTION_RE = /^[1-6][A-Z]{3}$/;
@@ -168,13 +169,28 @@ const REQUIRED_DOCUMENT_TYPES: DocumentType[] = [
   "registration",
 ];
 
+function normalizeChoiceRefs(
+  choices: string[] | ChoiceRef[],
+): ChoiceRef[] {
+  return choices.map((choice) =>
+    typeof choice === "string"
+      ? { committee: choice, title: "" }
+      : choice,
+  );
+}
+
 export function validateChoiceUrls(
-  committeeNames: string[],
+  choices: string[] | ChoiceRef[],
   portfolioUrl: string | null | undefined,
   githubUrl: string | null | undefined,
 ): string | null {
-  const needsPortfolio = committeeNames.some(isCreativesCommittee);
-  const needsGithub = committeeNames.some(isDevelopmentCommittee);
+  const refs = normalizeChoiceRefs(choices);
+  const needsPortfolio = refs.some((choice) =>
+    isCreativesCommittee(choice.committee),
+  );
+  const needsGithub = refs.some((choice) =>
+    needsGithubForChoice(choice.committee, choice.title),
+  );
 
   const portfolio = portfolioUrl?.trim() ?? "";
   const github = githubUrl?.trim() ?? "";
@@ -191,7 +207,7 @@ export function validateChoiceUrls(
     return "githubUrl must be a GitHub profile link (https://github.com/username), not a repository URL.";
   }
   if (github && !needsGithub) {
-    return "githubUrl is only used when applying to the Development Committee.";
+    return "githubUrl is only used when applying to the Development Committee or as Executive Assistant to the CTO.";
   }
 
   return null;

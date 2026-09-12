@@ -51,6 +51,13 @@ try {
     "ALTER TABLE applications ADD COLUMN IF NOT EXISTS github_url text",
   );
 
+  await sql.unsafe(
+    "ALTER TABLE application_documents ADD COLUMN IF NOT EXISTS file_size_bytes integer NOT NULL DEFAULT 0",
+  );
+  await sql.unsafe(
+    "ALTER TABLE application_documents ADD COLUMN IF NOT EXISTS available_until timestamptz",
+  );
+
   const [{ exists }] = await sql`
     SELECT EXISTS (
       SELECT 1
@@ -79,6 +86,56 @@ try {
   }
 
   await sql.unsafe(`
+    DO $$ BEGIN
+      CREATE TYPE upload_session_status AS ENUM ('active', 'consumed', 'expired');
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END $$;
+  `);
+
+  await sql.unsafe(`
+    CREATE TABLE IF NOT EXISTS upload_sessions (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+      status upload_session_status NOT NULL DEFAULT 'active',
+      application_id uuid REFERENCES applications(id) ON DELETE set null,
+      resume_file_name varchar(255) NOT NULL,
+      resume_size_bytes integer NOT NULL,
+      resume_checksum_sha256 varchar(44) NOT NULL,
+      transcript_file_name varchar(255) NOT NULL,
+      transcript_size_bytes integer NOT NULL,
+      transcript_checksum_sha256 varchar(44) NOT NULL,
+      registration_file_name varchar(255) NOT NULL,
+      registration_size_bytes integer NOT NULL,
+      registration_checksum_sha256 varchar(44) NOT NULL,
+      upload_expires_at timestamptz NOT NULL,
+      expires_at timestamptz NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      consumed_at timestamptz
+    )
+  `);
+
+  await sql.unsafe(
+    "CREATE INDEX IF NOT EXISTS idx_upload_sessions_status ON upload_sessions(status)",
+  );
+  await sql.unsafe(
+    "CREATE INDEX IF NOT EXISTS idx_upload_sessions_expires_at ON upload_sessions(expires_at)",
+  );
+
+  const [{ uploadSessionsUniqueExists }] = await sql`
+    SELECT EXISTS (
+      SELECT 1
+      FROM pg_constraint
+      WHERE conname = 'upload_sessions_application_id_unique'
+    ) AS "uploadSessionsUniqueExists"
+  `;
+  if (!uploadSessionsUniqueExists) {
+    await sql.unsafe(`
+      ALTER TABLE upload_sessions
+        ADD CONSTRAINT upload_sessions_application_id_unique UNIQUE (application_id)
+    `);
+  }
+
+  await sql.unsafe(`
     CREATE TABLE IF NOT EXISTS interview_windows (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
       singleton integer DEFAULT 1 NOT NULL,
@@ -91,6 +148,22 @@ try {
       CONSTRAINT interview_windows_range_check CHECK (ends_at > starts_at)
     )
   `);
+
+  for (const value of [
+    "officer_application_notice",
+    "officer_first_choice_left",
+    "officer_first_choice_joined",
+    "officer_interview_rescheduled",
+    "applicant_dev_exam",
+  ]) {
+    await sql.unsafe(`
+      DO $$ BEGIN
+        ALTER TYPE email_message_type ADD VALUE IF NOT EXISTS '${value}';
+      EXCEPTION
+        WHEN duplicate_object THEN NULL;
+      END $$;
+    `);
+  }
 
   console.log("Schema sync complete.");
 } finally {

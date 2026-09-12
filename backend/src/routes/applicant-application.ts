@@ -11,6 +11,10 @@ import {
   type UpdateApplicantApplicationInput,
 } from "../lib/applicant-editing";
 import type { DocumentType } from "../lib/applications";
+import {
+  fireApplicantChoiceEditNotifications,
+  loadApplicantEditEmailSnapshot,
+} from "../lib/email/service";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -246,11 +250,18 @@ applicantApplicationRoutes.patch("/application", async (c) => {
   }
 
   const session = getApplicantSession(c);
+  const shouldNotify = parsed.value.choices !== undefined;
+  const snapshot = shouldNotify
+    ? await loadApplicantEditEmailSnapshot(session.applicationId)
+    : null;
   try {
     const application = await updateApplicantApplication(
       session.applicationId,
       parsed.value,
     );
+    if (shouldNotify && snapshot) {
+      fireApplicantChoiceEditNotifications(session.applicationId, snapshot);
+    }
     return c.json(application);
   } catch (error) {
     const result = editError(error);

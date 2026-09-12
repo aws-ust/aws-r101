@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
+import { getServerSession } from "@/lib/session-server"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787"
 const AUTH_COOKIE_NAME = "hr_token"
@@ -67,8 +68,13 @@ export async function loginAction(
 }
 
 export async function logoutHrSession(): Promise<void> {
+  const session = await getServerSession()
+  if (!session) {
+    redirect("/login")
+  }
+
   const cookieStore = await cookies()
-  cookieStore.delete("hr_token")
+  cookieStore.delete(AUTH_COOKIE_NAME)
 
   try {
     await fetch(`${API_BASE}/auth/logout`, {

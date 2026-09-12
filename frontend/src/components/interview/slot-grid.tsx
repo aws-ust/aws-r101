@@ -3,6 +3,10 @@
 import { memo } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
+  formatDisplayDate,
+  formatDisplayDateTime,
+} from "@/lib/display-datetime"
+import {
   INTERVIEW_TIME_LABELS,
   INTERVIEW_GRID_END_HOUR,
   INTERVIEW_GRID_START_HOUR,
@@ -87,8 +91,8 @@ function cellClasses(state: SlotGridCellState, scrollable: boolean): string {
 
 function formatDayHeader(day: Date) {
   return {
-    weekday: day.toLocaleDateString(undefined, { weekday: "short" }),
-    date: day.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+    weekday: formatDisplayDate(day, { weekday: "short" }),
+    date: formatDisplayDate(day, { month: "short", day: "numeric" }),
   }
 }
 
@@ -197,7 +201,10 @@ export const SlotGrid = memo(function SlotGrid({
                           className="size-full cursor-pointer"
                           onMouseDown={(event) => event.preventDefault()}
                           onClick={() => onCellClick?.(fallback)}
-                          aria-label={`Unavailable ${startsAt.toLocaleString()}`}
+                          aria-label={`Unavailable ${formatDisplayDateTime(startsAt, {
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                          })}`}
                         />
                       </td>
                     )
@@ -217,7 +224,13 @@ export const SlotGrid = memo(function SlotGrid({
                           className="flex size-full flex-col items-center justify-center px-1 text-[0.65rem] leading-tight text-blue-chalk"
                           onMouseDown={(event) => event.preventDefault()}
                           onClick={() => onCellClick?.(cell)}
-                          aria-label={cell.detail ?? cell.startsAt.toLocaleString()}
+                          aria-label={
+                            cell.detail ??
+                            formatDisplayDateTime(cell.startsAt, {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            })
+                          }
                           title={cell.detail}
                         >
                           {cell.detail ? (

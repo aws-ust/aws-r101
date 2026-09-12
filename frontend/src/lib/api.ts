@@ -169,13 +169,17 @@ export function useApplication(id: string | undefined) {
 }
 
 export function useOpenPositions() {
-  const cached = peekOpenPositions()
-  const [positions, setPositions] = useState<Position[]>(cached ?? [])
-  const [loading, setLoading] = useState(!cached)
+  const [positions, setPositions] = useState<Position[]>([])
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (cached) return
+    const cached = peekOpenPositions()
+    if (cached) {
+      setPositions(cached)
+      setLoading(false)
+    }
+
     let cancelled = false
     listOpenPositions()
       .then((rows) => {

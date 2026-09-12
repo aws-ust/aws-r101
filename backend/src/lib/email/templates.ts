@@ -1,167 +1,369 @@
 import type { RenderedEmail } from "./types";
-import { appBaseUrl, messengerGcLink, signatoryName } from "./config";
+import { appBaseUrl, messengerGcLink } from "./config";
+import { devExamParagraphs, officerFirstChoiceLinkExtras } from "./choice-email-extras";
+import { isExecutiveOfficeCommittee } from "./officer-recipients";
 import {
   applicantOtpSubject,
   applicationSubmittedSubject,
+  officerApplicationNoticeSubject,
   resultAcceptedSubject,
   resultRejectedSubject,
 } from "./subjects";
+import {
+  academicYearLabel,
+  APPLICATION_RECEIVED_HEADER_CID,
+  brandedEmailHeaderInline,
+  ctaButton,
+  escapeHtmlForEmail,
+  formatChoiceLabel,
+  formatInterviewSlot,
+  wrapBrandedHtml,
+} from "./template-kit";
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
+const escapeHtml = escapeHtmlForEmail;
 
-function wrapHtml(body: string): string {
-  return `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;line-height:1.6;color:#111">${body}</body></html>`;
-}
+export { APPLICATION_RECEIVED_HEADER_CID };
 
 export function applicantOtpTemplate(input: {
-  firstName: string;
+  lastName: string;
   applicationCode: string;
   code: string;
   expiresInMinutes: number;
 }): RenderedEmail {
-  const signatory = signatoryName();
+  const statusUrl = `${appBaseUrl()}/apply/status`;
   const subject = applicantOtpSubject(input.applicationCode);
-  const text = `Hi ${input.firstName},
+  const honorific = `Mx. ${input.lastName}`;
+  const yearLabel = academicYearLabel(input.applicationCode);
 
-Use this verification code to securely access your AWS Builders - UST application:
+  const text = `Greetings from the Clouds!
 
-${input.code}
+
+Good day, ${honorific},
+
+You asked to sign in to your AWS Builders - UST application. Use the verification code below on your application status page.
+
+Verification Code: ${input.code}
 
 This code expires in ${input.expiresInMinutes} minutes and can only be used once. For your security, do not share it with anyone.
 
 Application ID: ${input.applicationCode}
 
+Open your application: ${statusUrl}
+
 If you did not request this code, you can safely ignore this email.
 
-Best regards,
+Yours in Thomasian Leadership,
+The AWS Builders - UST Executive Board`;
 
-${signatory}
-AWS Builders - UST Recruitment Team`;
+  const html = wrapBrandedHtml({
+    eyebrow: "AWS BUILDERS – UST",
+    bannerTitle: "WELCOME, BUILDER!",
+    bannerSub: yearLabel,
+    heading: "Verification Code",
+    headerImageUrl: `cid:${APPLICATION_RECEIVED_HEADER_CID}`,
+    headerImageAlt: "AWS Builders - UST — It's Always Day One",
+    inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
+<p style="margin:0 0 0;line-height:8px;font-size:8px;">&nbsp;</p>
+<p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
+<p style="margin:0 0 16px;">You asked to sign in to your AWS Builders - UST application. Enter the verification code below on your application status page.</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;background:#f8f5ff;border-radius:8px;">
+  <tr>
+    <td style="padding:20px 18px;text-align:center;font-family:Arial,Helvetica,sans-serif;color:#170f33;">
+      <p style="margin:0 0 10px;font-size:14px;"><strong>Verification Code</strong></p>
+      <p style="margin:0;font-size:28px;letter-spacing:0.18em;color:#46258a;font-weight:bold;">${escapeHtml(input.code)}</p>
+    </td>
+  </tr>
+</table>
+<p style="margin:0 0 16px;">This code expires in ${input.expiresInMinutes} minutes and can only be used once. For your security, do not share it with anyone.</p>
+<p style="margin:0 0 16px;">Application ID: <strong>${escapeHtml(input.applicationCode)}</strong></p>
+${ctaButton(statusUrl, "Open your application")}
+<p style="margin:0 0 16px;">If you did not request this code, you can safely ignore this email.</p>
+<p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
+<p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
+  });
 
-  const html = wrapHtml(
-    `Hi ${escapeHtml(input.firstName)},<br><br>
-Use this verification code to securely access your AWS Builders - UST application: <strong>${escapeHtml(input.code)}</strong><br><br>
-This code expires in ${input.expiresInMinutes} minutes and can only be used once. For your security, do not share it with anyone.<br><br>
-Application ID: <strong>${escapeHtml(input.applicationCode)}</strong><br><br>
-If you did not request this code, you can safely ignore this email.<br><br>
-Best regards,<br>
-${escapeHtml(signatory)}<br>
-AWS Builders - UST Recruitment Team`,
-  );
-
-  return { subject, text, html };
+  return { subject, text, html, inline: [brandedEmailHeaderInline()] };
 }
 
 export function applicationSubmittedTemplate(input: {
-  firstName: string;
+  lastName: string;
   applicationCode: string;
+  firstChoice: { committee: string; title: string };
+  secondChoice: { committee: string; title: string };
+  interviewStartsAt: Date;
 }): RenderedEmail {
   const statusUrl = `${appBaseUrl()}/apply/status`;
-  const signatory = signatoryName();
   const subject = applicationSubmittedSubject(input.applicationCode);
+  const honorific = `Mx. ${input.lastName}`;
+  const interviewTime = formatInterviewSlot(input.interviewStartsAt);
+  const firstChoice = formatChoiceLabel(input.firstChoice);
+  const secondChoice = formatChoiceLabel(input.secondChoice);
+  const yearLabel = academicYearLabel(input.applicationCode);
+  const examCopy = devExamParagraphs([input.firstChoice, input.secondChoice]);
+
   const text = `Greetings from the Clouds!
 
-Hi ${input.firstName},
 
-Thank you for applying to AWS Builders - UST. We received your application.
+Good day, ${honorific},
+
+Thank you for applying to AWS Builders - UST. We received your application, and we are excited to meet you.
 
 Please save your Application ID: ${input.applicationCode}
 
-You can return to ${statusUrl} later to securely access and check your application.
+First Choice: ${firstChoice}
+Second Choice: ${secondChoice}
+Interview: ${interviewTime}
+${examCopy.text}
+While the application season is open, you can still change your interview slot from your application page. Keep this Application ID so you can return whenever you need to.
 
-Best regards,
+We cannot wait to see you and to build with you.
 
-${signatory}
-AWS Builders - UST Recruitment Team`;
+Check your application: ${statusUrl}
 
-  const html = wrapHtml(
-    `Greetings from the Clouds!<br><br>
-Hi ${escapeHtml(input.firstName)},<br><br>
-Thank you for applying to AWS Builders - UST. We received your application.<br><br>
-Please save your Application ID: <strong>${escapeHtml(input.applicationCode)}</strong><br><br>
-You can return to <a href="${escapeHtml(statusUrl)}">${escapeHtml(statusUrl)}</a> later to securely access and check your application.<br><br>
-Best regards,<br>
-${escapeHtml(signatory)}<br>
-AWS Builders - UST Recruitment Team`,
-  );
+Once again, thank you for taking this first step with us. We look forward to meeting you.
 
-  return { subject, text, html };
+Yours in Thomasian Leadership,
+The AWS Builders - UST Executive Board`;
+
+  const headerImageUrl = `cid:${APPLICATION_RECEIVED_HEADER_CID}`;
+
+  const html = wrapBrandedHtml({
+    eyebrow: "AWS BUILDERS – UST",
+    bannerTitle: "WELCOME, BUILDER!",
+    bannerSub: yearLabel,
+    heading: "Application Received",
+    headerImageUrl,
+    headerImageAlt: "AWS Builders - UST — It's Always Day One",
+    inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
+<p style="margin:0 0 0;line-height:8px;font-size:8px;">&nbsp;</p>
+<p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
+<p style="margin:0 0 16px;">Thank you for applying to AWS Builders - UST. We received your application, and we are excited to meet you.</p>
+<p style="margin:0 0 16px;">Please save your Application ID: <strong>${escapeHtml(input.applicationCode)}</strong></p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;background:#f8f5ff;border-radius:8px;">
+  <tr>
+    <td style="padding:16px 18px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#170f33;">
+      <p style="margin:0 0 12px;"><strong>First Choice</strong><br>${escapeHtml(firstChoice)}</p>
+      <p style="margin:0 0 12px;"><strong>Second Choice</strong><br>${escapeHtml(secondChoice)}</p>
+      <p style="margin:0;"><strong>Interview</strong><br>${escapeHtml(interviewTime)}</p>
+    </td>
+  </tr>
+</table>
+${examCopy.html}
+<p style="margin:0 0 16px;">While the application season is open, you can still change your interview slot from your application page. Keep this Application ID so you can return whenever you need to.</p>
+<p style="margin:0 0 16px;">We cannot wait to see you and to build with you.</p>
+${ctaButton(statusUrl, "View your application")}
+<p style="margin:0 0 16px;">Once again, thank you for taking this first step with us. We look forward to meeting you.</p>
+<p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
+<p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
+  });
+
+  return {
+    subject,
+    text,
+    html,
+    inline: [brandedEmailHeaderInline()],
+  };
+}
+
+export function officerApplicationNoticeTemplate(input: {
+  officerLastName: string;
+  applicantFirstName: string;
+  applicantLastName: string;
+  studentNumber: string;
+  email: string;
+  applicationCode: string;
+  portfolioUrl?: string | null;
+  githubUrl?: string | null;
+  firstChoice: { committee: string; title: string };
+  secondChoice: { committee: string; title: string };
+  interviewStartsAt: Date;
+}): RenderedEmail {
+  const subject = officerApplicationNoticeSubject({
+    firstName: input.applicantFirstName,
+    lastName: input.applicantLastName,
+    firstChoiceCommittee: input.firstChoice.committee,
+  });
+  const officerHonorific = `Mx. ${input.officerLastName}`;
+  const applicantName = `${input.applicantFirstName} ${input.applicantLastName}`;
+  const firstChoice = formatChoiceLabel(input.firstChoice);
+  const secondChoice = formatChoiceLabel(input.secondChoice);
+  const interviewTime = formatInterviewSlot(input.interviewStartsAt);
+  const yearLabel = academicYearLabel(input.applicationCode);
+  const unitLabel = isExecutiveOfficeCommittee(input.firstChoice.committee)
+    ? "office"
+    : "committee";
+  const linkExtras = officerFirstChoiceLinkExtras({
+    firstChoice: input.firstChoice,
+    portfolioUrl: input.portfolioUrl,
+    githubUrl: input.githubUrl,
+  });
+
+  const text = `Greetings from the Clouds!
+
+Good day, ${officerHonorific},
+
+A new applicant listed your ${unitLabel} as their first choice in R101.
+
+Applicant: ${applicantName}
+Student Number: ${input.studentNumber}
+UST Email: ${input.email}
+${linkExtras.textLines}First Choice: ${firstChoice}
+Second Choice: ${secondChoice}
+Interview: ${interviewTime}
+Application ID: ${input.applicationCode}
+
+You can review their file in the HR applications list when you are ready.
+
+Yours in Thomasian Leadership,
+The AWS Builders - UST Executive Board`;
+
+  const html = wrapBrandedHtml({
+    eyebrow: "AWS BUILDERS – UST",
+    bannerTitle: "NEW APPLICANT",
+    bannerSub: yearLabel,
+    heading: "First-Choice Notice",
+    headerImageUrl: `cid:${APPLICATION_RECEIVED_HEADER_CID}`,
+    headerImageAlt: "AWS Builders - UST — It's Always Day One",
+    inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
+<p style="margin:0 0 0;line-height:8px;font-size:8px;">&nbsp;</p>
+<p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(officerHonorific)},</p>
+<p style="margin:0 0 16px;">A new applicant listed your ${escapeHtml(unitLabel)} as their first choice in R101.</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;background:#f8f5ff;border-radius:8px;">
+  <tr>
+    <td style="padding:16px 18px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#170f33;">
+      <p style="margin:0 0 12px;"><strong>Applicant</strong><br>${escapeHtml(applicantName)}</p>
+      <p style="margin:0 0 12px;"><strong>Student Number</strong><br>${escapeHtml(input.studentNumber)}</p>
+      <p style="margin:0 0 12px;"><strong>UST Email</strong><br>${escapeHtml(input.email)}</p>
+      ${linkExtras.htmlRows}
+      <p style="margin:0 0 12px;"><strong>First Choice</strong><br>${escapeHtml(firstChoice)}</p>
+      <p style="margin:0 0 12px;"><strong>Second Choice</strong><br>${escapeHtml(secondChoice)}</p>
+      <p style="margin:0 0 12px;"><strong>Interview</strong><br>${escapeHtml(interviewTime)}</p>
+      <p style="margin:0;"><strong>Application ID</strong><br>${escapeHtml(input.applicationCode)}</p>
+    </td>
+  </tr>
+</table>
+<p style="margin:0 0 16px;">You can review their file in the HR applications list when you are ready.</p>
+<p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
+<p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
+  });
+
+  return {
+    subject,
+    text,
+    html,
+    inline: [brandedEmailHeaderInline()],
+  };
 }
 
 export function resultAcceptedTemplate(input: {
   lastName: string;
   position: string;
+  memberId: string;
 }): RenderedEmail {
   const gcLink = messengerGcLink();
-  const signatory = signatoryName();
   const subject = resultAcceptedSubject;
+  const honorific = `Mx. ${input.lastName}`;
+
   const text = `Greetings from the Clouds!
 
-Good day, Mx. ${input.lastName},
 
-Congratulations! We are pleased to inform you that you have been accepted into AWS Builders - UST as our newest ${input.position}. Your passion, skills, and enthusiasm truly stood out throughout the recruitment process, and your alignment with the values and vision of AWS Builders - UST did not go unnoticed.
+Good day, ${honorific},
 
-We are confident that you will fulfill the responsibilities of this role with excellence and dedication. We look forward to building great things with you as we continue to grow our community of builders.
+Congratulations! We are thrilled to welcome you to AWS Builders - UST as our newest ${input.position}. Your passion, skills, and enthusiasm stood out throughout R101, and we cannot wait to build with you.
 
-Please join our official GC (Messenger group chat) here: ${gcLink}
+Please save these details for your records:
 
-Welcome to the team, Mx. ${input.lastName}!
+Membership ID: ${input.memberId}
+Position: ${input.position}
 
-Best regards,
+Your Membership ID is how we will recognize you in the org. Keep it somewhere you can find it.
 
-${signatory}`;
+Please join our official Messenger group chat here: ${gcLink}
 
-  const html = wrapHtml(
-    `Greetings from the Clouds!<br><br>
-Good day, Mx. ${escapeHtml(input.lastName)},<br><br>
-Congratulations! We are pleased to inform you that you have been accepted into AWS Builders - UST as our newest ${escapeHtml(input.position)}. Your passion, skills, and enthusiasm truly stood out throughout the recruitment process, and your alignment with the values and vision of AWS Builders - UST did not go unnoticed.<br><br>
-We are confident that you will fulfill the responsibilities of this role with excellence and dedication. We look forward to building great things with you as we continue to grow our community of builders.<br><br>
-Please join our official GC (Messenger group chat) here: <a href="${escapeHtml(gcLink)}">${escapeHtml(gcLink)}</a><br><br>
-Welcome to the team, Mx. ${escapeHtml(input.lastName)}!<br><br>
-Best regards,<br><br>
-${escapeHtml(signatory)}`,
-  );
+Welcome to the team, ${honorific}. It is always Day One — and yours starts now.
 
-  return { subject, text, html };
+Yours in Thomasian Leadership,
+The AWS Builders - UST Executive Board`;
+
+  const html = wrapBrandedHtml({
+    eyebrow: "AWS BUILDERS – UST",
+    bannerTitle: "WELCOME, BUILDER!",
+    bannerSub: "R101 Results",
+    heading: "You Are Accepted",
+    headerImageUrl: `cid:${APPLICATION_RECEIVED_HEADER_CID}`,
+    headerImageAlt: "AWS Builders - UST — It's Always Day One",
+    inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
+<p style="margin:0 0 0;line-height:8px;font-size:8px;">&nbsp;</p>
+<p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
+<p style="margin:0 0 16px;">Congratulations! We are thrilled to welcome you to AWS Builders - UST as our newest ${escapeHtml(input.position)}. Your passion, skills, and enthusiasm stood out throughout R101, and we cannot wait to build with you.</p>
+<p style="margin:0 0 16px;">Please save these details for your records:</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;background:#f8f5ff;border-radius:8px;">
+  <tr>
+    <td style="padding:16px 18px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#170f33;">
+      <p style="margin:0 0 12px;"><strong>Membership ID</strong><br>${escapeHtml(input.memberId)}</p>
+      <p style="margin:0;"><strong>Position</strong><br>${escapeHtml(input.position)}</p>
+    </td>
+  </tr>
+</table>
+<p style="margin:0 0 16px;">Your Membership ID is how we will recognize you in the org. Keep it somewhere you can find it.</p>
+${ctaButton(gcLink, "Join the Messenger group chat")}
+<p style="margin:0 0 16px;">Welcome to the team, ${escapeHtml(honorific)}. It is always Day One — and yours starts now.</p>
+<p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
+<p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
+  });
+
+  return {
+    subject,
+    text,
+    html,
+    inline: [brandedEmailHeaderInline()],
+  };
 }
 
 export function resultRejectedTemplate(input: {
   lastName: string;
 }): RenderedEmail {
-  const signatory = signatoryName();
   const subject = resultRejectedSubject;
+  const honorific = `Mx. ${input.lastName}`;
+
   const text = `Greetings from the Clouds!
 
-Good day, Mx. ${input.lastName},
 
-Thank you for taking the time to apply and for your interest in joining AWS Builders - UST. We truly appreciate the effort you put into the recruitment process.
+Good day, ${honorific},
 
-After careful deliberation, we regret to inform you that you were not selected to join the organization this term. This was not an easy decision, as we had a highly competitive pool of applicants.
+Thank you for applying to AWS Builders - UST and for the time and care you put into R101. We saw the effort you brought to this process, and it meant a lot to us.
 
-We encourage you to stay connected with us, as we regularly hold events, workshops, and future recruitment cycles that you're welcome to join. Your enthusiasm for cloud computing and technology is valued, and we hope to see you around!
+After careful deliberation, we regret to inform you that you were not selected to join the organization this term. This was not an easy decision. We had a highly competitive pool of applicants, and choosing among so many strong builders was genuinely difficult.
 
-Thank you again, and we wish you the best in your future endeavors.
+Please know that this outcome does not take away from what you showed us. We would be glad to see you at our events and workshops, and we hope you will consider applying again in a future cycle.
 
-Best regards,
+Thank you again, ${honorific}. We wish you the very best, and we hope our paths still cross in the cloud.
 
-${signatory}`;
+Yours in Thomasian Leadership,
+The AWS Builders - UST Executive Board`;
 
-  const html = wrapHtml(
-    `Greetings from the Clouds!<br><br>
-Good day, Mx. ${escapeHtml(input.lastName)},<br><br>
-Thank you for taking the time to apply and for your interest in joining AWS Builders - UST. We truly appreciate the effort you put into the recruitment process.<br><br>
-After careful deliberation, we regret to inform you that you were not selected to join the organization this term. This was not an easy decision, as we had a highly competitive pool of applicants.<br><br>
-We encourage you to stay connected with us, as we regularly hold events, workshops, and future recruitment cycles that you're welcome to join. Your enthusiasm for cloud computing and technology is valued, and we hope to see you around!<br><br>
-Thank you again, and we wish you the best in your future endeavors.<br><br>
-Best regards,<br><br>
-${escapeHtml(signatory)}`,
-  );
+  const html = wrapBrandedHtml({
+    eyebrow: "AWS BUILDERS – UST",
+    bannerTitle: "R101 RESULTS",
+    bannerSub: "Thank you for applying",
+    heading: "Recruitment Update",
+    headerImageUrl: `cid:${APPLICATION_RECEIVED_HEADER_CID}`,
+    headerImageAlt: "AWS Builders - UST — It's Always Day One",
+    inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
+<p style="margin:0 0 0;line-height:8px;font-size:8px;">&nbsp;</p>
+<p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
+<p style="margin:0 0 16px;">Thank you for applying to AWS Builders - UST and for the time and care you put into R101. We saw the effort you brought to this process, and it meant a lot to us.</p>
+<p style="margin:0 0 16px;">After careful deliberation, we regret to inform you that you were not selected to join the organization this term. This was not an easy decision. We had a highly competitive pool of applicants, and choosing among so many strong builders was genuinely difficult.</p>
+<p style="margin:0 0 16px;">Please know that this outcome does not take away from what you showed us. We would be glad to see you at our events and workshops, and we hope you will consider applying again in a future cycle.</p>
+<p style="margin:0 0 16px;">Thank you again, ${escapeHtml(honorific)}. We wish you the very best, and we hope our paths still cross in the cloud.</p>
+<p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
+<p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
+  });
 
-  return { subject, text, html };
+  return {
+    subject,
+    text,
+    html,
+    inline: [brandedEmailHeaderInline()],
+  };
 }

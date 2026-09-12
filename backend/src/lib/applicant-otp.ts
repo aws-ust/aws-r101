@@ -22,6 +22,7 @@ export const OTP_MAX_REQUESTS_PER_WINDOW = 5;
 type ApplicantIdentity = ApplicantSession & {
   email: string;
   firstName: string;
+  lastName: string;
 };
 
 async function findApplicantIdentity(
@@ -34,6 +35,7 @@ async function findApplicantIdentity(
       applicationCode: applications.applicationCode,
       email: applicants.email,
       firstName: applicants.firstName,
+      lastName: applicants.lastName,
     })
     .from(applications)
     .innerJoin(applicants, eq(applications.applicantId, applicants.id))
@@ -111,7 +113,7 @@ export async function issueApplicantOtp(
     await sendApplicantOtp({
       applicationId: identity.applicationId,
       applicationCode: identity.applicationCode,
-      firstName: identity.firstName,
+      lastName: identity.lastName,
       email: identity.email,
       code,
       expiresInMinutes: OTP_TTL_SECONDS / 60,

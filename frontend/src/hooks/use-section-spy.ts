@@ -5,7 +5,9 @@ import { useEffect, useState } from "react"
 const navigationOffset = 80
 
 export function useSectionSpy(pathname: string, sectionIds: readonly string[]) {
-  const [activeId, setActiveId] = useState<string | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(
+    sectionIds[0] ?? null,
+  )
 
   useEffect(() => {
     if (pathname !== "/") {

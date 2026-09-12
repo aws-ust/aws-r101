@@ -1,4 +1,4 @@
-import { ApplyForm } from "@/components/apply/apply-form"
+import { ApplyFormGate } from "@/components/apply/apply-form-gate"
 
 export default async function ApplyFormPage({
   searchParams,
@@ -6,5 +6,5 @@ export default async function ApplyFormPage({
   const { position } = await searchParams
   const initialPositionId = typeof position === "string" ? position : undefined
 
-  return <ApplyForm initialPositionId={initialPositionId} />
+  return <ApplyFormGate initialPositionId={initialPositionId} />
 }

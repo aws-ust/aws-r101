@@ -1,5 +1,10 @@
 import { OAuth2Client } from "google-auth-library";
-import type { SendEmailInput, SendEmailResult } from "./types";
+import type {
+  EmailFileAttachment,
+  EmailInlineAttachment,
+  SendEmailInput,
+  SendEmailResult,
+} from "./types";
 import { fromHeader, replyToEmail } from "./config";
 
 function base64UrlEncode(value: string): string {
@@ -10,27 +15,120 @@ function base64UrlEncode(value: string): string {
     .replace(/=+$/g, "");
 }
 
-function buildRfc2822Message(input: SendEmailInput): string {
-  const lines = [
-    `From: ${fromHeader()}`,
-    `To: ${input.to}`,
-    `Reply-To: ${replyToEmail()}`,
-    `Subject: ${input.subject}`,
-    "MIME-Version: 1.0",
-    'Content-Type: multipart/alternative; boundary="aws_ust_boundary"',
-    "",
-    "--aws_ust_boundary",
+function encodeBase64Body(buffer: Buffer): string {
+  return buffer
+    .toString("base64")
+    .replace(/.{1,76}/g, "$&\r\n")
+    .replace(/\r\n$/, "");
+}
+
+function encodeHeaderValue(value: string): string {
+  if (/^[\x20-\x7E]*$/.test(value)) return value;
+  return `=?UTF-8?B?${Buffer.from(value, "utf8").toString("base64")}?=`;
+}
+
+function buildAlternativePart(boundary: string, input: SendEmailInput): string[] {
+  return [
+    `--${boundary}`,
     "Content-Type: text/plain; charset=UTF-8",
     "",
     input.text,
     "",
-    "--aws_ust_boundary",
+    `--${boundary}`,
     "Content-Type: text/html; charset=UTF-8",
     "",
     input.html,
     "",
-    "--aws_ust_boundary--",
   ];
+}
+
+function buildInlineParts(relatedBoundary: string, inline: EmailInlineAttachment[]): string[] {
+  const lines: string[] = [];
+  for (const attachment of inline) {
+    lines.push(
+      `--${relatedBoundary}`,
+      `Content-Type: ${attachment.mimeType}`,
+      "Content-Transfer-Encoding: base64",
+      `Content-ID: <${attachment.cid}>`,
+      `Content-Disposition: inline; filename="${attachment.filename ?? "image.png"}"`,
+      "",
+      encodeBase64Body(attachment.content),
+      "",
+    );
+  }
+  return lines;
+}
+
+function buildRelatedBody(input: SendEmailInput): string[] {
+  const inline = input.inline ?? [];
+  if (inline.length === 0) {
+    const boundary = "aws_ust_boundary";
+    return [
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+      "",
+      ...buildAlternativePart(boundary, input),
+      `--${boundary}--`,
+    ];
+  }
+
+  const relatedBoundary = "aws_ust_related";
+  const altBoundary = "aws_ust_alt";
+  return [
+    `Content-Type: multipart/related; boundary="${relatedBoundary}"`,
+    "",
+    `--${relatedBoundary}`,
+    `Content-Type: multipart/alternative; boundary="${altBoundary}"`,
+    "",
+    ...buildAlternativePart(altBoundary, input),
+    `--${altBoundary}--`,
+    "",
+    ...buildInlineParts(relatedBoundary, inline),
+    `--${relatedBoundary}--`,
+  ];
+}
+
+function buildFileAttachmentParts(
+  boundary: string,
+  attachments: EmailFileAttachment[],
+): string[] {
+  const lines: string[] = [];
+  for (const file of attachments) {
+    const safeName = file.filename.replace(/"/g, "'");
+    lines.push(
+      `--${boundary}`,
+      `Content-Type: ${file.mimeType}; name="${safeName}"`,
+      "Content-Transfer-Encoding: base64",
+      `Content-Disposition: attachment; filename="${safeName}"`,
+      "",
+      encodeBase64Body(file.content),
+      "",
+    );
+  }
+  return lines;
+}
+
+function buildRfc2822Message(input: SendEmailInput): string {
+  const attachments = input.attachments ?? [];
+  const lines = [
+    `From: ${fromHeader()}`,
+    `To: ${input.to}`,
+    `Reply-To: ${replyToEmail()}`,
+    `Subject: ${encodeHeaderValue(input.subject)}`,
+    "MIME-Version: 1.0",
+  ];
+
+  const bodyLines = buildRelatedBody(input);
+
+  if (attachments.length === 0) {
+    lines.push(...bodyLines);
+    return lines.join("\r\n");
+  }
+
+  const mixedBoundary = "aws_ust_mixed";
+  lines.push(`Content-Type: multipart/mixed; boundary="${mixedBoundary}"`, "");
+  lines.push(`--${mixedBoundary}`, ...bodyLines, "");
+  lines.push(...buildFileAttachmentParts(mixedBoundary, attachments));
+  lines.push(`--${mixedBoundary}--`);
   return lines.join("\r\n");
 }
 

@@ -470,13 +470,20 @@ export async function positionsExist(positionIds: string[]): Promise<boolean> {
 export async function committeeNamesForPositions(
   positionIds: string[],
 ): Promise<string[]> {
+  const refs = await choiceRefsForPositions(positionIds);
+  return refs.map((row) => row.committee);
+}
+
+export async function choiceRefsForPositions(
+  positionIds: string[],
+): Promise<{ committee: string; title: string }[]> {
   if (positionIds.length === 0) return [];
   const rows = await db
-    .select({ committee: committees.name })
+    .select({ committee: committees.name, title: positions.name })
     .from(positions)
     .innerJoin(committees, eq(positions.committeeId, committees.id))
     .where(inArray(positions.id, positionIds));
-  return rows.map((row) => row.committee);
+  return rows;
 }
 
 export async function createApplication(

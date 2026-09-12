@@ -48,6 +48,29 @@ function endAt(startsAt: Date): string {
   return new Date(startsAt.getTime() + INTERVIEW_SLOT_MS).toISOString();
 }
 
+export async function getBookedInterviewStartsAt(
+  applicationId: string,
+): Promise<Date | null> {
+  const booking = await getBookedInterviewBooking(applicationId);
+  return booking?.startsAt ?? null;
+}
+
+export async function getBookedInterviewBooking(
+  applicationId: string,
+): Promise<{ slotId: string; startsAt: Date } | null> {
+  const [row] = await db
+    .select({
+      slotId: interviewBookings.slotId,
+      startsAt: interviewSlots.startsAt,
+    })
+    .from(interviewBookings)
+    .innerJoin(interviewSlots, eq(interviewBookings.slotId, interviewSlots.id))
+    .where(eq(interviewBookings.applicationId, applicationId))
+    .limit(1);
+  if (!row) return null;
+  return { slotId: row.slotId, startsAt: row.startsAt };
+}
+
 type CommitteeSlotRow = {
   id: string;
   startsAt: Date;
@@ -539,6 +562,9 @@ export async function getApplicantInterviewSchedule(
     : [];
 
   const { slots, booked } = partitionCommitteeSlots(rows, applicationId);
+  const previewingOtherCommittee = Boolean(positionId);
+  const bookingBelongsToTarget =
+    Boolean(current) && slots.some((slot) => slot.id === current?.slotId);
 
   return {
     committee: {
@@ -547,15 +573,16 @@ export async function getApplicantInterviewSchedule(
     },
     canSchedule,
     lockReason,
-    booking: current
-      ? {
-          id: current.id,
-          slotId: current.slotId,
-          startsAt: current.startsAt.toISOString(),
-          endsAt: endAt(current.startsAt),
-          bookedAt: current.bookedAt.toISOString(),
-        }
-      : null,
+    booking:
+      current && (!previewingOtherCommittee || bookingBelongsToTarget)
+        ? {
+            id: current.id,
+            slotId: current.slotId,
+            startsAt: current.startsAt.toISOString(),
+            endsAt: endAt(current.startsAt),
+            bookedAt: current.bookedAt.toISOString(),
+          }
+        : null,
     slots,
     booked,
   };

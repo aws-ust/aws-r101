@@ -48,8 +48,10 @@ export const generalInfoSchema = z.object({
 export const committeeSchema = z.object({
   firstCommittee: z.string(),
   firstPositionId: z.string(),
+  firstPositionTitle: z.string(),
   secondCommittee: z.string(),
   secondPositionId: z.string(),
+  secondPositionTitle: z.string(),
   motivation: z.string(),
   slotId: z.string(),
   portfolioUrl: z.string(),
@@ -120,7 +122,12 @@ export const applySchema = z
     if (!committee.slotId) issue(["committee", "slotId"], "Pick an interview time slot for your first-choice committee.")
     if (!committee.motivation.trim()) issue(["committee", "motivation"], "Please complete all the required fields.")
     const needsPortfolio = needsCreativesPortfolio(committee.firstCommittee, committee.secondCommittee)
-    const needsGithub = needsDevelopmentGithub(committee.firstCommittee, committee.secondCommittee)
+    const needsGithub = needsDevelopmentGithub(
+      committee.firstCommittee,
+      committee.secondCommittee,
+      committee.firstPositionTitle,
+      committee.secondPositionTitle,
+    )
     if (needsPortfolio && !committee.portfolioUrl.trim()) {
       issue(["committee", "portfolioUrl"], "Add your Google Drive portfolio link for your Creatives committee choice.")
     } else if (needsPortfolio && !isValidGoogleDriveUrl(committee.portfolioUrl)) {
@@ -151,7 +158,12 @@ export const applyFormDefaults: ApplyFormValues = {
     emailLocal: "", studentNumber: "", contactDigits: "", facebookUrl: "",
   },
   committee: {
-    firstCommittee: "", firstPositionId: "", secondCommittee: "", secondPositionId: "",
+    firstCommittee: "",
+    firstPositionId: "",
+    firstPositionTitle: "",
+    secondCommittee: "",
+    secondPositionId: "",
+    secondPositionTitle: "",
     motivation: "", slotId: "", portfolioUrl: "", githubUrl: "",
   },
   upload: { resume: null, transcript: null, registration: null },

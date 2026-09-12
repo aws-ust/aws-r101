@@ -59,6 +59,34 @@ function classifyApplication(
     };
   }
 
+  const approvedChoices = choices.filter(
+    (choice) => choice.decisionStatus === "approved",
+  );
+
+  if (approvedChoices.length === 1) {
+    if (!finalPositionId) {
+      return {
+        classification: "incomplete",
+        blockingReason:
+          "Final placement is required after a committee approves the applicant.",
+      };
+    }
+    if (approvedChoices[0].positionId === finalPositionId) {
+      return { classification: "accepted", blockingReason: null };
+    }
+    return {
+      classification: "incomplete",
+      blockingReason: "Final placement must match an approved position choice.",
+    };
+  }
+
+  if (approvedChoices.length > 1) {
+    return {
+      classification: "incomplete",
+      blockingReason: "Only one committee choice may be approved.",
+    };
+  }
+
   if (choices.some((choice) => choice.decisionStatus === "pending")) {
     return {
       classification: "incomplete",
@@ -66,36 +94,15 @@ function classifyApplication(
     };
   }
 
-  const approvedChoices = choices.filter(
-    (choice) => choice.decisionStatus === "approved",
-  );
-  if (approvedChoices.length === 0) {
-    if (finalPositionId) {
-      return {
-        classification: "incomplete",
-        blockingReason:
-          "Final placement must be empty when all choices are rejected.",
-      };
-    }
-    return { classification: "rejected", blockingReason: null };
-  }
-
-  if (!finalPositionId) {
+  if (finalPositionId) {
     return {
       classification: "incomplete",
       blockingReason:
-        "Final placement is required after a committee approves the applicant.",
+        "Final placement must be empty when all choices are rejected.",
     };
   }
 
-  if (!approvedChoices.some((choice) => choice.positionId === finalPositionId)) {
-    return {
-      classification: "incomplete",
-      blockingReason: "Final placement must match an approved position choice.",
-    };
-  }
-
-  return { classification: "accepted", blockingReason: null };
+  return { classification: "rejected", blockingReason: null };
 }
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
