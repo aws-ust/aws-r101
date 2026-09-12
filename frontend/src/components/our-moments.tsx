@@ -142,7 +142,7 @@ export function OurMoments() {
         eyebrow="// events"
         title={
           <span id="our-moments-title">
-            Workshops and milestones, in order
+            Workshops and Milestones
           </span>
         }
       />

@@ -87,8 +87,7 @@ export function HrRecruitmentWindow() {
         Recruitment Week
       </h2>
       <p className="mt-1 font-sans text-sm text-prelude">
-        Applicants can edit their dashboard application (committee choices,
-        documents, and interview time) between these dates.
+        Applicants can edit their dashboard application between these dates.
       </p>
       {loading ? (
         <DatetimeFieldsSkeleton />

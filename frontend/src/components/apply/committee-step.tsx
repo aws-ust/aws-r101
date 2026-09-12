@@ -92,6 +92,7 @@ export function CommitteeStep({ values, onChange, errors }: CommitteeStepProps) 
           {values.firstPositionId ? (
             <>
               <ApplyInterviewSlotPicker
+                key={values.firstPositionId}
                 positionId={values.firstPositionId}
                 selectedSlotId={values.slotId}
                 onSelectedSlotIdChange={(slotId) => onChange({ slotId })}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { ActionFeedback } from "@/components/action-feedback"
 import { SlotGrid, type SlotGridCell } from "@/components/interview/slot-grid"
 import { Button } from "@/components/ui/button"
@@ -138,50 +138,50 @@ export function HrInterviewGrid({
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
   const [resetOpen, setResetOpen] = useState(false)
-  const hasLoadedRef = useRef(false)
-
   const committeeId = committeeName ? committeeIds.get(committeeName) : undefined
-  const effectiveWeekStart = useMemo(
-    () => (seasonBounds ? clampWeekStart(weekStart, seasonBounds) : weekStart),
-    [seasonBounds, weekStart]
+  const displayedWeekStart = useMemo(
+    () => clampWeekStart(weekStart, seasonBounds),
+    [weekStart, seasonBounds]
   )
   const days = useMemo(
-    () => weekDaysInSeason(effectiveWeekStart, seasonBounds),
-    [effectiveWeekStart, seasonBounds]
+    () => weekDaysInSeason(displayedWeekStart, seasonBounds),
+    [displayedWeekStart, seasonBounds]
   )
-  const weekLabel = formatWeekRange(effectiveWeekStart, days)
+  const weekLabel = formatWeekRange(displayedWeekStart, days)
   const cells = useMemo(() => buildHrCells(days, slots), [days, slots])
 
-  const loadSlots = useCallback(async () => {
+  const fetchSlots = useCallback(() => {
     if (!committeeId || !seasonConfigured) {
-      setSlots([])
-      return
+      return Promise.resolve<HrInterviewSlot[]>([])
     }
-    if (!hasLoadedRef.current) setLoading(true)
-    hasLoadedRef.current = true
-    setError("")
-    try {
-      const range = weekQueryRange(effectiveWeekStart, days)
-      setSlots(
-        await listInterviewSlots({
-          committeeId,
-          from: range.from,
-          to: range.to,
-        })
-      )
-    } catch (err) {
-      setSlots([])
-      setError(
-        err instanceof Error ? err.message : "Could not load interview slots."
-      )
-    } finally {
-      setLoading(false)
-    }
-  }, [committeeId, days, effectiveWeekStart, seasonConfigured])
+    const range = weekQueryRange(displayedWeekStart, days)
+    return listInterviewSlots({
+      committeeId,
+      from: range.from,
+      to: range.to,
+    })
+  }, [committeeId, days, displayedWeekStart, seasonConfigured])
 
   useEffect(() => {
-    void loadSlots()
-  }, [loadSlots])
+    let cancelled = false
+    fetchSlots()
+      .then((rows) => {
+        if (!cancelled) setSlots(rows)
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        setSlots([])
+        setError(
+          err instanceof Error ? err.message : "Could not load interview slots."
+        )
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [fetchSlots])
 
   async function openSlot(startsAt: Date, existing?: HrInterviewSlot) {
     if (!committeeId) return
@@ -216,7 +216,7 @@ export function HrInterviewGrid({
       }
       setSuccess(parts.join(" "))
       setResetOpen(false)
-      await loadSlots()
+      setSlots(await fetchSlots())
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Could not reset the schedule."
@@ -304,7 +304,8 @@ export function HrInterviewGrid({
             onSelect={(name) => {
               setCommitteeName(name)
               setSlots([])
-              hasLoadedRef.current = false
+              setError("")
+              setLoading(Boolean(name && seasonConfigured))
             }}
           />
         </Field>
@@ -314,12 +315,14 @@ export function HrInterviewGrid({
             type="button"
             color="purple"
             className={navButtonClasses}
-            disabled={!seasonConfigured || !canGoPrevWeek(effectiveWeekStart, seasonBounds)}
-            onClick={() =>
-              setWeekStart((current) =>
-                clampWeekStart(addDays(current, -7), seasonBounds)
+            disabled={!seasonConfigured || !canGoPrevWeek(displayedWeekStart, seasonBounds)}
+            onClick={() => {
+              setLoading(true)
+              setError("")
+              setWeekStart(
+                clampWeekStart(addDays(displayedWeekStart, -7), seasonBounds)
               )
-            }
+            }}
           >
             ← Prev
           </Button>
@@ -328,12 +331,14 @@ export function HrInterviewGrid({
             type="button"
             color="purple"
             className={navButtonClasses}
-            disabled={!seasonConfigured || !canGoNextWeek(effectiveWeekStart, seasonBounds)}
-            onClick={() =>
-              setWeekStart((current) =>
-                clampWeekStart(addDays(current, 7), seasonBounds)
+            disabled={!seasonConfigured || !canGoNextWeek(displayedWeekStart, seasonBounds)}
+            onClick={() => {
+              setLoading(true)
+              setError("")
+              setWeekStart(
+                clampWeekStart(addDays(displayedWeekStart, 7), seasonBounds)
               )
-            }
+            }}
           >
             Next →
           </Button>

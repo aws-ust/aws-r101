@@ -85,7 +85,7 @@ export const ABOUT_EVENTS: AboutEvent[] = [
     academicYear: "SY 2026–27",
     title: "AWSSUG Student Community Day Mega Manila 2026",
     description:
-      "Joined AWS User Group Student Community Day Mega Manila with peers and industry builders.",
+      "AWS Builders – UST served as a Platinum Partner of AWS Student User Group Philippines for Student Community Day Mega Manila 2026. This photo was taken on event day with our founder—who founded AWS Learning Club – UST, the org now known as AWS Builders – UST—and who spoke at the conference.",
     imageSrc: "/events/sy-26-27/awssug-scd-2627.jpg",
   },
 ]
