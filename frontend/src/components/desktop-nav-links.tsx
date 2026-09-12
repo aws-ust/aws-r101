@@ -40,8 +40,9 @@ type TabSegment = {
 }
 
 const linksRowClasses =
-  "relative hidden items-center gap-1 rounded-pill font-mono text-sm md:flex"
-const navLinkClasses = "relative z-10 whitespace-nowrap rounded-pill px-3 py-1.5 transition-colors"
+  "relative hidden items-center gap-0.5 rounded-pill font-mono text-sm lg:flex xl:gap-1"
+const navLinkClasses =
+  "relative z-10 whitespace-nowrap rounded-pill px-2.5 py-1.5 transition-colors xl:px-3"
 const inactiveNavLinkClasses = "text-prelude hover:text-blue-chalk"
 const activeNavLinkClasses = "text-haiti hover:text-haiti"
 const pillBaseClasses =
