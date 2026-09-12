@@ -28,7 +28,7 @@ export function AboutUs() {
     <section
       id="about-us"
       aria-labelledby="about-us-title"
-      className={sectionClasses}
+    className={`${sectionClasses} scroll-mt-20`}
     >
       <SectionHeader
         className={headerWidthClasses}

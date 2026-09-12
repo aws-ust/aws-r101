@@ -4,6 +4,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useEffect, useEffectEvent, useRef } from "react"
 import { Button } from "@/components/ui/button"
+import { scrollToSection } from "@/lib/scroll-to-section"
 
 const heroClasses =
   "relative left-1/2 -mt-16 mb-[-40px] flex min-h-[calc(100svh-10rem)] w-screen -translate-x-1/2 scroll-mt-16 overflow-hidden bg-cover bg-center text-center"
@@ -164,8 +165,15 @@ export function Hero() {
       id="hero"
       aria-labelledby="hero-title"
       className={heroClasses}
-      style={{ backgroundImage: "url('/hero/hero-background.png')" }}
     >
+      <Image
+        src="/hero/hero-background.png"
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        className="-z-20 object-cover object-center"
+      />
       <div aria-hidden="true" className={overlayClasses} />
       <div className={contentClasses}>
         <div className={artworkClasses}>
@@ -248,14 +256,7 @@ export function Hero() {
                     aria-label="Find your committee"
                     onClick={(event) => {
                       event.preventDefault()
-                      document.getElementById("committees")?.scrollIntoView({
-                        behavior: window.matchMedia(
-                          "(prefers-reduced-motion: reduce)"
-                        ).matches
-                          ? "instant"
-                          : "smooth",
-                        block: "start",
-                      })
+                      scrollToSection("committees")
                     }}
                   />
                 }
@@ -268,7 +269,7 @@ export function Hero() {
                 color="purple"
                 className={`${buttonClasses} ${purpleButtonEffectClasses}`}
                 nativeButton={false}
-                render={<Link href="/about" />}
+                render={<a href="#about-us" onClick={(event) => { event.preventDefault(); scrollToSection("about-us") }} />}
               >
                 Know more about us!
               </Button>

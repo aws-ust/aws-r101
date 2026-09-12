@@ -1,18 +1,23 @@
 "use client"
 
-import { useState } from "react"
+import { useState, type MouseEvent } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import Hamburger from "hamburger-react"
-import { X } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { DesktopNavLinks } from "@/components/desktop-nav-links"
+import { DesktopNavLinks, type DesktopNavItem } from "@/components/desktop-nav-links"
+import { useSectionSpy } from "@/hooks/use-section-spy"
+import { logoutApplicant } from "@/lib/applicant-api"
+import { scrollToSection } from "@/lib/scroll-to-section"
 import { SITE_NAV_ITEMS } from "@/lib/site-nav"
 import { chromeBarClasses } from "@/lib/surface"
 import { cn } from "@/lib/utils"
 
 const NAV_ITEMS = SITE_NAV_ITEMS
+const HOME_SECTION_IDS = NAV_ITEMS.flatMap((item) =>
+  item.path === "/" && "sectionId" in item ? [item.sectionId] : []
+)
 
 const headerClasses = "fixed inset-x-0 top-0 z-50"
 const barInnerClasses =
@@ -31,24 +36,32 @@ const mobileNavLinkClasses =
 const activeNavLinkClasses = "bg-aquamarine text-haiti hover:text-haiti"
 const logoLinkClasses = "flex items-center gap-2 font-bold"
 
-function scrollToHero() {
-  const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ? "instant"
-    : "smooth"
-  const hero = document.getElementById("hero")
-  if (hero) {
-    hero.scrollIntoView({ behavior, block: "start" })
-    return
-  }
-  window.scrollTo({ top: 0, behavior })
-}
-
 export function Navbar() {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
+  const activeSectionId = useSectionSpy(pathname, HOME_SECTION_IDS)
+  const activeHref =
+    pathname === "/"
+      ? NAV_ITEMS.find((item) => "sectionId" in item && item.sectionId === activeSectionId)?.href ?? "/"
+      : NAV_ITEMS.find((item) => item.path === pathname)?.href ?? ""
+  const isApplicantDashboard = pathname.startsWith("/apply/dashboard")
 
-  if (pathname.startsWith("/admin") || pathname === "/login") {
-    return null
+  if (pathname.startsWith("/admin") || pathname === "/login") return null
+
+  function navigateToSection(
+    event: MouseEvent<HTMLAnchorElement>,
+    item: DesktopNavItem
+  ) {
+    if (pathname !== item.path || !item.sectionId) return
+    event.preventDefault()
+    scrollToSection(item.sectionId)
+    window.history.replaceState(null, "", item.href)
+  }
+
+  async function onApplicantSignOut() {
+    await logoutApplicant()
+    router.replace("/apply/status")
   }
 
   return (
@@ -58,82 +71,68 @@ export function Navbar() {
           <Link
             href="/"
             className={logoLinkClasses}
-            onClick={(event) => {
-              if (pathname !== "/") return
-              event.preventDefault()
-              scrollToHero()
-            }}
+            onClick={(event) => navigateToSection(event, NAV_ITEMS[0])}
           >
             <Image src="/aws-logo.png" alt="AWS Builders – UST" width={117} height={66} className="h-8 w-auto" />
             <span className="hidden sm:inline">AWS Builders – UST</span>
           </Link>
 
-          <DesktopNavLinks items={NAV_ITEMS} pathname={pathname} />
+          <DesktopNavLinks items={NAV_ITEMS} activeHref={activeHref} onNavigate={navigateToSection} />
 
           <div className="hidden md:block">
-            <Button color="cyan" nativeButton={false} render={<Link href="/apply/positions" />}>
-              Apply now!
-            </Button>
+            {isApplicantDashboard ? (
+              <Button type="button" color="purple" onClick={() => void onApplicantSignOut()}>
+                Sign out
+              </Button>
+            ) : (
+              <Button color="cyan" nativeButton={false} render={<Link href="/apply/positions" />}>
+                Apply now!
+              </Button>
+            )}
           </div>
 
           <div className="md:hidden">
-            <Hamburger
-              toggled={open}
-              toggle={setOpen}
-              size={20}
-              color="#F3EEFF"
-              duration={0.3}
-              rounded
-              label="Show menu"
-            />
+            <button
+              type="button"
+              aria-label="Show menu"
+              aria-expanded={open}
+              className="inline-flex size-10 items-center justify-center rounded-pill text-blue-chalk hover:bg-biloba-flower/15"
+              onClick={() => setOpen((current) => !current)}
+            >
+              {open ? <X className="size-5" /> : <Menu className="size-5" />}
+            </button>
           </div>
         </div>
       </nav>
 
-      <div
-        className={cn(
-          mobileOverlayClasses,
-          open ? mobileOverlayOpenClasses : mobileOverlayClosedClasses
-        )}
-      >
-        <button
-          type="button"
-          className={mobileBackdropClasses}
-          aria-label="Close menu"
-          onClick={() => setOpen(false)}
-        />
+      <div className={cn(mobileOverlayClasses, open ? mobileOverlayOpenClasses : mobileOverlayClosedClasses)}>
+        <button type="button" className={mobileBackdropClasses} aria-label="Close menu" onClick={() => setOpen(false)} />
         <div className={mobilePanelInnerClasses}>
-          <button
-            type="button"
-            className={mobileCloseButtonClasses}
-            aria-label="Close menu"
-            onClick={() => setOpen(false)}
-          >
+          <button type="button" className={mobileCloseButtonClasses} aria-label="Close menu" onClick={() => setOpen(false)}>
             <X aria-hidden="true" className="size-6" />
           </button>
           {NAV_ITEMS.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              onClick={() => setOpen(false)}
-              className={cn(
-                mobileNavLinkClasses,
-                pathname === item.href && activeNavLinkClasses
-              )}
+              onClick={(event) => {
+                navigateToSection(event, item)
+                setOpen(false)
+              }}
+              className={cn(mobileNavLinkClasses, activeHref === item.href && activeNavLinkClasses)}
             >
               {item.label}
             </Link>
           ))}
-          <Button
-            color="cyan"
-            className="mt-2"
-            nativeButton={false}
-            render={
-              <Link href="/apply/positions" onClick={() => setOpen(false)} />
-            }
-          >
-            Apply now!
-          </Button>
+          {isApplicantDashboard ? (
+            <Button color="purple" className="mt-2" onClick={() => void onApplicantSignOut()}>
+              Sign out
+            </Button>
+          ) : (
+            <Button color="cyan" className="mt-2" nativeButton={false} render={<Link href="/apply/positions" onClick={() => setOpen(false)} />}>
+              Apply now!
+            </Button>
+          )}
         </div>
       </div>
     </header>

@@ -5,6 +5,12 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787";
 const nextConfig: NextConfig = {
   experimental: {
     authInterrupts: true,
+    optimizePackageImports: ["lucide-react", "motion", "react-day-picker"],
+  },
+  async redirects() {
+    return [
+      { source: "/about", destination: "/#about-us", permanent: false },
+    ];
   },
   async rewrites() {
     return [

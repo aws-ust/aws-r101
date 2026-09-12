@@ -13,6 +13,11 @@ export function ScrollToTop() {
   }, [])
 
   useLayoutEffect(() => {
+    const hash = window.location.hash.slice(1)
+    if (hash && document.getElementById(hash)) {
+      document.getElementById(hash)?.scrollIntoView({ behavior: "instant", block: "start" })
+      return
+    }
     window.scrollTo({ top: 0, left: 0, behavior: "instant" })
   }, [pathname])
 
