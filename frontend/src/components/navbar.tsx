@@ -11,7 +11,7 @@ import { useSectionSpy } from "@/hooks/use-section-spy"
 import { logoutApplicant } from "@/lib/applicant-api"
 import { scrollToSection } from "@/lib/scroll-to-section"
 import { SITE_NAV_ITEMS } from "@/lib/site-nav"
-import { chromeBarClasses } from "@/lib/surface"
+import { chromeBarClasses, chromeInsetClasses } from "@/lib/surface"
 import { cn } from "@/lib/utils"
 
 const NAV_ITEMS = SITE_NAV_ITEMS
@@ -21,7 +21,7 @@ const HOME_SECTION_IDS = NAV_ITEMS.flatMap((item) =>
 
 const headerClasses = "fixed inset-x-0 top-0 z-50"
 const barInnerClasses =
-  "mx-auto flex max-w-[1180px] items-center justify-between gap-4 px-4 py-2.5"
+  `mx-auto flex max-w-[1180px] items-center justify-between gap-4 py-2.5 ${chromeInsetClasses}`
 const mobileOverlayClasses =
   "fixed inset-0 z-40 transition-[opacity,visibility] duration-300 md:hidden"
 const mobileOverlayOpenClasses = "visible pointer-events-auto opacity-100"
@@ -45,7 +45,7 @@ export function Navbar() {
     pathname === "/"
       ? NAV_ITEMS.find((item) => "sectionId" in item && item.sectionId === activeSectionId)?.href ?? "/"
       : NAV_ITEMS.find((item) => item.path === pathname)?.href ?? ""
-  const isApplicantDashboard = pathname.startsWith("/apply/dashboard")
+  const isApplicantSignedIn = pathname.startsWith("/apply/dashboard")
 
   if (pathname.startsWith("/admin") || pathname === "/login") return null
 
@@ -77,10 +77,16 @@ export function Navbar() {
             <span className="hidden sm:inline">AWS Builders – UST</span>
           </Link>
 
-          <DesktopNavLinks items={NAV_ITEMS} activeHref={activeHref} onNavigate={navigateToSection} />
+          {isApplicantSignedIn ? null : (
+            <DesktopNavLinks
+              items={NAV_ITEMS}
+              activeHref={activeHref}
+              onNavigate={navigateToSection}
+            />
+          )}
 
-          <div className="hidden md:block">
-            {isApplicantDashboard ? (
+          <div className={cn(isApplicantSignedIn ? "flex" : "hidden md:block")}>
+            {isApplicantSignedIn ? (
               <Button type="button" color="purple" onClick={() => void onApplicantSignOut()}>
                 Sign out
               </Button>
@@ -91,21 +97,28 @@ export function Navbar() {
             )}
           </div>
 
-          <div className="md:hidden">
-            <button
-              type="button"
-              aria-label="Show menu"
-              aria-expanded={open}
-              className="inline-flex size-10 items-center justify-center rounded-pill text-blue-chalk hover:bg-biloba-flower/15"
-              onClick={() => setOpen((current) => !current)}
-            >
-              {open ? <X className="size-5" /> : <Menu className="size-5" />}
-            </button>
-          </div>
+          {isApplicantSignedIn ? null : (
+            <div className="md:hidden">
+              <button
+                type="button"
+                aria-label="Show menu"
+                aria-expanded={open}
+                className="inline-flex size-10 items-center justify-center rounded-pill text-blue-chalk hover:bg-biloba-flower/15"
+                onClick={() => setOpen((current) => !current)}
+              >
+                {open ? <X className="size-5" /> : <Menu className="size-5" />}
+              </button>
+            </div>
+          )}
         </div>
       </nav>
 
-      <div className={cn(mobileOverlayClasses, open ? mobileOverlayOpenClasses : mobileOverlayClosedClasses)}>
+      <div
+        className={cn(
+          mobileOverlayClasses,
+          open && !isApplicantSignedIn ? mobileOverlayOpenClasses : mobileOverlayClosedClasses,
+        )}
+      >
         <button type="button" className={mobileBackdropClasses} aria-label="Close menu" onClick={() => setOpen(false)} />
         <div className={mobilePanelInnerClasses}>
           <button type="button" className={mobileCloseButtonClasses} aria-label="Close menu" onClick={() => setOpen(false)}>
@@ -124,15 +137,14 @@ export function Navbar() {
               {item.label}
             </Link>
           ))}
-          {isApplicantDashboard ? (
-            <Button color="purple" className="mt-2" onClick={() => void onApplicantSignOut()}>
-              Sign out
-            </Button>
-          ) : (
-            <Button color="cyan" className="mt-2" nativeButton={false} render={<Link href="/apply/positions" onClick={() => setOpen(false)} />}>
-              Apply now!
-            </Button>
-          )}
+          <Button
+            color="cyan"
+            className="mt-2"
+            nativeButton={false}
+            render={<Link href="/apply/positions" onClick={() => setOpen(false)} />}
+          >
+            Apply now!
+          </Button>
         </div>
       </div>
     </header>

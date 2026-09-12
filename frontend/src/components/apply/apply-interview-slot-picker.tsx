@@ -2,12 +2,15 @@
 
 import { useEffect, useEffectEvent, useMemo, useState } from "react"
 import { SlotGrid, type SlotGridCell } from "@/components/interview/slot-grid"
-import { Button } from "@/components/ui/button"
+import { InterviewWeekNav } from "@/components/interview/week-nav"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Field } from "@/components/field"
 import { useInterviewWindow } from "@/hooks/use-interview-window"
 import { listPositionInterviewSlots } from "@/lib/api-client"
-import { formatDisplayTime, formatSeasonBoundsRange } from "@/lib/display-datetime"
+import {
+  formatInterviewSlotLabel,
+  formatSeasonBoundsRange,
+} from "@/lib/display-datetime"
 import {
   addDays,
   canGoNextWeek,
@@ -21,10 +24,8 @@ import {
 
 const hintClasses = "font-sans text-sm text-prelude"
 const committeeClasses = "mt-1 font-mono text-xs text-aquamarine"
-const weekNavClasses = "mt-4 flex flex-wrap items-center gap-2"
-const weekLabelClasses = "min-w-[10rem] text-center font-sans text-sm text-blue-chalk"
-const navButtonClasses = "h-9 px-4 text-xs"
 const errorClasses = "mt-2 font-sans text-sm text-aquamarine"
+const selectedClasses = "mt-3 font-mono text-xs text-aquamarine"
 
 type ApplyInterviewSlotPickerProps = {
   positionId: string
@@ -98,11 +99,6 @@ export function ApplyInterviewSlotPicker({
   )
 
   useEffect(() => {
-    onSelectedSlotIdChange("")
-    // Clear stale picks when the first-choice committee/position changes.
-  }, [onSelectedSlotIdChange, positionId])
-
-  useEffect(() => {
     let cancelled = false
     listPositionInterviewSlots(positionId)
       .then((payload) => {
@@ -141,10 +137,6 @@ export function ApplyInterviewSlotPicker({
         startsAt: new Date(slot.startsAt),
         state: selectedSlotId === slot.id ? "selected" : "available",
         slotId: slot.id,
-        detail: formatDisplayTime(new Date(slot.startsAt), {
-          hour: "numeric",
-          minute: "2-digit",
-        }),
       })
     }
     for (const occupied of booked) {
@@ -167,6 +159,8 @@ export function ApplyInterviewSlotPicker({
     onSelectedSlotIdChange(cell.slotId)
   }
 
+  const selectedSlot = slots.find((slot) => slot.id === selectedSlotId)
+
   return (
     <Field label="Interview time slot" required>
       <div className={hintClasses}>
@@ -186,37 +180,30 @@ export function ApplyInterviewSlotPicker({
         <p className={committeeClasses}>{committeeName}</p>
       ) : null}
 
-      <div className={`${weekNavClasses} max-w-full`}>
-        <Button
-          type="button"
-          color="purple"
-          className={navButtonClasses}
-          disabled={!seasonConfigured || !canGoPrevWeek(displayedWeekStart, seasonBounds)}
-          onClick={() =>
-            setWeekStart(
-              clampWeekStart(addDays(displayedWeekStart, -7), seasonBounds)
-            )
-          }
-        >
-          ← Prev
-        </Button>
-        <p className={weekLabelClasses}>{weekLabel}</p>
-        <Button
-          type="button"
-          color="purple"
-          className={navButtonClasses}
-          disabled={!seasonConfigured || !canGoNextWeek(displayedWeekStart, seasonBounds)}
-          onClick={() =>
-            setWeekStart(
-              clampWeekStart(addDays(displayedWeekStart, 7), seasonBounds)
-            )
-          }
-        >
-          Next →
-        </Button>
-      </div>
+      <InterviewWeekNav
+        className="mt-4"
+        weekLabel={weekLabel}
+        prevDisabled={
+          !seasonConfigured ||
+          !canGoPrevWeek(displayedWeekStart, seasonBounds)
+        }
+        nextDisabled={
+          !seasonConfigured ||
+          !canGoNextWeek(displayedWeekStart, seasonBounds)
+        }
+        onPrev={() =>
+          setWeekStart(
+            clampWeekStart(addDays(displayedWeekStart, -7), seasonBounds),
+          )
+        }
+        onNext={() =>
+          setWeekStart(
+            clampWeekStart(addDays(displayedWeekStart, 7), seasonBounds),
+          )
+        }
+      />
 
-      <div className="mt-4 min-w-0 w-full">
+      <div className="mt-4 min-w-0 w-full max-w-full">
         {seasonConfigured ? (
           <SlotGrid
             days={days}
@@ -231,6 +218,15 @@ export function ApplyInterviewSlotPicker({
         ) : (
           <p className={errorClasses} role="status">
             Interview season is not configured. You cannot pick a slot yet.
+          </p>
+        )}
+        {selectedSlot ? (
+          <p className={selectedClasses} role="status">
+            Selected: {formatInterviewSlotLabel(selectedSlot)}
+          </p>
+        ) : (
+          <p className="mt-3 font-sans text-xs text-prelude">
+            Tap a highlighted slot in the grid to select your interview time.
           </p>
         )}
       </div>

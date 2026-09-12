@@ -12,18 +12,23 @@ import type {
 } from "@/lib/hr-application-types"
 
 const panelClasses =
-  "mt-8 rounded-[22px] border border-biloba-flower/30 bg-haiti/55 px-5 py-5"
+  "mt-8 min-w-0 overflow-x-clip rounded-[22px] border border-biloba-flower/30 bg-haiti/55 px-4 py-5 sm:px-5"
 const headerClasses = "font-sans text-lg font-semibold text-blue-chalk"
-const helpClasses = "mt-1 font-sans text-sm leading-relaxed text-prelude"
-const listClasses = "mt-5 grid gap-3"
+const helpClasses = "mt-1 font-sans text-sm leading-relaxed text-pretty text-prelude"
+const listClasses = "mt-5 grid min-w-0 gap-3"
 const rowClasses =
-  "flex flex-col gap-3 rounded-[14px] border border-blue-chalk/15 bg-meteorite/35 p-4 md:flex-row md:items-center md:justify-between"
-const choiceCopyClasses = "min-w-0"
+  "flex min-w-0 flex-col gap-4 rounded-[14px] border border-blue-chalk/15 bg-meteorite/35 p-4 xl:flex-row xl:items-start xl:justify-between xl:gap-6"
+const choiceCopyClasses = "min-w-0 flex-1"
 const rankClasses =
   "font-mono text-[11px] uppercase tracking-wide text-aquamarine"
-const choiceClasses = "mt-1 font-sans text-sm font-medium text-blue-chalk"
-const actionsClasses = "flex flex-wrap items-center gap-2"
-const actionButtonClasses = "h-8 px-4 text-[11px]"
+const committeeClasses =
+  "mt-1 font-sans text-sm font-medium text-balance break-words text-blue-chalk"
+const positionClasses =
+  "mt-0.5 font-sans text-sm leading-snug text-pretty break-words text-prelude"
+const actionsClasses =
+  "grid w-full min-w-0 shrink-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-nowrap sm:items-center xl:justify-end"
+const actionButtonClasses = "h-9 w-full min-w-0 px-3 text-xs sm:w-auto sm:px-4"
+const statusCellClasses = "col-span-2 sm:col-span-1 sm:w-auto"
 const placementClasses =
   "mt-5 border-t border-blue-chalk/15 pt-5 font-sans text-sm text-prelude"
 
@@ -88,12 +93,13 @@ export function HrCommitteeDecisionPanel({
           <div className={rowClasses} key={choice.positionId}>
             <div className={choiceCopyClasses}>
               <p className={rankClasses}>Choice {choice.preferenceRank}</p>
-              <p className={choiceClasses}>
-                {choice.committee} · {choice.title}
-              </p>
+              <p className={committeeClasses}>{choice.committee}</p>
+              <p className={positionClasses}>{choice.title}</p>
             </div>
             <div className={actionsClasses}>
-              <StatusPill status={choice.decisionStatus} />
+              <span className={statusCellClasses}>
+                <StatusPill status={choice.decisionStatus} />
+              </span>
               <Button
                 className={actionButtonClasses}
                 disabled={

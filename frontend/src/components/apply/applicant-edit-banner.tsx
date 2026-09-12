@@ -1,5 +1,5 @@
 const bannerClasses =
-  "rounded-[22px] border px-5 py-4 font-sans text-sm leading-relaxed"
+  "min-w-0 rounded-[22px] border px-5 py-4 font-sans text-sm leading-relaxed text-pretty break-words"
 const openClasses =
   "border-aquamarine/40 bg-aquamarine/10 text-blue-chalk"
 const lockedClasses =

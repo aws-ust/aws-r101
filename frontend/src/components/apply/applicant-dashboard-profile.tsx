@@ -1,18 +1,44 @@
+import type { ReactNode } from "react"
 import { formatDateDisplay } from "@/lib/date-local"
 import { formatApplicantGender } from "@/lib/applicant-gender"
 import type { ApplicantApplication } from "@/lib/applicant-api"
 import { safeExternalHref } from "@/lib/safe-external-href"
+import { cn } from "@/lib/utils"
 
-const metaRowClasses =
-  "mt-6 flex flex-wrap gap-x-8 gap-y-3 font-sans text-sm text-blue-chalk"
+const metaGridClasses =
+  "mt-6 grid min-w-0 grid-cols-1 gap-3 font-sans text-sm text-blue-chalk sm:grid-cols-2 sm:gap-x-8 sm:gap-y-3"
+const metaItemClasses = "min-w-0"
+const metaEmailItemClasses = "min-w-0 sm:col-span-2"
 const metaLabelClasses = "mr-2 text-prelude"
+const metaValueClasses = "min-w-0 break-words text-blue-chalk"
+const metaEmailValueClasses = "min-w-0 break-all text-blue-chalk"
 const whyLabelClasses = "mt-8 font-sans text-sm font-semibold text-biloba-flower"
 const whyBodyClasses =
-  "mt-2 font-sans text-sm leading-relaxed text-pretty text-justify text-blue-chalk"
+  "mt-2 min-w-0 font-sans text-sm leading-relaxed text-pretty text-blue-chalk"
 const linkClasses =
   "text-aquamarine underline-offset-2 hover:text-blue-chalk hover:underline"
-const headingClasses = "font-sans text-3xl font-bold text-blue-chalk md:text-4xl"
+const headingClasses =
+  "font-sans text-3xl font-bold text-balance break-words text-blue-chalk md:text-4xl"
 const codeClasses = "mt-2 font-mono text-sm text-aquamarine"
+
+function MetaField({
+  label,
+  className,
+  valueClassName,
+  children,
+}: {
+  label: string
+  className?: string
+  valueClassName?: string
+  children: ReactNode
+}) {
+  return (
+    <p className={cn(metaItemClasses, className)}>
+      <span className={metaLabelClasses}>{label}</span>
+      <span className={valueClassName ?? metaValueClasses}>{children}</span>
+    </p>
+  )
+}
 
 export function ApplicantDashboardProfile({
   application,
@@ -30,39 +56,28 @@ export function ApplicantDashboardProfile({
       </h1>
       <p className={codeClasses}>{application.applicationCode}</p>
 
-      <div className={metaRowClasses}>
-        <p>
-          <span className={metaLabelClasses}>Email</span>
-          {application.email}
+      <div className={metaGridClasses}>
+        <p className={metaEmailItemClasses}>
+          <span className="block text-prelude">Email</span>
+          <span className={metaEmailValueClasses}>{application.email}</span>
         </p>
-        <p>
-          <span className={metaLabelClasses}>Age</span>
-          {application.age ?? "—"}
-        </p>
-        <p>
-          <span className={metaLabelClasses}>Birthday</span>
+        <MetaField label="Age">{application.age ?? "—"}</MetaField>
+        <MetaField label="Birthday">
           {application.birthday
             ? formatDateDisplay(application.birthday, "—")
             : "—"}
-        </p>
-        <p>
-          <span className={metaLabelClasses}>Gender</span>
+        </MetaField>
+        <MetaField label="Gender">
           {formatApplicantGender(application.gender)}
-        </p>
-        <p>
-          <span className={metaLabelClasses}>Section</span>
-          {application.section ?? "—"}
-        </p>
-        <p>
-          <span className={metaLabelClasses}>Student no.</span>
+        </MetaField>
+        <MetaField label="Section">{application.section ?? "—"}</MetaField>
+        <MetaField label="Student no.">
           {application.studentNumber ?? "—"}
-        </p>
-        <p>
-          <span className={metaLabelClasses}>Contact</span>
+        </MetaField>
+        <MetaField label="Contact">
           {application.contactNumber ?? "—"}
-        </p>
-        <p>
-          <span className={metaLabelClasses}>Facebook</span>
+        </MetaField>
+        <MetaField label="Facebook">
           {facebookHref ? (
             <a
               href={facebookHref}
@@ -75,10 +90,9 @@ export function ApplicantDashboardProfile({
           ) : (
             "—"
           )}
-        </p>
+        </MetaField>
         {portfolioHref ? (
-          <p>
-            <span className={metaLabelClasses}>Portfolio</span>
+          <MetaField label="Portfolio">
             <a
               href={portfolioHref}
               target="_blank"
@@ -87,11 +101,10 @@ export function ApplicantDashboardProfile({
             >
               Google Drive
             </a>
-          </p>
+          </MetaField>
         ) : null}
         {githubHref ? (
-          <p>
-            <span className={metaLabelClasses}>GitHub</span>
+          <MetaField label="GitHub">
             <a
               href={githubHref}
               target="_blank"
@@ -100,7 +113,7 @@ export function ApplicantDashboardProfile({
             >
               Profile
             </a>
-          </p>
+          </MetaField>
         ) : null}
       </div>
 

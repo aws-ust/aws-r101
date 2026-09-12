@@ -6,18 +6,22 @@ import { PositionsList } from "@/components/positions-list"
 import { PositionDetail } from "@/components/position-detail"
 import type { Position } from "@/lib/positions"
 import { groupPositionsByOfficeHierarchy } from "@/lib/positions"
+import { cn } from "@/lib/utils"
 
-const shellClasses = "relative flex flex-col gap-8"
-const glowLeftClasses =
-  "pointer-events-none absolute -left-28 top-10 h-56 w-56 rounded-full bg-aquamarine/12 blur-3xl"
-const glowRightClasses =
-  "pointer-events-none absolute -right-20 top-32 h-72 w-72 rounded-full bg-biloba-flower/18 blur-3xl"
+const shellClasses = "flex min-w-0 flex-col gap-8 overflow-x-clip"
+const introClasses = "flex flex-col items-start text-left"
+const metaClasses =
+  "w-full font-mono text-xs uppercase tracking-wide text-prelude text-left"
+const backButtonClasses =
+  "mb-3 flex w-fit items-center gap-1.5 rounded-pill border border-blue-chalk/25 bg-transparent px-3 py-1.5 font-mono text-xs text-blue-chalk transition-colors hover:bg-blue-chalk/10 lg:hidden"
+const listPaneClasses = "min-h-0 min-w-0"
+const detailPaneClasses =
+  "flex min-h-0 min-w-0 flex-col px-4 pt-4 lg:p-0"
 const accentClasses = "text-aquamarine"
-const metaClasses = "font-mono text-xs uppercase tracking-wide text-prelude"
 const boardClasses =
-  "glass relative grid min-h-[min(72vh,46rem)] overflow-hidden rounded-[28px] border border-blue-chalk/20 bg-haiti/30 lg:grid-cols-[minmax(0,23rem)_1fr]"
+  "grid min-h-[min(72vh,46rem)] min-w-0 overflow-hidden rounded-[28px] border border-blue-chalk/20 bg-haiti lg:grid-cols-[minmax(0,23rem)_minmax(0,1fr)]"
 const stateClasses =
-  "glass flex min-h-72 flex-col items-center justify-center gap-3 rounded-[28px] border border-blue-chalk/20 bg-haiti/30 px-6 text-center"
+  "flex min-h-72 flex-col items-center justify-center gap-3 rounded-[28px] border border-blue-chalk/20 bg-haiti px-6 text-center"
 const stateTitleClasses = "font-sans text-xl font-semibold text-blue-chalk"
 const stateCopyClasses = "max-w-lg font-sans text-sm leading-relaxed text-prelude"
 
@@ -35,8 +39,14 @@ export function PositionsBrowser({
   const officeGroups = groupPositionsByOfficeHierarchy(positions)
   const officeCount = officeGroups.length
   const [selectedId, setSelectedId] = useState(positions[0]?.id ?? "")
+  const [mobileShowsDetail, setMobileShowsDetail] = useState(false)
   const selected =
     positions.find((position) => position.id === selectedId) ?? positions[0]
+
+  function selectPosition(id: string) {
+    setSelectedId(id)
+    setMobileShowsDetail(true)
+  }
   const stateTitle = loadError
     ? "Positions are temporarily unavailable."
     : "There are no open positions right now."
@@ -46,33 +56,55 @@ export function PositionsBrowser({
 
   return (
     <div className={shellClasses}>
-      <div className={glowLeftClasses} />
-      <div className={glowRightClasses} />
+      <div className={introClasses}>
+        <SectionHeader
+          eyebrow="$ ls positions/"
+          title={
+            <>
+              Find a role that <span className={accentClasses}>fits</span>.
+            </>
+          }
+          subtitle="Browse open executive assistant and committee staff roles. Select a role to read the full description, then apply."
+          className="items-start"
+          titleClassName="mx-0"
+        />
 
-      <SectionHeader
-        eyebrow="$ ls positions/"
-        title={
-          <>
-            Find a role that <span className={accentClasses}>fits</span>.
-          </>
-        }
-        subtitle="Browse open executive assistant and committee staff roles. Pick a role on the left, read it on the right, then apply."
-      />
-
-      <p className={metaClasses}>
+        <p className={metaClasses}>
         {loadError
           ? "positions unavailable"
           : `${positions.length} open roles · ${officeCount} offices`}
-      </p>
+        </p>
+      </div>
 
       {selected ? (
         <div className={boardClasses}>
-          <PositionsList
-            officeGroups={officeGroups}
-            selectedId={selected.id}
-            onSelect={setSelectedId}
-          />
-          <PositionDetail position={selected} applicationsOpen={applicationsOpen} />
+          <div
+            className={cn(
+              listPaneClasses,
+              mobileShowsDetail && "hidden lg:block"
+            )}
+          >
+            <PositionsList
+              officeGroups={officeGroups}
+              selectedId={selected.id}
+              onSelect={selectPosition}
+            />
+          </div>
+          <div
+            className={cn(
+              detailPaneClasses,
+              !mobileShowsDetail && "hidden lg:flex"
+            )}
+          >
+            <button
+              type="button"
+              className={backButtonClasses}
+              onClick={() => setMobileShowsDetail(false)}
+            >
+              ← All roles
+            </button>
+            <PositionDetail position={selected} applicationsOpen={applicationsOpen} />
+          </div>
         </div>
       ) : (
         <div role={loadError ? "alert" : "status"} className={stateClasses}>

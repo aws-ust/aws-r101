@@ -1,5 +1,6 @@
 import { ActionFeedback } from "@/components/action-feedback"
 import { SlotGrid, type SlotGridCell } from "@/components/interview/slot-grid"
+import { InterviewWeekNav } from "@/components/interview/week-nav"
 import { Button } from "@/components/ui/button"
 import type { ApplicantInterviewSchedule } from "@/lib/applicant-api"
 import {
@@ -9,9 +10,6 @@ import {
 import type { InterviewSeasonBounds } from "@/lib/interview-season"
 
 const sectionClasses = "mt-8 border-t border-biloba-flower/20 pt-8"
-const weekNavClasses = "mt-4 flex flex-wrap items-center gap-2"
-const weekLabelClasses = "min-w-[10rem] text-center font-sans text-sm text-blue-chalk"
-const navButtonClasses = "h-9 px-4 text-xs"
 const lockClasses =
   "mt-4 rounded-[14px] border border-rose-blush/45 bg-rose-deep/20 px-4 py-3 font-sans text-sm text-rose-glow"
 const actionsClasses = "mt-4 flex flex-wrap gap-3"
@@ -34,27 +32,14 @@ export function ApplicantInterviewWeekNav({
   onNext,
 }: WeekNavProps) {
   return (
-    <div className={weekNavClasses}>
-      <Button
-        type="button"
-        color="purple"
-        className={navButtonClasses}
-        disabled={disabled || !canGoPrev}
-        onClick={onPrev}
-      >
-        ← Prev
-      </Button>
-      <p className={weekLabelClasses}>{weekLabel}</p>
-      <Button
-        type="button"
-        color="purple"
-        className={navButtonClasses}
-        disabled={disabled || !canGoNext}
-        onClick={onNext}
-      >
-        Next →
-      </Button>
-    </div>
+    <InterviewWeekNav
+      className="mt-4"
+      weekLabel={weekLabel}
+      prevDisabled={disabled || !canGoPrev}
+      nextDisabled={disabled || !canGoNext}
+      onPrev={onPrev}
+      onNext={onNext}
+    />
   )
 }
 
@@ -182,7 +167,7 @@ export function ApplicantInterviewSchedulerFull({
             disabled={pending || !canConfirm}
             onClick={onConfirm}
           >
-            {pending ? "Confirming…" : "Confirm interview slot"}
+            {pending ? "Confirming…" : "Confirm Interview Slot"}
           </Button>
         </div>
       ) : null}

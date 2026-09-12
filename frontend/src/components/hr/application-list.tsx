@@ -14,6 +14,7 @@ import { ApplicationExportButton } from "@/components/hr/application-export-butt
 import { HrArchiveApplicantDialog } from "@/components/hr/hr-archive-applicant-dialog"
 import { useApplications } from "@/lib/api"
 import { pageShellClasses } from "@/lib/surface"
+import { cn } from "@/lib/utils"
 import type { HrApplication } from "@/lib/hr-application-types"
 
 const toolbarClasses =
@@ -52,10 +53,11 @@ export function HrApplicationList({ notice }: { notice?: string }) {
   }
 
   return (
-    <main className={pageShellClasses}>
+    <main className={cn(pageShellClasses, "min-w-0 max-w-full overflow-x-clip")}>
       <SectionHeader
         eyebrow="// APPLICATIONS"
         title="Applications Results"
+        titleClassName="max-w-none text-balance"
         subtitle="Every R101 application so far."
       />
       {visibleFeedback ? (

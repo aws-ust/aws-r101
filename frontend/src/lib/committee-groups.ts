@@ -98,15 +98,21 @@ const LANDING_COMMITTEE_TITLE_BY_SEED: Record<string, string> = {
   "Publicity Committee": "Publication",
 }
 
-/** Staff committee card titles in executive-office hierarchy (CEO → CCO). */
-export function landingCommitteeCardOrder(): string[] {
-  const titles: string[] = []
+/** Seeded committee names in executive-office hierarchy (CEO → CCO), excluding EB offices. */
+export function staffCommitteeSeedNamesInOrgOrder(): string[] {
+  const names: string[] = []
   for (const group of COMMITTEE_OFFICE_GROUPS) {
     for (const committee of group.committees) {
       if (committee.startsWith("Office of the ")) continue
-      const title = LANDING_COMMITTEE_TITLE_BY_SEED[committee]
-      if (title) titles.push(title)
+      names.push(committee)
     }
   }
-  return titles
+  return names
+}
+
+/** Staff committee card titles in executive-office hierarchy (CEO → CCO). */
+export function landingCommitteeCardOrder(): string[] {
+  return staffCommitteeSeedNamesInOrgOrder().map(
+    (committee) => LANDING_COMMITTEE_TITLE_BY_SEED[committee] ?? committee,
+  )
 }

@@ -13,13 +13,17 @@ import { formatDateDisplay } from "@/lib/date-local"
 import { safeExternalHref } from "@/lib/safe-external-href"
 import { HrApplicationDocumentActions } from "@/components/hr/hr-application-document-actions"
 
-const metaRowClasses =
-  "flex flex-wrap gap-x-8 gap-y-3 font-sans text-sm text-blue-chalk"
+const metaGridClasses =
+  "grid min-w-0 grid-cols-1 gap-3 font-sans text-sm text-blue-chalk sm:grid-cols-2 sm:gap-x-8 sm:gap-y-3"
+const metaItemClasses = "min-w-0"
+const metaEmailItemClasses = "min-w-0 sm:col-span-2"
 const metaLabelClasses = "mr-2 text-prelude"
+const metaValueClasses = "min-w-0 [overflow-wrap:anywhere]"
 const whyLabelClasses =
   "mt-8 font-sans text-sm font-semibold text-biloba-flower"
 const whyBodyClasses = "mt-2 font-sans text-sm leading-relaxed text-blue-chalk"
-const downloadsClasses = "mt-8 flex flex-wrap justify-center gap-4"
+const downloadsClasses =
+  "mt-8 grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
 const archiveRowClasses = "mt-8 flex justify-center"
 const archiveActionClasses = "h-9 rounded-pill px-5 font-mono text-xs"
 const archivedNoticeClasses =
@@ -56,42 +60,52 @@ export function HrApplicationDetailPanel({
 
   return (
     <>
-      <div className={metaRowClasses}>
-        <p>
+      <div className={metaGridClasses}>
+        <p className={metaItemClasses}>
           <span className={metaLabelClasses}>Application ID:</span>
-          {application.applicationCode}
+          <span className={metaValueClasses}>{application.applicationCode}</span>
         </p>
-        <p>
+        <p className={metaItemClasses}>
           <span className={metaLabelClasses}>Year & Section:</span>
-          {application.section ?? "—"}
+          <span className={metaValueClasses}>{application.section ?? "—"}</span>
         </p>
-        <p>
+        <p className={metaItemClasses}>
           <span className={metaLabelClasses}>Age:</span>
-          {application.age ?? "—"}
+          <span className={metaValueClasses}>{application.age ?? "—"}</span>
         </p>
-        <p>
+        <p className={metaItemClasses}>
           <span className={metaLabelClasses}>Birthday:</span>
-          {application.birthday
-            ? formatDateDisplay(application.birthday, "—")
-            : "—"}
+          <span className={metaValueClasses}>
+            {application.birthday
+              ? formatDateDisplay(application.birthday, "—")
+              : "—"}
+          </span>
         </p>
-        <p>
+        <p className={metaItemClasses}>
           <span className={metaLabelClasses}>Gender:</span>
-          {formatApplicantGender(application.gender)}
+          <span className={metaValueClasses}>
+            {formatApplicantGender(application.gender)}
+          </span>
         </p>
-        <p>
-          <span className={metaLabelClasses}>Email:</span>
-          {application.email}
+        <p className={metaEmailItemClasses}>
+          <span className="block text-prelude">Email:</span>
+          <span className={metaValueClasses} title={application.email}>
+            {application.email}
+          </span>
         </p>
-        <p>
+        <p className={metaItemClasses}>
           <span className={metaLabelClasses}>Student No.:</span>
-          {application.studentNumber ?? "—"}
+          <span className={metaValueClasses}>
+            {application.studentNumber ?? "—"}
+          </span>
         </p>
-        <p>
+        <p className={metaItemClasses}>
           <span className={metaLabelClasses}>Contact:</span>
-          {application.contactNumber ?? "—"}
+          <span className={metaValueClasses}>
+            {application.contactNumber ?? "—"}
+          </span>
         </p>
-        <p>
+        <p className={metaItemClasses}>
           <span className={metaLabelClasses}>Facebook:</span>
           {facebookHref ? (
             <a
@@ -103,11 +117,11 @@ export function HrApplicationDetailPanel({
               Profile
             </a>
           ) : (
-            "—"
+            <span className={metaValueClasses}>—</span>
           )}
         </p>
         {portfolioHref ? (
-          <p>
+          <p className={metaItemClasses}>
             <span className={metaLabelClasses}>Portfolio:</span>
             <a
               href={portfolioHref}
@@ -120,7 +134,7 @@ export function HrApplicationDetailPanel({
           </p>
         ) : null}
         {githubHref ? (
-          <p>
+          <p className={metaItemClasses}>
             <span className={metaLabelClasses}>GitHub:</span>
             <a
               href={githubHref}
@@ -132,9 +146,11 @@ export function HrApplicationDetailPanel({
             </a>
           </p>
         ) : null}
-        <p>
+        <p className={metaItemClasses}>
           <span className={metaLabelClasses}>Applied:</span>
-          {formatAppliedDate(application.submittedAt)}
+          <span className={metaValueClasses}>
+            {formatAppliedDate(application.submittedAt)}
+          </span>
         </p>
       </div>
       <ChoiceCards first={first} second={second} />

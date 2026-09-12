@@ -1,11 +1,11 @@
 import type { ApplicantChoice } from "@/lib/applicant-api"
 
-const choicesClasses = "grid gap-4 md:grid-cols-2"
-const choiceCardClasses = "rounded-[22px] bg-haiti/70 px-5 py-5"
+const choicesClasses = "grid min-w-0 gap-4 md:grid-cols-2"
+const choiceCardClasses = "min-w-0 rounded-[22px] bg-haiti/70 px-5 py-5"
+const choiceTitleClasses = "mt-1 font-sans text-xl font-bold text-balance text-blue-chalk"
 const choiceEyebrowClasses =
   "font-mono text-[11px] uppercase tracking-wide text-prelude"
-const choiceTitleClasses = "mt-1 font-sans text-xl font-bold text-blue-chalk"
-const choicePositionClasses = "mt-1 font-sans text-sm text-aquamarine"
+const choicePositionClasses = "mt-1 font-sans text-sm text-pretty text-aquamarine"
 
 function ChoiceCard({
   label,

@@ -266,5 +266,6 @@ main:has(#committee-quiz) .faq-section {
   html {
     @apply font-sans;
     scroll-behavior: auto;
+    scrollbar-gutter: stable;
   }
 }

@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 const listClasses = "mt-8 flex flex-col gap-3"
 const rowClasses =
-  "glass flex items-center gap-3 rounded-pill border border-blue-chalk/20 bg-meteorite/40 px-5 py-3.5"
+  "glass flex min-w-0 items-center gap-2 rounded-[22px] border border-blue-chalk/20 bg-meteorite/40 px-3 py-3 sm:gap-3 sm:rounded-pill sm:px-5 sm:py-3.5"
 
 export function ApplicationListSkeleton() {
   return (

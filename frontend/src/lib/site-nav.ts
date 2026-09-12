@@ -4,6 +4,7 @@ export const SITE_NAV_ITEMS = [
   { label: "Events", href: "/#our-moments", path: "/", sectionId: "our-moments" },
   { label: "People", href: "/#people", path: "/", sectionId: "people" },
   { label: "Careers", href: "/#careers", path: "/", sectionId: "careers" },
+  { label: "Contact", href: "/#contact", path: "/", sectionId: "contact" },
 ] as const
 
 export const SITE_SOCIAL_LINKS = [

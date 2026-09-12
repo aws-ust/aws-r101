@@ -1,7 +1,14 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import { ApplicantChoiceCards } from "@/components/apply/applicant-choice-cards"
-import { ApplicantInterviewScheduler } from "@/components/apply/applicant-interview-scheduler"
+import { LazyWhenVisible } from "@/components/lazy-when-visible"
+
+const ApplicantInterviewScheduler = dynamic(() =>
+  import("@/components/apply/applicant-interview-scheduler").then(
+    (mod) => mod.ApplicantInterviewScheduler,
+  ),
+)
 import { ApplicantResultPanel } from "@/components/apply/applicant-result-panel"
 import { ApplicantChoiceEditor } from "@/components/apply/applicant-choice-editor"
 import { ApplicantEditBanner } from "@/components/apply/applicant-edit-banner"
@@ -100,15 +107,17 @@ export function ApplicantDashboardContent({
         <ApplicantChoiceCards first={first} second={second} />
       </div>
 
-      <ApplicantInterviewScheduler
-        key={`${previewPositionId ?? "current-booking"}:${first?.committee ?? ""}`}
-        positionId={previewPositionId}
-        previewMode={Boolean(previewPositionId)}
-        selectedSlotId={previewPositionId ? previewSlotId : undefined}
-        onSelectedSlotIdChange={
-          previewPositionId ? onPreviewSlotIdChange : undefined
-        }
-      />
+      <LazyWhenVisible minHeight="18rem" className="mt-8">
+        <ApplicantInterviewScheduler
+          key={`${previewPositionId ?? "current-booking"}:${first?.committee ?? ""}`}
+          positionId={previewPositionId}
+          previewMode={Boolean(previewPositionId)}
+          selectedSlotId={previewPositionId ? previewSlotId : undefined}
+          onSelectedSlotIdChange={
+            previewPositionId ? onPreviewSlotIdChange : undefined
+          }
+        />
+      </LazyWhenVisible>
 
       {application.canEdit ? (
         <ApplicantChoiceEditor

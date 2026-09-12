@@ -5,11 +5,13 @@ import { Skeleton } from "@/components/ui/skeleton"
 import {
   formatDisplayDate,
   formatDisplayDateTime,
+  formatDisplayTime,
 } from "@/lib/display-datetime"
 import {
   INTERVIEW_TIME_LABELS,
   INTERVIEW_GRID_END_HOUR,
   INTERVIEW_GRID_START_HOUR,
+  INTERVIEW_SLOT_MINUTES,
   slotKey,
   slotStartsAt,
 } from "@/lib/interview-season"
@@ -43,50 +45,98 @@ type SlotGridProps = {
 
 const shellBaseClasses = "rounded-[20px] border border-biloba-flower/25"
 const shellWideClasses = "overflow-x-auto"
+const shellScrollClasses =
+  "max-h-[min(36rem,62vh)] overflow-x-auto overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] [touch-action:pan-x_pan-y]"
 const stickyHeaderClasses =
   "[&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-20 [&_thead_th]:bg-meteorite/95 [&_thead_th:first-child]:z-30"
+const stickyTimeColumnClasses =
+  "sticky left-0 z-10 bg-meteorite/95 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.45)]"
 const tableWideClasses = "min-w-full border-collapse text-left"
-const tableScrollClasses = "w-full table-fixed border-collapse text-left"
-const timeColumnClasses =
-  "bg-meteorite/95 px-1 text-center sm:px-2"
-const timeColumnWideClasses = `${timeColumnClasses} sticky left-0 z-10 w-[4.75rem] min-w-[4.75rem]`
-const timeColumnScrollClasses = `${timeColumnClasses} w-[14%]`
+const tableScrollClasses = "w-max min-w-full border-collapse text-left"
+const timeColumnClasses = "px-1 text-center sm:px-2"
+const timeColumnWideClasses = `${timeColumnClasses} ${stickyTimeColumnClasses} w-[4.75rem] min-w-[4.75rem] max-w-[4.75rem]`
+const timeColumnScrollClasses = `${timeColumnClasses} ${stickyTimeColumnClasses} w-[4.25rem] min-w-[4.25rem] max-w-[4.25rem] sm:w-[4.75rem] sm:min-w-[4.75rem] sm:max-w-[4.75rem]`
 const dayHeaderWideClasses =
-  "min-w-[5.5rem] px-2 py-2 text-center font-sans text-xs font-semibold text-blue-chalk"
+  "min-w-[5rem] px-1.5 py-1.5 text-center font-sans text-xs font-semibold text-blue-chalk"
 const dayHeaderScrollClasses =
-  "min-w-0 px-0.5 py-2 text-center font-sans text-[0.7rem] font-semibold leading-tight text-blue-chalk sm:px-1 sm:text-xs"
-const daySubheaderClasses = "block font-mono text-[0.6rem] font-normal text-prelude sm:text-[0.65rem]"
+  "min-w-[4.75rem] px-1 py-1.5 text-center font-sans text-[0.65rem] font-semibold leading-tight text-blue-chalk sm:min-w-[5.5rem] sm:px-1.5 sm:text-xs"
+const daySubheaderClasses =
+  "block font-mono text-[0.55rem] font-normal text-prelude sm:text-[0.65rem]"
 const cellWideClasses =
-  "h-9 min-w-[5.5rem] border border-haiti/40 px-1 transition-colors"
+  "relative h-10 min-w-[5rem] border border-haiti/40 p-0"
 const cellScrollClasses =
-  "h-9 min-w-0 border border-haiti/40 px-0.5 transition-colors"
-const unavailableClasses = "bg-haiti/30 cursor-pointer hover:bg-haiti/50"
+  "relative h-10 min-w-[4.75rem] border border-haiti/40 p-0 sm:min-w-[5.5rem]"
+const slotButtonClasses =
+  "absolute inset-0 flex touch-manipulation flex-col items-center justify-center p-0.5 text-blue-chalk transition-colors"
+const unavailableClasses =
+  "cursor-pointer bg-haiti/30 hover:bg-haiti/50 active:bg-haiti/60"
 const availableClasses =
-  "cursor-pointer bg-aquamarine/25 hover:bg-aquamarine/40"
+  "cursor-pointer bg-aquamarine/40 ring-1 ring-inset ring-aquamarine/50 hover:bg-aquamarine/55 active:bg-aquamarine/65"
 const bookedClasses = "cursor-not-allowed bg-biloba-flower/35 text-prelude"
-const selectedClasses = "cursor-pointer bg-aquamarine ring-2 ring-aquamarine/70"
-const currentClasses = "cursor-pointer bg-aquamarine/50 ring-2 ring-aquamarine"
+const selectedClasses =
+  "cursor-pointer bg-aquamarine text-haiti ring-2 ring-inset ring-aquamarine shadow-[0_0_0_1px_var(--haiti)]"
+const currentClasses =
+  "cursor-pointer bg-aquamarine/60 ring-2 ring-inset ring-aquamarine"
 const hiddenClasses = "bg-transparent border-transparent"
+const slotTimeClasses =
+  "pointer-events-none flex flex-col items-center font-mono text-[0.5rem] leading-none sm:text-[0.6rem] sm:leading-tight"
+const slotDetailClasses =
+  "pointer-events-none line-clamp-2 max-w-full break-words text-center text-[0.5rem] leading-tight sm:text-[0.6rem]"
+const clockOpts = { hour: "numeric", minute: "2-digit" } as const
 const legendClasses = "mt-3 flex flex-wrap gap-4 font-sans text-xs text-prelude"
 const legendSwatchClasses = "mr-2 inline-block size-3 rounded-sm align-middle"
 const emptyClasses = "px-4 py-8 text-center font-sans text-sm text-prelude"
 
-function cellClasses(state: SlotGridCellState, scrollable: boolean): string {
-  const base = scrollable ? cellScrollClasses : cellWideClasses
+function cellTdClasses(scrollable: boolean): string {
+  return scrollable ? cellScrollClasses : cellWideClasses
+}
+
+function slotButtonStateClasses(state: SlotGridCellState): string {
   switch (state) {
     case "unavailable":
-      return `${base} ${unavailableClasses}`
+      return unavailableClasses
     case "available":
-      return `${base} ${availableClasses}`
+      return availableClasses
     case "booked":
-      return `${base} ${bookedClasses}`
+      return bookedClasses
     case "selected":
-      return `${base} ${selectedClasses}`
+      return selectedClasses
     case "current":
-      return `${base} ${currentClasses}`
+      return currentClasses
     default:
-      return `${base} ${hiddenClasses}`
+      return hiddenClasses
   }
+}
+
+function slotEndsAt(startsAt: Date): Date {
+  return new Date(startsAt.getTime() + INTERVIEW_SLOT_MINUTES * 60_000)
+}
+
+function formatSlotClockRange(startsAt: Date): string {
+  return `${formatDisplayTime(startsAt, clockOpts)} – ${formatDisplayTime(slotEndsAt(startsAt), clockOpts)}`
+}
+
+function slotButtonLabel(
+  state: SlotGridCellState,
+  startsAt: Date,
+  detail?: string,
+) {
+  if (detail) {
+    return <span className={slotDetailClasses}>{detail}</span>
+  }
+  if (
+    state !== "available" &&
+    state !== "selected" &&
+    state !== "current"
+  ) {
+    return null
+  }
+  return (
+    <span className={slotTimeClasses}>
+      <span>{formatDisplayTime(startsAt, clockOpts)}</span>
+      <span>– {formatDisplayTime(slotEndsAt(startsAt), clockOpts)}</span>
+    </span>
+  )
 }
 
 function formatDayHeader(day: Date) {
@@ -133,9 +183,7 @@ export const SlotGrid = memo(function SlotGrid({
     return <p className={emptyClasses}>{emptyMessage}</p>
   }
 
-  const scrollShell =
-    scrollShellClassName ??
-    "max-h-[min(32rem,55vh)] overflow-x-hidden overflow-y-auto overscroll-contain"
+  const scrollShell = scrollShellClassName ?? shellScrollClasses
   const shellClasses = scrollable
     ? `${shellBaseClasses} ${scrollShell} ${stickyHeaderClasses}`
     : `${shellBaseClasses} ${shellWideClasses}`
@@ -145,7 +193,7 @@ export const SlotGrid = memo(function SlotGrid({
   } py-2 font-mono text-[0.65rem] uppercase tracking-wide text-prelude`
   const timeLabelClasses = `${
     scrollable ? timeColumnScrollClasses : timeColumnWideClasses
-  } py-1 font-mono text-[0.65rem] text-prelude whitespace-nowrap`
+  } py-1 font-mono text-[0.6rem] text-prelude whitespace-nowrap sm:text-[0.65rem]`
   const dayHeaderClasses = scrollable
     ? dayHeaderScrollClasses
     : dayHeaderWideClasses
@@ -182,7 +230,7 @@ export const SlotGrid = memo(function SlotGrid({
                       return (
                         <td
                           key={`${day.toISOString()}-${rowIndex}`}
-                          className={`${scrollable ? cellScrollClasses : cellWideClasses} ${hiddenClasses}`}
+                          className={`${cellTdClasses(scrollable)} ${hiddenClasses}`}
                         />
                       )
                     }
@@ -192,14 +240,10 @@ export const SlotGrid = memo(function SlotGrid({
                       state: "unavailable",
                     }
                     return (
-                      <td
-                        key={fallback.key}
-                        className={cellClasses("unavailable", scrollable)}
-                      >
+                      <td key={fallback.key} className={cellTdClasses(scrollable)}>
                         <button
                           type="button"
-                          className="size-full cursor-pointer"
-                          onMouseDown={(event) => event.preventDefault()}
+                          className={`${slotButtonClasses} ${unavailableClasses}`}
                           onClick={() => onCellClick?.(fallback)}
                           aria-label={`Unavailable ${formatDisplayDateTime(startsAt, {
                             dateStyle: "medium",
@@ -216,35 +260,34 @@ export const SlotGrid = memo(function SlotGrid({
                     cell.state === "selected" ||
                     cell.state === "current"
 
+                  const rangeLabel = formatSlotClockRange(cell.startsAt)
+                  const ariaLabel = cell.detail
+                    ? `${rangeLabel}. ${cell.detail}`
+                    : rangeLabel
+
                   return (
-                    <td key={cell.key} className={cellClasses(cell.state, scrollable)}>
+                    <td key={cell.key} className={cellTdClasses(scrollable)}>
                       {clickable ? (
                         <button
                           type="button"
-                          className="flex size-full flex-col items-center justify-center px-1 text-[0.65rem] leading-tight text-blue-chalk"
-                          onMouseDown={(event) => event.preventDefault()}
+                          className={`${slotButtonClasses} ${slotButtonStateClasses(cell.state)}`}
                           onClick={() => onCellClick?.(cell)}
-                          aria-label={
-                            cell.detail ??
-                            formatDisplayDateTime(cell.startsAt, {
-                              dateStyle: "medium",
-                              timeStyle: "short",
-                            })
+                          aria-label={ariaLabel}
+                          aria-pressed={
+                            cell.state === "selected" || cell.state === "current"
+                              ? true
+                              : undefined
                           }
-                          title={cell.detail}
+                          title={ariaLabel}
                         >
-                          {cell.detail ? (
-                            <span className="line-clamp-2">{cell.detail}</span>
-                          ) : null}
+                          {slotButtonLabel(cell.state, cell.startsAt, cell.detail)}
                         </button>
                       ) : (
                         <span
-                          className="flex size-full items-center justify-center px-1 text-[0.65rem] leading-tight"
-                          title={cell.detail}
+                          className={`${slotButtonClasses} ${slotButtonStateClasses(cell.state)}`}
+                          title={ariaLabel}
                         >
-                          {cell.detail ? (
-                            <span className="line-clamp-2">{cell.detail}</span>
-                          ) : null}
+                          {slotButtonLabel(cell.state, cell.startsAt, cell.detail)}
                         </span>
                       )}
                     </td>
@@ -261,7 +304,7 @@ export const SlotGrid = memo(function SlotGrid({
           Unavailable
         </span>
         <span>
-          <span className={`${legendSwatchClasses} bg-aquamarine/30`} />
+          <span className={`${legendSwatchClasses} bg-aquamarine/40 ring-1 ring-inset ring-aquamarine/50`} />
           Available
         </span>
         <span>

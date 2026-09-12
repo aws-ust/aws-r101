@@ -2,10 +2,11 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { applyFlowInsetClasses } from "@/lib/surface"
 import { cn } from "@/lib/utils"
 
-const shellClasses = "mx-auto w-full max-w-[1180px] px-4 pt-8 md:px-10"
-const tabListClasses = "flex flex-wrap gap-2"
+const shellClasses = `mx-auto w-full min-w-0 max-w-[1180px] overflow-x-clip pt-8 ${applyFlowInsetClasses}`
+const tabListClasses = "flex flex-wrap justify-start gap-2"
 const tabClasses =
   "rounded-pill px-3 py-1.5 font-mono text-xs transition-colors"
 const activeTabClasses = "bg-aquamarine text-haiti"
