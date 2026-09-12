@@ -1,8 +1,6 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import type { RenderedEmail } from "./types";
 import { appBaseUrl, messengerGcLink } from "./config";
+import { devExamParagraphs, officerFirstChoiceLinkExtras } from "./choice-email-extras";
 import { isExecutiveOfficeCommittee } from "./officer-recipients";
 import {
   applicantOtpSubject,
@@ -11,143 +9,20 @@ import {
   resultAcceptedSubject,
   resultRejectedSubject,
 } from "./subjects";
+import {
+  academicYearLabel,
+  APPLICATION_RECEIVED_HEADER_CID,
+  brandedEmailHeaderInline,
+  ctaButton,
+  escapeHtmlForEmail,
+  formatChoiceLabel,
+  formatInterviewSlot,
+  wrapBrandedHtml,
+} from "./template-kit";
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
+const escapeHtml = escapeHtmlForEmail;
 
-const EMAIL_TZ = "Asia/Manila";
-const INTERVIEW_MINUTES = 30;
-export const APPLICATION_RECEIVED_HEADER_CID = "application-received-header@aws-ust";
-
-function applicationReceivedHeaderBytes(): Buffer {
-  const path = resolve(
-    dirname(fileURLToPath(import.meta.url)),
-    "assets/application-received-header.png",
-  );
-  return readFileSync(path);
-}
-
-function brandedEmailHeaderInline() {
-  return {
-    cid: APPLICATION_RECEIVED_HEADER_CID,
-    mimeType: "image/png",
-    filename: "application-received-header.png",
-    content: applicationReceivedHeaderBytes(),
-  };
-}
-
-function academicYearLabel(applicationCode: string): string {
-  const match = /^AP-(\d{4})-/i.exec(applicationCode);
-  if (!match) return "";
-  const start = Number(match[1]);
-  return `A.Y. ${start}–${start + 1}`;
-}
-
-function formatInterviewSlot(startsAt: Date): string {
-  const endsAt = new Date(startsAt.getTime() + INTERVIEW_MINUTES * 60 * 1000);
-  const date = startsAt.toLocaleDateString("en-PH", {
-    timeZone: EMAIL_TZ,
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-  const startTime = startsAt.toLocaleTimeString("en-PH", {
-    timeZone: EMAIL_TZ,
-    hour: "numeric",
-    minute: "2-digit",
-  });
-  const endTime = endsAt.toLocaleTimeString("en-PH", {
-    timeZone: EMAIL_TZ,
-    hour: "numeric",
-    minute: "2-digit",
-  });
-  return `${date}, ${startTime} – ${endTime}`;
-}
-
-function formatChoiceLabel(choice: { committee: string; title: string }): string {
-  return `${choice.title} (${choice.committee})`;
-}
-
-function emailHeaderRow(input: {
-  headerImageUrl?: string;
-  headerImageAlt?: string;
-  eyebrow: string;
-  bannerTitle: string;
-  bannerSub: string;
-}): string {
-  if (input.headerImageUrl) {
-    const alt = escapeHtml(input.headerImageAlt ?? "AWS Builders - UST");
-    return `<tr>
-          <td style="padding:0;line-height:0;">
-            <img src="${escapeHtml(input.headerImageUrl)}" alt="${alt}" width="600" style="display:block;width:100%;max-width:600px;height:auto;border:0;" />
-          </td>
-        </tr>`;
-  }
-  return `<tr>
-          <td style="background:#170f33;padding:28px 32px;text-align:center;">
-            <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:0.14em;color:#5af0c0;">${escapeHtml(input.eyebrow)}</p>
-            <h1 style="margin:12px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:26px;line-height:1.25;color:#f3eeff;">${escapeHtml(input.bannerTitle)}</h1>
-            ${input.bannerSub ? `<p style="margin:8px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#c6b8e8;">${escapeHtml(input.bannerSub)}</p>` : ""}
-          </td>
-        </tr>`;
-}
-
-function wrapBrandedHtml(input: {
-  eyebrow: string;
-  bannerTitle: string;
-  bannerSub: string;
-  heading: string;
-  inner: string;
-  headerImageUrl?: string;
-  headerImageAlt?: string;
-}): string {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escapeHtml(input.heading)}</title>
-</head>
-<body style="margin:0;padding:0;background:#f3eeff;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3eeff;">
-  <tr>
-    <td align="center" style="padding:24px 12px;">
-      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#ffffff;border-collapse:collapse;">
-        ${emailHeaderRow(input)}
-        <tr>
-          <td style="padding:32px 36px 8px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#170f33;">
-            <h2 style="margin:0 0 24px;text-align:center;font-size:22px;color:#46258a;">${escapeHtml(input.heading)}</h2>
-            ${input.inner}
-          </td>
-        </tr>
-        <tr>
-          <td style="background:#46258a;padding:16px 32px;text-align:center;">
-            <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:0.1em;color:#f3eeff;">IT&apos;S ALWAYS DAY ONE.</p>
-          </td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-</table>
-</body>
-</html>`;
-}
-
-function ctaButton(href: string, label: string): string {
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-  <tr>
-    <td align="center" style="padding:8px 0 24px;">
-      <a href="${escapeHtml(href)}" style="display:inline-block;background:#46258a;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:6px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;">${escapeHtml(label)}</a>
-    </td>
-  </tr>
-</table>`;
-}
+export { APPLICATION_RECEIVED_HEADER_CID };
 
 export function applicantOtpTemplate(input: {
   lastName: string;
@@ -167,7 +42,7 @@ Good day, ${honorific},
 
 You asked to sign in to your AWS Builders - UST application. Use the verification code below on your application status page.
 
-Verification code: ${input.code}
+Verification Code: ${input.code}
 
 This code expires in ${input.expiresInMinutes} minutes and can only be used once. For your security, do not share it with anyone.
 
@@ -184,7 +59,7 @@ The AWS Builders - UST Executive Board`;
     eyebrow: "AWS BUILDERS – UST",
     bannerTitle: "WELCOME, BUILDER!",
     bannerSub: yearLabel,
-    heading: "Verification code",
+    heading: "Verification Code",
     headerImageUrl: `cid:${APPLICATION_RECEIVED_HEADER_CID}`,
     headerImageAlt: "AWS Builders - UST — It's Always Day One",
     inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
@@ -194,7 +69,7 @@ The AWS Builders - UST Executive Board`;
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;background:#f8f5ff;border-radius:8px;">
   <tr>
     <td style="padding:20px 18px;text-align:center;font-family:Arial,Helvetica,sans-serif;color:#170f33;">
-      <p style="margin:0 0 10px;font-size:14px;"><strong>Verification code</strong></p>
+      <p style="margin:0 0 10px;font-size:14px;"><strong>Verification Code</strong></p>
       <p style="margin:0;font-size:28px;letter-spacing:0.18em;color:#46258a;font-weight:bold;">${escapeHtml(input.code)}</p>
     </td>
   </tr>
@@ -224,6 +99,7 @@ export function applicationSubmittedTemplate(input: {
   const firstChoice = formatChoiceLabel(input.firstChoice);
   const secondChoice = formatChoiceLabel(input.secondChoice);
   const yearLabel = academicYearLabel(input.applicationCode);
+  const examCopy = devExamParagraphs([input.firstChoice, input.secondChoice]);
 
   const text = `Greetings from the Clouds!
 
@@ -234,10 +110,10 @@ Thank you for applying to AWS Builders - UST. We received your application, and 
 
 Please save your Application ID: ${input.applicationCode}
 
-First choice: ${firstChoice}
-Second choice: ${secondChoice}
+First Choice: ${firstChoice}
+Second Choice: ${secondChoice}
 Interview: ${interviewTime}
-
+${examCopy.text}
 While the application season is open, you can still change your interview slot from your application page. Keep this Application ID so you can return whenever you need to.
 
 We cannot wait to see you and to build with you.
@@ -255,7 +131,7 @@ The AWS Builders - UST Executive Board`;
     eyebrow: "AWS BUILDERS – UST",
     bannerTitle: "WELCOME, BUILDER!",
     bannerSub: yearLabel,
-    heading: "Application received",
+    heading: "Application Received",
     headerImageUrl,
     headerImageAlt: "AWS Builders - UST — It's Always Day One",
     inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
@@ -266,12 +142,13 @@ The AWS Builders - UST Executive Board`;
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;background:#f8f5ff;border-radius:8px;">
   <tr>
     <td style="padding:16px 18px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#170f33;">
-      <p style="margin:0 0 12px;"><strong>First choice</strong><br>${escapeHtml(firstChoice)}</p>
-      <p style="margin:0 0 12px;"><strong>Second choice</strong><br>${escapeHtml(secondChoice)}</p>
+      <p style="margin:0 0 12px;"><strong>First Choice</strong><br>${escapeHtml(firstChoice)}</p>
+      <p style="margin:0 0 12px;"><strong>Second Choice</strong><br>${escapeHtml(secondChoice)}</p>
       <p style="margin:0;"><strong>Interview</strong><br>${escapeHtml(interviewTime)}</p>
     </td>
   </tr>
 </table>
+${examCopy.html}
 <p style="margin:0 0 16px;">While the application season is open, you can still change your interview slot from your application page. Keep this Application ID so you can return whenever you need to.</p>
 <p style="margin:0 0 16px;">We cannot wait to see you and to build with you.</p>
 ${ctaButton(statusUrl, "View your application")}
@@ -295,6 +172,8 @@ export function officerApplicationNoticeTemplate(input: {
   studentNumber: string;
   email: string;
   applicationCode: string;
+  portfolioUrl?: string | null;
+  githubUrl?: string | null;
   firstChoice: { committee: string; title: string };
   secondChoice: { committee: string; title: string };
   interviewStartsAt: Date;
@@ -313,6 +192,11 @@ export function officerApplicationNoticeTemplate(input: {
   const unitLabel = isExecutiveOfficeCommittee(input.firstChoice.committee)
     ? "office"
     : "committee";
+  const linkExtras = officerFirstChoiceLinkExtras({
+    firstChoice: input.firstChoice,
+    portfolioUrl: input.portfolioUrl,
+    githubUrl: input.githubUrl,
+  });
 
   const text = `Greetings from the Clouds!
 
@@ -321,10 +205,10 @@ Good day, ${officerHonorific},
 A new applicant listed your ${unitLabel} as their first choice in R101.
 
 Applicant: ${applicantName}
-Student number: ${input.studentNumber}
-UST email: ${input.email}
-First choice: ${firstChoice}
-Second choice: ${secondChoice}
+Student Number: ${input.studentNumber}
+UST Email: ${input.email}
+${linkExtras.textLines}First Choice: ${firstChoice}
+Second Choice: ${secondChoice}
 Interview: ${interviewTime}
 Application ID: ${input.applicationCode}
 
@@ -337,7 +221,7 @@ The AWS Builders - UST Executive Board`;
     eyebrow: "AWS BUILDERS – UST",
     bannerTitle: "NEW APPLICANT",
     bannerSub: yearLabel,
-    heading: "First-choice notice",
+    heading: "First-Choice Notice",
     headerImageUrl: `cid:${APPLICATION_RECEIVED_HEADER_CID}`,
     headerImageAlt: "AWS Builders - UST — It's Always Day One",
     inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
@@ -348,10 +232,11 @@ The AWS Builders - UST Executive Board`;
   <tr>
     <td style="padding:16px 18px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#170f33;">
       <p style="margin:0 0 12px;"><strong>Applicant</strong><br>${escapeHtml(applicantName)}</p>
-      <p style="margin:0 0 12px;"><strong>Student number</strong><br>${escapeHtml(input.studentNumber)}</p>
-      <p style="margin:0 0 12px;"><strong>UST email</strong><br>${escapeHtml(input.email)}</p>
-      <p style="margin:0 0 12px;"><strong>First choice</strong><br>${escapeHtml(firstChoice)}</p>
-      <p style="margin:0 0 12px;"><strong>Second choice</strong><br>${escapeHtml(secondChoice)}</p>
+      <p style="margin:0 0 12px;"><strong>Student Number</strong><br>${escapeHtml(input.studentNumber)}</p>
+      <p style="margin:0 0 12px;"><strong>UST Email</strong><br>${escapeHtml(input.email)}</p>
+      ${linkExtras.htmlRows}
+      <p style="margin:0 0 12px;"><strong>First Choice</strong><br>${escapeHtml(firstChoice)}</p>
+      <p style="margin:0 0 12px;"><strong>Second Choice</strong><br>${escapeHtml(secondChoice)}</p>
       <p style="margin:0 0 12px;"><strong>Interview</strong><br>${escapeHtml(interviewTime)}</p>
       <p style="margin:0;"><strong>Application ID</strong><br>${escapeHtml(input.applicationCode)}</p>
     </td>
@@ -404,7 +289,7 @@ The AWS Builders - UST Executive Board`;
     eyebrow: "AWS BUILDERS – UST",
     bannerTitle: "WELCOME, BUILDER!",
     bannerSub: "R101 Results",
-    heading: "You are accepted",
+    heading: "You Are Accepted",
     headerImageUrl: `cid:${APPLICATION_RECEIVED_HEADER_CID}`,
     headerImageAlt: "AWS Builders - UST — It's Always Day One",
     inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
@@ -461,7 +346,7 @@ The AWS Builders - UST Executive Board`;
     eyebrow: "AWS BUILDERS – UST",
     bannerTitle: "R101 RESULTS",
     bannerSub: "Thank you for applying",
-    heading: "Recruitment update",
+    heading: "Recruitment Update",
     headerImageUrl: `cid:${APPLICATION_RECEIVED_HEADER_CID}`,
     headerImageAlt: "AWS Builders - UST — It's Always Day One",
     inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>

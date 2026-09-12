@@ -351,6 +351,7 @@ export async function updateApplicantApplication(
       const selectedPositions = await tx
         .select({
           id: positions.id,
+          title: positions.name,
           committeeId: positions.committeeId,
           committee: committees.name,
           isOpen: positions.isOpen,
@@ -369,7 +370,10 @@ export async function updateApplicantApplication(
         );
       }
 
-      const committeeNames = selectedPositions.map((row) => row.committee);
+      const choiceRefs = selectedPositions.map((row) => ({
+        committee: row.committee,
+        title: row.title,
+      }));
       const nextPortfolio =
         input.portfolioUrl !== undefined
           ? input.portfolioUrl.trim()
@@ -379,7 +383,7 @@ export async function updateApplicantApplication(
           ? input.githubUrl.trim()
           : (application.githubUrl?.trim() ?? "");
       const urlError = validateChoiceUrls(
-        committeeNames,
+        choiceRefs,
         nextPortfolio,
         nextGithub,
       );
