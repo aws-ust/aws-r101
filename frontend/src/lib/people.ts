@@ -33,6 +33,18 @@ const CURRENT_EB_PHOTOS: Partial<Record<string, string>> = {
   cco: "/people/current-ebs/CCO_Escosia.png",
 }
 
+/** Outgoing EB photos in `public/people/previous-ebs/` keyed by `OfficerSeat.id`. */
+const PREVIOUS_EB_PHOTOS: Partial<Record<string, string>> = {
+  ceo: "/people/previous-ebs/CEO_Viray.JPG",
+  chro: "/people/previous-ebs/CHRO_To.png",
+  "corp-sec": "/people/previous-ebs/Sec_Elleazar.JPG",
+}
+
+/** Committee director photos in `public/people/directors/` keyed by director `rank`. */
+const DIRECTOR_PHOTOS_BY_RANK: Partial<Record<number, string>> = {
+  2: "/people/directors/Marketing_Lopez.jpg",
+}
+
 /** Matches office order in `committee-groups.ts` (CEO → COO → CRO → …). */
 function officer(
   rank: number,
@@ -54,6 +66,7 @@ function officer(
       name: previousName,
       title,
       academicYear: PREVIOUS_AY,
+      photo: PREVIOUS_EB_PHOTOS[id],
     },
   }
 }
@@ -112,5 +125,6 @@ export const COMMITTEE_DIRECTORS: DirectorSeat[] = COMMITTEE_DIRECTOR_SEATS
       name: seat.name,
       title: seat.title,
       academicYear: CURRENT_AY,
+      photo: DIRECTOR_PHOTOS_BY_RANK[seat.rank],
     },
   }))

@@ -30,6 +30,10 @@ const termSnap = { duration: 0 }
 const swipeDistance = 48
 const swipeThreshold = 40
 
+function isLocalPeoplePhoto(src: string): boolean {
+  return /^\/people\/(current-ebs|previous-ebs|directors)\//.test(src)
+}
+
 function termVariants(reducedMotion: boolean | null) {
   if (reducedMotion) {
     return {
@@ -65,6 +69,7 @@ export function PersonCard({ terms, showPager = false }: PersonCardProps) {
   const person = terms[termIndex] ?? terms[0]
   const photoSrc = person.photo ?? PERSON_AVATAR_PLACEHOLDER
   const canExpandPhoto = Boolean(person.photo)
+  const localPeoplePhoto = isLocalPeoplePhoto(photoSrc)
   const termCount = terms.length
   const atStart = termIndex <= 0
   const atEnd = termIndex >= termCount - 1
@@ -137,7 +142,7 @@ export function PersonCard({ terms, showPager = false }: PersonCardProps) {
                     alt={person.name}
                     title={person.name}
                     triggerAriaLabel={`View full photo of ${person.name}`}
-                    unoptimized={photoSrc.startsWith("/people/current-ebs/")}
+                    unoptimized={localPeoplePhoto}
                     onTriggerPointerDown={(event) => event.stopPropagation()}
                     triggerClassName="size-full"
                   >
@@ -147,7 +152,7 @@ export function PersonCard({ terms, showPager = false }: PersonCardProps) {
                       width={96}
                       height={96}
                       className="size-full object-cover"
-                      unoptimized={photoSrc.startsWith("/people/current-ebs/")}
+                      unoptimized={localPeoplePhoto}
                     />
                   </ImageLightbox>
                 ) : (
