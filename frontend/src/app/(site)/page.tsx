@@ -1,5 +1,11 @@
+import dynamic from "next/dynamic"
 import { Hero } from "@/components/hero"
-import { HomeDeferredSections } from "@/components/home-deferred-sections"
+
+const HomeDeferredSections = dynamic(() =>
+  import("@/components/home-deferred-sections").then(
+    (mod) => mod.HomeDeferredSections,
+  ),
+)
 
 export default function Home() {
   return (

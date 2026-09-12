@@ -5,7 +5,7 @@ import { REVEAL_SECTION_EVENT } from "@/lib/reveal-section-event"
 import { cn } from "@/lib/utils"
 
 const placeholderClasses =
-  "w-full rounded-[14px] bg-daisy-bush/15 motion-reduce:animate-none"
+  "w-full rounded-[14px] bg-daisy-bush/15 motion-reduce:animate-none [content-visibility:auto]"
 
 type LazyWhenVisibleProps = {
   children: ReactNode
@@ -25,7 +25,7 @@ function hashTargetsSection(anchorId: string) {
 export function LazyWhenVisible({
   children,
   minHeight = "12rem",
-  rootMargin = "240px 0px",
+  rootMargin = "120px 0px",
   className,
   anchorId,
 }: LazyWhenVisibleProps) {
