@@ -16,7 +16,7 @@ const codeClasses = "font-mono text-xs text-prelude"
 const metaClasses = "flex items-center gap-3 font-sans text-sm text-prelude"
 const actionIconClasses = "size-4"
 const archiveIconButtonClasses =
-  "size-8 shrink-0 rounded-full border-biloba-flower/45 bg-daisy-bush/25 text-biloba-flower hover:border-biloba-flower/70 hover:bg-daisy-bush/45 hover:text-blue-chalk"
+  "size-8 shrink-0 rounded-full border-rose-blush/45 bg-rose-deep/25 text-rose-glow hover:border-rose-blush/65 hover:bg-rose-deep/45 hover:text-blue-chalk"
 const restoreIconButtonClasses =
   "size-8 shrink-0 rounded-full border-aquamarine/45 bg-aquamarine/10 text-aquamarine hover:border-aquamarine/70 hover:bg-aquamarine/20 hover:text-blue-chalk"
 const archivedClasses =
@@ -40,7 +40,7 @@ export function ApplicationRow({
     <div className={cn(rowClasses, emphasized && firstRowClasses)}>
       <Button
         type="button"
-        color={archived ? "cyan" : "purple"}
+        color={archived ? "cyan" : "danger"}
         variant="ghost"
         size="icon-sm"
         className={

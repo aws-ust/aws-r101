@@ -271,7 +271,7 @@ export function HrApplicationDetail() {
         </div>
         <div className={archiveRowClasses}>
           <Button
-            color={application.archivedAt ? "cyan" : "purple"}
+            color={application.archivedAt ? "cyan" : "danger"}
             className={archiveActionClasses}
             onClick={() => setArchiveOpen(true)}
           >
