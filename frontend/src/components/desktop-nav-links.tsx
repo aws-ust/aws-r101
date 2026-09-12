@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { m } from "motion/react"
 import type { Transition } from "motion/react"
+import type { MouseEvent } from "react"
 import {
   useCallback,
   useEffect,
@@ -22,6 +23,8 @@ import { cn } from "@/lib/utils"
 export type DesktopNavItem = {
   label: string
   href: string
+  path: string
+  sectionId?: string
 }
 
 type PillRect = {
@@ -48,7 +51,8 @@ const hoverPillClasses = `${pillBaseClasses} z-[1] bg-aquamarine/20`
 
 type DesktopNavLinksProps = {
   items: readonly DesktopNavItem[]
-  pathname: string
+  activeHref: string
+  onNavigate: (event: MouseEvent<HTMLAnchorElement>, item: DesktopNavItem) => void
 }
 
 function measureLink(
@@ -70,11 +74,13 @@ function lerp(start: number, end: number, amount: number) {
 
 function getTabSegments(
   items: readonly DesktopNavItem[],
-  linkRefs: Map<string, HTMLAnchorElement>,
   row: HTMLElement
 ): TabSegment[] {
   return items.flatMap((item) => {
-    const rect = measureLink(linkRefs.get(item.href) ?? null, row)
+    const link = Array.from(row.querySelectorAll<HTMLAnchorElement>("a[data-href]")).find(
+      (node) => node.dataset.href === item.href
+    )
+    const rect = measureLink(link ?? null, row)
     return rect ? [{ href: item.href, rect }] : []
   })
 }
@@ -143,9 +149,8 @@ function resolveHoverFromPointer(
   return { rect: nearest.rect, href: nearest.href }
 }
 
-export function DesktopNavLinks({ items, pathname }: DesktopNavLinksProps) {
+export function DesktopNavLinks({ items, activeHref, onNavigate }: DesktopNavLinksProps) {
   const rowRef = useRef<HTMLDivElement>(null)
-  const linkRefs = useRef<Map<string, HTMLAnchorElement>>(new Map())
   const lastPointerXRef = useRef<number | null>(null)
   const [hoveredHref, setHoveredHref] = useState<string | null>(null)
   const [hoverRect, setHoverRect] = useState<PillRect | null>(null)
@@ -157,24 +162,20 @@ export function DesktopNavLinks({ items, pathname }: DesktopNavLinksProps) {
     ? navigationSnap
     : navHoverFollowTransition
 
-  const setLinkRef = useCallback(
-    (href: string) => (node: HTMLAnchorElement | null) => {
-      if (node) linkRefs.current.set(href, node)
-      else linkRefs.current.delete(href)
-    },
-    []
-  )
-
   const measureActive = useCallback(() => {
-    const activeItem = items.find((item) => item.href === pathname)
+    const activeItem = items.find((item) => item.href === activeHref)
     if (!activeItem) {
       setActiveRect(null)
       return
     }
-    setActiveRect(
-      measureLink(linkRefs.current.get(activeItem.href) ?? null, rowRef.current)
-    )
-  }, [items, pathname])
+    const row = rowRef.current
+    const link = row
+      ? Array.from(row.querySelectorAll<HTMLAnchorElement>("a[data-href]")).find(
+          (node) => node.dataset.href === activeItem.href
+        )
+      : null
+    setActiveRect(measureLink(link ?? null, row))
+  }, [activeHref, items])
 
   const updateHoverFromPointer = useCallback(
     (clientX: number) => {
@@ -182,7 +183,7 @@ export function DesktopNavLinks({ items, pathname }: DesktopNavLinksProps) {
       if (!row) return
 
       const resolved = resolveHoverFromPointer(
-        getTabSegments(items, linkRefs.current, row),
+        getTabSegments(items, row),
         row,
         clientX
       )
@@ -268,14 +269,15 @@ export function DesktopNavLinks({ items, pathname }: DesktopNavLinksProps) {
       ) : null}
 
       {items.map((item) => {
-        const isActive = pathname === item.href
+        const isActive = activeHref === item.href
         const isHovered = hoveredHref === item.href
 
         return (
           <Link
             key={item.href}
-            ref={setLinkRef(item.href)}
             href={item.href}
+            data-href={item.href}
+            onClick={(event) => onNavigate(event, item)}
             className={cn(
               navLinkClasses,
               isActive ? activeNavLinkClasses : inactiveNavLinkClasses,

@@ -99,7 +99,6 @@ export function CommitteeQuiz({ className }: CommitteeQuizProps) {
               fill
               sizes="(min-width: 1024px) 22rem, 100vw"
               className="object-contain"
-              unoptimized
               priority
             />
           </div>

@@ -47,7 +47,6 @@ export function HrInterviewWindow({
   const [error, setError] = useState("")
   const [pending, setPending] = useState(false)
 
-
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError("")

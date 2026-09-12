@@ -50,7 +50,7 @@ export function interviewSeasonEndIsoFromYmd(ymd: string): string | null {
   return date.toISOString()
 }
 
-export function interviewTimeLabels(): string[] {
+function createInterviewTimeLabels(): string[] {
   const labels: string[] = []
   for (let hour = INTERVIEW_GRID_START_HOUR; hour < INTERVIEW_GRID_END_HOUR; hour++) {
     for (const minute of [0, 30]) {
@@ -65,6 +65,8 @@ export function interviewTimeLabels(): string[] {
   }
   return labels
 }
+
+export const INTERVIEW_TIME_LABELS = createInterviewTimeLabels()
 
 /** Sunday 00:00 local — interview weeks run Sunday through Saturday. */
 export function startOfWeek(date: Date): Date {

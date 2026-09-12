@@ -66,7 +66,7 @@ export function StackSection() {
   }
 
   return (
-    <section id="build-stack" aria-labelledby="build-stack-title" className={sectionClasses}>
+    <section id="build-stack" aria-labelledby="build-stack-title" className={`${sectionClasses} scroll-mt-20`}>
       <div className="flex flex-col gap-3">
         <p className={eyebrowClasses}>{"// BUILD YOUR FIRST STACK"}</p>
         <h2 id="build-stack-title" className={titleClasses}>
@@ -122,11 +122,11 @@ export function StackSection() {
               )
             })}
           </div>
-          {isDeployed && (
+          {isDeployed ? (
             <p className={deploymentClasses}>
               Stack deployed. That&apos;s the exact loop we run in real build sessions — just with real AWS consoles instead of buttons on a webpage.
             </p>
-          )}
+          ) : null}
           <div className={actionsClasses}>
             <Button type="button" color="cyan" onClick={deployStack} disabled={!isComplete}>
               deploy stack

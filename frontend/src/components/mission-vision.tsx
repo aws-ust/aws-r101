@@ -39,7 +39,7 @@ export function MissionVision() {
     <section
       id="our-identity"
       aria-labelledby="our-identity-title"
-      className={sectionClasses}
+      className={`${sectionClasses} scroll-mt-20`}
     >
       <SectionHeader
         className={headerWidthClasses}
@@ -57,7 +57,6 @@ export function MissionVision() {
               fill
               sizes="(min-width: 1024px) 26rem, 100vw"
               className="object-contain"
-              unoptimized
               priority
             />
           </div>

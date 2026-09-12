@@ -104,7 +104,7 @@ const COMMITTEE_DIRECTOR_SEATS: Array<{ rank: number; title: string; name: strin
 ]
 
 export const COMMITTEE_DIRECTORS: DirectorSeat[] = COMMITTEE_DIRECTOR_SEATS
-  .sort((a, b) => a.rank - b.rank)
+  .toSorted((a, b) => a.rank - b.rank)
   .map((seat, index) => ({
     id: `director-${index + 1}`,
     rank: seat.rank,

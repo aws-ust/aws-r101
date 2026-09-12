@@ -1,10 +1,6 @@
-"use client"
-
-import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import { SectionHeader } from "@/components/section-header"
-import { CommitteeQuiz } from "@/components/committee-quiz"
+import { QuizGate } from "@/components/quiz-gate"
 import { landingCommitteeCardOrder } from "@/lib/committee-groups"
 import { cn } from "@/lib/utils"
 
@@ -98,47 +94,27 @@ const committeeIcons: Record<string, string> = {
   Development: "development.png",
 }
 
-
 const sectionClasses =
   "flex w-full flex-col gap-[clamp(2rem,4vw,3.5rem)] pt-[clamp(3rem,7vw,5.625rem)]"
 const cardsClasses =
   "grid auto-rows-fr grid-cols-1 gap-x-5 gap-y-6 sm:grid-cols-2 lg:grid-cols-3"
 const cardClasses =
   "flex h-full min-h-[15rem] flex-col rounded-[14px] border border-biloba-flower/15 bg-daisy-bush/25 p-4 transition-[background-color,border-color,box-shadow,transform] duration-300 ease-out hover:-translate-y-1 hover:border-biloba-flower/35 hover:bg-daisy-bush/35 hover:shadow-[0_0_24px_rgba(183,140,240,0.18)] motion-reduce:transition-none motion-reduce:hover:transform-none sm:min-h-[16rem] sm:p-5 lg:p-6"
-const iconClasses = "flex size-12 shrink-0 items-center justify-center rounded-full border border-biloba-flower/25 bg-haiti/60 shadow-[0_0_20px_rgba(183,140,240,0.24)]"
+const iconClasses =
+  "flex size-12 shrink-0 items-center justify-center rounded-full border border-biloba-flower/25 bg-haiti/60 shadow-[0_0_20px_rgba(183,140,240,0.24)]"
 const categoryClasses =
   "font-mono text-[0.65rem] uppercase tracking-[0.1em] text-prelude sm:text-xs"
-const titleClasses = "mt-2 flex items-center gap-3 text-lg font-semibold leading-tight text-blue-chalk sm:text-xl"
+const titleClasses =
+  "mt-2 flex items-center gap-3 text-lg font-semibold leading-tight text-blue-chalk sm:text-xl"
 const descriptionClasses = "mt-2.5 text-sm leading-[1.4] text-prelude"
-const ctaClasses =
-  "flex min-h-[6.5rem] flex-col gap-5 rounded-[18px] border border-biloba-flower/25 bg-daisy-bush/35 p-5 shadow-[0_0_28px_rgba(183,140,240,0.12)] sm:flex-row sm:items-center sm:justify-between sm:px-7"
-const ctaTextClasses = "text-base font-medium text-blue-chalk sm:text-lg"
-const ctaButtonClasses = "h-11 px-6 text-sm transition-[background-color,box-shadow,transform] duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_0_24px_rgba(90,240,192,0.45)] active:translate-y-0 motion-reduce:transition-none sm:h-12 sm:px-7 sm:text-base"
 
 export function Committees() {
-  const [quizOpen, setQuizOpen] = useState(false)
-
-  useEffect(() => {
-    if (window.location.hash !== "#committee-quiz") return
-
-    const frame = window.requestAnimationFrame(() => setQuizOpen(true))
-    return () => window.cancelAnimationFrame(frame)
-  }, [])
-
-  useEffect(() => {
-    if (!quizOpen) return
-    document.getElementById("committee-quiz")?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    })
-  }, [quizOpen])
-
-  function startQuiz() {
-    setQuizOpen(true)
-  }
-
   return (
-    <section id="committees" aria-labelledby="committees-title" className={`${sectionClasses} scroll-mt-20`}>
+    <section
+      id="committees"
+      aria-labelledby="committees-title"
+      className={`${sectionClasses} scroll-mt-20`}
+    >
       <SectionHeader
         eyebrow="// committees"
         title={<span id="committees-title">Thirteen committees. One community.</span>}
@@ -152,7 +128,7 @@ export function Committees() {
             className={cn(
               cardClasses,
               index === committees.length - 1 &&
-                "sm:col-span-2 sm:mx-auto sm:w-[calc(50%-0.625rem)] lg:col-span-1 lg:mx-0 lg:w-auto lg:col-start-2"
+                "sm:col-span-2 sm:mx-auto sm:w-[calc(50%-0.625rem)] lg:col-span-1 lg:mx-0 lg:w-auto lg:col-start-2",
             )}
           >
             <p className={categoryClasses}>{category}</p>
@@ -163,7 +139,6 @@ export function Committees() {
                   alt=""
                   width={48}
                   height={48}
-                  unoptimized
                   className={
                     title === "Sponsorships" || title === "External Affairs"
                       ? "h-10 w-10 object-contain"
@@ -179,14 +154,7 @@ export function Committees() {
         ))}
       </div>
 
-      <div className={ctaClasses}>
-        <p className={ctaTextClasses}>Not sure which one fits you?</p>
-        <Button color="cyan" className={ctaButtonClasses} onClick={startQuiz}>
-          Take the committee quiz
-        </Button>
-      </div>
-
-      {quizOpen ? <CommitteeQuiz className="-mt-2" /> : null}
+      <QuizGate />
     </section>
   )
 }

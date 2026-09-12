@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import type {
   Application,
   CreateApplicationInput,
@@ -21,6 +21,16 @@ import {
   type ApplicationListParams,
   type UploadPresignRequest,
 } from "./api-client"
+
+const applicationPromises = new Map<string, Promise<HrApplication>>()
+
+function loadApplication(id: string) {
+  const existing = applicationPromises.get(id)
+  if (existing) return existing
+  const request = getApplicationById(id)
+  applicationPromises.set(id, request)
+  return request
+}
 
 export {
   ApiError,
@@ -96,7 +106,6 @@ export function useApplications(params: ApplicationListParams) {
       },
       query ? 250 : 0
     )
-
     return () => {
       cancelled = true
       window.clearTimeout(timeout)
@@ -120,7 +129,7 @@ export function useApplication(id: string | undefined) {
     if (!id) return
 
     let cancelled = false
-    getApplicationById(id)
+    loadApplication(id)
       .then((row) => {
         if (cancelled) return
         setApplication(row)
@@ -166,6 +175,7 @@ export function useOpenPositions() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (cached) return
     let cancelled = false
     listOpenPositions()
       .then((rows) => {
@@ -186,7 +196,10 @@ export function useOpenPositions() {
     }
   }, [])
 
-  const committees = [...new Set(positions.map((position) => position.committee))]
+  const committees = useMemo(
+    () => [...new Set(positions.map((position) => position.committee))],
+    [positions]
+  )
   return { positions, committees, loading, error }
 }
 

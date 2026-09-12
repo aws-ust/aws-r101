@@ -226,18 +226,24 @@ function ensurePositionsLoaded() {
 }
 
 export function peekOpenPositions() {
-  return openPositionsCache;
+  return typeof window === "undefined" ? null : openPositionsCache;
 }
 
 export function peekBrowserPositions() {
-  return browserPositionsCache;
+  return typeof window === "undefined" ? null : browserPositionsCache;
 }
 
 export function listOpenPositions() {
+  if (typeof window === "undefined") {
+    return apiFetch<PositionApiRow[]>("/positions").then((rows) => rows.map(mapOpenPosition));
+  }
   return ensurePositionsLoaded().then(() => openPositionsCache ?? []);
 }
 
 export function listBrowserPositions() {
+  if (typeof window === "undefined") {
+    return apiFetch<PositionApiRow[]>("/positions").then((rows) => rows.map(mapBrowserPosition));
+  }
   return ensurePositionsLoaded().then(() => browserPositionsCache ?? []);
 }
 

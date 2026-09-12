@@ -27,7 +27,7 @@ export const navHoverFollowTransition: Transition = {
 }
 
 export function getSiteNavIndex(pathname: string) {
-  return SITE_NAV_ITEMS.findIndex((item) => item.href === pathname)
+  return SITE_NAV_ITEMS.findIndex((item) => item.path === pathname)
 }
 
 export function resolveNavigationDirection(

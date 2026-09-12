@@ -28,8 +28,7 @@ export function HrSeasonPage() {
       <div className={stackClasses}>
         <HrRecruitmentWindow />
         <HrInterviewWindow
-          key={seasonLoading ? "loading" : "ready"}
-
+          key={`${seasonBounds?.startsAt.toISOString() ?? ""}:${seasonBounds?.endsAt.toISOString() ?? ""}`}
           seasonBounds={seasonBounds}
           seasonLoading={seasonLoading}
           loadError={seasonLoadError}

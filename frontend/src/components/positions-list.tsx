@@ -1,7 +1,6 @@
 import { cn } from "@/lib/utils"
-import type { Position } from "@/lib/positions"
+import type { PositionOfficeGroup } from "@/lib/positions"
 import {
-  groupPositionsByOfficeHierarchy,
   isAssistantRole,
   openSpots,
 } from "@/lib/positions"
@@ -27,18 +26,16 @@ const assistantPillClasses =
   "border-aquamarine/40 bg-aquamarine/15 text-aquamarine"
 
 type PositionsListProps = {
-  positions: Position[]
+  officeGroups: PositionOfficeGroup[]
   selectedId: string
   onSelect: (id: string) => void
 }
 
 export function PositionsList({
-  positions,
+  officeGroups,
   selectedId,
   onSelect,
 }: PositionsListProps) {
-  const officeGroups = groupPositionsByOfficeHierarchy(positions)
-
   return (
     <nav aria-label="Open positions" className={cn(listClasses, "reveal")}>
       {officeGroups.map((officeGroup) => (

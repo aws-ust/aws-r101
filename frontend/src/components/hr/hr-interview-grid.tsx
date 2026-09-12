@@ -125,7 +125,10 @@ export function HrInterviewGrid({
 }: HrInterviewGridProps) {
   const { positions, committees, loading: positionsLoading } = useOpenPositions()
   const committeeIds = useMemo(() => committeeOptions(positions), [positions])
-  const groups = groupedCommitteesForPicker(committees)
+  const groups = useMemo(
+    () => groupedCommitteesForPicker(committees),
+    [committees]
+  )
 
   const [committeeName, setCommitteeName] = useState("")
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
@@ -135,7 +138,6 @@ export function HrInterviewGrid({
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
   const [resetOpen, setResetOpen] = useState(false)
-
   const committeeId = committeeName ? committeeIds.get(committeeName) : undefined
   const displayedWeekStart = useMemo(
     () => clampWeekStart(weekStart, seasonBounds),
@@ -238,7 +240,7 @@ export function HrInterviewGrid({
     }
   }
 
-  function onCellClick(cell: SlotGridCell) {
+  const onCellClick = useCallback((cell: SlotGridCell) => {
     if (pending || !committeeId || !seasonConfigured) return
 
     const slot = cell.slotId
@@ -259,7 +261,7 @@ export function HrInterviewGrid({
       }
       void openSlot(cell.startsAt)
     }
-  }
+  }, [committeeId, pending, seasonConfigured, slots])
 
   return (
     <section className={panelClasses}>

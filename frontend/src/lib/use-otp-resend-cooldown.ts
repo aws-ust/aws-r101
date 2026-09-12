@@ -8,12 +8,11 @@ export function useOtpResendCooldown(totalSeconds: number) {
   }, [totalSeconds])
 
   useEffect(() => {
-    if (remaining <= 0) return
-    const id = window.setTimeout(() => {
-      setRemaining((prev) => prev - 1)
+    const id = window.setInterval(() => {
+      setRemaining((current) => (current > 0 ? current - 1 : 0))
     }, 1000)
-    return () => window.clearTimeout(id)
-  }, [remaining])
+    return () => window.clearInterval(id)
+  }, [])
 
   return { remaining, canResend: remaining <= 0, restart }
 }

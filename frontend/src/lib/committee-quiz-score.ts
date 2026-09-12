@@ -7,6 +7,7 @@ import {
 } from "@/lib/committee-quiz-data"
 
 export const EA_THRESHOLD = 10
+const COMMITTEE_ORDER = new Map(COMMITTEE_IDS.map((id, index) => [id, index]))
 
 const OFFICER_BY_COMMITTEE: Record<CommitteeId, string> = {
   logistics: "Chief Operating Officer",
@@ -92,7 +93,7 @@ export function scoreQuiz(optionIds: string[]): QuizResult {
   })
 
   const ranked = COMMITTEE_IDS.map((id) => ({ id, score: scores[id] })).sort(
-    (a, b) => b.score - a.score || COMMITTEE_IDS.indexOf(a.id) - COMMITTEE_IDS.indexOf(b.id)
+    (a, b) => b.score - a.score || COMMITTEE_ORDER.get(a.id)! - COMMITTEE_ORDER.get(b.id)!
   )
   const { primary, alsoCompatible } = takeTopGroups(ranked)
 

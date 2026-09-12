@@ -30,7 +30,7 @@ export function SectionHeader({
     <div className={cn("flex flex-col gap-3", className)}>
       <p className={eyebrowClasses}>{eyebrow}</p>
       <h2 className={cn(titleClasses, titleClassName)}>{title}</h2>
-      {subtitle && <p className={subtitleClasses}>{subtitle}</p>}
+      {subtitle ? <p className={subtitleClasses}>{subtitle}</p> : null}
     </div>
   )
 }

@@ -53,26 +53,6 @@ export function groupPositionsByOfficeHierarchy(positions: Position[]) {
   return groups
 }
 
-/** @deprecated Use groupPositionsByOfficeHierarchy for the positions browser. */
-export function groupPositionsByOffice(positions: Position[]) {
-  const groups: { office: string; positions: Position[] }[] = []
-
-  for (const position of positions) {
-    const existing = groups.find((group) => group.office === position.office)
-
-    if (existing) {
-      existing.positions.push(position)
-    } else {
-      groups.push({
-        office: position.office,
-        positions: [position],
-      })
-    }
-  }
-
-  return groups
-}
-
 export const OFFICE_CODE: Record<string, string> = {
   "Office of the Chief Executive Officer": "ceo",
   "Office of the Chief Finance Officer": "cfo",

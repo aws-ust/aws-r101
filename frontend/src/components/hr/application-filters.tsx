@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -48,7 +49,10 @@ type ApplicationFiltersProps = {
 
 export function ApplicationFilters({ value, onChange }: ApplicationFiltersProps) {
   const { committees } = useOpenPositions()
-  const committeeGroups = groupedCommitteesForPicker(committees)
+  const committeeGroups = useMemo(
+    () => groupedCommitteesForPicker(committees),
+    [committees]
+  )
 
   return (
     <div className={rowClasses}>

@@ -136,7 +136,7 @@ export function OurMoments() {
     <section
       id="our-moments"
       aria-labelledby="our-moments-title"
-      className={sectionClasses}
+      className={`${sectionClasses} scroll-mt-20`}
     >
       <SectionHeader
         eyebrow="// events"
