@@ -4,14 +4,8 @@ import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { AnimatePresence, LazyMotion, domAnimation, m, useReducedMotion } from "motion/react"
+import { LazyMotion, domAnimation, useReducedMotion } from "motion/react"
 import { ApplyStepper } from "@/components/apply/stepper"
-import { PrivacyStep } from "@/components/apply/privacy-step"
-import { GeneralInfoStep } from "@/components/apply/general-info-step"
-import { CommitteeStep } from "@/components/apply/committee-step"
-import { UploadStep } from "@/components/apply/upload-step"
-import { ReviewStep } from "@/components/apply/review-step"
-import { SuccessPanel } from "@/components/apply/success-panel"
 import {
   applyFormDefaults,
   applySchema,
@@ -33,10 +27,12 @@ import {
   saveDraftDocument,
   type DraftDocumentKey,
 } from "@/components/apply/apply-form-draft-files"
-import { mapApplyApiError, toCreateApplicationInput } from "@/components/apply/form-model"
+import { applyMappedServerError } from "@/components/apply/apply-form-server-field"
 import { Button } from "@/components/ui/button"
 import { SectionHeader } from "@/components/section-header"
-import { createApplication, createUploadSession, listOpenPositions } from "@/lib/api"
+import { listOpenPositions } from "@/lib/api"
+import { submitApplyForm } from "@/components/apply/apply-form-submit"
+import { ApplyFormSteps } from "@/components/apply/apply-form-steps"
 import { UST_EMAIL_DOMAIN } from "@/lib/constants"
 import { glassPanelClasses, ghostPillButtonClasses, pageShellClasses } from "@/lib/surface"
 import { cn } from "@/lib/utils"
@@ -56,20 +52,6 @@ const stepVariantsMotion = {
   exit: (direction: number) => ({ x: direction * -40, opacity: 0 }),
 }
 const stepVariantsReduced = { enter: { x: 0, opacity: 1 }, center: { x: 0, opacity: 1 }, exit: { x: 0, opacity: 1 } }
-
-function toBase64(bytes: ArrayBuffer): string {
-  const chunk = 0x8000
-  const view = new Uint8Array(bytes)
-  let binary = ""
-  for (let i = 0; i < view.length; i += chunk) {
-    binary += String.fromCharCode(...view.subarray(i, i + chunk))
-  }
-  return btoa(binary)
-}
-
-async function fileChecksum(file: File): Promise<string> {
-  return toBase64(await crypto.subtle.digest("SHA-256", await file.arrayBuffer()))
-}
 
 function fieldErrors<T extends object>(errors: Record<string, { message?: string }> | undefined): Partial<Record<keyof T, string>> {
   return Object.fromEntries(Object.entries(errors ?? {}).map(([key, error]) => [key, error?.message ?? ""])) as Partial<Record<keyof T, string>>
@@ -231,93 +213,24 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
     setStep((current) => (current - 1) as FormStep)
   }
 
-  function setMappedServerError(message: string) {
-    const lower = message.toLowerCase()
-    const set = (name: "privacy.dataPrivacyAgreed" | "general.firstName" | "general.studentNumber" | "general.contactDigits" | "general.facebookUrl" | "general.age" | "general.birthday" | "general.gender" | "general.section" | "general.emailLocal" | "committee.portfolioUrl" | "committee.githubUrl" | "committee.firstPositionId" | "committee.slotId" | "upload.resume", nextStep: FormStep) => {
-      setError(name, { type: "server", message })
-      setStep(nextStep)
-    }
-    if (lower.includes("dataprivacy") || lower.includes("data privacy")) return set("privacy.dataPrivacyAgreed", 1)
-    if (lower.includes("firstname") || lower.includes("lastname")) return set("general.firstName", 2)
-    if (lower.includes("studentnumber")) return set("general.studentNumber", 2)
-    if (lower.includes("contactnumber")) return set("general.contactDigits", 2)
-    if (lower.includes("facebookurl")) return set("general.facebookUrl", 2)
-    if (lower.includes("age")) return set("general.age", 2)
-    if (lower.includes("birthday")) return set("general.birthday", 2)
-    if (lower.includes("gender")) return set("general.gender", 2)
-    if (lower.includes("section")) return set("general.section", 2)
-    if (lower.includes("email")) return set("general.emailLocal", 2)
-    if (lower.includes("portfolio")) return set("committee.portfolioUrl", 3)
-    if (lower.includes("github")) return set("committee.githubUrl", 3)
-    if (lower.includes("choice") || lower.includes("position")) return set("committee.firstPositionId", 3)
-    if (lower.includes("slot") || lower.includes("interview")) return set("committee.slotId", 3)
-    if (lower.includes("document") || lower.includes("resume") || lower.includes("transcript") || lower.includes("registration")) return set("upload.resume", 4)
-    setServerError(mapApplyApiError(message))
-  }
-
   async function submit() {
     setServerError("")
     if (!(await trigger(undefined, { shouldFocus: true }))) return
     const values = getValues()
     setSubmitting(true)
     try {
-      const files = [
-        { documentType: "resume" as const, file: values.upload.resume! },
-        { documentType: "transcript" as const, file: values.upload.transcript! },
-        { documentType: "registration" as const, file: values.upload.registration! },
-      ]
-      const documents = await Promise.all(files.map(async ({ documentType, file }) => ({
-        documentType, fileName: file.name, sizeBytes: file.size, checksumSha256: await fileChecksum(file),
-      })))
-      const fingerprint = JSON.stringify(documents)
-      const cachedUpload = completedUploadRef.current
-      let uploadSessionId = cachedUpload?.id
-      if (
-        !cachedUpload ||
-        cachedUpload.fingerprint !== fingerprint ||
-        new Date(cachedUpload.expiresAt) <= new Date()
-      ) {
-        const session = await createUploadSession({ documents })
-        await Promise.all(session.uploads.map(async (signedUpload) => {
-          const match = files.find(
-            (candidate) => candidate.documentType === signedUpload.documentType,
-          )
-          if (!match) {
-            throw new Error(
-              `Missing upload file for document type "${signedUpload.documentType}".`,
-            )
-          }
-          const file = match.file
-          const form = new FormData()
-          Object.entries(signedUpload.fields).forEach(([name, value]) => form.append(name, value))
-          form.append("file", file)
-          const response = await fetch(signedUpload.url, { method: "POST", body: form })
-          if (!response.ok) throw new Error("Could not upload the PDF files.")
-        }))
-        uploadSessionId = session.uploadSessionId
-        completedUploadRef.current = {
-          fingerprint,
-          id: session.uploadSessionId,
-          expiresAt: session.sessionExpiresAt,
-        }
-      }
-      const created = await createApplication(toCreateApplicationInput(
-        values.privacy, values.general, values.committee, values.upload, UST_EMAIL_DOMAIN, uploadSessionId!,
-      ))
-      clearApplyFormDraft()
-      setApplicationCode(created.applicationCode)
-      const createdFirst = created.choices.find((choice) => choice.preferenceRank === 1)
-      const createdSecond = created.choices.find((choice) => choice.preferenceRank === 2)
-      setSuccessChoices({
-        firstCommittee: createdFirst?.committee ?? values.committee.firstCommittee,
-        secondCommittee: createdSecond?.committee ?? values.committee.secondCommittee,
-        firstTitle: createdFirst?.title ?? values.committee.firstPositionTitle,
-        secondTitle: createdSecond?.title ?? values.committee.secondPositionTitle,
-      })
+      const result = await submitApplyForm(values, UST_EMAIL_DOMAIN, completedUploadRef)
+      setApplicationCode(result.applicationCode)
+      setSuccessChoices(result.successChoices)
       setStep(6)
       setDirection(1)
     } catch (error) {
-      setMappedServerError(error instanceof Error ? error.message : "Could not submit application.")
+      applyMappedServerError(
+        error instanceof Error ? error.message : "Could not submit application.",
+        setError,
+        setStep,
+        setServerError,
+      )
     } finally {
       setSubmitting(false)
     }
@@ -340,25 +253,25 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
         <div className="mt-10"><ApplyStepper current={step} /></div>
         <div className={cn(panelShellClasses, panelWidth)}>
           <div className="relative overflow-hidden">
-            <AnimatePresence mode="wait" custom={direction}>
-              <m.div key={step} custom={direction} variants={variants} initial="enter" animate="center" exit="exit" transition={transition}>
-                {step === 1 ? <PrivacyStep values={privacy} onChange={updatePrivacy} errors={currentStepErrors.privacy} /> : null}
-                {step === 2 ? <GeneralInfoStep values={general} onChange={updateGeneral} errors={currentStepErrors.general} /> : null}
-                {step === 3 ? <CommitteeStep values={committee} onChange={updateCommittee} errors={currentStepErrors.committee} /> : null}
-                {step === 4 ? <UploadStep values={upload} onChange={updateUpload} errors={currentStepErrors.upload} /> : null}
-                {step === 5 ? <ReviewStep general={general} committee={committee} upload={upload} onGeneralChange={updateGeneral} onCommitteeChange={updateCommittee} onUploadChange={updateUpload} generalErrors={currentStepErrors.general} committeeErrors={currentStepErrors.committee} uploadErrors={currentStepErrors.upload} /> : null}
-                {step === 6 ? (
-                  <SuccessPanel
-                    applicationCode={applicationCode}
-                    firstChoiceCommittee={successChoices.firstCommittee}
-                    secondChoiceCommittee={successChoices.secondCommittee}
-                    firstChoiceTitle={successChoices.firstTitle}
-                    secondChoiceTitle={successChoices.secondTitle}
-                  />
-                ) : null}
-                {serverError ? <p className={errorClasses} role="alert">{serverError}</p> : null}
-              </m.div>
-            </AnimatePresence>
+            <ApplyFormSteps
+              step={step}
+              direction={direction}
+              variants={variants}
+              transition={transition}
+              serverError={serverError}
+              errorClasses={errorClasses}
+              privacy={privacy}
+              general={general}
+              committee={committee}
+              upload={upload}
+              updatePrivacy={updatePrivacy}
+              updateGeneral={updateGeneral}
+              updateCommittee={updateCommittee}
+              updateUpload={updateUpload}
+              currentStepErrors={currentStepErrors}
+              applicationCode={applicationCode}
+              successChoices={successChoices}
+            />
           </div>
           {step !== 6 ? (
             <div className={actionsClasses}>
