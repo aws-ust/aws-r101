@@ -100,10 +100,13 @@ const LANDING_COMMITTEE_TITLE_BY_SEED: Record<string, string> = {
 
 /** Staff committee card titles in executive-office hierarchy (CEO → CCO). */
 export function landingCommitteeCardOrder(): string[] {
-  return COMMITTEE_OFFICE_GROUPS.flatMap((group) =>
-    group.committees
-      .filter((committee) => !committee.startsWith("Office of the "))
-      .map((committee) => LANDING_COMMITTEE_TITLE_BY_SEED[committee])
-      .filter((title): title is string => Boolean(title)),
-  )
+  const titles: string[] = []
+  for (const group of COMMITTEE_OFFICE_GROUPS) {
+    for (const committee of group.committees) {
+      if (committee.startsWith("Office of the ")) continue
+      const title = LANDING_COMMITTEE_TITLE_BY_SEED[committee]
+      if (title) titles.push(title)
+    }
+  }
+  return titles
 }
