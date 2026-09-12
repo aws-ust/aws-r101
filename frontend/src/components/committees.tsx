@@ -5,23 +5,82 @@ import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import { SectionHeader } from "@/components/section-header"
 import { CommitteeQuiz } from "@/components/committee-quiz"
+import { landingCommitteeCardOrder } from "@/lib/committee-groups"
 import { cn } from "@/lib/utils"
 
-const committees = [
-  ["PARTNERSHIPS", "Sponsorships", "Sources and secures sponsors, prepares proposals, negotiates terms, and manages sponsorship deliverables for the organization."],
-  ["External Relations", "External Affairs", "Acts as the liaison between the members and the external partners of the organization."],
-  ["Marketing", "Marketing", "Develops and implements comprehensive marketing plans and campaigns for events, while managing relationships with partners, sponsors, and the public."],
-  ["Operations", "Logistics", "Plans and executes event production, including venue, equipment, and manpower needs."],
-  ["Administration", "Secretariat", "Handles the internal and organizational matters of the organization, including feedback mechanisms for events, meetings, or activities."],
-  ["Financing", "Finance", "Manages and facilitates the flow of financial resources for events, and continuously develops initiatives to guarantee sustainable and consistent funding."],
-  ["Community", "Community Development", "Plans outreach programs with partner communities of the UST Simbahayan Community Development Office, while promoting social consciousness among members."],
-  ["People", "Human Resources", "Manages the members within the organization, including their welfare, satisfaction, and involvement in the organization’s events, meetings, and activities."],
-  ["Technology", "Technical", "Oversees and coordinates the technical aspects of every event, meeting, or activity the organization holds."],
-  ["Creatives", "Media", "Produces edits of all video and multimedia production for events, meetings, and promotional purposes of the organization."],
-  ["Creatives", "Publication", "Designs graphic advertisements, publications, and promotional materials for the organization’s social media accounts."],
-  ["Creatives", "Documentation", "Documents the projects and activities of the organization for whatever official record it may be used."],
-  ["Technology", "Development", "Creates and produces online resources for organization use, and educates members on how to utilize them effectively."],
-] as const
+type CommitteeCard = readonly [category: string, title: string, description: string]
+
+const committeesByTitle: Record<string, CommitteeCard> = {
+  Sponsorships: [
+    "PARTNERSHIPS",
+    "Sponsorships",
+    "Sources and secures sponsors, prepares proposals, negotiates terms, and manages sponsorship deliverables for the organization.",
+  ],
+  "External Affairs": [
+    "External Relations",
+    "External Affairs",
+    "Acts as the liaison between the members and the external partners of the organization.",
+  ],
+  Marketing: [
+    "Marketing",
+    "Marketing",
+    "Develops and implements comprehensive marketing plans and campaigns for events, while managing relationships with partners, sponsors, and the public.",
+  ],
+  Logistics: [
+    "Operations",
+    "Logistics",
+    "Plans and executes event production, including venue, equipment, and manpower needs.",
+  ],
+  Secretariat: [
+    "Administration",
+    "Secretariat",
+    "Handles the internal and organizational matters of the organization, including feedback mechanisms for events, meetings, or activities.",
+  ],
+  Finance: [
+    "Financing",
+    "Finance",
+    "Manages and facilitates the flow of financial resources for events, and continuously develops initiatives to guarantee sustainable and consistent funding.",
+  ],
+  "Community Development": [
+    "Community",
+    "Community Development",
+    "Plans outreach programs with partner communities of the UST Simbahayan Community Development Office, while promoting social consciousness among members.",
+  ],
+  "Human Resources": [
+    "People",
+    "Human Resources",
+    "Manages the members within the organization, including their welfare, satisfaction, and involvement in the organization’s events, meetings, and activities.",
+  ],
+  Technical: [
+    "Technology",
+    "Technical",
+    "Oversees and coordinates the technical aspects of every event, meeting, or activity the organization holds.",
+  ],
+  Media: [
+    "Creatives",
+    "Media",
+    "Produces edits of all video and multimedia production for events, meetings, and promotional purposes of the organization.",
+  ],
+  Publication: [
+    "Creatives",
+    "Publication",
+    "Designs graphic advertisements, publications, and promotional materials for the organization’s social media accounts.",
+  ],
+  Documentation: [
+    "Creatives",
+    "Documentation",
+    "Documents the projects and activities of the organization for whatever official record it may be used.",
+  ],
+  Development: [
+    "Technology",
+    "Development",
+    "Creates and produces online resources for organization use, and educates members on how to utilize them effectively.",
+  ],
+}
+
+const committees: CommitteeCard[] = landingCommitteeCardOrder().map(
+  (title) => committeesByTitle[title],
+)
 const committeeIcons: Record<string, string> = {
   "Executive (Internal)": "executive-internal.png",
   Sponsorships: "executive-internal.png",
