@@ -23,6 +23,7 @@ import {
   useOpenPositions,
   type HrInterviewSlot,
 } from "@/lib/api"
+import { formatSeasonBoundsRange } from "@/lib/display-datetime"
 import { groupedCommitteesForPicker } from "@/lib/committee-groups"
 import type { InterviewSeasonBounds } from "@/lib/interview-season"
 import {
@@ -278,8 +279,7 @@ export function HrInterviewGrid({
         Interview Season:{" "}
         {seasonConfigured ? (
           <>
-            {seasonBounds!.startsAt.toLocaleDateString()} –{" "}
-            {seasonBounds!.endsAt.toLocaleDateString()}
+            {formatSeasonBoundsRange(seasonBounds!.startsAt, seasonBounds!.endsAt)}
           </>
         ) : seasonLoading ? (
           <Skeleton className="ml-1 inline-block h-4 w-36 align-middle" />

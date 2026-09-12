@@ -8,9 +8,13 @@ import {
   getApplicantInterviewSlots,
   putApplicantInterviewBooking,
   type ApplicantInterviewSchedule,
-  type ApplicantInterviewSlot,
 } from "@/lib/applicant-api"
 import { useInterviewWindow } from "@/hooks/use-interview-window"
+import {
+  formatDisplayTime,
+  formatInterviewSlotLabel,
+  formatSeasonBoundsRange,
+} from "@/lib/display-datetime"
 import {
   addDays,
   canGoNextWeek,
@@ -45,15 +49,6 @@ type ApplicantInterviewSchedulerProps = {
   onScheduleLoaded?: (schedule: ApplicantInterviewSchedule) => void
 }
 
-function formatSlotLabel(slot: ApplicantInterviewSlot | { startsAt: string; endsAt: string }) {
-  const start = new Date(slot.startsAt)
-  const end = new Date(slot.endsAt)
-  return `${start.toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  })} – ${end.toLocaleTimeString(undefined, { timeStyle: "short" })}`
-}
-
 function buildApplicantCells(
   schedule: ApplicantInterviewSchedule,
   selectedSlotId: string,
@@ -75,8 +70,8 @@ function buildApplicantCells(
       slotId: slot.id,
       detail:
         isCurrent
-          ? `${formatSlotLabel(slot)} (your booking)`
-          : new Date(slot.startsAt).toLocaleTimeString(undefined, {
+          ? `${formatInterviewSlotLabel(slot)} (your booking)`
+          : formatDisplayTime(new Date(slot.startsAt), {
               hour: "numeric",
               minute: "2-digit",
             }),
@@ -326,8 +321,7 @@ export function ApplicantInterviewScheduler({
         {schedule && seasonConfigured ? (
           <p className={committeeClasses}>
             {schedule.committee.name} · season{" "}
-            {seasonBounds!.startsAt.toLocaleDateString()} –{" "}
-            {seasonBounds!.endsAt.toLocaleDateString()}
+            {formatSeasonBoundsRange(seasonBounds!.startsAt, seasonBounds!.endsAt)}
           </p>
         ) : null}
 
@@ -337,7 +331,7 @@ export function ApplicantInterviewScheduler({
 
         {!previewMode && schedule?.booking ? (
           <p className={bookingClasses}>
-            Your interview: {formatSlotLabel(schedule.booking)}
+            Your interview: {formatInterviewSlotLabel(schedule.booking)}
           </p>
         ) : null}
 

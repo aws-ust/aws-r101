@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Field } from "@/components/field"
 import { useInterviewWindow } from "@/hooks/use-interview-window"
 import { listPositionInterviewSlots } from "@/lib/api-client"
+import { formatDisplayTime, formatSeasonBoundsRange } from "@/lib/display-datetime"
 import {
   addDays,
   canGoNextWeek,
@@ -140,7 +141,7 @@ export function ApplyInterviewSlotPicker({
         startsAt: new Date(slot.startsAt),
         state: selectedSlotId === slot.id ? "selected" : "available",
         slotId: slot.id,
-        detail: new Date(slot.startsAt).toLocaleTimeString(undefined, {
+        detail: formatDisplayTime(new Date(slot.startsAt), {
           hour: "numeric",
           minute: "2-digit",
         }),
@@ -173,8 +174,7 @@ export function ApplyInterviewSlotPicker({
         {seasonConfigured ? (
           <>
             {" "}
-            Season {seasonBounds!.startsAt.toLocaleDateString()} –{" "}
-            {seasonBounds!.endsAt.toLocaleDateString()}.
+            Season {formatSeasonBoundsRange(seasonBounds!.startsAt, seasonBounds!.endsAt)}.
           </>
         ) : seasonLoading ? (
           <Skeleton className="ml-1 inline-block h-4 w-40 align-middle" />
