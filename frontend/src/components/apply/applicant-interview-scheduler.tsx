@@ -1,20 +1,13 @@
 "use client"
 
-import { useEffect, useEffectEvent, useMemo, useState } from "react"
-import { ActionFeedback } from "@/components/action-feedback"
-import { SlotGrid, type SlotGridCell } from "@/components/interview/slot-grid"
-import { Button } from "@/components/ui/button"
+import { useCallback, useEffect, useEffectEvent, useMemo, useState } from "react"
+import { type SlotGridCell } from "@/components/interview/slot-grid"
 import {
   getApplicantInterviewSlots,
   putApplicantInterviewBooking,
   type ApplicantInterviewSchedule,
 } from "@/lib/applicant-api"
 import { useInterviewWindow } from "@/hooks/use-interview-window"
-import {
-  formatDisplayTime,
-  formatInterviewSlotLabel,
-  formatSeasonBoundsRange,
-} from "@/lib/display-datetime"
 import {
   addDays,
   canGoNextWeek,
@@ -24,21 +17,17 @@ import {
   slotKeyFromIso,
   startOfWeek,
   weekDaysInSeason,
-  type InterviewSeasonBounds,
 } from "@/lib/interview-season"
-
-const sectionClasses = "mt-8 border-t border-biloba-flower/20 pt-8"
-const headingClasses = "font-sans text-lg font-semibold text-blue-chalk"
-const hintClasses = "mt-1 font-sans text-sm text-prelude"
-const committeeClasses = "mt-2 font-mono text-xs text-aquamarine"
-const weekNavClasses = "mt-4 flex flex-wrap items-center gap-2"
-const weekLabelClasses = "min-w-[10rem] text-center font-sans text-sm text-blue-chalk"
-const navButtonClasses = "h-9 px-4 text-xs"
-const bookingClasses =
-  "mt-4 rounded-[14px] border border-aquamarine/40 bg-aquamarine/10 px-4 py-3 font-sans text-sm text-blue-chalk"
-const lockClasses =
-  "mt-4 rounded-[14px] border border-rose-blush/45 bg-rose-deep/20 px-4 py-3 font-sans text-sm text-rose-glow"
-const actionsClasses = "mt-4 flex flex-wrap gap-3"
+import {
+  applyInterviewSchedule,
+  buildApplicantCells,
+  slotBelongsToSchedule,
+  slotInWeek,
+} from "@/components/apply/applicant-interview-scheduler-helpers"
+import {
+  ApplicantInterviewSchedulerCompact,
+  ApplicantInterviewSchedulerFull,
+} from "@/components/apply/applicant-interview-scheduler-ui"
 
 type ApplicantInterviewSchedulerProps = {
   positionId?: string
@@ -47,88 +36,6 @@ type ApplicantInterviewSchedulerProps = {
   selectedSlotId?: string
   onSelectedSlotIdChange?: (slotId: string) => void
   onScheduleLoaded?: (schedule: ApplicantInterviewSchedule) => void
-}
-
-function buildApplicantCells(
-  schedule: ApplicantInterviewSchedule,
-  selectedSlotId: string,
-  previewMode: boolean,
-): Map<string, SlotGridCell> {
-  const cells = new Map<string, SlotGridCell>()
-  const showSavedBooking = !previewMode && Boolean(schedule.booking)
-  const bookingId = showSavedBooking ? schedule.booking?.slotId : undefined
-
-  for (const slot of schedule.slots) {
-    const key = slotKeyFromIso(slot.startsAt)
-    const isSelected = Boolean(selectedSlotId) && selectedSlotId === slot.id
-    const isCurrent = Boolean(bookingId) && bookingId === slot.id && !isSelected
-
-    cells.set(key, {
-      key,
-      startsAt: new Date(slot.startsAt),
-      state: isSelected ? "selected" : isCurrent ? "current" : "available",
-      slotId: slot.id,
-      detail:
-        isCurrent
-          ? `${formatInterviewSlotLabel(slot)} (your booking)`
-          : formatDisplayTime(new Date(slot.startsAt), {
-              hour: "numeric",
-              minute: "2-digit",
-            }),
-    })
-  }
-
-  return cells
-}
-
-function slotBelongsToSchedule(
-  schedule: ApplicantInterviewSchedule,
-  slotId: string,
-  previewMode: boolean,
-): boolean {
-  if (schedule.slots.some((slot) => slot.id === slotId)) return true
-  if (!previewMode && schedule.booking?.slotId === slotId) return true
-  return false
-}
-
-function slotInWeek(slotIso: string, days: Date[]): boolean {
-  if (days.length === 0) return false
-  const time = new Date(slotIso).getTime()
-  const start = new Date(days[0])
-  start.setHours(0, 0, 0, 0)
-  const end = new Date(days[days.length - 1])
-  end.setDate(end.getDate() + 1)
-  end.setHours(0, 0, 0, 0)
-  return time >= start.getTime() && time < end.getTime()
-}
-
-type ApplyInterviewScheduleContext = {
-  previewMode: boolean
-  selectedSlotId: string
-  seasonBounds: InterviewSeasonBounds
-  onScheduleLoaded?: (schedule: ApplicantInterviewSchedule) => void
-  setSchedule: (schedule: ApplicantInterviewSchedule) => void
-  setSelectedSlotId: (slotId: string) => void
-  setWeekStart: (weekStart: Date) => void
-}
-
-function applyInterviewSchedule(
-  payload: ApplicantInterviewSchedule,
-  ctx: ApplyInterviewScheduleContext,
-) {
-  ctx.setSchedule(payload)
-  ctx.onScheduleLoaded?.(payload)
-  if (ctx.previewMode) return
-  if (!payload.booking || ctx.selectedSlotId) return
-  ctx.setSelectedSlotId(payload.booking.slotId)
-  if (ctx.seasonBounds) {
-    ctx.setWeekStart(
-      clampWeekStart(
-        startOfWeek(new Date(payload.booking.startsAt)),
-        ctx.seasonBounds,
-      ),
-    )
-  }
 }
 
 export function ApplicantInterviewScheduler({
@@ -156,11 +63,11 @@ export function ApplicantInterviewScheduler({
   const setSelectedSlotId = onSelectedSlotIdChange ?? setInternalSelectedId
   const displayedWeekStart = useMemo(
     () => clampWeekStart(weekStart, seasonBounds),
-    [weekStart, seasonBounds]
+    [weekStart, seasonBounds],
   )
   const days = useMemo(
     () => weekDaysInSeason(displayedWeekStart, seasonBounds),
-    [displayedWeekStart, seasonBounds]
+    [displayedWeekStart, seasonBounds],
   )
   const weekLabel = formatWeekRange(displayedWeekStart, days)
 
@@ -171,7 +78,7 @@ export function ApplicantInterviewScheduler({
       : ""
   }, [previewMode, schedule, selectedSlotId])
 
-  const scheduleContext: ApplyInterviewScheduleContext = {
+  const scheduleContext = {
     previewMode,
     selectedSlotId: selectionForGrid,
     seasonBounds,
@@ -197,7 +104,7 @@ export function ApplicantInterviewScheduler({
         setError(
           err instanceof Error
             ? err.message
-            : "Interview scheduling is temporarily unavailable. Try again in a moment."
+            : "Interview scheduling is temporarily unavailable. Try again in a moment.",
         )
       })
       .finally(() => {
@@ -221,7 +128,7 @@ export function ApplicantInterviewScheduler({
       setError(
         err instanceof Error
           ? err.message
-          : "Interview scheduling is temporarily unavailable. Try again in a moment."
+          : "Interview scheduling is temporarily unavailable. Try again in a moment.",
       )
     } finally {
       setLoading(false)
@@ -285,180 +192,77 @@ export function ApplicantInterviewScheduler({
       setSuccess(
         result.booking.rescheduled
           ? "Interview rescheduled."
-          : "Interview booked."
+          : "Interview booked.",
       )
       await refreshSchedule()
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Could not confirm this interview slot."
+        err instanceof Error ? err.message : "Could not confirm this interview slot.",
       )
     } finally {
       setPending(false)
     }
   }
 
-  function onCellClick(cell: SlotGridCell) {
-    if (pending || !schedule?.canSchedule || !cell.slotId) return
-    if (cell.state === "booked" || cell.state === "unavailable") return
-    if (cell.slotId === selectedSlotId) return
-    setSelectedSlotId(cell.slotId)
-    setSuccess("")
-    setError("")
-  }
+  const onCellClick = useCallback(
+    (cell: SlotGridCell) => {
+      if (pending || !schedule?.canSchedule || !cell.slotId) return
+      if (cell.state === "booked" || cell.state === "unavailable") return
+      if (cell.slotId === selectedSlotId) return
+      setSelectedSlotId(cell.slotId)
+      setSuccess("")
+      setError("")
+    },
+    [pending, schedule?.canSchedule, selectedSlotId, setSelectedSlotId],
+  )
 
   const gridLocked = pending
   const weekNavDisabled = pending || !seasonConfigured
+  const goPrevWeek = useCallback(() => {
+    setWeekStart(clampWeekStart(addDays(displayedWeekStart, -7), seasonBounds))
+  }, [displayedWeekStart, seasonBounds])
+  const goNextWeek = useCallback(() => {
+    setWeekStart(clampWeekStart(addDays(displayedWeekStart, 7), seasonBounds))
+  }, [displayedWeekStart, seasonBounds])
+
+  const shellProps = {
+    schedule,
+    seasonConfigured,
+    seasonLoading,
+    seasonBounds,
+    days,
+    cells,
+    loading,
+    weekLabel,
+    weekNavDisabled,
+    canGoPrevWeek: canGoPrevWeek(displayedWeekStart, seasonBounds),
+    canGoNextWeek: canGoNextWeek(displayedWeekStart, seasonBounds),
+    onPrevWeek: goPrevWeek,
+    onNextWeek: goNextWeek,
+    gridLocked,
+    onCellClick,
+    error,
+  }
 
   if (!compact) {
     return (
-      <section className={sectionClasses}>
-        <h2 className={headingClasses}>Schedule your interview</h2>
-        <p className={hintClasses}>
-          {previewMode
-            ? "This grid shows open slots for the first-choice committee you selected below. Pick one, then save committee choices."
-            : "Pick one open slot for your first-choice committee. You can change your interview time until recruitment week ends."}
-        </p>
-        {schedule && seasonConfigured ? (
-          <p className={committeeClasses}>
-            {schedule.committee.name} · season{" "}
-            {formatSeasonBoundsRange(seasonBounds!.startsAt, seasonBounds!.endsAt)}
-          </p>
-        ) : null}
-
-        {schedule && !schedule.canSchedule && schedule.lockReason ? (
-          <p className={lockClasses} role="alert">{schedule.lockReason}</p>
-        ) : null}
-
-        {!previewMode && schedule?.booking ? (
-          <p className={bookingClasses}>
-            Your interview: {formatInterviewSlotLabel(schedule.booking)}
-          </p>
-        ) : null}
-
-        {!seasonConfigured && !seasonLoading ? (
-          <p className={lockClasses} role="status">
-            Interview season is not configured. Check back later.
-          </p>
-        ) : null}
-
-        <div className={weekNavClasses}>
-          <Button
-            type="button"
-            color="purple"
-            className={navButtonClasses}
-            disabled={weekNavDisabled || !canGoPrevWeek(displayedWeekStart, seasonBounds)}
-            onClick={() =>
-              setWeekStart(
-                clampWeekStart(addDays(displayedWeekStart, -7), seasonBounds)
-              )
-            }
-          >
-            ← Prev
-          </Button>
-          <p className={weekLabelClasses}>{weekLabel}</p>
-          <Button
-            type="button"
-            color="purple"
-            className={navButtonClasses}
-            disabled={weekNavDisabled || !canGoNextWeek(displayedWeekStart, seasonBounds)}
-            onClick={() =>
-              setWeekStart(
-                clampWeekStart(addDays(displayedWeekStart, 7), seasonBounds)
-              )
-            }
-          >
-            Next →
-          </Button>
-        </div>
-
-        <div className="mt-4">
-          {seasonConfigured ? (
-            <SlotGrid
-              days={days}
-              cells={cells}
-              loading={loading}
-              scrollable
-              onCellClick={gridLocked ? undefined : onCellClick}
-              emptyMessage="No open interview slots this week. Try another week or check back later."
-            />
-          ) : null}
-        </div>
-
-        {schedule?.canSchedule && !previewMode ? (
-          <div className={actionsClasses}>
-            <Button
-              type="button"
-              color="cyan"
-              disabled={pending || !canConfirm}
-              onClick={() => void confirmBooking()}
-            >
-              {pending ? "Confirming…" : "Confirm interview slot"}
-            </Button>
-          </div>
-        ) : null}
-
-        {error ? <ActionFeedback type="error" message={error} /> : null}
-        {success ? <ActionFeedback type="success" message={success} /> : null}
-      </section>
+      <ApplicantInterviewSchedulerFull
+        {...shellProps}
+        previewMode={previewMode}
+        success={success}
+        canConfirm={Boolean(canConfirm)}
+        pending={pending}
+        onConfirm={() => void confirmBooking()}
+        showConfirm={Boolean(schedule?.canSchedule && !previewMode)}
+        gridEmptyMessage="No open interview slots this week. Try another week or check back later."
+      />
     )
   }
 
   return (
-    <div className="mt-4">
-      {schedule && !schedule.canSchedule && schedule.lockReason ? (
-        <p className={lockClasses} role="alert">{schedule.lockReason}</p>
-      ) : null}
-
-      {!seasonConfigured && !seasonLoading ? (
-        <p className={lockClasses} role="status">
-          Interview season is not configured.
-        </p>
-      ) : null}
-
-      <div className={weekNavClasses}>
-        <Button
-          type="button"
-          color="purple"
-          className={navButtonClasses}
-          disabled={weekNavDisabled || !canGoPrevWeek(displayedWeekStart, seasonBounds)}
-          onClick={() =>
-            setWeekStart(
-              clampWeekStart(addDays(displayedWeekStart, -7), seasonBounds)
-            )
-          }
-        >
-          ← Prev
-        </Button>
-        <p className={weekLabelClasses}>{weekLabel}</p>
-        <Button
-          type="button"
-          color="purple"
-          className={navButtonClasses}
-          disabled={weekNavDisabled || !canGoNextWeek(displayedWeekStart, seasonBounds)}
-          onClick={() =>
-            setWeekStart(
-              clampWeekStart(addDays(displayedWeekStart, 7), seasonBounds)
-            )
-          }
-        >
-          Next →
-        </Button>
-      </div>
-
-      <div className="mt-4">
-        {seasonConfigured ? (
-          <SlotGrid
-            days={days}
-            cells={cells}
-            loading={loading}
-            scrollable
-            onCellClick={gridLocked ? undefined : onCellClick}
-            emptyMessage="No open slots for this committee yet."
-          />
-        ) : null}
-      </div>
-
-      {error ? <ActionFeedback type="error" message={error} /> : null}
-    </div>
+    <ApplicantInterviewSchedulerCompact
+      {...shellProps}
+      gridEmptyMessage="No open slots for this committee yet."
+    />
   )
 }
