@@ -169,9 +169,16 @@ export function ApplicantInterviewScheduler({
   )
   const weekLabel = formatWeekRange(displayedWeekStart, days)
 
+  const selectionForGrid = useMemo(() => {
+    if (!selectedSlotId || !schedule) return ""
+    return slotBelongsToSchedule(schedule, selectedSlotId, previewMode)
+      ? selectedSlotId
+      : ""
+  }, [previewMode, schedule, selectedSlotId])
+
   const scheduleContext: ApplyInterviewScheduleContext = {
     previewMode,
-    selectedSlotId,
+    selectedSlotId: selectionForGrid,
     seasonBounds,
     onScheduleLoaded,
     setSchedule,
@@ -182,26 +189,6 @@ export function ApplicantInterviewScheduler({
   const applySchedule = useEffectEvent((payload: ApplicantInterviewSchedule) => {
     applyInterviewSchedule(payload, scheduleContext)
   })
-
-  useEffect(() => {
-    if (previewMode) {
-      setSelectedSlotId("")
-    }
-  }, [positionId, previewMode, setSelectedSlotId])
-
-  const selectionForGrid = useMemo(() => {
-    if (!selectedSlotId || !schedule) return ""
-    return slotBelongsToSchedule(schedule, selectedSlotId, previewMode)
-      ? selectedSlotId
-      : ""
-  }, [previewMode, schedule, selectedSlotId])
-
-  useEffect(() => {
-    if (!schedule || !selectedSlotId) return
-    if (!slotBelongsToSchedule(schedule, selectedSlotId, previewMode)) {
-      setSelectedSlotId("")
-    }
-  }, [previewMode, schedule, selectedSlotId, setSelectedSlotId])
 
   useEffect(() => {
     let cancelled = false
