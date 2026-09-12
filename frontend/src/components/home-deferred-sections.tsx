@@ -27,6 +27,9 @@ const PeopleDirectory = dynamic(() =>
 const CareersSection = dynamic(() =>
   import("@/components/careers-section").then((mod) => mod.CareersSection),
 )
+const ContactSection = dynamic(() =>
+  import("@/components/contact-section").then((mod) => mod.ContactSection),
+)
 
 export function HomeDeferredSections() {
   return (
@@ -54,6 +57,9 @@ export function HomeDeferredSections() {
       </LazyWhenVisible>
       <LazyWhenVisible minHeight="14rem" anchorId="careers">
         <CareersSection />
+      </LazyWhenVisible>
+      <LazyWhenVisible minHeight="14rem" anchorId="contact">
+        <ContactSection />
       </LazyWhenVisible>
     </>
   )
