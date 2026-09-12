@@ -108,7 +108,7 @@ export function HrInterviewWindow({
             />
           </Field>
           <Button type="submit" color="cyan" disabled={pending}>
-            {pending ? "Saving…" : "Save dates"}
+            {pending ? "Saving…" : "Save Dates"}
           </Button>
         </form>
       )}
