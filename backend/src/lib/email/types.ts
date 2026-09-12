@@ -3,8 +3,18 @@ export type EmailMessageType =
   | "applicant_otp"
   | "interview_booking"
   | "officer_application_notice"
+  | "officer_first_choice_left"
+  | "officer_first_choice_joined"
+  | "officer_interview_rescheduled"
+  | "applicant_dev_exam"
   | "result_accepted"
   | "result_rejected";
+
+export type EmailFileAttachment = {
+  filename: string;
+  mimeType: string;
+  content: Buffer;
+};
 
 export type EmailDeliveryStatus = "pending" | "sent" | "failed";
 
@@ -20,6 +30,7 @@ export type RenderedEmail = {
   text: string;
   html: string;
   inline?: EmailInlineAttachment[];
+  attachments?: EmailFileAttachment[];
 };
 
 export type SendEmailInput = {
@@ -28,6 +39,7 @@ export type SendEmailInput = {
   text: string;
   html: string;
   inline?: EmailInlineAttachment[];
+  attachments?: EmailFileAttachment[];
 };
 
 export type SendEmailResult = {

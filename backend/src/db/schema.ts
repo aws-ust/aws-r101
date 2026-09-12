@@ -40,6 +40,10 @@ export const emailMessageType = pgEnum("email_message_type", [
   "applicant_otp",
   "interview_booking",
   "officer_application_notice",
+  "officer_first_choice_left",
+  "officer_first_choice_joined",
+  "officer_interview_rescheduled",
+  "applicant_dev_exam",
   "result_accepted",
   "result_rejected",
 ]);

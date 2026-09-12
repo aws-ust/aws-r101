@@ -149,13 +149,21 @@ try {
     )
   `);
 
-  await sql.unsafe(`
-    DO $$ BEGIN
-      ALTER TYPE email_message_type ADD VALUE IF NOT EXISTS 'officer_application_notice';
-    EXCEPTION
-      WHEN duplicate_object THEN NULL;
-    END $$;
-  `);
+  for (const value of [
+    "officer_application_notice",
+    "officer_first_choice_left",
+    "officer_first_choice_joined",
+    "officer_interview_rescheduled",
+    "applicant_dev_exam",
+  ]) {
+    await sql.unsafe(`
+      DO $$ BEGIN
+        ALTER TYPE email_message_type ADD VALUE IF NOT EXISTS '${value}';
+      EXCEPTION
+        WHEN duplicate_object THEN NULL;
+      END $$;
+    `);
+  }
 
   console.log("Schema sync complete.");
 } finally {
