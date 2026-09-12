@@ -51,7 +51,9 @@ export function UploadStep({ values, onChange, errors }: UploadStepProps) {
 
         error={errors?.resume}
 
-        onFile={(resume) => onChange({ resume, resumeDisplayName: undefined })}
+        onFile={(resume) =>
+          onChange({ resume, resumeDisplayName: resume?.name })
+        }
 
       />
 
@@ -69,7 +71,7 @@ export function UploadStep({ values, onChange, errors }: UploadStepProps) {
 
         onFile={(transcript) =>
 
-          onChange({ transcript, transcriptDisplayName: undefined })
+          onChange({ transcript, transcriptDisplayName: transcript?.name })
 
         }
 
@@ -89,7 +91,7 @@ export function UploadStep({ values, onChange, errors }: UploadStepProps) {
 
         onFile={(registration) =>
 
-          onChange({ registration, registrationDisplayName: undefined })
+          onChange({ registration, registrationDisplayName: registration?.name })
 
         }
 

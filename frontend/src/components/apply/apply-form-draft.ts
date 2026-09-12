@@ -2,6 +2,7 @@ import {
   applyFormDraftSchema,
   type ApplyFormDraft,
 } from "@/components/apply/apply-schema"
+import { clearDraftDocuments } from "@/components/apply/apply-form-draft-files"
 
 const STORAGE_KEY = "aws-ust-apply-draft"
 
@@ -33,4 +34,5 @@ export function saveApplyFormDraft(draft: ApplyFormDraft) {
 export function clearApplyFormDraft() {
   if (typeof window === "undefined") return
   sessionStorage.removeItem(STORAGE_KEY)
+  void clearDraftDocuments()
 }

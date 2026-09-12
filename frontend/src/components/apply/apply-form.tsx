@@ -25,7 +25,14 @@ import {
   clearApplyFormDraft,
   loadApplyFormDraft,
   saveApplyFormDraft,
+  type ApplyFormDraft,
 } from "@/components/apply/apply-form-draft"
+import {
+  deleteDraftDocument,
+  loadAllDraftDocuments,
+  saveDraftDocument,
+  type DraftDocumentKey,
+} from "@/components/apply/apply-form-draft-files"
 import { mapApplyApiError, toCreateApplicationInput } from "@/components/apply/form-model"
 import { Button } from "@/components/ui/button"
 import { SectionHeader } from "@/components/section-header"
@@ -51,7 +58,13 @@ const stepVariantsMotion = {
 const stepVariantsReduced = { enter: { x: 0, opacity: 1 }, center: { x: 0, opacity: 1 }, exit: { x: 0, opacity: 1 } }
 
 function toBase64(bytes: ArrayBuffer): string {
-  return btoa(String.fromCharCode(...new Uint8Array(bytes)))
+  const chunk = 0x8000
+  const view = new Uint8Array(bytes)
+  let binary = ""
+  for (let i = 0; i < view.length; i += chunk) {
+    binary += String.fromCharCode(...view.subarray(i, i + chunk))
+  }
+  return btoa(binary)
 }
 
 async function fileChecksum(file: File): Promise<string> {
@@ -61,6 +74,27 @@ async function fileChecksum(file: File): Promise<string> {
 function fieldErrors<T extends object>(errors: Record<string, { message?: string }> | undefined): Partial<Record<keyof T, string>> {
   return Object.fromEntries(Object.entries(errors ?? {}).map(([key, error]) => [key, error?.message ?? ""])) as Partial<Record<keyof T, string>>
 }
+
+function draftUploadMeta(upload: UploadValues): ApplyFormDraft["upload"] {
+  return {
+    resumeDisplayName: upload.resume?.name ?? upload.resumeDisplayName,
+    transcriptDisplayName: upload.transcript?.name ?? upload.transcriptDisplayName,
+    registrationDisplayName: upload.registration?.name ?? upload.registrationDisplayName,
+  }
+}
+
+function persistApplyFormDraft(step: FormStep, values: ApplyFormValues) {
+  if (step > 5) return
+  saveApplyFormDraft({
+    step: step as ApplyFormDraft["step"],
+    privacy: values.privacy,
+    general: values.general,
+    committee: values.committee,
+    upload: draftUploadMeta(values.upload),
+  })
+}
+
+const draftDocumentKeys: DraftDocumentKey[] = ["resume", "transcript", "registration"]
 
 type ApplyFormProps = { initialPositionId?: string }
 
@@ -94,20 +128,28 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
 
   useEffect(() => {
     let cancelled = false
-    queueMicrotask(() => {
-      if (cancelled) return
+    void (async () => {
       const draft = loadApplyFormDraft()
+      const files = await loadAllDraftDocuments()
+      if (cancelled) return
       if (draft) {
         reset({
           privacy: draft.privacy,
           general: draft.general,
           committee: draft.committee,
-          upload: { resume: null, transcript: null, registration: null, ...draft.upload },
+          upload: {
+            resume: files.resume ?? null,
+            transcript: files.transcript ?? null,
+            registration: files.registration ?? null,
+            resumeDisplayName: files.resume?.name ?? draft.upload.resumeDisplayName,
+            transcriptDisplayName: files.transcript?.name ?? draft.upload.transcriptDisplayName,
+            registrationDisplayName: files.registration?.name ?? draft.upload.registrationDisplayName,
+          },
         })
         setStep(draft.step)
       }
       setDraftReady(true)
-    })
+    })()
     return () => {
       cancelled = true
     }
@@ -119,25 +161,14 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
     const subscription = watch((value) => {
       if (timer) clearTimeout(timer)
       timer = setTimeout(() => {
-        const current = value as ApplyFormValues
-        saveApplyFormDraft({
-          step: Math.min(step, 5) as 1 | 2 | 3 | 4 | 5,
-          privacy: current.privacy,
-          general: current.general,
-          committee: current.committee,
-          upload: {
-            resumeDisplayName: current.upload.resume?.name ?? current.upload.resumeDisplayName,
-            transcriptDisplayName: current.upload.transcript?.name ?? current.upload.transcriptDisplayName,
-            registrationDisplayName: current.upload.registration?.name ?? current.upload.registrationDisplayName,
-          },
-        })
+        persistApplyFormDraft(step, getValues())
       }, 250)
     })
     return () => {
       subscription.unsubscribe()
       if (timer) clearTimeout(timer)
     }
-  }, [draftReady, step, watch])
+  }, [draftReady, getValues, step, watch])
 
   useEffect(() => {
     if (!draftReady || !initialPositionId) return
@@ -165,6 +196,13 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
   const updateUpload = (patch: Partial<UploadValues>) => {
     setCompletedUpload(null)
     for (const [key, value] of Object.entries(patch)) setValue(`upload.${key}` as never, value as never, { shouldDirty: true, shouldTouch: true })
+    for (const key of draftDocumentKeys) {
+      if (!(key in patch)) continue
+      const file = patch[key]
+      if (file instanceof File) void saveDraftDocument(key, file)
+      else if (file === null) void deleteDraftDocument(key)
+    }
+    queueMicrotask(() => persistApplyFormDraft(step, getValues()))
   }
 
   async function goNext() {
