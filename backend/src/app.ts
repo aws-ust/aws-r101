@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { secureHeaders } from "hono/secure-headers";
 import { deleteCookie, setCookie } from "hono/cookie";
 import type { LambdaEvent, LambdaContext } from "hono/aws-lambda";
 import { applicationsRoutes } from "./routes/applications";
@@ -15,12 +16,14 @@ import { interviewWindowRoutes } from "./routes/interview-window";
 import {
   AUTH_COOKIE_NAME,
   authCookieOptions,
-  credentialsMatch,
   expiresInSeconds,
   requireAuth,
   signToken,
+  verifyHrCredentials,
 } from "./auth";
 import { logApiError } from "./lib/api-errors";
+import { loginTokenInJsonAllowed } from "./lib/secure-cookie";
+import { requireTrustedOrigin } from "./lib/trusted-origin";
 
 type Bindings = {
   event: LambdaEvent;
@@ -37,14 +40,18 @@ app.onError((err, c) => {
   );
 });
 
+app.use("*", secureHeaders());
+
 app.use(
   "*",
   cors({
     origin: process.env.CORS_ORIGIN ?? "http://localhost:3000",
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,
-  })
+  }),
 );
+
+app.use("*", requireTrustedOrigin);
 
 app.get("/health", (c) => c.json({ ok: true, service: "aws-ust-api" }));
 
@@ -56,25 +63,27 @@ app.post("/auth/login", async (c) => {
   const email = typeof body.email === "string" ? body.email : "";
   const password = typeof body.password === "string" ? body.password : "";
 
-  if (!credentialsMatch(email, password)) {
+  const verified = await verifyHrCredentials(email, password);
+  if (!verified.ok) {
     return c.json({ error: "invalid credentials" }, 401);
   }
 
   try {
-    const subject = email.trim().toLowerCase();
-    const result = await signToken(subject);
+    const result = await signToken(verified.email);
     setCookie(
       c,
       AUTH_COOKIE_NAME,
       result.token,
-      authCookieOptions(expiresInSeconds())
+      authCookieOptions(expiresInSeconds()),
     );
-    return c.json({
-      email: subject,
+    const payload: { email: string; expiresAt: string; token?: string } = {
+      email: verified.email,
       expiresAt: result.expiresAt,
-      // Bearer token kept for non-browser API clients (e.g. smoke tests).
-      token: result.token,
-    });
+    };
+    if (loginTokenInJsonAllowed()) {
+      payload.token = result.token;
+    }
+    return c.json(payload);
   } catch {
     return c.json({ error: "auth not configured" }, 500);
   }
