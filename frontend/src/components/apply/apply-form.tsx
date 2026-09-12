@@ -106,7 +106,12 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
   const [submitting, setSubmitting] = useState(false)
   const [completedUpload, setCompletedUpload] = useState<CompletedUploadSession | null>(null)
   const [applicationCode, setApplicationCode] = useState("")
-  const [successCommittees, setSuccessCommittees] = useState({ first: "", second: "" })
+  const [successChoices, setSuccessChoices] = useState({
+    firstCommittee: "",
+    secondCommittee: "",
+    firstTitle: "",
+    secondTitle: "",
+  })
   const [draftReady, setDraftReady] = useState(false)
   const {
     formState: { errors },
@@ -133,10 +138,16 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
       const files = await loadAllDraftDocuments()
       if (cancelled) return
       if (draft) {
+        // Committee choices and interview slots are not restored from session draft —
+        // only a ?position= deep link pre-fills first choice (see effect below).
+        const step: FormStep = draft.step > 3 ? 3 : draft.step
         reset({
           privacy: draft.privacy,
           general: draft.general,
-          committee: draft.committee,
+          committee: {
+            ...applyFormDefaults.committee,
+            motivation: draft.committee.motivation,
+          },
           upload: {
             resume: files.resume ?? null,
             transcript: files.transcript ?? null,
@@ -146,7 +157,7 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
             registrationDisplayName: files.registration?.name ?? draft.upload.registrationDisplayName,
           },
         })
-        setStep(draft.step)
+        setStep(step)
       }
       setDraftReady(true)
     })()
@@ -178,6 +189,7 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
       if (!cancelled && position) {
         setValue("committee.firstCommittee", position.committee)
         setValue("committee.firstPositionId", position.id)
+        setValue("committee.firstPositionTitle", position.title)
         setValue("committee.slotId", "")
       }
     }).catch(() => {})
@@ -277,9 +289,13 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
       ))
       clearApplyFormDraft()
       setApplicationCode(created.applicationCode)
-      setSuccessCommittees({
-        first: created.choices.find((choice) => choice.preferenceRank === 1)?.committee ?? values.committee.firstCommittee,
-        second: created.choices.find((choice) => choice.preferenceRank === 2)?.committee ?? values.committee.secondCommittee,
+      const createdFirst = created.choices.find((choice) => choice.preferenceRank === 1)
+      const createdSecond = created.choices.find((choice) => choice.preferenceRank === 2)
+      setSuccessChoices({
+        firstCommittee: createdFirst?.committee ?? values.committee.firstCommittee,
+        secondCommittee: createdSecond?.committee ?? values.committee.secondCommittee,
+        firstTitle: createdFirst?.title ?? values.committee.firstPositionTitle,
+        secondTitle: createdSecond?.title ?? values.committee.secondPositionTitle,
       })
       setStep(6)
       setDirection(1)
@@ -314,7 +330,15 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
                 {step === 3 ? <CommitteeStep values={committee} onChange={updateCommittee} errors={currentStepErrors.committee} /> : null}
                 {step === 4 ? <UploadStep values={upload} onChange={updateUpload} errors={currentStepErrors.upload} /> : null}
                 {step === 5 ? <ReviewStep general={general} committee={committee} upload={upload} onGeneralChange={updateGeneral} onCommitteeChange={updateCommittee} onUploadChange={updateUpload} generalErrors={currentStepErrors.general} committeeErrors={currentStepErrors.committee} uploadErrors={currentStepErrors.upload} /> : null}
-                {step === 6 ? <SuccessPanel applicationCode={applicationCode} firstChoiceCommittee={successCommittees.first} secondChoiceCommittee={successCommittees.second} /> : null}
+                {step === 6 ? (
+                  <SuccessPanel
+                    applicationCode={applicationCode}
+                    firstChoiceCommittee={successChoices.firstCommittee}
+                    secondChoiceCommittee={successChoices.secondCommittee}
+                    firstChoiceTitle={successChoices.firstTitle}
+                    secondChoiceTitle={successChoices.secondTitle}
+                  />
+                ) : null}
                 {serverError ? <p className={errorClasses} role="alert">{serverError}</p> : null}
               </m.div>
             </AnimatePresence>
