@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import {
   ApplicationAlreadySubmittedError,
-  committeeNamesForPositions,
+  choiceRefsForPositions,
   createApplication,
   getApplicationDocument,
   getApplicationById,
@@ -141,9 +141,9 @@ applicationsRoutes.post("/", async (c) => {
     return c.json({ error: "One or more positions do not exist." }, 400);
   }
 
-  const committeeNames = await committeeNamesForPositions(positionIds);
+  const choiceRefs = await choiceRefsForPositions(positionIds);
   const urlError = validateChoiceUrls(
-    committeeNames,
+    choiceRefs,
     parsed.value.portfolioUrl,
     parsed.value.githubUrl,
   );

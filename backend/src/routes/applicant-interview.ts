@@ -4,9 +4,11 @@ import {
   requireApplicantAuth,
 } from "../applicant-auth";
 import { unavailableApiError } from "../lib/api-errors";
+import { fireInterviewRescheduleNotification } from "../lib/email/service";
 import {
   bookApplicantInterview,
   getApplicantInterviewSchedule,
+  getBookedInterviewBooking,
   InterviewScheduleError,
 } from "../lib/interview-scheduling";
 
@@ -70,11 +72,20 @@ applicantInterviewRoutes.put("/interview-booking", async (c) => {
   }
 
   const session = getApplicantSession(c);
+  const previousBooking = await getBookedInterviewBooking(
+    session.applicationId,
+  );
   try {
     const booking = await bookApplicantInterview(
       session.applicationId,
       slotId,
     );
+    if (previousBooking?.slotId !== booking.slotId) {
+      fireInterviewRescheduleNotification(
+        session.applicationId,
+        previousBooking?.startsAt ?? null,
+      );
+    }
     return c.json({ booking });
   } catch (error) {
     if (error instanceof InterviewScheduleError) {
