@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -104,7 +104,7 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
   const [direction, setDirection] = useState(1)
   const [serverError, setServerError] = useState("")
   const [submitting, setSubmitting] = useState(false)
-  const [completedUpload, setCompletedUpload] = useState<CompletedUploadSession | null>(null)
+  const completedUploadRef = useRef<CompletedUploadSession | null>(null)
   const [applicationCode, setApplicationCode] = useState("")
   const [successChoices, setSuccessChoices] = useState({
     firstCommittee: "",
@@ -206,7 +206,7 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
     for (const [key, value] of Object.entries(patch)) setValue(`committee.${key}` as never, value as never, { shouldDirty: true, shouldTouch: true })
   }
   const updateUpload = (patch: Partial<UploadValues>) => {
-    setCompletedUpload(null)
+    completedUploadRef.current = null
     for (const [key, value] of Object.entries(patch)) setValue(`upload.${key}` as never, value as never, { shouldDirty: true, shouldTouch: true })
     for (const key of draftDocumentKeys) {
       if (!(key in patch)) continue
@@ -270,8 +270,13 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
         documentType, fileName: file.name, sizeBytes: file.size, checksumSha256: await fileChecksum(file),
       })))
       const fingerprint = JSON.stringify(documents)
-      let uploadSessionId = completedUpload?.id
-      if (!completedUpload || completedUpload.fingerprint !== fingerprint || new Date(completedUpload.expiresAt) <= new Date()) {
+      const cachedUpload = completedUploadRef.current
+      let uploadSessionId = cachedUpload?.id
+      if (
+        !cachedUpload ||
+        cachedUpload.fingerprint !== fingerprint ||
+        new Date(cachedUpload.expiresAt) <= new Date()
+      ) {
         const session = await createUploadSession({ documents })
         await Promise.all(session.uploads.map(async (signedUpload) => {
           const match = files.find(
@@ -290,7 +295,11 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
           if (!response.ok) throw new Error("Could not upload the PDF files.")
         }))
         uploadSessionId = session.uploadSessionId
-        setCompletedUpload({ fingerprint, id: session.uploadSessionId, expiresAt: session.sessionExpiresAt })
+        completedUploadRef.current = {
+          fingerprint,
+          id: session.uploadSessionId,
+          expiresAt: session.sessionExpiresAt,
+        }
       }
       const created = await createApplication(toCreateApplicationInput(
         values.privacy, values.general, values.committee, values.upload, UST_EMAIL_DOMAIN, uploadSessionId!,
