@@ -2,30 +2,7 @@
 
 import { useEffect, useState } from "react"
 
-/** Fixed nav height + breathing room. */
-const NAV_OFFSET_PX = 120
-
-function activeSectionFromScroll(sectionIds: readonly string[]): string | null {
-  if (sectionIds.length === 0) return null
-
-  const scrollAnchor = window.scrollY + NAV_OFFSET_PX
-  const viewportHeight = window.innerHeight
-
-  let current = sectionIds[0]
-  for (const id of sectionIds) {
-    const section = document.getElementById(id)
-    if (!section) continue
-
-    const { top, bottom } = section.getBoundingClientRect()
-    const reachedByScroll = section.offsetTop <= scrollAnchor
-    const enteredViewport = top < viewportHeight && bottom > NAV_OFFSET_PX
-
-    if (reachedByScroll || enteredViewport) {
-      current = id
-    }
-  }
-  return current
-}
+const navigationOffset = 80
 
 export function useSectionSpy(pathname: string, sectionIds: readonly string[]) {
   const [activeId, setActiveId] = useState<string | null>(
@@ -37,16 +14,36 @@ export function useSectionSpy(pathname: string, sectionIds: readonly string[]) {
       return
     }
 
-    function updateActive() {
-      setActiveId(activeSectionFromScroll(sectionIds))
+    let animationFrame: number | null = null
+
+    function updateActiveSection() {
+      animationFrame = null
+      const nextActiveId = sectionIds.reduce<string | null>((activeId, id) => {
+        const section = document.getElementById(id)
+        return section && section.getBoundingClientRect().top <= navigationOffset
+          ? id
+          : activeId
+      }, sectionIds[0] ?? null)
+
+      setActiveId((currentActiveId) =>
+        currentActiveId === nextActiveId ? currentActiveId : nextActiveId
+      )
     }
 
-    updateActive()
-    window.addEventListener("scroll", updateActive, { passive: true })
-    window.addEventListener("resize", updateActive)
+    function scheduleUpdate() {
+      if (animationFrame === null) {
+        animationFrame = window.requestAnimationFrame(updateActiveSection)
+      }
+    }
+
+    scheduleUpdate()
+    window.addEventListener("scroll", scheduleUpdate, { passive: true })
+    window.addEventListener("resize", scheduleUpdate)
+
     return () => {
-      window.removeEventListener("scroll", updateActive)
-      window.removeEventListener("resize", updateActive)
+      if (animationFrame !== null) window.cancelAnimationFrame(animationFrame)
+      window.removeEventListener("scroll", scheduleUpdate)
+      window.removeEventListener("resize", scheduleUpdate)
     }
   }, [pathname, sectionIds])
 
