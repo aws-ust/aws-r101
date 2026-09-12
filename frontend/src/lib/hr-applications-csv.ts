@@ -19,21 +19,22 @@ const HEADERS = [
   "Final position",
   "Submitted at",
 ]
+const FORMULA_PREFIX = /^[=+\-@\t\r]/
 
 function escapeCell(value: string | null | undefined) {
   const text = value ?? ""
-  const safeText = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text
+  const safeText = FORMULA_PREFIX.test(text) ? `'${text}` : text
   return `"${safeText.replaceAll('"', '""')}"`
 }
 
 export function applicationsToCsv(applications: HrApplication[]) {
   const rows = applications.map((application) => {
-    const first = application.choices.find(
-      (choice) => choice.preferenceRank === 1
-    )
-    const second = application.choices.find(
-      (choice) => choice.preferenceRank === 2
-    )
+    let first: (typeof application.choices)[number] | undefined
+    let second: (typeof application.choices)[number] | undefined
+    for (const choice of application.choices) {
+      if (choice.preferenceRank === 1) first = choice
+      if (choice.preferenceRank === 2) second = choice
+    }
     return [
       application.applicationCode,
       `${application.firstName} ${application.lastName}`,

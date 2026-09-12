@@ -1,5 +1,3 @@
-"use client"
-
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -48,7 +46,6 @@ export function EspiErrorPage({ code, retry }: EspiErrorPageProps) {
             fill
             sizes="(min-width: 768px) 16rem, 14rem"
             className="object-contain"
-            unoptimized
             priority
           />
         </div>
