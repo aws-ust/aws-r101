@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, type MouseEvent } from "react"
+import { useEffect, useState, type MouseEvent } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
@@ -38,13 +38,23 @@ const logoLinkClasses = "flex items-center gap-2 font-bold"
 
 export function Navbar() {
   const [open, setOpen] = useState(false)
+  const [pendingSectionHref, setPendingSectionHref] = useState<string | null>(
+    null,
+  )
   const pathname = usePathname()
   const router = useRouter()
   const activeSectionId = useSectionSpy(pathname, HOME_SECTION_IDS)
-  const activeHref =
+  const spyActiveHref =
     pathname === "/"
       ? NAV_ITEMS.find((item) => "sectionId" in item && item.sectionId === activeSectionId)?.href ?? "/"
       : NAV_ITEMS.find((item) => item.path === pathname)?.href ?? ""
+  const activeHref = pendingSectionHref ?? spyActiveHref
+
+  useEffect(() => {
+    if (pendingSectionHref && pendingSectionHref === spyActiveHref) {
+      setPendingSectionHref(null)
+    }
+  }, [pendingSectionHref, spyActiveHref])
   const isApplicantSignedIn = pathname.startsWith("/apply/dashboard")
 
   if (pathname.startsWith("/admin") || pathname === "/login") return null
@@ -55,6 +65,7 @@ export function Navbar() {
   ) {
     if (pathname !== item.path || !item.sectionId) return
     event.preventDefault()
+    setPendingSectionHref(item.href)
     scrollToSection(item.sectionId)
     window.history.replaceState(null, "", item.href)
   }

@@ -212,6 +212,11 @@ export function DesktopNavLinks({ items, activeHref, onNavigate }: DesktopNavLin
     return () => window.removeEventListener("resize", remeasurePills)
   }, [])
 
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(measureActive)
+    return () => window.cancelAnimationFrame(frame)
+  }, [activeHref, measureActive])
+
   const showHoverPill = pointerOverRow && hoverRect !== null
 
   return (

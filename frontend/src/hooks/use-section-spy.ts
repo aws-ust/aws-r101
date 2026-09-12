@@ -18,12 +18,19 @@ export function useSectionSpy(pathname: string, sectionIds: readonly string[]) {
 
     function updateActiveSection() {
       animationFrame = null
-      let nextActiveId = sectionIds.reduce<string | null>((activeId, id) => {
+      const activationLine = navigationOffset + 120
+      let nextActiveId = sectionIds[0] ?? null
+      let bestTop = Number.NEGATIVE_INFINITY
+
+      for (const id of sectionIds) {
         const section = document.getElementById(id)
-        return section && section.getBoundingClientRect().top <= navigationOffset
-          ? id
-          : activeId
-      }, sectionIds[0] ?? null)
+        if (!section) continue
+        const top = section.getBoundingClientRect().top
+        if (top <= activationLine && top > bestTop) {
+          bestTop = top
+          nextActiveId = id
+        }
+      }
 
       const atPageEnd =
         window.scrollY + window.innerHeight >=
