@@ -24,6 +24,7 @@ import {
   clampWeekStart,
 } from "@/lib/interview-season"
 import { glassPanelClasses } from "@/lib/surface"
+import { cn } from "@/lib/utils"
 import type { useHrInterviewGrid } from "@/components/hr/use-hr-interview-grid"
 
 const panelClasses = `${glassPanelClasses} px-5 py-5`
@@ -68,6 +69,7 @@ function HrInterviewGridBody({
   days,
   cells,
   loading,
+  fetching,
   onCellClick,
 }: Pick<
   HrInterviewGridViewProps,
@@ -77,6 +79,7 @@ function HrInterviewGridBody({
   | "days"
   | "cells"
   | "loading"
+  | "fetching"
   | "onCellClick"
 >) {
   if (!seasonConfigured && !seasonLoading) {
@@ -95,7 +98,10 @@ function HrInterviewGridBody({
     )
   }
   return (
-    <div className="mt-6">
+    <div
+      className={cn("mt-6", fetching && "pointer-events-none opacity-75")}
+      aria-busy={fetching}
+    >
       <SlotGrid
         days={days}
         cells={cells}
@@ -122,7 +128,7 @@ export function HrInterviewGridView({
   days,
   cells,
   loading,
-  setLoading,
+  fetching,
   pending,
   error,
   setError,
@@ -182,14 +188,12 @@ export function HrInterviewGridView({
             !canGoNextWeek(displayedWeekStart, seasonBounds)
           }
           onPrev={() => {
-            setLoading(true)
             setError("")
             setWeekStart(
               clampWeekStart(addDays(displayedWeekStart, -7), seasonBounds),
             )
           }}
           onNext={() => {
-            setLoading(true)
             setError("")
             setWeekStart(
               clampWeekStart(addDays(displayedWeekStart, 7), seasonBounds),
@@ -215,6 +219,7 @@ export function HrInterviewGridView({
         days={days}
         cells={cells}
         loading={loading}
+        fetching={fetching}
         onCellClick={onCellClick}
       />
 

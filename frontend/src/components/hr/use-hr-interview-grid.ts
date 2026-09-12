@@ -35,7 +35,8 @@ export function useHrInterviewGrid(seasonBounds: InterviewSeasonBounds, seasonCo
   const [committeeName, setCommitteeName] = useState("")
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
   const [slots, setSlots] = useState<HrInterviewSlot[]>([])
-  const [loading, setLoading] = useState(false)
+  const [gridReady, setGridReady] = useState(false)
+  const [fetching, setFetching] = useState(false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
@@ -65,25 +66,32 @@ export function useHrInterviewGrid(seasonBounds: InterviewSeasonBounds, seasonCo
   }, [committeeId, days, displayedWeekStart, seasonConfigured])
 
   useEffect(() => {
+    if (!committeeId || !seasonConfigured) {
+      setFetching(false)
+      return
+    }
     let cancelled = false
+    setFetching(true)
     fetchSlots()
       .then((rows) => {
-        if (!cancelled) setSlots(rows)
+        if (!cancelled) {
+          setSlots(rows)
+          setGridReady(true)
+        }
       })
       .catch((err: unknown) => {
         if (cancelled) return
-        setSlots([])
         setError(
           err instanceof Error ? err.message : "Could not load interview slots.",
         )
       })
       .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (!cancelled) setFetching(false)
       })
     return () => {
       cancelled = true
     }
-  }, [fetchSlots])
+  }, [committeeId, fetchSlots, seasonConfigured])
 
   const openSlot = useCallback(
     async (startsAt: Date, existing?: HrInterviewSlot) => {
@@ -159,15 +167,14 @@ export function useHrInterviewGrid(seasonBounds: InterviewSeasonBounds, seasonCo
     [closeSlot, committeeId, openSlot, pending, seasonConfigured, slots],
   )
 
-  const selectCommittee = useCallback(
-    (name: string) => {
-      setCommitteeName(name)
-      setSlots([])
-      setError("")
-      setLoading(Boolean(name && seasonConfigured))
-    },
-    [seasonConfigured],
-  )
+  const selectCommittee = useCallback((name: string) => {
+    setCommitteeName(name)
+    setSlots([])
+    setGridReady(false)
+    setError("")
+  }, [])
+
+  const loading = fetching && !gridReady
 
   return {
     groups,
@@ -180,7 +187,7 @@ export function useHrInterviewGrid(seasonBounds: InterviewSeasonBounds, seasonCo
     days,
     cells,
     loading,
-    setLoading,
+    fetching,
     pending,
     error,
     setError,

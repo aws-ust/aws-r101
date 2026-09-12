@@ -3,33 +3,23 @@
 import { type FormEvent, useEffect, useState } from "react"
 import { ActionFeedback } from "@/components/action-feedback"
 import { Button } from "@/components/ui/button"
-import { DatetimePicker } from "@/components/ui/datetime-picker"
 import { Field } from "@/components/field"
+import { getRecruitmentWindow, patchRecruitmentWindow } from "@/lib/api"
 import {
-  getRecruitmentWindow,
-  patchRecruitmentWindow,
-} from "@/lib/api"
+  recruitmentWeekEndIsoFromYmd,
+  recruitmentWeekStartIsoFromYmd,
+  recruitmentWeekYmdFromIso,
+} from "@/lib/recruitment-window-season"
 import { DatetimeFieldsSkeleton } from "@/components/hr/datetime-fields-skeleton"
+import { InterviewSeasonDatePicker } from "@/components/hr/interview-season-date-picker"
 import { glassPanelClasses } from "@/lib/surface"
 
 const panelClasses = `${glassPanelClasses} px-5 py-5`
 const formClasses = "mt-4 grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end"
 
-function toDatetimeLocal(iso: string | null) {
-  if (!iso) return ""
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return ""
-  const pad = (value: number) => String(value).padStart(2, "0")
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
-
-function toIso(localValue: string) {
-  return new Date(localValue).toISOString()
-}
-
 export function HrRecruitmentWindow() {
-  const [startsAt, setStartsAt] = useState("")
-  const [endsAt, setEndsAt] = useState("")
+  const [startYmd, setStartYmd] = useState("")
+  const [endYmd, setEndYmd] = useState("")
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
   const [pending, setPending] = useState(false)
@@ -40,15 +30,15 @@ export function HrRecruitmentWindow() {
     getRecruitmentWindow()
       .then((window) => {
         if (cancelled) return
-        setStartsAt(toDatetimeLocal(window.startsAt))
-        setEndsAt(toDatetimeLocal(window.endsAt))
+        setStartYmd(recruitmentWeekYmdFromIso(window.startsAt))
+        setEndYmd(recruitmentWeekYmdFromIso(window.endsAt))
       })
       .catch((err: unknown) => {
         if (cancelled) return
         setError(
           err instanceof Error
             ? err.message
-            : "Could not load the recruitment window."
+            : "Could not load the recruitment window.",
         )
       })
       .finally(() => {
@@ -63,18 +53,21 @@ export function HrRecruitmentWindow() {
     event.preventDefault()
     setError("")
     setMessage("")
+    const startsAt = recruitmentWeekStartIsoFromYmd(startYmd)
+    const endsAt = recruitmentWeekEndIsoFromYmd(endYmd)
+    if (!startsAt || !endsAt) {
+      setError("Choose valid start and end dates.")
+      return
+    }
     setPending(true)
     try {
-      const updated = await patchRecruitmentWindow(
-        toIso(startsAt),
-        toIso(endsAt)
-      )
-      setStartsAt(toDatetimeLocal(updated.startsAt))
-      setEndsAt(toDatetimeLocal(updated.endsAt))
+      const updated = await patchRecruitmentWindow(startsAt, endsAt)
+      setStartYmd(recruitmentWeekYmdFromIso(updated.startsAt))
+      setEndYmd(recruitmentWeekYmdFromIso(updated.endsAt))
       setMessage("Recruitment week saved.")
     } catch (err: unknown) {
       setError(
-        err instanceof Error ? err.message : "Could not save recruitment week."
+        err instanceof Error ? err.message : "Could not save recruitment week.",
       )
     } finally {
       setPending(false)
@@ -87,30 +80,34 @@ export function HrRecruitmentWindow() {
         Recruitment Week
       </h2>
       <p className="mt-1 font-sans text-sm text-prelude">
-        New applications and applicant dashboard edits are allowed between these dates.
+        New applications and applicant dashboard edits are allowed between these
+        dates. Times are fixed at 7:00 AM on the start date through 11:59 PM on
+        the end date.
       </p>
       {loading ? (
         <DatetimeFieldsSkeleton />
       ) : (
         <form className={formClasses} onSubmit={onSubmit}>
           <Field label="Starts" htmlFor="recruitment-start" required>
-            <DatetimePicker
+            <InterviewSeasonDatePicker
               id="recruitment-start"
               required
-              value={startsAt}
-              onChange={setStartsAt}
+              value={startYmd}
+              onChange={setStartYmd}
+              placeholder="Start date"
             />
           </Field>
           <Field label="Ends" htmlFor="recruitment-end" required>
-            <DatetimePicker
+            <InterviewSeasonDatePicker
               id="recruitment-end"
               required
-              value={endsAt}
-              onChange={setEndsAt}
+              value={endYmd}
+              onChange={setEndYmd}
+              placeholder="End date"
             />
           </Field>
           <Button type="submit" color="cyan" disabled={pending}>
-            {pending ? "Saving…" : "Save dates"}
+            {pending ? "Saving…" : "Save Dates"}
           </Button>
         </form>
       )}
