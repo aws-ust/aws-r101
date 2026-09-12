@@ -13,7 +13,7 @@ const CHAPTER_TAGS = [
   "+ chapters worldwide",
 ] as const
 
-const sectionClasses = "flex w-full flex-col gap-4"
+const sectionClasses = "mt-10 flex w-full flex-col gap-4 md:mt-16"
 const headerWidthClasses = "[&>h2]:max-w-[46rem] [&>p:last-child]:max-w-[60rem]"
 const tagsClasses = "flex flex-wrap gap-2"
 const tagClasses =

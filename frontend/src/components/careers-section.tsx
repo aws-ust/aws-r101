@@ -23,7 +23,7 @@ const HIGHLIGHTS = [
   },
 ] as const
 
-const sectionClasses = "flex w-full flex-col gap-[clamp(2rem,4vw,3.5rem)]"
+const sectionClasses = "flex w-full flex-col gap-[clamp(2rem,4vw,3.5rem)] scroll-mt-20"
 const headerWidthClasses = "[&>h2]:max-w-[46rem] [&>p:last-child]:max-w-[60rem]"
 const cardListClasses = "grid gap-4 md:grid-cols-3"
 const cardClasses =
