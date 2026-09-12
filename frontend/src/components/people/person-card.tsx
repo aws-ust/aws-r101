@@ -5,6 +5,7 @@ import Image from "next/image"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import { AnimatePresence, LazyMotion, domAnimation, m, useReducedMotion } from "motion/react"
 import { ImageLightbox } from "@/components/image-lightbox"
+import { personAvatarImageProps } from "@/lib/public-gallery-image"
 import { PERSON_AVATAR_PLACEHOLDER, type PersonTerm } from "@/lib/people"
 import { cn } from "@/lib/utils"
 
@@ -139,23 +140,21 @@ export function PersonCard({ terms, showPager = false }: PersonCardProps) {
                     triggerAriaLabel={`View full photo of ${person.name}`}
                     onTriggerPointerDown={(event) => event.stopPropagation()}
                     triggerClassName="size-full"
+                    unoptimized
                   >
                     <Image
                       src={photoSrc}
                       alt=""
-                      width={96}
-                      height={96}
-                      sizes="96px"
                       className="size-full object-cover"
+                      {...personAvatarImageProps}
                     />
                   </ImageLightbox>
                 ) : (
                   <Image
                     src={photoSrc}
                     alt=""
-                    width={96}
-                    height={96}
                     className="size-full object-cover"
+                    {...personAvatarImageProps}
                   />
                 )}
               </div>

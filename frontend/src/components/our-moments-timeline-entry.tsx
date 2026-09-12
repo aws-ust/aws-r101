@@ -4,6 +4,7 @@ import Image from "next/image"
 import { m } from "motion/react"
 import { ImageLightbox } from "@/components/image-lightbox"
 import type { AboutEvent } from "@/lib/about-events"
+import { eventTimelineImageProps } from "@/lib/public-gallery-image"
 import { cn } from "@/lib/utils"
 
 const entryClasses = "relative pb-14 last:pb-0 md:pb-16"
@@ -24,7 +25,7 @@ const mediaColLeftClasses = "md:order-1 md:pr-8 md:text-right"
 const dateClasses = "font-mono text-sm font-medium text-aquamarine"
 const labelClasses = "mt-1 font-sans text-sm font-medium leading-snug text-blue-chalk"
 const mediaClasses =
-  "glass relative mt-4 aspect-[4/3] w-full overflow-hidden rounded-[14px] border border-blue-chalk/20 bg-meteorite/45"
+  "relative mt-4 aspect-[4/3] w-full overflow-hidden rounded-[14px] border border-blue-chalk/20 bg-meteorite/45"
 const mediaImageClasses = "object-cover"
 
 const revealSnap = { duration: 0 }
@@ -136,13 +137,14 @@ function TimelineEntryMedia({
           title={event.title}
           triggerAriaLabel={`View full photo of ${event.title}`}
           triggerClassName="relative block size-full"
+          unoptimized
         >
           <Image
             src={event.imageSrc}
             alt=""
             fill
             className={mediaImageClasses}
-            sizes="(max-width: 768px) 100vw, min(40rem, 45vw)"
+            {...eventTimelineImageProps}
           />
         </ImageLightbox>
       </m.div>
