@@ -13,7 +13,6 @@ const lonelyDirectorWrapperClasses =
   "w-full sm:col-span-2 sm:flex sm:justify-center lg:col-span-4"
 const lonelyDirectorInnerClasses =
   "w-full sm:max-w-[calc((100%-1.25rem)/2)] lg:max-w-[calc((100%-3.75rem)/4)]"
-
 function renderDirectorCard(seat: (typeof COMMITTEE_DIRECTORS)[number], index: number) {
   const isLast = index === COMMITTEE_DIRECTORS.length - 1
   const lonelyOnSm = isLast && COMMITTEE_DIRECTORS.length % 2 === 1
@@ -40,7 +39,7 @@ export function PeopleDirectory() {
       <SectionHeader
         eyebrow="// THE PEOPLE"
         title="Meet the People behind our org!"
-        subtitle="Meet the members of our organization!"
+        subtitle="Meet the members of our organization! Click a photo for a better view of our faces."
       />
 
       <BoardToggle value={view} onChange={setView} />
