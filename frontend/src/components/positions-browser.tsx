@@ -30,7 +30,8 @@ export function PositionsBrowser({
   positions,
   loadError = false,
 }: PositionsBrowserProps) {
-  const officeCount = groupPositionsByOfficeHierarchy(positions).length
+  const officeGroups = groupPositionsByOfficeHierarchy(positions)
+  const officeCount = officeGroups.length
   const [selectedId, setSelectedId] = useState(positions[0]?.id ?? "")
   const selected =
     positions.find((position) => position.id === selectedId) ?? positions[0]
@@ -65,7 +66,7 @@ export function PositionsBrowser({
       {selected ? (
         <div className={boardClasses}>
           <PositionsList
-            positions={positions}
+            officeGroups={officeGroups}
             selectedId={selected.id}
             onSelect={setSelectedId}
           />

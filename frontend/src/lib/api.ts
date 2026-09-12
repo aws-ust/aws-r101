@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import type {
   Application,
   CreateApplicationInput,
@@ -20,6 +20,22 @@ import {
   postUploadPresign,
   type UploadPresignRequest,
 } from "./api-client"
+
+let applicationsPromise: Promise<HrApplication[]> | null = null
+const applicationPromises = new Map<string, Promise<HrApplication>>()
+
+function loadApplications() {
+  applicationsPromise ??= listApplications("all")
+  return applicationsPromise
+}
+
+function loadApplication(id: string) {
+  const existing = applicationPromises.get(id)
+  if (existing) return existing
+  const request = getApplicationById(id)
+  applicationPromises.set(id, request)
+  return request
+}
 
 export {
   ApiError,
@@ -54,7 +70,7 @@ export function useApplications() {
 
   useEffect(() => {
     let cancelled = false
-    listApplications("all")
+    loadApplications()
       .then((rows) => {
         if (cancelled) return
         setApplications(rows)
@@ -94,7 +110,7 @@ export function useApplication(id: string | undefined) {
     if (!id) return
 
     let cancelled = false
-    getApplicationById(id)
+    loadApplication(id)
       .then((row) => {
         if (cancelled) return
         setApplication(row)
@@ -140,6 +156,7 @@ export function useOpenPositions() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (cached) return
     let cancelled = false
     listOpenPositions()
       .then((rows) => {
@@ -160,7 +177,10 @@ export function useOpenPositions() {
     }
   }, [])
 
-  const committees = [...new Set(positions.map((position) => position.committee))]
+  const committees = useMemo(
+    () => [...new Set(positions.map((position) => position.committee))],
+    [positions]
+  )
   return { positions, committees, loading, error }
 }
 
