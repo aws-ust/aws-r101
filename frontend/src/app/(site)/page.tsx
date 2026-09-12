@@ -16,8 +16,8 @@ export default function Home() {
       <MissionVision />
       <OurMoments />
       <StackSection />
-      <Committees />
       <PeopleDirectory />
+      <Committees />
       <FAQSection />
       <CareersSection />
     </main>

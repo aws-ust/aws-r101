@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react"
 
+const navigationOffset = 80
+
 export function useSectionSpy(pathname: string, sectionIds: readonly string[]) {
   const [activeId, setActiveId] = useState<string | null>(null)
 
@@ -10,24 +12,37 @@ export function useSectionSpy(pathname: string, sectionIds: readonly string[]) {
       return
     }
 
-    const visible = new Set<string>()
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) visible.add(entry.target.id)
-          else visible.delete(entry.target.id)
-        }
-        setActiveId(sectionIds.find((id) => visible.has(id)) ?? null)
-      },
-      { rootMargin: "-80px 0px -55% 0px" }
-    )
+    let animationFrame: number | null = null
 
-    for (const id of sectionIds) {
-      const section = document.getElementById(id)
-      if (section) observer.observe(section)
+    function updateActiveSection() {
+      animationFrame = null
+      const nextActiveId = sectionIds.reduce<string | null>((activeId, id) => {
+        const section = document.getElementById(id)
+        return section && section.getBoundingClientRect().top <= navigationOffset
+          ? id
+          : activeId
+      }, sectionIds[0] ?? null)
+
+      setActiveId((currentActiveId) =>
+        currentActiveId === nextActiveId ? currentActiveId : nextActiveId
+      )
     }
 
-    return () => observer.disconnect()
+    function scheduleUpdate() {
+      if (animationFrame === null) {
+        animationFrame = window.requestAnimationFrame(updateActiveSection)
+      }
+    }
+
+    scheduleUpdate()
+    window.addEventListener("scroll", scheduleUpdate, { passive: true })
+    window.addEventListener("resize", scheduleUpdate)
+
+    return () => {
+      if (animationFrame !== null) window.cancelAnimationFrame(animationFrame)
+      window.removeEventListener("scroll", scheduleUpdate)
+      window.removeEventListener("resize", scheduleUpdate)
+    }
   }, [pathname, sectionIds])
 
   return pathname === "/" ? activeId : null
