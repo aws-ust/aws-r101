@@ -3,20 +3,15 @@ import { SlotGrid, type SlotGridCell } from "@/components/interview/slot-grid"
 import { Button } from "@/components/ui/button"
 import type { ApplicantInterviewSchedule } from "@/lib/applicant-api"
 import {
-  formatInterviewSlotLabel,
-  formatSeasonBoundsRange,
-} from "@/lib/display-datetime"
+  ApplicantInterviewSchedulerFullStatus,
+  ApplicantInterviewSchedulerIntro,
+} from "@/components/apply/applicant-interview-scheduler-full-status"
 import type { InterviewSeasonBounds } from "@/lib/interview-season"
 
 const sectionClasses = "mt-8 border-t border-biloba-flower/20 pt-8"
-const headingClasses = "font-sans text-lg font-semibold text-blue-chalk"
-const hintClasses = "mt-1 font-sans text-sm text-prelude"
-const committeeClasses = "mt-2 font-mono text-xs text-aquamarine"
 const weekNavClasses = "mt-4 flex flex-wrap items-center gap-2"
 const weekLabelClasses = "min-w-[10rem] text-center font-sans text-sm text-blue-chalk"
 const navButtonClasses = "h-9 px-4 text-xs"
-const bookingClasses =
-  "mt-4 rounded-[14px] border border-aquamarine/40 bg-aquamarine/10 px-4 py-3 font-sans text-sm text-blue-chalk"
 const lockClasses =
   "mt-4 rounded-[14px] border border-rose-blush/45 bg-rose-deep/20 px-4 py-3 font-sans text-sm text-rose-glow"
 const actionsClasses = "mt-4 flex flex-wrap gap-3"
@@ -151,34 +146,14 @@ export function ApplicantInterviewSchedulerFull({
 }: SchedulerShellProps) {
   return (
     <section className={sectionClasses}>
-      <h2 className={headingClasses}>Schedule your interview</h2>
-      <p className={hintClasses}>
-        {previewMode
-          ? "This grid shows open slots for the first-choice committee you selected below. Pick one, then save committee choices."
-          : "Pick one open slot for your first-choice committee. You can change your interview time until recruitment week ends."}
-      </p>
-      {schedule && seasonConfigured ? (
-        <p className={committeeClasses}>
-          {schedule.committee.name} · season{" "}
-          {formatSeasonBoundsRange(seasonBounds!.startsAt, seasonBounds!.endsAt)}
-        </p>
-      ) : null}
-
-      {schedule && !schedule.canSchedule && schedule.lockReason ? (
-        <p className={lockClasses} role="alert">{schedule.lockReason}</p>
-      ) : null}
-
-      {!previewMode && schedule?.booking ? (
-        <p className={bookingClasses}>
-          Your interview: {formatInterviewSlotLabel(schedule.booking)}
-        </p>
-      ) : null}
-
-      {!seasonConfigured && !seasonLoading ? (
-        <p className={lockClasses} role="status">
-          Interview season is not configured. Check back later.
-        </p>
-      ) : null}
+      <ApplicantInterviewSchedulerIntro previewMode={previewMode} />
+      <ApplicantInterviewSchedulerFullStatus
+        previewMode={previewMode}
+        schedule={schedule}
+        seasonConfigured={seasonConfigured}
+        seasonLoading={seasonLoading}
+        seasonBounds={seasonBounds}
+      />
 
       <ApplicantInterviewWeekNav
         weekLabel={weekLabel}
