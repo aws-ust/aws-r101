@@ -1,17 +1,15 @@
-import { createHash, timingSafeEqual } from "node:crypto";
 import { getCookie } from "hono/cookie";
 import { sign, verify } from "hono/jwt";
 import type { Context, MiddlewareHandler } from "hono";
+import { eq } from "drizzle-orm";
+import bcrypt from "bcryptjs";
+import { db } from "./db";
+import { users } from "./db/schema";
+import { usesSecureCookies } from "./lib/secure-cookie";
 
 export const AUTH_COOKIE_NAME = "hr_token";
 
 const DEFAULT_EXPIRES_SECONDS = 8 * 60 * 60;
-
-function safeEqual(a: string, b: string): boolean {
-  const ha = createHash("sha256").update(a).digest();
-  const hb = createHash("sha256").update(b).digest();
-  return timingSafeEqual(ha, hb);
-}
 
 export function expiresInSeconds(): number {
   const raw = process.env.JWT_EXPIRES_IN ?? "8h";
@@ -23,7 +21,7 @@ export function expiresInSeconds(): number {
 export function authCookieOptions(maxAge: number) {
   return {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: usesSecureCookies(),
     sameSite: "Lax" as const,
     path: "/",
     maxAge,
@@ -41,23 +39,39 @@ function tokenFromRequest(c: Context): string | null {
   return bearerToken || null;
 }
 
-export function credentialsMatch(email: string, password: string): boolean {
-  const expectedEmail = process.env.HR_EMAIL ?? "";
-  const expectedPassword = process.env.HR_PASSWORD ?? "";
-  if (!expectedEmail || !expectedPassword || !email || !password) {
-    return false;
+export async function verifyHrCredentials(
+  email: string,
+  password: string,
+): Promise<{ ok: true; email: string } | { ok: false }> {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail || !password) {
+    return { ok: false };
   }
 
-  const emailOk = safeEqual(
-    email.trim().toLowerCase(),
-    expectedEmail.trim().toLowerCase()
-  );
-  const passwordOk = safeEqual(password, expectedPassword);
-  return emailOk && passwordOk;
+  const [user] = await db
+    .select({
+      email: users.email,
+      passwordHash: users.passwordHash,
+      isActive: users.isActive,
+    })
+    .from(users)
+    .where(eq(users.email, normalizedEmail))
+    .limit(1);
+
+  if (!user || !user.isActive) {
+    return { ok: false };
+  }
+
+  const passwordOk = await bcrypt.compare(password, user.passwordHash);
+  if (!passwordOk) {
+    return { ok: false };
+  }
+
+  return { ok: true, email: user.email };
 }
 
 export async function signToken(
-  subject: string
+  subject: string,
 ): Promise<{ token: string; expiresAt: string }> {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
@@ -77,17 +91,20 @@ export async function verifyToken(token: string) {
   return verify(token, secret, "HS256");
 }
 
-export const requireAuth: MiddlewareHandler = async (c, next) => {
+export async function authenticateHrRequest(c: Context): Promise<boolean> {
   const token = tokenFromRequest(c);
-  if (!token) {
-    return c.json({ error: "unauthorized" }, 401);
-  }
-
+  if (!token) return false;
   try {
-    const payload = await verifyToken(token);
-    c.set("jwtPayload", payload);
-    await next();
+    c.set("jwtPayload", await verifyToken(token));
+    return true;
   } catch {
+    return false;
+  }
+}
+
+export const requireAuth: MiddlewareHandler = async (c, next) => {
+  if (!(await authenticateHrRequest(c))) {
     return c.json({ error: "unauthorized" }, 401);
   }
+  await next();
 };
