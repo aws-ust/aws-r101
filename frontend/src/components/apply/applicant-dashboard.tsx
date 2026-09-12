@@ -54,7 +54,9 @@ export function ApplicantDashboard() {
       .catch((err: unknown) => {
         if (cancelled) return
         if (err instanceof ApiError && err.status === 401) {
-          router.replace("/apply/status")
+          setError(
+            "Your session expired. Open the application status page to sign in again."
+          )
           return
         }
         setError(
@@ -67,7 +69,7 @@ export function ApplicantDashboard() {
     return () => {
       cancelled = true
     }
-  }, [router])
+  }, [])
 
   async function onSave(input: {
     choices: { positionId: string; preferenceRank: 1 | 2 }[]
