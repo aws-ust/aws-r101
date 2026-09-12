@@ -1,13 +1,29 @@
-export function scrollToSection(id: string) {
-  const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+import { requestSectionReveal } from "@/lib/reveal-section-event"
+
+function scrollBehavior() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches
     ? "instant"
     : "smooth"
+}
+
+function scrollToElement(id: string) {
   const target = document.getElementById(id)
+  if (!target) return false
+  target.scrollIntoView({ behavior: scrollBehavior(), block: "start" })
+  return true
+}
 
-  if (!target) {
-    window.scrollTo({ top: 0, behavior })
-    return
-  }
+export function scrollToSection(id: string) {
+  requestSectionReveal(id)
 
-  target.scrollIntoView({ behavior, block: "start" })
+  if (scrollToElement(id)) return
+
+  window.requestAnimationFrame(() => {
+    if (scrollToElement(id)) return
+    window.setTimeout(() => {
+      if (!scrollToElement(id)) {
+        window.scrollTo({ top: 0, behavior: scrollBehavior() })
+      }
+    }, 120)
+  })
 }
