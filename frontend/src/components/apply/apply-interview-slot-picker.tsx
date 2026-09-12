@@ -99,7 +99,7 @@ export function ApplyInterviewSlotPicker({
   useEffect(() => {
     onSelectedSlotIdChange("")
     // Clear stale picks when the first-choice committee/position changes.
-  }, [positionId])
+  }, [onSelectedSlotIdChange, positionId])
 
   useEffect(() => {
     let cancelled = false

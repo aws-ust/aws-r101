@@ -183,7 +183,7 @@ export function HrInterviewGrid({
     }
   }, [fetchSlots])
 
-  async function openSlot(startsAt: Date, existing?: HrInterviewSlot) {
+  const openSlot = useCallback(async (startsAt: Date, existing?: HrInterviewSlot) => {
     if (!committeeId) return
     setPending(true)
     setError("")
@@ -198,7 +198,7 @@ export function HrInterviewGrid({
     } finally {
       setPending(false)
     }
-  }
+  }, [committeeId])
 
   async function resetSchedule() {
     if (!committeeId) return
@@ -226,7 +226,7 @@ export function HrInterviewGrid({
     }
   }
 
-  async function closeSlot(slot: HrInterviewSlot) {
+  const closeSlot = useCallback(async (slot: HrInterviewSlot) => {
     setPending(true)
     setError("")
     try {
@@ -238,7 +238,7 @@ export function HrInterviewGrid({
     } finally {
       setPending(false)
     }
-  }
+  }, [])
 
   const onCellClick = useCallback((cell: SlotGridCell) => {
     if (pending || !committeeId || !seasonConfigured) return
@@ -261,7 +261,7 @@ export function HrInterviewGrid({
       }
       void openSlot(cell.startsAt)
     }
-  }, [committeeId, pending, seasonConfigured, slots])
+  }, [closeSlot, committeeId, openSlot, pending, seasonConfigured, slots])
 
   return (
     <section className={panelClasses}>
