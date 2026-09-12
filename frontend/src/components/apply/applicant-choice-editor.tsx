@@ -1,25 +1,17 @@
 "use client"
 
-import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Field } from "@/components/field"
 import { Input } from "@/components/ui/input"
 import { CommitteeOfficePicker } from "@/components/apply/committee-office-picker"
 import { CommitteePickerSkeleton } from "@/components/apply/committee-picker-skeleton"
-import { groupedCommitteesForPicker } from "@/lib/committee-groups"
 import {
   GITHUB_PROFILE_URL_EXAMPLE,
   GOOGLE_DRIVE_URL_EXAMPLE,
-  isValidGithubUrl,
-  isValidGoogleDriveUrl,
 } from "@/lib/apply-field-validation"
-import {
-  needsCreativesPortfolio,
-  needsDevelopmentGithub,
-} from "@/lib/committee-apply"
-import { useOpenPositions } from "@/lib/api"
 import type { ApplicantApplication } from "@/lib/applicant-api"
 import { fieldControlClasses } from "@/lib/surface"
+import { useApplicantChoiceEditorState } from "@/components/apply/applicant-choice-editor-state"
 
 const stackClasses = "mt-6 flex flex-col gap-4"
 const errorClasses = "text-sm text-rose-glow"
@@ -50,96 +42,11 @@ export function ApplicantChoiceEditor({
   onPreviewPositionIdChange,
   onSave,
 }: ApplicantChoiceEditorProps) {
-  const first = application.choices.find((choice) => choice.preferenceRank === 1)
-  const second = application.choices.find((choice) => choice.preferenceRank === 2)
-  const { positions, committees, loading } = useOpenPositions()
-  const groups = groupedCommitteesForPicker(committees)
-
-  const [firstCommittee, setFirstCommittee] = useState(first?.committee ?? "")
-  const [firstPositionId, setFirstPositionId] = useState(first?.positionId ?? "")
-  const [secondCommittee, setSecondCommittee] = useState(second?.committee ?? "")
-  const [secondPositionId, setSecondPositionId] = useState(second?.positionId ?? "")
-  const [portfolioUrl, setPortfolioUrl] = useState(
-    application.portfolioUrl ?? ""
-  )
-  const [githubUrl, setGithubUrl] = useState(application.githubUrl ?? "")
-  const showPortfolio = needsCreativesPortfolio(firstCommittee, secondCommittee)
-  const positionTitle = (positionId: string) =>
-    positions.find((position) => position.id === positionId)?.title ?? ""
-  const showGithub = needsDevelopmentGithub(
-    firstCommittee,
-    secondCommittee,
-    positionTitle(firstPositionId),
-    positionTitle(secondPositionId),
-  )
-  const savedFirstCommittee = first?.committee ?? ""
-  const savedFirstPositionId = first?.positionId ?? ""
-  const firstChoiceCommitteeChanged =
-    Boolean(savedFirstCommittee) && firstCommittee !== savedFirstCommittee
-  const needsSlot = firstChoiceCommitteeChanged && Boolean(firstPositionId)
-
-
-  const canSubmit = useMemo(() => {
-    if (!firstPositionId || !secondPositionId) return false
-    if (firstPositionId === secondPositionId) return false
-    if (needsSlot && !slotId) return false
-    if (showPortfolio && !isValidGoogleDriveUrl(portfolioUrl)) return false
-    if (
-      showGithub &&
-      githubUrl.trim() &&
-      !isValidGithubUrl(githubUrl)
-    ) {
-      return false
-    }
-    return true
-  }, [
-    firstPositionId,
-    githubUrl,
-    needsSlot,
-    portfolioUrl,
-    secondPositionId,
-    showGithub,
-    showPortfolio,
+  const editor = useApplicantChoiceEditorState(
+    application,
     slotId,
-  ])
-
-  function applyChoice(
-    rank: 1 | 2,
-    next: { committee: string; positionId: string }
-  ) {
-    if (rank === 1) {
-      const firstChoiceChanged =
-        next.committee !== firstCommittee ||
-        next.positionId !== firstPositionId
-      if (firstChoiceChanged) {
-        const previewForNewCommittee =
-          next.committee !== savedFirstCommittee ? next.positionId : undefined
-        onPreviewPositionIdChange(previewForNewCommittee)
-      }
-      setFirstCommittee(next.committee)
-      setFirstPositionId(next.positionId)
-    } else {
-      setSecondCommittee(next.committee)
-      setSecondPositionId(next.positionId)
-    }
-    const nextFirst = rank === 1 ? next.committee : firstCommittee
-    const nextSecond = rank === 2 ? next.committee : secondCommittee
-    const nextFirstId = rank === 1 ? next.positionId : firstPositionId
-    const nextSecondId = rank === 2 ? next.positionId : secondPositionId
-    if (!needsCreativesPortfolio(nextFirst, nextSecond)) {
-      setPortfolioUrl("")
-    }
-    if (
-      !needsDevelopmentGithub(
-        nextFirst,
-        nextSecond,
-        positionTitle(nextFirstId),
-        positionTitle(nextSecondId),
-      )
-    ) {
-      setGithubUrl("")
-    }
-  }
+    onPreviewPositionIdChange,
+  )
 
   return (
     <form
@@ -148,70 +55,70 @@ export function ApplicantChoiceEditor({
         event.preventDefault()
         onSave({
           choices: [
-            { positionId: firstPositionId, preferenceRank: 1 },
-            { positionId: secondPositionId, preferenceRank: 2 },
+            { positionId: editor.firstPositionId, preferenceRank: 1 },
+            { positionId: editor.secondPositionId, preferenceRank: 2 },
           ],
-          ...(needsSlot && slotId ? { slotId } : {}),
-          portfolioUrl,
-          githubUrl,
+          ...(editor.needsSlot && slotId ? { slotId } : {}),
+          portfolioUrl: editor.portfolioUrl,
+          githubUrl: editor.githubUrl,
         })
       }}
     >
-      {loading ? (
+      {editor.loading ? (
         <CommitteePickerSkeleton />
       ) : (
         <>
           <Field label="First choice" htmlFor="dash-first-choice">
             <CommitteeOfficePicker
               id="dash-first-choice"
-              committee={firstCommittee}
-              positionId={firstPositionId}
-              groups={groups}
-              positions={positions}
-              disabled={loading}
-              disabledPositionId={secondPositionId}
-              onSelect={(next) => applyChoice(1, next)}
+              committee={editor.firstCommittee}
+              positionId={editor.firstPositionId}
+              groups={editor.groups}
+              positions={editor.positions}
+              disabled={editor.loading}
+              disabledPositionId={editor.secondPositionId}
+              onSelect={(next) => editor.applyChoice(1, next)}
             />
           </Field>
           <Field label="Second choice" htmlFor="dash-second-choice">
             <CommitteeOfficePicker
               id="dash-second-choice"
-              committee={secondCommittee}
-              positionId={secondPositionId}
-              groups={groups}
-              positions={positions}
-              disabled={loading}
-              disabledPositionId={firstPositionId}
-              onSelect={(next) => applyChoice(2, next)}
+              committee={editor.secondCommittee}
+              positionId={editor.secondPositionId}
+              groups={editor.groups}
+              positions={editor.positions}
+              disabled={editor.loading}
+              disabledPositionId={editor.firstPositionId}
+              onSelect={(next) => editor.applyChoice(2, next)}
             />
           </Field>
         </>
       )}
-      {showPortfolio ? (
+      {editor.showPortfolio ? (
         <Field label="Google Drive portfolio" htmlFor="dash-portfolio">
           <Input
             id="dash-portfolio"
             type="url"
             placeholder={GOOGLE_DRIVE_URL_EXAMPLE}
-            value={portfolioUrl}
-            onChange={(e) => setPortfolioUrl(e.target.value)}
+            value={editor.portfolioUrl}
+            onChange={(e) => editor.setPortfolioUrl(e.target.value)}
             className={fieldControlClasses}
           />
         </Field>
       ) : null}
-      {showGithub ? (
+      {editor.showGithub ? (
         <Field label="GitHub profile" htmlFor="dash-github">
           <Input
             id="dash-github"
             type="url"
             placeholder={GITHUB_PROFILE_URL_EXAMPLE}
-            value={githubUrl}
-            onChange={(e) => setGithubUrl(e.target.value)}
+            value={editor.githubUrl}
+            onChange={(e) => editor.setGithubUrl(e.target.value)}
             className={fieldControlClasses}
           />
         </Field>
       ) : null}
-      {needsSlot ? (
+      {editor.needsSlot ? (
         <p className={hintClasses}>
           Pick an open interview slot in the schedule above, then save. Booked
           cells belong to other applicants.
@@ -224,7 +131,7 @@ export function ApplicantChoiceEditor({
       ) : success ? (
         <p className={successClasses} role="status">{success}</p>
       ) : null}
-      <Button type="submit" color="cyan" disabled={pending || !canSubmit}>
+      <Button type="submit" color="cyan" disabled={pending || !editor.canSubmit}>
         {pending ? "Saving…" : "Save committee choices"}
       </Button>
     </form>
