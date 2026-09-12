@@ -4,9 +4,11 @@ import { useEffect, useState } from "react"
 import { PositionsBrowser } from "@/components/positions-browser"
 import { PositionsBrowserSkeleton } from "@/components/positions-browser-skeleton"
 import { listBrowserPositions, peekBrowserPositions } from "@/lib/api-client"
+import { useRecruitmentWindow } from "@/hooks/use-recruitment-window"
 import type { Position } from "@/lib/positions"
 
 export function PositionsPageClient() {
+  const { applicationsOpen } = useRecruitmentWindow()
   const cached = peekBrowserPositions()
   const [positions, setPositions] = useState<Position[]>(cached ?? [])
   const [loadError, setLoadError] = useState(false)
@@ -37,5 +39,11 @@ export function PositionsPageClient() {
     return <PositionsBrowserSkeleton />
   }
 
-  return <PositionsBrowser positions={positions} loadError={loadError} />
+  return (
+    <PositionsBrowser
+      positions={positions}
+      loadError={loadError}
+      applicationsOpen={applicationsOpen}
+    />
+  )
 }

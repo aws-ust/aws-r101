@@ -315,9 +315,17 @@ export function resetInterviewSchedule(committeeId: string) {
   );
 }
 
+export type RecruitmentSeasonCode =
+  | "not_configured"
+  | "recruitment_not_started"
+  | "deadline_passed";
+
 export type RecruitmentWindow = {
   startsAt: string | null;
   endsAt: string | null;
+  open: boolean;
+  code: RecruitmentSeasonCode | null;
+  message: string | null;
 };
 
 export function getRecruitmentWindow() {

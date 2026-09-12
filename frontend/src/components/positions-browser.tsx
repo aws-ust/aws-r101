@@ -24,11 +24,13 @@ const stateCopyClasses = "max-w-lg font-sans text-sm leading-relaxed text-prelud
 type PositionsBrowserProps = {
   positions: Position[]
   loadError?: boolean
+  applicationsOpen?: boolean
 }
 
 export function PositionsBrowser({
   positions,
   loadError = false,
+  applicationsOpen = true,
 }: PositionsBrowserProps) {
   const officeCount = groupPositionsByOfficeHierarchy(positions).length
   const [selectedId, setSelectedId] = useState(positions[0]?.id ?? "")
@@ -69,7 +71,7 @@ export function PositionsBrowser({
             selectedId={selected.id}
             onSelect={setSelectedId}
           />
-          <PositionDetail position={selected} />
+          <PositionDetail position={selected} applicationsOpen={applicationsOpen} />
         </div>
       ) : (
         <div role={loadError ? "alert" : "status"} className={stateClasses}>

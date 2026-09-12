@@ -8,6 +8,7 @@ import {
 } from "../lib/documents";
 import { uploadPresignSchema } from "../lib/apply-schemas";
 import { uploadsAreClosed } from "../lib/free-plan";
+import { resolveRecruitmentSeasonStatus } from "../lib/recruitment-window";
 
 const UPLOAD_EXPIRY_SECONDS = 10 * 60;
 const SESSION_EXPIRY_MS = 24 * 60 * 60 * 1000;
@@ -79,6 +80,10 @@ async function createUploadSession(documents: UploadDocument[]) {
 export const uploadsRoutes = new Hono();
 
 uploadsRoutes.post("/presign", async (c) => {
+  const season = await resolveRecruitmentSeasonStatus();
+  if (!season.open) {
+    return c.json({ error: season.message ?? "Applications are closed." }, 403);
+  }
   if (uploadsAreClosed()) return c.json({ error: "Uploads are closed during the final seven days of the AWS Free Plan." }, 403);
   try {
     return c.json(await createUploadSession(parseBody(await c.req.json().catch(() => null))), 201);
