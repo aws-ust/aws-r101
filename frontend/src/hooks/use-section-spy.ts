@@ -18,12 +18,26 @@ export function useSectionSpy(pathname: string, sectionIds: readonly string[]) {
 
     function updateActiveSection() {
       animationFrame = null
-      const nextActiveId = sectionIds.reduce<string | null>((activeId, id) => {
+      let nextActiveId = sectionIds.reduce<string | null>((activeId, id) => {
         const section = document.getElementById(id)
         return section && section.getBoundingClientRect().top <= navigationOffset
           ? id
           : activeId
       }, sectionIds[0] ?? null)
+
+      const atPageEnd =
+        window.scrollY + window.innerHeight >=
+        document.documentElement.scrollHeight - 2
+
+      if (atPageEnd) {
+        for (let index = sectionIds.length - 1; index >= 0; index -= 1) {
+          const id = sectionIds[index]
+          if (document.getElementById(id)) {
+            nextActiveId = id
+            break
+          }
+        }
+      }
 
       setActiveId((currentActiveId) =>
         currentActiveId === nextActiveId ? currentActiveId : nextActiveId
