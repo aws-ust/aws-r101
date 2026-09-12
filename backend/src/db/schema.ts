@@ -39,6 +39,7 @@ export const emailMessageType = pgEnum("email_message_type", [
   "application_submitted",
   "applicant_otp",
   "interview_booking",
+  "officer_application_notice",
   "result_accepted",
   "result_rejected",
 ]);

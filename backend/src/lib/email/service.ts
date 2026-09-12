@@ -1,11 +1,14 @@
 import type { ApplicationJson } from "../applications";
+import { getBookedInterviewStartsAt } from "../interview-scheduling";
 import { emailEnabled, hasGmailCredentials } from "./config";
 import { sendViaGmail } from "./gmail-client";
 import * as notifications from "./notifications";
 import { withRetry } from "./retry";
+import { lookupOfficerRecipient } from "./officer-recipients";
 import {
   applicantOtpTemplate,
   applicationSubmittedTemplate,
+  officerApplicationNoticeTemplate,
   resultAcceptedTemplate,
   resultRejectedTemplate,
 } from "./templates";
@@ -42,6 +45,7 @@ async function deliverNotification(input: {
         subject: input.rendered.subject,
         text: input.rendered.text,
         html: input.rendered.html,
+        inline: input.rendered.inline,
       });
     });
     await notifications.markSent(input.notificationId, result.providerMessageId);
@@ -75,13 +79,13 @@ async function deliverEmail(input: {
 export async function sendApplicantOtp(input: {
   applicationId: string;
   applicationCode: string;
-  firstName: string;
+  lastName: string;
   email: string;
   code: string;
   expiresInMinutes: number;
 }): Promise<void> {
   const rendered = applicantOtpTemplate({
-    firstName: input.firstName,
+    lastName: input.lastName,
     applicationCode: input.applicationCode,
     code: input.code,
     expiresInMinutes: input.expiresInMinutes,
@@ -97,9 +101,21 @@ export async function sendApplicantOtp(input: {
 export async function sendApplicationSubmitted(
   application: ApplicationJson,
 ): Promise<void> {
+  const firstChoice = application.choices.find((choice) => choice.preferenceRank === 1);
+  const secondChoice = application.choices.find((choice) => choice.preferenceRank === 2);
+  const interviewStartsAt = await getBookedInterviewStartsAt(application.id);
+  if (!firstChoice || !secondChoice || !interviewStartsAt) {
+    throw new Error(
+      "Cannot send the application received email without choices and an interview slot.",
+    );
+  }
+
   const rendered = applicationSubmittedTemplate({
-    firstName: application.firstName,
+    lastName: application.lastName,
     applicationCode: application.applicationCode,
+    firstChoice: { committee: firstChoice.committee, title: firstChoice.title },
+    secondChoice: { committee: secondChoice.committee, title: secondChoice.title },
+    interviewStartsAt,
   });
   await deliverEmail({
     applicationId: application.id,
@@ -109,15 +125,71 @@ export async function sendApplicationSubmitted(
   });
 }
 
+export async function sendOfficerApplicationNotice(
+  application: ApplicationJson,
+): Promise<void> {
+  const firstChoice = application.choices.find((choice) => choice.preferenceRank === 1);
+  const secondChoice = application.choices.find((choice) => choice.preferenceRank === 2);
+  if (!firstChoice || !secondChoice) {
+    console.info(
+      `[email] skipped officer_application_notice for application ${application.id} (missing choices)`,
+    );
+    return;
+  }
+
+  const officer = lookupOfficerRecipient(firstChoice.committee);
+  if (!officer) {
+    console.info(
+      `[email] skipped officer_application_notice for application ${application.id} (unknown committee: ${firstChoice.committee})`,
+    );
+    return;
+  }
+
+  const interviewStartsAt = await getBookedInterviewStartsAt(application.id);
+  if (!interviewStartsAt) {
+    console.info(
+      `[email] skipped officer_application_notice for application ${application.id} (no interview slot)`,
+    );
+    return;
+  }
+
+  if (!application.studentNumber?.trim()) {
+    console.info(
+      `[email] skipped officer_application_notice for application ${application.id} (missing student number)`,
+    );
+    return;
+  }
+
+  const rendered = officerApplicationNoticeTemplate({
+    officerLastName: officer.lastName,
+    applicantFirstName: application.firstName,
+    applicantLastName: application.lastName,
+    studentNumber: application.studentNumber.trim(),
+    email: application.email,
+    applicationCode: application.applicationCode,
+    firstChoice: { committee: firstChoice.committee, title: firstChoice.title },
+    secondChoice: { committee: secondChoice.committee, title: secondChoice.title },
+    interviewStartsAt,
+  });
+  await deliverEmail({
+    applicationId: application.id,
+    messageType: "officer_application_notice",
+    recipient: officer.email,
+    rendered,
+  });
+}
+
 export async function sendResultAccepted(input: {
   applicationId: string;
   lastName: string;
   email: string;
   position: string;
+  memberId: string;
 }): Promise<void> {
   const rendered = resultAcceptedTemplate({
     lastName: input.lastName,
     position: input.position,
+    memberId: input.memberId,
   });
   await deliverEmail({
     applicationId: input.applicationId,
@@ -147,12 +219,14 @@ export function deliverQueuedResultEmail(input: {
   recipient: string;
   lastName: string;
   position: string | null;
+  memberId: string | null;
 }): Promise<EmailDeliveryStatus> {
   const rendered =
     input.messageType === "result_accepted"
       ? resultAcceptedTemplate({
           lastName: input.lastName,
           position: input.position ?? "",
+          memberId: input.memberId ?? "",
         })
       : resultRejectedTemplate({ lastName: input.lastName });
   return deliverNotification({

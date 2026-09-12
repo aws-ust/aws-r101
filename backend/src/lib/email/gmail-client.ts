@@ -1,5 +1,5 @@
 import { OAuth2Client } from "google-auth-library";
-import type { SendEmailInput, SendEmailResult } from "./types";
+import type { EmailInlineAttachment, SendEmailInput, SendEmailResult } from "./types";
 import { fromHeader, replyToEmail } from "./config";
 
 function base64UrlEncode(value: string): string {
@@ -10,27 +10,80 @@ function base64UrlEncode(value: string): string {
     .replace(/=+$/g, "");
 }
 
+function encodeBase64Body(buffer: Buffer): string {
+  return buffer
+    .toString("base64")
+    .replace(/.{1,76}/g, "$&\r\n")
+    .replace(/\r\n$/, "");
+}
+
+function buildAlternativePart(boundary: string, input: SendEmailInput): string[] {
+  return [
+    `--${boundary}`,
+    "Content-Type: text/plain; charset=UTF-8",
+    "",
+    input.text,
+    "",
+    `--${boundary}`,
+    "Content-Type: text/html; charset=UTF-8",
+    "",
+    input.html,
+    "",
+  ];
+}
+
+function buildInlineParts(relatedBoundary: string, inline: EmailInlineAttachment[]): string[] {
+  const lines: string[] = [];
+  for (const attachment of inline) {
+    lines.push(
+      `--${relatedBoundary}`,
+      `Content-Type: ${attachment.mimeType}`,
+      "Content-Transfer-Encoding: base64",
+      `Content-ID: <${attachment.cid}>`,
+      `Content-Disposition: inline; filename="${attachment.filename ?? "image.png"}"`,
+      "",
+      encodeBase64Body(attachment.content),
+      "",
+    );
+  }
+  return lines;
+}
+
 function buildRfc2822Message(input: SendEmailInput): string {
+  const inline = input.inline ?? [];
   const lines = [
     `From: ${fromHeader()}`,
     `To: ${input.to}`,
     `Reply-To: ${replyToEmail()}`,
     `Subject: ${input.subject}`,
     "MIME-Version: 1.0",
-    'Content-Type: multipart/alternative; boundary="aws_ust_boundary"',
-    "",
-    "--aws_ust_boundary",
-    "Content-Type: text/plain; charset=UTF-8",
-    "",
-    input.text,
-    "",
-    "--aws_ust_boundary",
-    "Content-Type: text/html; charset=UTF-8",
-    "",
-    input.html,
-    "",
-    "--aws_ust_boundary--",
   ];
+
+  if (inline.length === 0) {
+    const boundary = "aws_ust_boundary";
+    lines.push(
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+      "",
+      ...buildAlternativePart(boundary, input),
+      `--${boundary}--`,
+    );
+    return lines.join("\r\n");
+  }
+
+  const relatedBoundary = "aws_ust_related";
+  const altBoundary = "aws_ust_alt";
+  lines.push(
+    `Content-Type: multipart/related; boundary="${relatedBoundary}"`,
+    "",
+    `--${relatedBoundary}`,
+    `Content-Type: multipart/alternative; boundary="${altBoundary}"`,
+    "",
+    ...buildAlternativePart(altBoundary, input),
+    `--${altBoundary}--`,
+    "",
+    ...buildInlineParts(relatedBoundary, inline),
+    `--${relatedBoundary}--`,
+  );
   return lines.join("\r\n");
 }
 

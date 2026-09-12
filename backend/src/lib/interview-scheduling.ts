@@ -48,6 +48,18 @@ function endAt(startsAt: Date): string {
   return new Date(startsAt.getTime() + INTERVIEW_SLOT_MS).toISOString();
 }
 
+export async function getBookedInterviewStartsAt(
+  applicationId: string,
+): Promise<Date | null> {
+  const [row] = await db
+    .select({ startsAt: interviewSlots.startsAt })
+    .from(interviewBookings)
+    .innerJoin(interviewSlots, eq(interviewBookings.slotId, interviewSlots.id))
+    .where(eq(interviewBookings.applicationId, applicationId))
+    .limit(1);
+  return row?.startsAt ?? null;
+}
+
 type CommitteeSlotRow = {
   id: string;
   startsAt: Date;

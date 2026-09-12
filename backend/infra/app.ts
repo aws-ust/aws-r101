@@ -14,6 +14,14 @@ import type { Construct } from "constructs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+const emailAssetBundlingHooks = {
+  afterBundling(_inputDir: string, outputDir: string): string[] {
+    const assets = path.join(__dirname, "../src/lib/email/assets");
+    const dest = path.join(outputDir, "assets");
+    return [`mkdir -p "${dest}"`, `cp -R "${assets}/." "${dest}/"`];
+  },
+};
+
 function requiredEnvironment(name: string): string {
   const value = process.env[name]?.trim();
   if (!value) throw new Error(`${name} is required for deployment.`);
@@ -91,7 +99,11 @@ class BackendStack extends cdk.Stack {
       reservedConcurrentExecutions: 5,
       logRetention: logs.RetentionDays.ONE_WEEK,
       depsLockFilePath: path.join(__dirname, "../../pnpm-lock.yaml"),
-      bundling: { minify: true, sourceMap: true },
+      bundling: {
+        minify: true,
+        sourceMap: true,
+        commandHooks: emailAssetBundlingHooks,
+      },
       environment,
     });
     apiFunction.addToRolePolicy(new iam.PolicyStatement({

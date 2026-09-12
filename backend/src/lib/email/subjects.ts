@@ -8,6 +8,18 @@ export function applicationSubmittedSubject(applicationCode: string): string {
   return `AWS Builders - UST | Application received (${applicationCode})`;
 }
 
+export function officerApplicationNoticeSubject(input: {
+  firstName: string;
+  lastName: string;
+  firstChoiceCommittee: string;
+}): string {
+  const applicant = `${input.firstName} ${input.lastName}`;
+  if (input.firstChoiceCommittee.startsWith("Office of the ")) {
+    return `New EA applicant for your office — ${applicant} | R101`;
+  }
+  return `New ${input.firstChoiceCommittee} staff applicant — ${applicant} | R101`;
+}
+
 /** Accepted result (Marc #10 Release Results). */
 export const resultAcceptedSubject =
   "Welcome Aboard! Your AWS Builders - UST R101 Results";

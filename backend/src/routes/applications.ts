@@ -23,8 +23,10 @@ import { freePlanEndDate } from "../lib/free-plan";
 import {
   listEmailNotificationsByApplicationId,
   sendApplicationSubmitted,
+  sendOfficerApplicationNotice,
 } from "../lib/email/service";
 import { InterviewScheduleError } from "../lib/interview-scheduling";
+import { resolveRecruitmentSeasonStatus } from "../lib/recruitment-window";
 
 export const applicationsRoutes = new Hono();
 
@@ -122,6 +124,11 @@ applicationsRoutes.get("/", requireAuth, async (c) => {
 });
 
 applicationsRoutes.post("/", async (c) => {
+  const season = await resolveRecruitmentSeasonStatus();
+  if (!season.open) {
+    return c.json({ error: season.message ?? "Applications are closed." }, 403);
+  }
+
   const body = await c.req.json().catch(() => null);
   const parsed = parseCreateBody(body);
   if (!parsed.ok) {
@@ -149,6 +156,9 @@ applicationsRoutes.post("/", async (c) => {
     if (result.created) {
       void sendApplicationSubmitted(result.application).catch((err) => {
         console.error("submission email failed", err);
+      });
+      void sendOfficerApplicationNotice(result.application).catch((err) => {
+        console.error("officer application notice failed", err);
       });
     }
     return c.json(result.application, result.created ? 201 : 200);

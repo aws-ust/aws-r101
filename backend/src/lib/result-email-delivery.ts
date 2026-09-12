@@ -29,6 +29,7 @@ export async function deliverResultNotifications(
       recipient: emailNotifications.recipient,
       lastName: applicants.lastName,
       position: positions.name,
+      memberId: applications.memberId,
     })
     .from(emailNotifications)
     .innerJoin(
@@ -52,12 +53,17 @@ export async function deliverResultNotifications(
         await markFailed(row.id, "Accepted result has no final position.");
         return "failed" as const;
       }
+      if (row.messageType === "result_accepted" && !row.memberId?.trim()) {
+        await markFailed(row.id, "Accepted result has no membership ID.");
+        return "failed" as const;
+      }
       return deliverQueuedResultEmail({
         notificationId: row.id,
         messageType: row.messageType,
         recipient: row.recipient,
         lastName: row.lastName,
         position: row.position,
+        memberId: row.memberId,
       });
     }),
   );
