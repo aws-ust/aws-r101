@@ -274,7 +274,15 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
       if (!completedUpload || completedUpload.fingerprint !== fingerprint || new Date(completedUpload.expiresAt) <= new Date()) {
         const session = await createUploadSession({ documents })
         await Promise.all(session.uploads.map(async (signedUpload) => {
-          const file = files.find((candidate) => candidate.documentType === signedUpload.documentType)!.file
+          const match = files.find(
+            (candidate) => candidate.documentType === signedUpload.documentType,
+          )
+          if (!match) {
+            throw new Error(
+              `Missing upload file for document type "${signedUpload.documentType}".`,
+            )
+          }
+          const file = match.file
           const form = new FormData()
           Object.entries(signedUpload.fields).forEach(([name, value]) => form.append(name, value))
           form.append("file", file)
