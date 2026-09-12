@@ -1,5 +1,10 @@
 import { OAuth2Client } from "google-auth-library";
-import type { EmailInlineAttachment, SendEmailInput, SendEmailResult } from "./types";
+import type {
+  EmailFileAttachment,
+  EmailInlineAttachment,
+  SendEmailInput,
+  SendEmailResult,
+} from "./types";
 import { fromHeader, replyToEmail } from "./config";
 
 function base64UrlEncode(value: string): string {
@@ -15,6 +20,11 @@ function encodeBase64Body(buffer: Buffer): string {
     .toString("base64")
     .replace(/.{1,76}/g, "$&\r\n")
     .replace(/\r\n$/, "");
+}
+
+function encodeHeaderValue(value: string): string {
+  if (/^[\x20-\x7E]*$/.test(value)) return value;
+  return `=?UTF-8?B?${Buffer.from(value, "utf8").toString("base64")}?=`;
 }
 
 function buildAlternativePart(boundary: string, input: SendEmailInput): string[] {
@@ -49,30 +59,21 @@ function buildInlineParts(relatedBoundary: string, inline: EmailInlineAttachment
   return lines;
 }
 
-function buildRfc2822Message(input: SendEmailInput): string {
+function buildRelatedBody(input: SendEmailInput): string[] {
   const inline = input.inline ?? [];
-  const lines = [
-    `From: ${fromHeader()}`,
-    `To: ${input.to}`,
-    `Reply-To: ${replyToEmail()}`,
-    `Subject: ${input.subject}`,
-    "MIME-Version: 1.0",
-  ];
-
   if (inline.length === 0) {
     const boundary = "aws_ust_boundary";
-    lines.push(
+    return [
       `Content-Type: multipart/alternative; boundary="${boundary}"`,
       "",
       ...buildAlternativePart(boundary, input),
       `--${boundary}--`,
-    );
-    return lines.join("\r\n");
+    ];
   }
 
   const relatedBoundary = "aws_ust_related";
   const altBoundary = "aws_ust_alt";
-  lines.push(
+  return [
     `Content-Type: multipart/related; boundary="${relatedBoundary}"`,
     "",
     `--${relatedBoundary}`,
@@ -83,7 +84,51 @@ function buildRfc2822Message(input: SendEmailInput): string {
     "",
     ...buildInlineParts(relatedBoundary, inline),
     `--${relatedBoundary}--`,
-  );
+  ];
+}
+
+function buildFileAttachmentParts(
+  boundary: string,
+  attachments: EmailFileAttachment[],
+): string[] {
+  const lines: string[] = [];
+  for (const file of attachments) {
+    const safeName = file.filename.replace(/"/g, "'");
+    lines.push(
+      `--${boundary}`,
+      `Content-Type: ${file.mimeType}; name="${safeName}"`,
+      "Content-Transfer-Encoding: base64",
+      `Content-Disposition: attachment; filename="${safeName}"`,
+      "",
+      encodeBase64Body(file.content),
+      "",
+    );
+  }
+  return lines;
+}
+
+function buildRfc2822Message(input: SendEmailInput): string {
+  const attachments = input.attachments ?? [];
+  const lines = [
+    `From: ${fromHeader()}`,
+    `To: ${input.to}`,
+    `Reply-To: ${replyToEmail()}`,
+    `Subject: ${encodeHeaderValue(input.subject)}`,
+    "MIME-Version: 1.0",
+  ];
+
+  const bodyLines = buildRelatedBody(input);
+
+  if (attachments.length === 0) {
+    lines.push(...bodyLines);
+    return lines.join("\r\n");
+  }
+
+  const mixedBoundary = "aws_ust_mixed";
+  lines.push(`Content-Type: multipart/mixed; boundary="${mixedBoundary}"`, "");
+  lines.push(`--${mixedBoundary}`, ...bodyLines, "");
+  lines.push(...buildFileAttachmentParts(mixedBoundary, attachments));
+  lines.push(`--${mixedBoundary}--`);
   return lines.join("\r\n");
 }
 

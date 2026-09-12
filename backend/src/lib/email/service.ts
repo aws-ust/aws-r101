@@ -1,10 +1,21 @@
 import type { ApplicationJson } from "../applications";
+import type { ChoiceRef } from "../committee-apply";
+import { applicationRequiresDevExam } from "../committee-apply";
 import { getBookedInterviewStartsAt } from "../interview-scheduling";
 import { emailEnabled, hasGmailCredentials } from "./config";
+import { awsDevAssessmentAttachment } from "./email-assets";
 import { sendViaGmail } from "./gmail-client";
+import {
+  loadApplicantEditEmailSnapshot,
+  notifyOfficerAfterInterviewReschedule,
+  notifyOfficersAfterApplicantChoiceEdit,
+  type ApplicantEditEmailSnapshot,
+} from "./officer-edit-notifications";
+import { loadOfficerApplicantAttachments } from "./officer-email-attachments";
 import * as notifications from "./notifications";
 import { withRetry } from "./retry";
 import { lookupOfficerRecipient } from "./officer-recipients";
+import { applicantDevExamTemplate } from "./officer-edit-templates";
 import {
   applicantOtpTemplate,
   applicationSubmittedTemplate,
@@ -17,6 +28,16 @@ import type {
   EmailMessageType,
   RenderedEmail,
 } from "./types";
+
+function isLikelyAttachmentSizeError(message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("too large") ||
+    lower.includes("message size") ||
+    lower.includes("413") ||
+    lower.includes("max")
+  );
+}
 
 async function deliverNotification(input: {
   notificationId: string;
@@ -37,21 +58,49 @@ async function deliverNotification(input: {
     return "failed";
   }
 
-  try {
-    const result = await withRetry(async () => {
-      await notifications.incrementAttempts(input.notificationId);
-      return sendViaGmail({
-        to: input.recipient,
-        subject: input.rendered.subject,
-        text: input.rendered.text,
-        html: input.rendered.html,
-        inline: input.rendered.inline,
-      });
+  const sendOnce = async (rendered: RenderedEmail) => {
+    await notifications.incrementAttempts(input.notificationId);
+    return sendViaGmail({
+      to: input.recipient,
+      subject: rendered.subject,
+      text: rendered.text,
+      html: rendered.html,
+      inline: rendered.inline,
+      attachments: rendered.attachments,
     });
+  };
+
+  try {
+    const result = await withRetry(async () => sendOnce(input.rendered));
     await notifications.markSent(input.notificationId, result.providerMessageId);
     return "sent";
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    if (
+      input.rendered.attachments?.length &&
+      isLikelyAttachmentSizeError(message)
+    ) {
+      console.warn(
+        `[email] retrying ${input.messageType} without attachments after size error`,
+      );
+      try {
+        const stripped: RenderedEmail = {
+          ...input.rendered,
+          attachments: undefined,
+        };
+        const result = await withRetry(async () => sendOnce(stripped));
+        await notifications.markSent(
+          input.notificationId,
+          result.providerMessageId,
+        );
+        return "sent";
+      } catch (retryErr) {
+        const retryMessage =
+          retryErr instanceof Error ? retryErr.message : String(retryErr);
+        await notifications.markFailed(input.notificationId, retryMessage);
+        throw retryErr;
+      }
+    }
     await notifications.markFailed(input.notificationId, message);
     throw err;
   }
@@ -75,6 +124,79 @@ async function deliverEmail(input: {
     rendered: input.rendered,
   });
 }
+
+function fireAndForget(promise: Promise<void>, label: string): void {
+  void promise.catch((err) => {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[email] ${label} failed:`, message);
+  });
+}
+
+const officerEditDeliverer = async (input: {
+  applicationId: string;
+  messageType: EmailMessageType;
+  recipient: string;
+  rendered: RenderedEmail;
+}) => {
+  await deliverEmail({
+    applicationId: input.applicationId,
+    messageType: input.messageType,
+    recipient: input.recipient,
+    rendered: input.rendered,
+  });
+};
+
+async function sendApplicantDevExamEmail(
+  applicationId: string,
+  applicant: {
+    lastName: string;
+    email: string;
+    applicationCode: string;
+  },
+  choices: ChoiceRef[],
+): Promise<void> {
+  const rendered = applicantDevExamTemplate({
+    lastName: applicant.lastName,
+    applicationCode: applicant.applicationCode,
+    choices,
+  });
+  rendered.attachments = [awsDevAssessmentAttachment()];
+  await deliverEmail({
+    applicationId,
+    messageType: "applicant_dev_exam",
+    recipient: applicant.email,
+    rendered,
+  });
+}
+
+export function fireApplicantChoiceEditNotifications(
+  applicationId: string,
+  snapshot: ApplicantEditEmailSnapshot,
+): void {
+  fireAndForget(
+    notifyOfficersAfterApplicantChoiceEdit(applicationId, snapshot, {
+      officerEmail: officerEditDeliverer,
+      applicantDevExam: sendApplicantDevExamEmail,
+    }),
+    "officer choice-edit notifications",
+  );
+}
+
+export function fireInterviewRescheduleNotification(
+  applicationId: string,
+  previousInterviewStartsAt: Date | null,
+): void {
+  fireAndForget(
+    notifyOfficerAfterInterviewReschedule(
+      applicationId,
+      previousInterviewStartsAt,
+      officerEditDeliverer,
+    ),
+    "officer interview reschedule notification",
+  );
+}
+
+export { loadApplicantEditEmailSnapshot };
 
 export async function sendApplicantOtp(input: {
   applicationId: string;
@@ -110,13 +232,21 @@ export async function sendApplicationSubmitted(
     );
   }
 
+  const choiceRefs = [
+    { committee: firstChoice.committee, title: firstChoice.title },
+    { committee: secondChoice.committee, title: secondChoice.title },
+  ];
+
   const rendered = applicationSubmittedTemplate({
     lastName: application.lastName,
     applicationCode: application.applicationCode,
-    firstChoice: { committee: firstChoice.committee, title: firstChoice.title },
-    secondChoice: { committee: secondChoice.committee, title: secondChoice.title },
+    firstChoice: choiceRefs[0],
+    secondChoice: choiceRefs[1],
     interviewStartsAt,
   });
+  if (applicationRequiresDevExam(choiceRefs)) {
+    rendered.attachments = [awsDevAssessmentAttachment()];
+  }
   await deliverEmail({
     applicationId: application.id,
     messageType: "application_submitted",
@@ -160,6 +290,7 @@ export async function sendOfficerApplicationNotice(
     return;
   }
 
+  const attachments = await loadOfficerApplicantAttachments(application.id);
   const rendered = officerApplicationNoticeTemplate({
     officerLastName: officer.lastName,
     applicantFirstName: application.firstName,
@@ -167,10 +298,15 @@ export async function sendOfficerApplicationNotice(
     studentNumber: application.studentNumber.trim(),
     email: application.email,
     applicationCode: application.applicationCode,
+    portfolioUrl: application.portfolioUrl,
+    githubUrl: application.githubUrl,
     firstChoice: { committee: firstChoice.committee, title: firstChoice.title },
     secondChoice: { committee: secondChoice.committee, title: secondChoice.title },
     interviewStartsAt,
   });
+  if (attachments.length) {
+    rendered.attachments = attachments;
+  }
   await deliverEmail({
     applicationId: application.id,
     messageType: "officer_application_notice",
