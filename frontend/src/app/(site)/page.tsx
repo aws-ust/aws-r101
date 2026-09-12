@@ -12,12 +12,6 @@ export default function Home() {
       <StackSection />
       <Committees />
       <FAQSection />
-      <div className="flex flex-wrap items-center gap-4">
-        <Button color="cyan" nativeButton={false} render={<Link href="/apply/positions" />}>
-          Apply now!
-        </Button>
-        <Button color="purple">Committee Directors</Button>
-      </div>
     </main>
   )
 }
