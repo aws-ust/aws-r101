@@ -13,14 +13,21 @@ const STEPS = [
   { n: 6, label: "Success" },
 ] as const
 
-const rowClasses = "mx-auto flex w-full max-w-3xl items-start justify-center"
-const connectorClasses = "mt-4 h-px min-w-4 flex-1 bg-biloba-flower/40"
+const shellClasses = "mx-auto w-full min-w-0 max-w-3xl"
+const listClasses =
+  "grid grid-cols-3 gap-x-2 gap-y-5 md:flex md:items-start md:justify-center"
+const itemClasses =
+  "flex flex-col items-center md:min-w-0 md:flex-1 md:flex-row md:items-start"
+const connectorClasses =
+  "mt-4 hidden h-px min-w-4 flex-1 bg-biloba-flower/40 md:block"
+const stepColumnClasses = "flex flex-col items-center px-0.5 sm:px-2"
 const circleBase =
-  "flex size-8 items-center justify-center rounded-full font-sans text-xs font-semibold sm:size-9 sm:text-sm"
+  "flex size-8 items-center justify-center rounded-full font-sans text-xs font-semibold md:size-9 md:text-sm"
 const currentCircle = `${circleBase} bg-aquamarine text-haiti border border-transparent`
 const completeCircle = `${circleBase} bg-biloba-flower text-haiti border border-transparent`
 const upcomingCircle = `${circleBase} border border-prelude/50 bg-transparent text-prelude`
-const labelBase = "mt-2 text-center font-sans text-[10px] sm:text-xs"
+const labelBase =
+  "mt-2 text-balance text-center font-sans text-[10px] leading-snug md:text-xs md:leading-normal"
 const currentLabel = `${labelBase} text-aquamarine`
 const completeLabel = `${labelBase} text-prelude`
 const upcomingLabel = `${labelBase} text-prelude/70`
@@ -37,80 +44,86 @@ export function ApplyStepper({ current }: StepperProps) {
   const transition = reducedMotion ? bubbleSnap : bubbleSpring
 
   return (
-    <ol className={rowClasses}>
-      {STEPS.map((step, index) => {
-        const state =
-          step.n < current
-            ? "complete"
-            : step.n === current
-              ? "current"
-              : "upcoming"
-        const leftConnectorDone = current >= step.n
-        const rightConnectorDone = step.n < current
+    <nav className={shellClasses} aria-label="Application progress">
+      <ol className={listClasses}>
+        {STEPS.map((step, index) => {
+          const state =
+            step.n < current
+              ? "complete"
+              : step.n === current
+                ? "current"
+                : "upcoming"
+          const leftConnectorDone = current >= step.n
+          const rightConnectorDone = step.n < current
 
-        return (
-          <li key={step.n} className="flex min-w-0 flex-1 items-start">
-            {index > 0 ? (
-              <m.div
-                className={connectorClasses}
-                aria-hidden="true"
-                initial={false}
-                animate={{ opacity: leftConnectorDone ? 1 : 0.4 }}
-                transition={transition}
-              />
-            ) : null}
-            <div className="flex flex-col items-center px-1 sm:px-2">
-              <m.span
-                className={cn(
-                  state === "current" && currentCircle,
-                  state === "complete" && completeCircle,
-                  state === "upcoming" && upcomingCircle
-                )}
-                initial={false}
-                animate={{ scale: state === "current" ? 1.05 : 1 }}
-                transition={transition}
-              >
-                {state === "complete" ? (
-                  <m.span
-                    key="check"
-                    initial={
-                      reducedMotion ? false : { scale: 0.6, opacity: 0 }
-                    }
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={transition}
-                    className="inline-flex"
-                  >
-                    <Check className="size-3.5 sm:size-4" strokeWidth={3} />
-                  </m.span>
-                ) : (
-                  step.n
-                )}
-              </m.span>
-              <m.span
-                className={cn(
-                  state === "current" && currentLabel,
-                  state === "complete" && completeLabel,
-                  state === "upcoming" && upcomingLabel
-                )}
-                initial={false}
-                animate={{ opacity: state === "upcoming" ? 0.7 : 1 }}
-                transition={transition}
-              >
-                {step.label}
-              </m.span>
-            </div>
-            {index < STEPS.length - 1 ? (
-              <m.div
-                className={connectorClasses}
-                aria-hidden="true"
-                initial={false}
-                animate={{ opacity: rightConnectorDone ? 1 : 0.4 }}
-                transition={transition}
-              />
-            ) : null}
-          </li>
-        )
-      })}
-    </ol>
+          return (
+            <li
+              key={step.n}
+              className={itemClasses}
+              aria-current={state === "current" ? "step" : undefined}
+            >
+              {index > 0 ? (
+                <m.div
+                  className={connectorClasses}
+                  aria-hidden="true"
+                  initial={false}
+                  animate={{ opacity: leftConnectorDone ? 1 : 0.4 }}
+                  transition={transition}
+                />
+              ) : null}
+              <div className={stepColumnClasses}>
+                <m.span
+                  className={cn(
+                    state === "current" && currentCircle,
+                    state === "complete" && completeCircle,
+                    state === "upcoming" && upcomingCircle,
+                  )}
+                  initial={false}
+                  animate={{ scale: state === "current" ? 1.05 : 1 }}
+                  transition={transition}
+                >
+                  {state === "complete" ? (
+                    <m.span
+                      key="check"
+                      initial={
+                        reducedMotion ? false : { scale: 0.6, opacity: 0 }
+                      }
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={transition}
+                      className="inline-flex"
+                    >
+                      <Check className="size-3.5 md:size-4" strokeWidth={3} />
+                    </m.span>
+                  ) : (
+                    step.n
+                  )}
+                </m.span>
+                <m.span
+                  className={cn(
+                    state === "current" && currentLabel,
+                    state === "complete" && completeLabel,
+                    state === "upcoming" && upcomingLabel,
+                  )}
+                  initial={false}
+                  animate={{ opacity: state === "upcoming" ? 0.7 : 1 }}
+                  transition={transition}
+                >
+                  {step.label}
+                </m.span>
+              </div>
+              {index < STEPS.length - 1 ? (
+                <m.div
+                  className={connectorClasses}
+                  aria-hidden="true"
+                  initial={false}
+                  animate={{ opacity: rightConnectorDone ? 1 : 0.4 }}
+                  transition={transition}
+                />
+              ) : null}
+            </li>
+          )
+        })}
+      </ol>
+    </nav>
   )
 }

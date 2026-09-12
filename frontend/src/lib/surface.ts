@@ -9,6 +9,10 @@ export const chromeInsetClasses = "pl-7 pr-3 md:pl-14 md:pr-8"
 
 export const applyFlowInsetClasses = chromeInsetClasses
 
+/** Apply flow pages (positions, form, status) — matches navbar inset so content stays centered on narrow viewports. */
+export const applyFlowShellClasses =
+  `mx-auto flex w-full min-w-0 max-w-[1180px] flex-1 flex-col overflow-x-clip pb-16 pt-4 ${applyFlowInsetClasses}`
+
 export const glassPanelClasses =
   "glass rounded-[28px] border border-biloba-flower/35 bg-meteorite/45"
 

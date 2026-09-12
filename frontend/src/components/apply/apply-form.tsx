@@ -34,14 +34,19 @@ import { listOpenPositions } from "@/lib/api"
 import { submitApplyForm } from "@/components/apply/apply-form-submit"
 import { ApplyFormSteps } from "@/components/apply/apply-form-steps"
 import { UST_EMAIL_DOMAIN } from "@/lib/constants"
-import { glassPanelClasses, ghostPillButtonClasses, pageShellClasses } from "@/lib/surface"
+import {
+  applyFlowShellClasses,
+  glassPanelClasses,
+  ghostPillButtonClasses,
+} from "@/lib/surface"
 import { cn } from "@/lib/utils"
 
 type FormStep = 1 | 2 | 3 | 4 | 5 | 6
 type CompletedUploadSession = { fingerprint: string; id: string; expiresAt: string }
 
-const panelShellClasses = `mx-auto mt-10 w-full ${glassPanelClasses} px-4 py-8 md:px-8`
-const actionsClasses = "mt-8 flex items-center justify-between gap-4"
+const panelShellClasses = `mx-auto w-full min-w-0 max-w-full overflow-x-clip ${glassPanelClasses} px-4 py-8 md:px-8`
+const actionsClasses =
+  "mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
 const nextButtonClasses = "h-10 px-5 text-xs"
 const errorClasses = "mt-4 text-sm text-aquamarine"
 const slideSpring = { type: "spring" as const, stiffness: 400, damping: 35 }
@@ -247,10 +252,16 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
   const panelWidth = step === 3 || step === 5 ? "max-w-6xl" : "max-w-2xl"
 
   return (
-    <main className={pageShellClasses}>
+    <main className={applyFlowShellClasses}>
       <LazyMotion features={domAnimation}>
-        <SectionHeader eyebrow="// RECRUITMENT 101" title="Apply to AWS Builders – UST" titleClassName="max-w-none whitespace-nowrap" subtitle="Every member lands on a committee that fits how they like to build, organize, or create." />
-        <div className="mt-10"><ApplyStepper current={step} /></div>
+        <div className="flex min-w-0 flex-col gap-10">
+        <SectionHeader
+          eyebrow="// RECRUITMENT 101"
+          title="Apply to AWS Builders – UST"
+          titleClassName="max-w-none text-balance"
+          subtitle="Every member lands on a committee that fits how they like to build, organize, or create."
+        />
+        <ApplyStepper current={step} />
         <div className={cn(panelShellClasses, panelWidth)}>
           <div className="relative min-w-0 overflow-x-clip">
             <ApplyFormSteps
@@ -279,6 +290,7 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
               {step === 5 ? <Button type="button" color="cyan" className={nextButtonClasses} onClick={submit} disabled={submitting}>Submit Application</Button> : <Button type="button" color="cyan" className={nextButtonClasses} onClick={goNext}>Next → Step {step + 1}</Button>}
             </div>
           ) : null}
+        </div>
         </div>
       </LazyMotion>
     </main>

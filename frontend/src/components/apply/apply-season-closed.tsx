@@ -5,9 +5,13 @@ import { SectionHeader } from "@/components/section-header"
 import { Button } from "@/components/ui/button"
 import { recruitmentClosedMessage } from "@/lib/recruitment-season"
 import type { RecruitmentWindow } from "@/lib/api-client"
-import { glassPanelClasses, ghostPillButtonClasses, pageShellClasses } from "@/lib/surface"
+import {
+  applyFlowShellClasses,
+  glassPanelClasses,
+  ghostPillButtonClasses,
+} from "@/lib/surface"
 
-const panelClasses = `mx-auto mt-10 w-full max-w-2xl ${glassPanelClasses} px-6 py-10 md:px-10`
+const panelClasses = `mx-auto w-full min-w-0 max-w-2xl ${glassPanelClasses} px-6 py-10 md:px-10`
 const copyClasses = "font-sans text-base leading-relaxed text-prelude"
 const actionsClasses = "mt-8 flex flex-wrap gap-3"
 
@@ -19,11 +23,11 @@ export function ApplySeasonClosed({ window }: ApplySeasonClosedProps) {
   const message = recruitmentClosedMessage(window)
 
   return (
-    <main className={pageShellClasses}>
+    <main className={`${applyFlowShellClasses} gap-10`}>
       <SectionHeader
         eyebrow="// RECRUITMENT 101"
         title="Apply to AWS Builders – UST"
-        titleClassName="max-w-none whitespace-nowrap"
+        titleClassName="max-w-none text-balance"
         subtitle="Every member lands on a committee that fits how they like to build, organize, or create."
       />
       <div className={panelClasses}>
