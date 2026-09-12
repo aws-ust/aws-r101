@@ -134,7 +134,9 @@ export function PersonCard({ terms, showPager = false }: PersonCardProps) {
                   width={96}
                   height={96}
                   className="size-full object-cover"
-                  unoptimized={!person.photo}
+                  unoptimized={
+                    !person.photo || person.photo.startsWith("/people/current-ebs/")
+                  }
                 />
               </div>
               <h3 className={nameClasses}>{person.name}</h3>

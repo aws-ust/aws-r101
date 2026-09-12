@@ -23,6 +23,16 @@ export type DirectorSeat = {
 const CURRENT_AY = "AY 2026-2027"
 const PREVIOUS_AY = "AY 2025-2026"
 
+/** Photos in `public/people/current-ebs/` keyed by `OfficerSeat.id`. */
+const CURRENT_EB_PHOTOS: Partial<Record<string, string>> = {
+  ceo: "/people/current-ebs/CEO_Padua.JPG",
+  coo: "/people/current-ebs/COO_Axalan.jpg",
+  cro: "/people/current-ebs/CRO_Olmedo.jpg",
+  "corp-sec": "/people/current-ebs/SEC_Muñoz.jpg",
+  cfo: "/people/current-ebs/CFO_So.jpg",
+  cco: "/people/current-ebs/CCO_Escosia.png",
+}
+
 /** Matches office order in `committee-groups.ts` (CEO → COO → CRO → …). */
 function officer(
   rank: number,
@@ -34,7 +44,12 @@ function officer(
   return {
     id,
     rank,
-    current: { name, title, academicYear: CURRENT_AY },
+    current: {
+      name,
+      title,
+      academicYear: CURRENT_AY,
+      photo: CURRENT_EB_PHOTOS[id],
+    },
     previous: {
       name: previousName,
       title,
