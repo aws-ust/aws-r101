@@ -230,7 +230,7 @@ export function ApplicantDashboard() {
       </div>
 
       <ApplicantInterviewScheduler
-        key={previewPositionId ?? "current-booking"}
+        key={`${previewPositionId ?? "current-booking"}:${first?.committee ?? ""}`}
         positionId={previewPositionId}
         previewMode={Boolean(previewPositionId)}
         selectedSlotId={previewPositionId ? previewSlotId : undefined}

@@ -64,10 +64,19 @@ export function ApplicantChoiceEditor({
   )
   const [githubUrl, setGithubUrl] = useState(application.githubUrl ?? "")
   const showPortfolio = needsCreativesPortfolio(firstCommittee, secondCommittee)
-  const showGithub = needsDevelopmentGithub(firstCommittee, secondCommittee)
-  const committeeChanged =
-    Boolean(first?.committee) && firstCommittee !== first?.committee
-  const needsSlot = committeeChanged && Boolean(firstPositionId)
+  const positionTitle = (positionId: string) =>
+    positions.find((position) => position.id === positionId)?.title ?? ""
+  const showGithub = needsDevelopmentGithub(
+    firstCommittee,
+    secondCommittee,
+    positionTitle(firstPositionId),
+    positionTitle(secondPositionId),
+  )
+  const savedFirstCommittee = first?.committee ?? ""
+  const savedFirstPositionId = first?.positionId ?? ""
+  const firstChoiceCommitteeChanged =
+    Boolean(savedFirstCommittee) && firstCommittee !== savedFirstCommittee
+  const needsSlot = firstChoiceCommitteeChanged && Boolean(firstPositionId)
 
 
   const canSubmit = useMemo(() => {
@@ -99,25 +108,35 @@ export function ApplicantChoiceEditor({
     next: { committee: string; positionId: string }
   ) {
     if (rank === 1) {
+      const firstChoiceChanged =
+        next.committee !== firstCommittee ||
+        next.positionId !== firstPositionId
+      if (firstChoiceChanged) {
+        const previewForNewCommittee =
+          next.committee !== savedFirstCommittee ? next.positionId : undefined
+        onPreviewPositionIdChange(previewForNewCommittee)
+      }
       setFirstCommittee(next.committee)
       setFirstPositionId(next.positionId)
-      const nextNeedsSlot =
-        Boolean(first?.committee) &&
-        next.committee !== first?.committee &&
-        Boolean(next.positionId)
-      onPreviewPositionIdChange(
-        nextNeedsSlot ? next.positionId : undefined
-      )
     } else {
       setSecondCommittee(next.committee)
       setSecondPositionId(next.positionId)
     }
     const nextFirst = rank === 1 ? next.committee : firstCommittee
     const nextSecond = rank === 2 ? next.committee : secondCommittee
+    const nextFirstId = rank === 1 ? next.positionId : firstPositionId
+    const nextSecondId = rank === 2 ? next.positionId : secondPositionId
     if (!needsCreativesPortfolio(nextFirst, nextSecond)) {
       setPortfolioUrl("")
     }
-    if (!needsDevelopmentGithub(nextFirst, nextSecond)) {
+    if (
+      !needsDevelopmentGithub(
+        nextFirst,
+        nextSecond,
+        positionTitle(nextFirstId),
+        positionTitle(nextSecondId),
+      )
+    ) {
       setGithubUrl("")
     }
   }

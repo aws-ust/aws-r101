@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useEffectEvent, useMemo, useState } from "react"
 import { ActionFeedback } from "@/components/action-feedback"
 import { SlotGrid, type SlotGridCell } from "@/components/interview/slot-grid"
 import { Button } from "@/components/ui/button"
@@ -55,45 +55,44 @@ function formatSlotLabel(slot: ApplicantInterviewSlot | { startsAt: string; ends
 
 function buildApplicantCells(
   schedule: ApplicantInterviewSchedule,
-  selectedSlotId: string
+  selectedSlotId: string,
+  previewMode: boolean,
 ): Map<string, SlotGridCell> {
   const cells = new Map<string, SlotGridCell>()
-  const bookingKey = schedule.booking
-    ? slotKeyFromIso(schedule.booking.startsAt)
-    : null
+  const showSavedBooking = !previewMode && Boolean(schedule.booking)
+  const bookingId = showSavedBooking ? schedule.booking?.slotId : undefined
 
   for (const slot of schedule.slots) {
     const key = slotKeyFromIso(slot.startsAt)
-    const isCurrent = schedule.booking?.slotId === slot.id
-    const isSelected = selectedSlotId === slot.id
+    const isSelected = Boolean(selectedSlotId) && selectedSlotId === slot.id
+    const isCurrent = Boolean(bookingId) && bookingId === slot.id && !isSelected
 
     cells.set(key, {
       key,
       startsAt: new Date(slot.startsAt),
-      state: isCurrent ? "current" : isSelected ? "selected" : "available",
+      state: isSelected ? "selected" : isCurrent ? "current" : "available",
       slotId: slot.id,
-      detail: new Date(slot.startsAt).toLocaleTimeString(undefined, {
-        hour: "numeric",
-        minute: "2-digit",
-      }),
-    })
-  }
-
-  if (
-    schedule.booking &&
-    bookingKey &&
-    !cells.has(bookingKey)
-  ) {
-    cells.set(bookingKey, {
-      key: bookingKey,
-      startsAt: new Date(schedule.booking.startsAt),
-      state: "current",
-      slotId: schedule.booking.slotId,
-      detail: formatSlotLabel(schedule.booking),
+      detail:
+        isCurrent
+          ? `${formatSlotLabel(slot)} (your booking)`
+          : new Date(slot.startsAt).toLocaleTimeString(undefined, {
+              hour: "numeric",
+              minute: "2-digit",
+            }),
     })
   }
 
   return cells
+}
+
+function slotBelongsToSchedule(
+  schedule: ApplicantInterviewSchedule,
+  slotId: string,
+  previewMode: boolean,
+): boolean {
+  if (schedule.slots.some((slot) => slot.id === slotId)) return true
+  if (!previewMode && schedule.booking?.slotId === slotId) return true
+  return false
 }
 
 function slotInWeek(slotIso: string, days: Date[]): boolean {
@@ -140,24 +139,41 @@ export function ApplicantInterviewScheduler({
   )
   const weekLabel = formatWeekRange(displayedWeekStart, days)
 
-  const applySchedule = useCallback(
-    (payload: ApplicantInterviewSchedule) => {
-      setSchedule(payload)
-      onScheduleLoaded?.(payload)
-      if (!previewMode && payload.booking) {
-        setSelectedSlotId(payload.booking.slotId)
-        if (seasonBounds) {
-          setWeekStart(
-            clampWeekStart(
-              startOfWeek(new Date(payload.booking.startsAt)),
-              seasonBounds
-            )
-          )
-        }
-      }
-    },
-    [onScheduleLoaded, previewMode, seasonBounds, setSelectedSlotId]
-  )
+  const applySchedule = useEffectEvent((payload: ApplicantInterviewSchedule) => {
+    setSchedule(payload)
+    onScheduleLoaded?.(payload)
+    if (previewMode) return
+    if (!payload.booking || selectedSlotId) return
+    setSelectedSlotId(payload.booking.slotId)
+    if (seasonBounds) {
+      setWeekStart(
+        clampWeekStart(
+          startOfWeek(new Date(payload.booking.startsAt)),
+          seasonBounds
+        )
+      )
+    }
+  })
+
+  useEffect(() => {
+    if (previewMode) {
+      setSelectedSlotId("")
+    }
+  }, [positionId, previewMode, setSelectedSlotId])
+
+  const selectionForGrid = useMemo(() => {
+    if (!selectedSlotId || !schedule) return ""
+    return slotBelongsToSchedule(schedule, selectedSlotId, previewMode)
+      ? selectedSlotId
+      : ""
+  }, [previewMode, schedule, selectedSlotId])
+
+  useEffect(() => {
+    if (!schedule || !selectedSlotId) return
+    if (!slotBelongsToSchedule(schedule, selectedSlotId, previewMode)) {
+      setSelectedSlotId("")
+    }
+  }, [previewMode, schedule, selectedSlotId, setSelectedSlotId])
 
   useEffect(() => {
     let cancelled = false
@@ -220,29 +236,9 @@ export function ApplicantInterviewScheduler({
     if (!schedule) return new Map<string, SlotGridCell>()
     const filtered: ApplicantInterviewSchedule = {
       ...schedule,
-      slots: weekSlots.filter(
-        (slot) => schedule.booking?.slotId !== slot.id
-      ),
+      slots: weekSlots,
     }
-    const map = buildApplicantCells(filtered, selectedSlotId)
-    if (!previewMode && schedule.booking) {
-      const bookingSlot = weekSlots.find(
-        (slot) => slot.id === schedule.booking?.slotId
-      )
-      if (bookingSlot) {
-        const key = slotKeyFromIso(bookingSlot.startsAt)
-        map.set(key, {
-          key,
-          startsAt: new Date(bookingSlot.startsAt),
-          state:
-            selectedSlotId === bookingSlot.id && schedule.canSchedule
-              ? "selected"
-              : "current",
-          slotId: bookingSlot.id,
-          detail: `${formatSlotLabel(bookingSlot)} (your booking)`,
-        })
-      }
-    }
+    const map = buildApplicantCells(filtered, selectionForGrid, previewMode)
     if (schedule.booked) {
       for (const occupied of schedule.booked) {
         if (!slotInWeek(occupied.startsAt, days)) continue
@@ -259,20 +255,20 @@ export function ApplicantInterviewScheduler({
     }
 
     return map
-  }, [days, previewMode, schedule, selectedSlotId, weekSlots])
+  }, [days, previewMode, schedule, selectionForGrid, weekSlots])
 
   const canConfirm =
     schedule?.canSchedule &&
-    selectedSlotId &&
-    selectedSlotId !== schedule.booking?.slotId
+    selectionForGrid &&
+    selectionForGrid !== schedule.booking?.slotId
 
   async function confirmBooking() {
-    if (!selectedSlotId || !schedule?.canSchedule) return
+    if (!selectionForGrid || !schedule?.canSchedule) return
     setPending(true)
     setError("")
     setSuccess("")
     try {
-      const result = await putApplicantInterviewBooking(selectedSlotId)
+      const result = await putApplicantInterviewBooking(selectionForGrid)
       setSuccess(
         result.booking.rescheduled
           ? "Interview rescheduled."
@@ -290,7 +286,8 @@ export function ApplicantInterviewScheduler({
 
   function onCellClick(cell: SlotGridCell) {
     if (pending || !schedule?.canSchedule || !cell.slotId) return
-    if (cell.state === "booked") return
+    if (cell.state === "booked" || cell.state === "unavailable") return
+    if (cell.slotId === selectedSlotId) return
     setSelectedSlotId(cell.slotId)
     setSuccess("")
     setError("")
