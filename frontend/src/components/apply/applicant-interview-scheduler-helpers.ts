@@ -1,10 +1,6 @@
 import type { SlotGridCell } from "@/components/interview/slot-grid"
 import type { ApplicantInterviewSchedule } from "@/lib/applicant-api"
 import {
-  formatDisplayTime,
-  formatInterviewSlotLabel,
-} from "@/lib/display-datetime"
-import {
   clampWeekStart,
   slotKeyFromIso,
   startOfWeek,
@@ -30,13 +26,7 @@ export function buildApplicantCells(
       startsAt: new Date(slot.startsAt),
       state: isSelected ? "selected" : isCurrent ? "current" : "available",
       slotId: slot.id,
-      detail:
-        isCurrent
-          ? `${formatInterviewSlotLabel(slot)} (your booking)`
-          : formatDisplayTime(new Date(slot.startsAt), {
-              hour: "numeric",
-              minute: "2-digit",
-            }),
+      detail: isCurrent ? "Your booking" : undefined,
     })
   }
 

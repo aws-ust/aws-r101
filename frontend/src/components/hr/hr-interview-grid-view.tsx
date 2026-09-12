@@ -102,7 +102,7 @@ function HrInterviewGridBody({
         cells={cells}
         loading={loading}
         scrollable
-        scrollShellClassName="max-h-[min(40rem,calc(100vh-14rem))] overflow-x-hidden overflow-y-auto overscroll-contain"
+        scrollShellClassName="max-h-[min(40rem,calc(100vh-14rem))] overflow-x-auto overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]"
         onCellClick={onCellClick}
         emptyMessage="No Monday–Saturday days fall in this interview week."
       />

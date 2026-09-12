@@ -43,23 +43,27 @@ type SlotGridProps = {
 
 const shellBaseClasses = "rounded-[20px] border border-biloba-flower/25"
 const shellWideClasses = "overflow-x-auto"
+const shellScrollClasses =
+  "max-h-[min(32rem,55vh)] overflow-x-auto overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]"
 const stickyHeaderClasses =
   "[&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-20 [&_thead_th]:bg-meteorite/95 [&_thead_th:first-child]:z-30"
+const stickyTimeColumnClasses =
+  "sticky left-0 z-10 bg-meteorite/95 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.45)]"
 const tableWideClasses = "min-w-full border-collapse text-left"
-const tableScrollClasses = "w-full table-fixed border-collapse text-left"
-const timeColumnClasses =
-  "bg-meteorite/95 px-1 text-center sm:px-2"
-const timeColumnWideClasses = `${timeColumnClasses} sticky left-0 z-10 w-[4.75rem] min-w-[4.75rem]`
-const timeColumnScrollClasses = `${timeColumnClasses} w-[14%]`
+const tableScrollClasses = "w-max min-w-full border-collapse text-left"
+const timeColumnClasses = "px-1 text-center sm:px-2"
+const timeColumnWideClasses = `${timeColumnClasses} ${stickyTimeColumnClasses} w-[4.75rem] min-w-[4.75rem] max-w-[4.75rem]`
+const timeColumnScrollClasses = `${timeColumnClasses} ${stickyTimeColumnClasses} w-[4.25rem] min-w-[4.25rem] max-w-[4.25rem] sm:w-[4.75rem] sm:min-w-[4.75rem] sm:max-w-[4.75rem]`
 const dayHeaderWideClasses =
   "min-w-[5.5rem] px-2 py-2 text-center font-sans text-xs font-semibold text-blue-chalk"
 const dayHeaderScrollClasses =
-  "min-w-0 px-0.5 py-2 text-center font-sans text-[0.7rem] font-semibold leading-tight text-blue-chalk sm:px-1 sm:text-xs"
-const daySubheaderClasses = "block font-mono text-[0.6rem] font-normal text-prelude sm:text-[0.65rem]"
+  "w-[3.25rem] min-w-[3.25rem] max-w-[3.25rem] px-0.5 py-2 text-center font-sans text-[0.65rem] font-semibold leading-tight text-blue-chalk sm:w-[4.5rem] sm:min-w-[4.5rem] sm:max-w-none sm:px-1 sm:text-xs"
+const daySubheaderClasses =
+  "block font-mono text-[0.55rem] font-normal text-prelude sm:text-[0.65rem]"
 const cellWideClasses =
   "h-9 min-w-[5.5rem] border border-haiti/40 px-1 transition-colors"
 const cellScrollClasses =
-  "h-9 min-w-0 border border-haiti/40 px-0.5 transition-colors"
+  "h-9 w-[3.25rem] min-w-[3.25rem] max-w-[3.25rem] border border-haiti/40 px-0 transition-colors sm:w-[4.5rem] sm:min-w-[4.5rem] sm:max-w-none sm:px-0.5"
 const unavailableClasses = "bg-haiti/30 cursor-pointer hover:bg-haiti/50"
 const availableClasses =
   "cursor-pointer bg-aquamarine/25 hover:bg-aquamarine/40"
@@ -133,9 +137,7 @@ export const SlotGrid = memo(function SlotGrid({
     return <p className={emptyClasses}>{emptyMessage}</p>
   }
 
-  const scrollShell =
-    scrollShellClassName ??
-    "max-h-[min(32rem,55vh)] overflow-x-hidden overflow-y-auto overscroll-contain"
+  const scrollShell = scrollShellClassName ?? shellScrollClasses
   const shellClasses = scrollable
     ? `${shellBaseClasses} ${scrollShell} ${stickyHeaderClasses}`
     : `${shellBaseClasses} ${shellWideClasses}`
@@ -145,7 +147,7 @@ export const SlotGrid = memo(function SlotGrid({
   } py-2 font-mono text-[0.65rem] uppercase tracking-wide text-prelude`
   const timeLabelClasses = `${
     scrollable ? timeColumnScrollClasses : timeColumnWideClasses
-  } py-1 font-mono text-[0.65rem] text-prelude whitespace-nowrap`
+  } py-1 font-mono text-[0.6rem] text-prelude whitespace-nowrap sm:text-[0.65rem]`
   const dayHeaderClasses = scrollable
     ? dayHeaderScrollClasses
     : dayHeaderWideClasses
@@ -221,7 +223,7 @@ export const SlotGrid = memo(function SlotGrid({
                       {clickable ? (
                         <button
                           type="button"
-                          className="flex size-full flex-col items-center justify-center px-1 text-[0.65rem] leading-tight text-blue-chalk"
+                          className="flex size-full flex-col items-center justify-center px-0.5 text-[0.6rem] leading-tight text-blue-chalk sm:px-1 sm:text-[0.65rem]"
                           onMouseDown={(event) => event.preventDefault()}
                           onClick={() => onCellClick?.(cell)}
                           aria-label={
@@ -234,16 +236,20 @@ export const SlotGrid = memo(function SlotGrid({
                           title={cell.detail}
                         >
                           {cell.detail ? (
-                            <span className="line-clamp-2">{cell.detail}</span>
+                            <span className="line-clamp-3 break-words text-center">
+                              {cell.detail}
+                            </span>
                           ) : null}
                         </button>
                       ) : (
                         <span
-                          className="flex size-full items-center justify-center px-1 text-[0.65rem] leading-tight"
+                          className="flex size-full items-center justify-center px-0.5 text-[0.6rem] leading-tight sm:px-1 sm:text-[0.65rem]"
                           title={cell.detail}
                         >
                           {cell.detail ? (
-                            <span className="line-clamp-2">{cell.detail}</span>
+                            <span className="line-clamp-3 break-words text-center">
+                              {cell.detail}
+                            </span>
                           ) : null}
                         </span>
                       )}
