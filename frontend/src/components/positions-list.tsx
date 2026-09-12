@@ -8,9 +8,9 @@ import {
 const listClasses =
   "panel-scroll flex max-h-[min(72vh,46rem)] flex-col gap-6 overflow-y-auto border-blue-chalk/15 p-4 lg:border-r"
 const officeHeaderClasses =
-  "font-mono text-[11px] font-medium uppercase tracking-wide text-aquamarine"
+  "font-mono text-[11px] font-medium uppercase tracking-wide text-aquamarine text-left"
 const committeeLabelClasses =
-  "font-mono text-[10px] uppercase tracking-wide text-prelude/75"
+  "font-mono text-[10px] uppercase tracking-wide text-prelude/75 text-left"
 const rowClasses =
   "relative w-full cursor-pointer rounded-[14px] border border-transparent px-3 py-2.5 text-left transition-colors hover:bg-biloba-flower/10"
 const activeRowClasses =

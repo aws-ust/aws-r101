@@ -11,7 +11,7 @@ import { useSectionSpy } from "@/hooks/use-section-spy"
 import { logoutApplicant } from "@/lib/applicant-api"
 import { scrollToSection } from "@/lib/scroll-to-section"
 import { SITE_NAV_ITEMS } from "@/lib/site-nav"
-import { chromeBarClasses } from "@/lib/surface"
+import { chromeBarClasses, chromeInsetClasses } from "@/lib/surface"
 import { cn } from "@/lib/utils"
 
 const NAV_ITEMS = SITE_NAV_ITEMS
@@ -21,7 +21,7 @@ const HOME_SECTION_IDS = NAV_ITEMS.flatMap((item) =>
 
 const headerClasses = "fixed inset-x-0 top-0 z-50"
 const barInnerClasses =
-  "mx-auto flex max-w-[1180px] items-center justify-between gap-4 px-4 py-2.5"
+  `mx-auto flex max-w-[1180px] items-center justify-between gap-4 py-2.5 ${chromeInsetClasses}`
 const mobileOverlayClasses =
   "fixed inset-0 z-40 transition-[opacity,visibility] duration-300 md:hidden"
 const mobileOverlayOpenClasses = "visible pointer-events-auto opacity-100"
