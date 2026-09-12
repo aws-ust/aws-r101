@@ -13,14 +13,15 @@ import {
   glassPanelClasses,
   pageShellClasses,
 } from "@/lib/surface"
+import { cn } from "@/lib/utils"
 
 const eyebrowClasses =
   "w-fit font-mono text-xs font-medium uppercase tracking-wide text-aquamarine"
 const backClasses =
   "mb-3 mt-3 inline-flex font-mono text-xs text-prelude hover:text-blue-chalk"
 const headingRowClasses = "flex flex-wrap items-center gap-3"
-const titleClasses = `max-w-[640px] font-sans text-4xl font-bold text-blue-chalk md:text-5xl ${displayTitleLeadingClasses}`
-const panelClasses = `${glassPanelClasses} mt-8 px-6 py-8 md:px-10`
+const titleClasses = `max-w-full font-sans text-4xl font-bold text-balance break-words text-blue-chalk md:text-5xl ${displayTitleLeadingClasses}`
+const panelClasses = `${glassPanelClasses} mt-8 min-w-0 overflow-x-clip px-4 py-8 sm:px-6 md:px-10`
 const archivedPillClasses =
   "rounded-pill bg-daisy-bush/55 px-3 py-1 font-mono text-xs text-blue-chalk"
 const missingClasses = "font-sans text-sm text-prelude"
@@ -59,7 +60,7 @@ export function HrApplicationDetail() {
   }
 
   return (
-    <main className={pageShellClasses}>
+    <main className={cn(pageShellClasses, "min-w-0 max-w-full overflow-x-clip")}>
       <p className={eyebrowClasses}>{"// APPLICATIONS"}</p>
       <Link href="/admin/hr" className={backClasses}>
         ← Back to Applications

@@ -7,13 +7,19 @@ import { firstChoiceCommittee, fullName } from "@/lib/api"
 import type { HrApplication } from "@/lib/hr-application-types"
 
 const rowClasses =
-  "glass flex items-center gap-3 rounded-pill border border-blue-chalk/20 bg-meteorite/40 px-5 py-3.5 transition-colors hover:border-biloba-flower/70"
+  "glass flex min-w-0 items-center gap-2 rounded-[22px] border border-blue-chalk/20 bg-meteorite/40 px-3 py-3 transition-colors hover:border-biloba-flower/70 sm:gap-3 sm:rounded-pill sm:px-5 sm:py-3.5"
 const firstRowClasses = "border-biloba-flower/70"
-const linkClasses = "flex min-w-0 flex-1 items-center justify-between gap-4"
-const nameBlockClasses = "flex flex-col gap-0.5"
-const nameClasses = "font-sans text-base font-semibold text-blue-chalk"
+const linkClasses =
+  "flex min-w-0 flex-1 flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-4"
+const nameBlockClasses = "flex min-w-0 flex-col gap-0.5"
+const nameClasses =
+  "font-sans text-base font-semibold text-balance text-blue-chalk"
 const codeClasses = "font-mono text-xs text-prelude"
-const metaClasses = "flex items-center gap-3 font-sans text-sm text-prelude"
+const committeeClasses =
+  "min-w-0 font-sans text-sm leading-snug text-prelude line-clamp-2 md:max-w-[14rem] md:truncate md:text-right lg:max-w-xs"
+const metaClasses =
+  "flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 md:shrink-0 md:flex-nowrap md:justify-end md:gap-3"
+const metaTrailingClasses = "flex shrink-0 items-center gap-2 md:gap-3"
 const actionIconClasses = "size-4"
 const archiveIconButtonClasses =
   "size-8 shrink-0 rounded-full border-rose-blush/45 bg-rose-deep/25 text-rose-glow hover:border-rose-blush/65 hover:bg-rose-deep/45 hover:text-blue-chalk"
@@ -60,12 +66,18 @@ export function ApplicationRow({
           <span className={nameClasses}>{name}</span>
           <span className={codeClasses}>{application.applicationCode}</span>
         </div>
-        <span className={metaClasses}>
-          <span>{firstChoiceCommittee(application)}</span>
-          {archived ? <span className={archivedClasses}>Archived</span> : null}
-          <StatusPill status={application.status} />
-          <ChevronRight className="size-4 text-prelude" />
-        </span>
+        <div className="flex min-w-0 flex-col gap-2 md:flex-row md:items-center md:justify-end md:gap-3">
+          <span className={committeeClasses}>
+            {firstChoiceCommittee(application)}
+          </span>
+          <span className={metaClasses}>
+            {archived ? <span className={archivedClasses}>Archived</span> : null}
+            <span className={metaTrailingClasses}>
+              <StatusPill status={application.status} />
+              <ChevronRight className="size-4 shrink-0 text-prelude" />
+            </span>
+          </span>
+        </div>
       </Link>
     </div>
   )

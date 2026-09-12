@@ -6,11 +6,13 @@ import type { ApplicationDocument } from "@/lib/application-types"
 
 const missingClasses = "font-sans text-sm text-prelude"
 const documentCardClasses =
-  "flex min-w-64 flex-1 flex-col gap-3 rounded-[14px] border border-blue-chalk/20 bg-haiti/35 p-4 text-left"
-const documentNameClasses = "font-sans text-sm font-semibold text-blue-chalk"
+  "flex min-w-0 w-full flex-col gap-3 rounded-[14px] border border-blue-chalk/20 bg-haiti/35 p-4 text-left"
+const documentNameClasses =
+  "min-w-0 font-sans text-sm font-semibold leading-snug text-blue-chalk [overflow-wrap:anywhere]"
 const documentMetaClasses = "font-sans text-xs text-prelude"
-const documentActionsClasses = "flex flex-wrap gap-2"
-const documentButtonClasses = "h-9 px-4 text-xs"
+const documentActionsClasses = "grid w-full grid-cols-2 gap-2"
+const documentButtonClasses =
+  "h-11 w-full min-w-0 justify-center px-2 text-sm"
 
 function formatFileSize(bytes: number) {
   return `${(bytes / 1_000_000).toFixed(bytes < 1_000_000 ? 2 : 1)} MB`
@@ -30,7 +32,9 @@ export function HrApplicationDocumentActions({
   const baseUrl = `/api/applications/${applicationId}/documents/${document.documentType}`
   return (
     <div className={documentCardClasses}>
-      <p className={documentNameClasses}>{document.fileName}</p>
+      <p className={documentNameClasses} title={document.fileName}>
+        {document.fileName}
+      </p>
       <p className={documentMetaClasses}>{formatFileSize(document.fileSizeBytes)}</p>
       <p className={documentMetaClasses}>
         Available until {formatAppliedDate(document.availableUntil)}

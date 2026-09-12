@@ -4,7 +4,7 @@ import { ApplicationListSkeleton } from "@/components/hr/application-list-skelet
 import { pageCount } from "@/components/hr/application-pagination-utils"
 import type { HrApplication } from "@/lib/hr-application-types"
 
-const listClasses = "mt-8 flex flex-col gap-3"
+const listClasses = "mt-8 flex min-w-0 flex-col gap-3"
 const emptyClasses = "mt-8 font-sans text-sm text-prelude"
 
 type ApplicationListResultsProps = {
