@@ -3,6 +3,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { useEffect, useEffectEvent, useRef } from "react"
+import { RecruitmentStatusBanner } from "@/components/recruitment-status-banner"
 import { Button } from "@/components/ui/button"
 import { scrollToSection } from "@/lib/scroll-to-section"
 
@@ -236,6 +237,7 @@ export function Hero() {
 
         <div className={lowerContentClasses}>
           <div className={informationClasses}>
+            <RecruitmentStatusBanner />
             <p className={descriptionClasses}>
               We&apos;re a student-led cloud &amp; AI community at the University of Santo Tomas
               &mdash; part of a global network of builders across the Philippines and beyond.
