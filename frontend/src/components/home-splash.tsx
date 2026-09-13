@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { useEffect, useState, useSyncExternalStore } from "react"
+import { useEffect, useLayoutEffect, useState, useSyncExternalStore } from "react"
 import { createPortal, preload } from "react-dom"
 import { m, useReducedMotion } from "motion/react"
 import { HomeSplashClouds } from "@/components/home-splash-clouds"
@@ -9,6 +9,7 @@ import {
   HOME_SPLASH_EXIT_MS,
   HOME_SPLASH_MAX_WAIT_MS,
   HOME_SPLASH_MIN_HOLD_MS,
+  clearHomeSplashActiveLock,
   markHomeSplashSeen,
   shouldSkipHomeSplashClient,
 } from "@/lib/home-splash"
@@ -77,6 +78,10 @@ export function HomeSplash() {
   const reducedMotion = useReducedMotion()
   const [phase, setPhase] = useState<SplashPhase>("loading")
 
+  useLayoutEffect(() => {
+    clearHomeSplashActiveLock()
+  }, [skip])
+
   useEffect(() => {
     if (skip || phase !== "loading") return
 
@@ -88,6 +93,7 @@ export function HomeSplash() {
       finished = true
       if (reducedMotion) {
         markHomeSplashSeen()
+        clearHomeSplashActiveLock()
         setPhase("done")
         return
       }
@@ -96,7 +102,7 @@ export function HomeSplash() {
 
     function maybeComplete() {
       const elapsed = Date.now() - startedAt
-      if (document.readyState === "complete" && elapsed >= HOME_SPLASH_MIN_HOLD_MS) {
+      if (elapsed >= HOME_SPLASH_MIN_HOLD_MS) {
         completeLoading()
       }
     }
@@ -126,6 +132,7 @@ export function HomeSplash() {
     if (phase !== "exiting") return
     const timeout = window.setTimeout(() => {
       markHomeSplashSeen()
+      clearHomeSplashActiveLock()
       setPhase("done")
     }, HOME_SPLASH_EXIT_MS + 180)
     return () => window.clearTimeout(timeout)

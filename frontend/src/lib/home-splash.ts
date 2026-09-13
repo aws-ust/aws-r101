@@ -1,6 +1,12 @@
 export const HOME_SPLASH_SEEN_KEY = "aws-ust-home-splash-seen"
 /** Set by beforeInteractive bootstrap; avoids mutating `<html>` (hydration-safe). */
 export const HOME_SPLASH_SKIP_GLOBAL = "__awsUstHomeSplashSkip"
+/** Injected before paint on first visit; removed when splash exits (no html classList). */
+export const HOME_SPLASH_LOCK_STYLE_ID = "home-splash-lock"
+
+const HOME_SPLASH_LOCK_CSS =
+  "html{overflow:hidden}body{overflow:hidden}body::before{content:'';position:fixed;inset:0;z-index:79;background:#170f33;pointer-events:none}"
+const HOME_SPLASH_LOCK_FAILSAFE_MS = 8000
 
 export const HOME_SPLASH_MIN_HOLD_MS = 1100
 export const HOME_SPLASH_MAX_WAIT_MS = 3500
@@ -12,7 +18,13 @@ type HomeSplashWindow = Window &
   }
 
 export function homeSplashSkipBootstrapScript(): string {
-  return `try{if(sessionStorage.getItem("${HOME_SPLASH_SEEN_KEY}"))window.${HOME_SPLASH_SKIP_GLOBAL}=1}catch(e){}`
+  const css = HOME_SPLASH_LOCK_CSS.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+  return `try{var p=location.pathname;if(p!=="/"&&p!=="")return;var s=sessionStorage.getItem("${HOME_SPLASH_SEEN_KEY}");if(s)window.${HOME_SPLASH_SKIP_GLOBAL}=1;else{var el=document.createElement("style");el.id="${HOME_SPLASH_LOCK_STYLE_ID}";el.textContent="${css}";(document.head||document.documentElement).appendChild(el);setTimeout(function(){document.getElementById("${HOME_SPLASH_LOCK_STYLE_ID}")?.remove()},${HOME_SPLASH_LOCK_FAILSAFE_MS})}}catch(e){}`
+}
+
+export function clearHomeSplashActiveLock() {
+  if (typeof document === "undefined") return
+  document.getElementById(HOME_SPLASH_LOCK_STYLE_ID)?.remove()
 }
 
 export function markHomeSplashSeen() {

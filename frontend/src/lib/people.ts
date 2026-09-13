@@ -38,12 +38,18 @@ const CURRENT_EB_PHOTOS: Partial<Record<string, string>> = {
 /** Outgoing EB photos in `public/people/previous-ebs/` keyed by `OfficerSeat.id`. */
 const PREVIOUS_EB_PHOTOS: Partial<Record<string, string>> = {
   ceo: "/people/previous-ebs/CEO_Viray.JPG",
+  cfo: "/people/previous-ebs/CFO_Palanog.JPG",
   chro: "/people/previous-ebs/CHRO_To.png",
   "corp-sec": "/people/previous-ebs/Sec_Elleazar.JPG",
 }
 
 /** Committee director photos in `public/people/directors/` keyed by seeded committee name. */
 const DIRECTOR_PHOTOS_BY_COMMITTEE: Partial<Record<string, string>> = {
+  "Logistics Committee": "/people/directors/Logistics_Ladia.jpg",
+  "Secretariat Committee": "/people/directors/Secretary_de%20Mesa.jpg",
+  "Technicals Committee": "/people/directors/Technicals_Lapuebla.jpeg",
+  "Finance Committee": "/people/directors/Finance_Gamban.jpg",
+  "Human Resources Committee": "/people/directors/HR_Tamondong.jpg",
   "Marketing Committee": "/people/directors/Marketing_Lopez.jpg",
 }
 
