@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { getCookie } from "hono/cookie";
 import { sign, verify } from "hono/jwt";
 import type { Context, MiddlewareHandler } from "hono";
+import { usesSecureCookies } from "./lib/secure-cookie";
 
 export const APPLICANT_AUTH_COOKIE_NAME = "applicant_token";
 export const APPLICANT_SESSION_SECONDS = 60 * 60;
@@ -44,7 +45,7 @@ export function applicantOtpMatches(
 export function applicantCookieOptions(maxAge: number) {
   return {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: usesSecureCookies(),
     sameSite: "Lax" as const,
     path: "/",
     maxAge,

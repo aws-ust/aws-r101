@@ -27,6 +27,13 @@ import {
 } from "../lib/email/service";
 import { InterviewScheduleError } from "../lib/interview-scheduling";
 import { resolveRecruitmentSeasonStatus } from "../lib/recruitment-window";
+import {
+  applicationArchivePatchSchema,
+  applicationDecisionPatchSchema,
+  zodErrorMessage,
+} from "../lib/hr-schemas";
+import { logHrAudit } from "../lib/hr-audit";
+import { internalApiError, logApiError } from "../lib/api-errors";
 
 export const applicationsRoutes = new Hono();
 
@@ -155,10 +162,10 @@ applicationsRoutes.post("/", async (c) => {
     const result = await createApplication(parsed.value);
     if (result.created) {
       void sendApplicationSubmitted(result.application).catch((err) => {
-        console.error("submission email failed", err);
+        logApiError(c, err, "submission email failed");
       });
       void sendOfficerApplicationNotice(result.application).catch((err) => {
-        console.error("officer application notice failed", err);
+        logApiError(c, err, "officer application notice failed");
       });
     }
     return c.json(result.application, result.created ? 201 : 200);
@@ -179,8 +186,12 @@ applicationsRoutes.post("/", async (c) => {
     if (message.includes("metadata") || message.includes("not a PDF")) {
       return c.json({ error: message }, 400);
     }
-    console.error("Could not create application", error);
-    return c.json({ error: "Could not create application." }, 503);
+    return internalApiError(
+      c,
+      error,
+      "Could not create application",
+      "Could not create application.",
+    );
   }
 });
 
@@ -190,55 +201,16 @@ applicationsRoutes.patch("/:id/decisions", requireAuth, async (c) => {
     return c.json({ error: "Invalid application id." }, 400);
   }
 
-  const body = (await c.req.json().catch(() => null)) as
-    | Record<string, unknown>
-    | null;
-  if (!body) {
-    return c.json({ error: "Request body must be a JSON object." }, 400);
+  const body = await c.req.json().catch(() => null);
+  const parsed = applicationDecisionPatchSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: zodErrorMessage(parsed.error) }, 400);
   }
 
-  const hasPositionId = Object.hasOwn(body, "positionId");
-  const hasDecisionStatus = Object.hasOwn(body, "decisionStatus");
-  const changesChoice = hasPositionId && hasDecisionStatus;
-  const changesFinalPlacement = Object.hasOwn(body, "finalPositionId");
-  if (hasPositionId !== hasDecisionStatus) {
-    return c.json(
-      { error: "positionId and decisionStatus must be provided together." },
-      400,
-    );
-  }
-  if (!changesChoice && !changesFinalPlacement) {
-    return c.json(
-      { error: "Provide a committee decision or finalPositionId." },
-      400,
-    );
-  }
-  if (
-    changesChoice &&
-    (!isNonEmptyString(body.positionId) ||
-      !isUuid(body.positionId) ||
-      (body.decisionStatus !== "approved" &&
-        body.decisionStatus !== "rejected"))
-  ) {
-    return c.json(
-      {
-        error:
-          "positionId must be a UUID and decisionStatus must be approved or rejected.",
-      },
-      400,
-    );
-  }
-  if (
-    changesFinalPlacement &&
-    body.finalPositionId !== null &&
-    (!isNonEmptyString(body.finalPositionId) ||
-      !isUuid(body.finalPositionId))
-  ) {
-    return c.json(
-      { error: "finalPositionId must be a UUID or null." },
-      400,
-    );
-  }
+  const changesChoice =
+    parsed.data.positionId !== undefined &&
+    parsed.data.decisionStatus !== undefined;
+  const changesFinalPlacement = parsed.data.finalPositionId !== undefined;
 
   const payload = c.get("jwtPayload") as { sub?: unknown };
   const reviewerEmail =
@@ -249,12 +221,12 @@ applicationsRoutes.patch("/:id/decisions", requireAuth, async (c) => {
       {
         ...(changesChoice
           ? {
-              positionId: body.positionId as string,
-              decisionStatus: body.decisionStatus as ChoiceDecisionStatus,
+              positionId: parsed.data.positionId as string,
+              decisionStatus: parsed.data.decisionStatus as ChoiceDecisionStatus,
             }
           : {}),
         ...(changesFinalPlacement
-          ? { finalPositionId: body.finalPositionId as string | null }
+          ? { finalPositionId: parsed.data.finalPositionId as string | null }
           : {}),
       },
       reviewerEmail,
@@ -262,6 +234,12 @@ applicationsRoutes.patch("/:id/decisions", requireAuth, async (c) => {
     if (!updated) {
       return c.json({ error: "Application not found." }, 404);
     }
+    logHrAudit({
+      actorEmail: reviewerEmail,
+      action: "application.decision",
+      resourceType: "application",
+      resourceId: id,
+    });
     return c.json(updated);
   } catch (error) {
     if (error instanceof ApplicationDecisionError) {
@@ -297,11 +275,10 @@ applicationsRoutes.patch("/:id/archive", requireAuth, async (c) => {
     return c.json({ error: "Invalid application id." }, 400);
   }
 
-  const body = (await c.req.json().catch(() => null)) as
-    | Record<string, unknown>
-    | null;
-  if (!body || typeof body.archived !== "boolean") {
-    return c.json({ error: "archived must be a boolean." }, 400);
+  const body = await c.req.json().catch(() => null);
+  const parsed = applicationArchivePatchSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: zodErrorMessage(parsed.error) }, 400);
   }
 
   const payload = c.get("jwtPayload") as { sub?: unknown };
@@ -309,12 +286,18 @@ applicationsRoutes.patch("/:id/archive", requireAuth, async (c) => {
     typeof payload.sub === "string" ? payload.sub : undefined;
   const updated = await setApplicationArchived(
     id,
-    body.archived,
+    parsed.data.archived,
     reviewerEmail,
   );
   if (!updated) {
     return c.json({ error: "Application not found." }, 404);
   }
+  logHrAudit({
+    actorEmail: reviewerEmail,
+    action: parsed.data.archived ? "application.archive" : "application.unarchive",
+    resourceType: "application",
+    resourceId: id,
+  });
   return c.json(updated);
 });
 
@@ -360,7 +343,11 @@ applicationsRoutes.get("/:id/documents/:type", requireAuth, async (c) => {
     c.header("Cache-Control", "no-store");
     return c.redirect(url, 302);
   } catch (error) {
-    console.error("Could not load application document", error);
-    return c.json({ error: "Document storage is unavailable." }, 503);
+    return internalApiError(
+      c,
+      error,
+      "Could not load application document",
+      "Document storage is unavailable.",
+    );
   }
 });

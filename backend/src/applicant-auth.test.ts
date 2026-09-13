@@ -11,6 +11,7 @@ import {
   applications,
   emailNotifications,
 } from "./db/schema";
+import { originHeaders } from "./test-support/request";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -42,7 +43,7 @@ after(async () => {
 async function postJson(path: string, body: Record<string, unknown>) {
   return app.request(path, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: originHeaders({ "content-type": "application/json" }),
     body: JSON.stringify(body),
   });
 }

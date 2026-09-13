@@ -19,6 +19,7 @@ import {
   positions,
   recruitmentWindows,
 } from "./db/schema";
+import { originHeaders } from "./test-support/request";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -98,10 +99,10 @@ function applicantRequest(
 ) {
   return app.request(path, {
     method,
-    headers: {
+    headers: originHeaders({
       ...(body ? { "content-type": "application/json" } : {}),
       Cookie: `${APPLICANT_AUTH_COOKIE_NAME}=${applicantToken}`,
-    },
+    }),
     body: body ? JSON.stringify(body) : undefined,
   });
 }
@@ -317,7 +318,7 @@ test("applicant editing", async (t) => {
       (
         await app.request("/applicant/application", {
           method: "PATCH",
-          headers: { "content-type": "application/json" },
+          headers: originHeaders({ "content-type": "application/json" }),
           body: JSON.stringify(baseEditBody()),
         })
       ).status,

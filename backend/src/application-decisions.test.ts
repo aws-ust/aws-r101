@@ -14,6 +14,7 @@ import {
   users,
 } from "./db/schema";
 import { getApplicantEditableApplication } from "./lib/applicant-editing";
+import { originHeaders } from "./test-support/request";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -52,10 +53,10 @@ function decisionRequest(
 ) {
   return app.request(`/applications/${id}/decisions`, {
     method: "PATCH",
-    headers: {
+    headers: originHeaders({
       "content-type": "application/json",
       ...(authenticated ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    }),
     body: JSON.stringify(body),
   });
 }
@@ -165,7 +166,7 @@ test("HR committee decisions", async (t) => {
 
     const editable = await getApplicantEditableApplication(applicationId);
     assert.equal(editable?.canEdit, false);
-    assert.match(editable?.lockReason ?? "", /HR review has started/i);
+    assert.match(editable?.lockReason ?? "", /can no longer be edited/i);
 
     const [choiceAudit] = await db
       .select({

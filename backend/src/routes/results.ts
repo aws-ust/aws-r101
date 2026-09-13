@@ -9,6 +9,7 @@ import {
   ResultsReleaseBlockedError,
 } from "../lib/results-release";
 import { getResultsPreview } from "../lib/results-preview";
+import { logHrAudit } from "../lib/hr-audit";
 
 export const resultsRoutes = new Hono();
 
@@ -22,9 +23,14 @@ resultsRoutes.get("/preview", async (c) => {
 resultsRoutes.post("/release", async (c) => {
   try {
     const payload = c.get("jwtPayload") as { sub?: unknown };
-    const release = await releaseResults(
-      typeof payload.sub === "string" ? payload.sub : undefined,
-    );
+    const actorEmail =
+      typeof payload.sub === "string" ? payload.sub : undefined;
+    const release = await releaseResults(actorEmail);
+    logHrAudit({
+      actorEmail,
+      action: "results.release",
+      resourceType: "results_batch",
+    });
     const delivery = await deliverResultNotifications(
       release.notificationIds,
     );

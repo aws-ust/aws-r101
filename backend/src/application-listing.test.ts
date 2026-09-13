@@ -13,6 +13,7 @@ import {
   positions,
   users,
 } from "./db/schema";
+import { originHeaders } from "./test-support/request";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -56,7 +57,7 @@ function applicationCode(index: number) {
 async function list(params: Record<string, string>) {
   const query = new URLSearchParams(params);
   return app.request(`/applications?${query}`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: originHeaders({ Authorization: `Bearer ${token}` }),
   });
 }
 

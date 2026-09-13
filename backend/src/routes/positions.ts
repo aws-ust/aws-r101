@@ -2,11 +2,17 @@ import { Hono } from "hono";
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "../db";
 import { committees, positions } from "../db/schema";
-import { requireAuth } from "../auth";
+import { authenticateHrRequest, requireAuth } from "../auth";
 import {
   InterviewScheduleError,
   listOpenInterviewSlotsForPosition,
 } from "../lib/interview-scheduling";
+import {
+  positionCreateSchema,
+  positionPatchSchema,
+  zodErrorMessage,
+} from "../lib/hr-schemas";
+import { logHrAudit } from "../lib/hr-audit";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -126,66 +132,6 @@ async function committeeExists(id: string) {
   return rows.length > 0;
 }
 
-function parsePositionPayload(
-  body: unknown,
-  partial: boolean
-): { ok: true; data: Partial<PositionPayload> } | { ok: false; error: string } {
-  if (typeof body !== "object" || body === null) {
-    return { ok: false, error: "Invalid JSON body" };
-  }
-
-  const record = body as Record<string, unknown>;
-  const data: Partial<PositionPayload> = {};
-
-  if ("title" in record) {
-    if (typeof record.title !== "string" || !record.title.trim()) {
-      return {
-        ok: false,
-        error: "title is required and must be a non-empty string",
-      };
-    }
-    data.title = record.title.trim();
-  } else if (!partial) {
-    return { ok: false, error: "title is required" };
-  }
-
-  if ("committee_id" in record) {
-    if (typeof record.committee_id !== "string" || !record.committee_id.trim()) {
-      return {
-        ok: false,
-        error: "committee_id is required and must be a string",
-      };
-    }
-    const committeeId = record.committee_id.trim();
-    if (!isUuid(committeeId)) {
-      return { ok: false, error: "committee_id must be a UUID." };
-    }
-    data.committee_id = committeeId;
-  } else if (!partial) {
-    return { ok: false, error: "committee_id is required" };
-  }
-
-  if ("description" in record) {
-    if (typeof record.description !== "string") {
-      return { ok: false, error: "description must be a string" };
-    }
-    data.description = record.description;
-  } else if (!partial) {
-    data.description = "";
-  }
-
-  if ("responsibilities" in record) {
-    if (typeof record.responsibilities !== "string") {
-      return { ok: false, error: "responsibilities must be a string" };
-    }
-    data.responsibilities = record.responsibilities;
-  } else if (!partial) {
-    data.responsibilities = "";
-  }
-
-  return { ok: true, data };
-}
-
 async function hasDuplicateTitle(committeeId: string, title: string, excludeId?: string) {
   const rows = await db
     .select({ id: positions.id })
@@ -205,8 +151,14 @@ export const positionsRoutes = new Hono();
 
 positionsRoutes.get("/", async (c) => {
   const scope = c.req.query("scope");
-  const rows =
-    scope === "all" ? await selectAllPositions() : await selectOpenPositions();
+  if (scope === "all") {
+    if (!(await authenticateHrRequest(c))) {
+      return c.json({ error: "unauthorized" }, 401);
+    }
+    const rows = await selectAllPositions();
+    return c.json(rows.map(toPositionResponse));
+  }
+  const rows = await selectOpenPositions();
   return c.json(rows.map(toPositionResponse));
 });
 
@@ -230,12 +182,17 @@ positionsRoutes.get("/:id/interview-slots", async (c) => {
 
 positionsRoutes.post("/", requireAuth, async (c) => {
   const body = await c.req.json().catch(() => null);
-  const parsed = parsePositionPayload(body, false);
-  if (!parsed.ok) {
-    return c.json({ error: parsed.error }, 400);
+  const parsed = positionCreateSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: zodErrorMessage(parsed.error) }, 400);
   }
 
-  const payload = parsed.data as PositionPayload;
+  const payload: PositionPayload = {
+    title: parsed.data.title,
+    committee_id: parsed.data.committee_id,
+    description: parsed.data.description,
+    responsibilities: parsed.data.responsibilities,
+  };
 
   if (!(await committeeExists(payload.committee_id))) {
     return c.json({ error: "Committee not found" }, 404);
@@ -259,6 +216,13 @@ positionsRoutes.post("/", requireAuth, async (c) => {
     .returning({ id: positions.id });
 
   const row = await selectPositionById(inserted.id);
+  const jwt = c.get("jwtPayload") as { sub?: unknown };
+  logHrAudit({
+    actorEmail: typeof jwt.sub === "string" ? jwt.sub : undefined,
+    action: "position.create",
+    resourceType: "position",
+    resourceId: inserted.id,
+  });
   return c.json(toPositionResponse(row), 201);
 });
 
@@ -274,9 +238,9 @@ positionsRoutes.patch("/:id", requireAuth, async (c) => {
   }
 
   const body = await c.req.json().catch(() => null);
-  const parsed = parsePositionPayload(body, true);
-  if (!parsed.ok) {
-    return c.json({ error: parsed.error }, 400);
+  const parsed = positionPatchSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: zodErrorMessage(parsed.error) }, 400);
   }
 
   const title = parsed.data.title ?? existing.title;
@@ -311,5 +275,12 @@ positionsRoutes.patch("/:id", requireAuth, async (c) => {
     .where(eq(positions.id, id));
 
   const row = await selectPositionById(id);
+  const jwt = c.get("jwtPayload") as { sub?: unknown };
+  logHrAudit({
+    actorEmail: typeof jwt.sub === "string" ? jwt.sub : undefined,
+    action: "position.update",
+    resourceType: "position",
+    resourceId: id,
+  });
   return c.json(toPositionResponse(row));
 });

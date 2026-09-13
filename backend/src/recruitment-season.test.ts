@@ -3,6 +3,7 @@ import test, { after, before } from "node:test";
 import { app } from "./app";
 import { db } from "./db";
 import { recruitmentWindows } from "./db/schema";
+import { originHeaders } from "./test-support/request";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -32,7 +33,7 @@ test("new applications are blocked before recruitment starts", async (t) => {
   await t.test("POST /applications returns 403", async () => {
     const response = await app.request("/applications", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: originHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({}),
     });
     assert.equal(response.status, 403);
@@ -43,7 +44,7 @@ test("new applications are blocked before recruitment starts", async (t) => {
   await t.test("POST /uploads/presign returns 403", async () => {
     const response = await app.request("/uploads/presign", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: originHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({ documents: [] }),
     });
     assert.equal(response.status, 403);
