@@ -177,18 +177,27 @@ class BackendStack extends cdk.Stack {
         allowHeaders: ["content-type", "authorization"],
       },
     });
-    httpApi.addRoutes({ path: "/uploads/presign", methods: [apigateway.HttpMethod.POST], integration });
+    const presignRoutes = httpApi.addRoutes({
+      path: "/uploads/presign",
+      methods: [apigateway.HttpMethod.POST],
+      integration,
+    });
     const stage = httpApi.defaultStage?.node.defaultChild as apigateway.CfnStage;
     stage.defaultRouteSettings = { throttlingRateLimit: 5, throttlingBurstLimit: 20 };
     stage.routeSettings = {
       "POST /uploads/presign": { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 10 },
     };
+    // Stage's routeSettings reference this route by key, so CloudFormation must
+    // create the route before the stage or it 404s looking up "POST /uploads/presign".
+    for (const route of presignRoutes) {
+      stage.addDependency(route.node.defaultChild as apigateway.CfnRoute);
+    }
 
     const schedulerRole = new iam.Role(this, "CleanupScheduleRole", {
       assumedBy: new iam.ServicePrincipal("scheduler.amazonaws.com"),
     });
     cleanupFunction.grantInvoke(schedulerRole);
-    const cleanupSchedule = new scheduler.CfnSchedule(this, "FreePlanCleanupSchedule", {
+    new scheduler.CfnSchedule(this, "FreePlanCleanupSchedule", {
       flexibleTimeWindow: { mode: "OFF" },
       scheduleExpression: `at(${freePlanEnd.toISOString().replace(/\.\d{3}Z$/, "")})`,
       scheduleExpressionTimezone: "UTC",
@@ -198,7 +207,6 @@ class BackendStack extends cdk.Stack {
         retryPolicy: { maximumEventAgeInSeconds: 3600, maximumRetryAttempts: 3 },
       },
     });
-    cleanupSchedule.addOverride("Properties.ActionAfterCompletion", "DELETE");
 
     const interviewReminderRole = new iam.Role(
       this,
