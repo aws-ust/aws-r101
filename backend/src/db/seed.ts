@@ -45,7 +45,10 @@ async function main() {
         role: "admin",
       },
     ])
-    .onConflictDoNothing({ target: users.email });
+    .onConflictDoUpdate({
+      target: users.email,
+      set: { passwordHash: devPasswordHash },
+    });
 
   const startsAt = new Date();
   const endsAt = new Date(startsAt.getTime() + 7 * 24 * 60 * 60 * 1000);
