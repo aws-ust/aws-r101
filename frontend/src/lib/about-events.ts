@@ -13,7 +13,7 @@ export const ABOUT_EVENTS: AboutEvent[] = [
     academicYear: "SY 2025–26",
     title: "Freshman Orientation",
     description:
-      "Welcomed new Thomasians to AWS Builders – UST and introduced how to get involved on campus.",
+      "Organization founder Josh Kenn Viray introduced incoming freshmen to the org—then AWS Learning Club – UST, now AWS Builders – UST—as they began their Thomasian journey.",
     imageSrc: "/events/sy-25-26/freshman-orientaion-2526.png",
   },
   {
