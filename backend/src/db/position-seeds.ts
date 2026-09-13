@@ -43,7 +43,7 @@ export const POSITION_SEEDS: PositionSeed[] = [
       "Assist in coordinating fundraising and financial activities",
       "Act as the CFO's associate",
     ],
-    isOpen: true,
+    isOpen: false,
   },
   {
     name: "Finance Committee Staff",
@@ -80,7 +80,7 @@ export const POSITION_SEEDS: PositionSeed[] = [
       "Monitor administrative tasks and deadlines",
       "Act as the Corporate Secretary's associate",
     ],
-    isOpen: true,
+    isOpen: false,
   },
   {
     name: "Secretariat Committee Staff",
@@ -335,7 +335,7 @@ export const POSITION_SEEDS: PositionSeed[] = [
       "Help facilitate communication between technical committees",
       "Act as the CTO's associate",
     ],
-    isOpen: true,
+    isOpen: false,
   },
   {
     name: "Technicals Committee Staff",

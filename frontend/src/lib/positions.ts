@@ -9,6 +9,7 @@ export type Position = {
   description: string
   responsibilities: string[]
   isOpen: boolean
+  openSlots: number
 }
 
 export type PositionCommitteeGroup = {
@@ -69,5 +70,5 @@ export function isAssistantRole(position: Position) {
 }
 
 export function openSpots(position: Position) {
-  return isAssistantRole(position) ? 1 : 4
+  return position.openSlots
 }

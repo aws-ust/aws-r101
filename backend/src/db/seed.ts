@@ -12,6 +12,7 @@ import {
   users,
 } from "./schema";
 import { POSITION_SEEDS } from "./position-seeds";
+import { resolvePositionOpenSlots } from "./position-open-slots";
 
 // Local/dev only.
 const DEV_PASSWORD = "password123";
@@ -117,6 +118,7 @@ async function main() {
       description: positionSeed.description,
       responsibilities: positionSeed.responsibilities.join("\n"),
       isOpen: positionSeed.isOpen,
+      openSlots: resolvePositionOpenSlots(positionSeed.name),
     };
 
     await db
@@ -129,6 +131,7 @@ async function main() {
           description: values.description,
           responsibilities: values.responsibilities,
           isOpen: values.isOpen,
+          openSlots: values.openSlots,
         },
       });
   }

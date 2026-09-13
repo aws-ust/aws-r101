@@ -38,6 +38,7 @@ type PositionResponse = {
   description: string;
   responsibilities: string;
   isOpen: boolean;
+  openSlots: number;
 };
 
 type PositionRow = {
@@ -50,6 +51,7 @@ type PositionRow = {
   description: string | null;
   responsibilities: string | null;
   isOpen: boolean;
+  openSlots: number;
 };
 
 function toPositionResponse(row: PositionRow): PositionResponse {
@@ -63,6 +65,7 @@ function toPositionResponse(row: PositionRow): PositionResponse {
     description: row.description ?? "",
     responsibilities: row.responsibilities ?? "",
     isOpen: row.isOpen,
+    openSlots: row.openSlots,
   };
 }
 
@@ -78,6 +81,7 @@ async function selectAllPositions() {
       description: positions.description,
       responsibilities: positions.responsibilities,
       isOpen: positions.isOpen,
+      openSlots: positions.openSlots,
     })
     .from(positions)
     .innerJoin(committees, eq(positions.committeeId, committees.id))
@@ -96,6 +100,7 @@ async function selectOpenPositions() {
       description: positions.description,
       responsibilities: positions.responsibilities,
       isOpen: positions.isOpen,
+      openSlots: positions.openSlots,
     })
     .from(positions)
     .innerJoin(committees, eq(positions.committeeId, committees.id))
@@ -115,6 +120,7 @@ async function selectPositionById(id: string) {
       description: positions.description,
       responsibilities: positions.responsibilities,
       isOpen: positions.isOpen,
+      openSlots: positions.openSlots,
     })
     .from(positions)
     .innerJoin(committees, eq(positions.committeeId, committees.id))
