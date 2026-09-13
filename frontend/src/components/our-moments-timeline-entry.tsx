@@ -115,9 +115,9 @@ function TimelineEntryMedia({
       viewport={{ once: true, amount: 0.4 }}
       transition={reducedMotion ? revealSnap : revealEase}
     >
-      <time dateTime={event.academicYear} className={dateClasses}>
-        {event.academicYear}
-      </time>
+      <p className={dateClasses}>
+        {event.dateLabel}
+      </p>
       <p className={labelClasses}>{event.title}</p>
       <p className={cn(descriptionClasses, descriptionMobileClasses)}>
         {event.description}

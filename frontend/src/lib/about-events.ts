@@ -1,6 +1,6 @@
 export type AboutEvent = {
   id: string
-  academicYear: string
+  dateLabel: string
   title: string
   description: string
   imageSrc: string
@@ -10,7 +10,7 @@ export type AboutEvent = {
 export const ABOUT_EVENTS: AboutEvent[] = [
   {
     id: "freshman-orientation",
-    academicYear: "SY 2025–26",
+    dateLabel: "Aug 3, 2025",
     title: "Freshman Orientation",
     description:
       "Organization founder Josh Kenn Viray introduced incoming freshmen to the org—then AWS Learning Club – UST, now AWS Builders – UST—as they began their Thomasian journey.",
@@ -18,7 +18,7 @@ export const ABOUT_EVENTS: AboutEvent[] = [
   },
   {
     id: "general-assembly",
-    academicYear: "SY 2025–26",
+    dateLabel: "Oct 26, 2025",
     title: "AWS General Assembly - Cloud Express",
     description:
       "Opened the academic year with member updates, committee sign-ups, and the Cloud Express track.",
@@ -26,7 +26,7 @@ export const ABOUT_EVENTS: AboutEvent[] = [
   },
   {
     id: "lightsail",
-    academicYear: "SY 2025–26",
+    dateLabel: "Nov 24, 2025",
     title: "The Lighsail Expedition",
     description:
       "Hands-on labs and sessions exploring Amazon Lightsail and core cloud building blocks.",
@@ -34,7 +34,7 @@ export const ABOUT_EVENTS: AboutEvent[] = [
   },
   {
     id: "docker",
-    academicYear: "SY 2025–26",
+    dateLabel: "Feb 23, 2026",
     title: "Docking into Atlantis: A Deep Dive into Containers",
     description:
       "A container-focused workshop diving into Docker and how apps ship to the cloud.",
@@ -42,7 +42,7 @@ export const ABOUT_EVENTS: AboutEvent[] = [
   },
   {
     id: "harvesting-data",
-    academicYear: "SY 2025–26",
+    dateLabel: "Mar 28, 2026",
     title: "Harvesting Data: Adventure in Data Syetems",
     description:
       "An adventure through data systems concepts and practical AWS data tooling.",
@@ -50,7 +50,7 @@ export const ABOUT_EVENTS: AboutEvent[] = [
   },
   {
     id: "kiroquest",
-    academicYear: "SY 2025–26",
+    dateLabel: "Apr 13, 2026",
     title: "Kiroquest",
     description:
       "Builder challenges and collaborative learning during the Kiroquest program.",
@@ -58,7 +58,7 @@ export const ABOUT_EVENTS: AboutEvent[] = [
   },
   {
     id: "press-start",
-    academicYear: "SY 2025–26",
+    dateLabel: "Apr 19, 2026",
     title: "Press Start: Building Serverless Systems with AWS Lambda",
     description:
       "Leveled up serverless skills by building systems with AWS Lambda.",
@@ -66,7 +66,7 @@ export const ABOUT_EVENTS: AboutEvent[] = [
   },
   {
     id: "kiro-challenge",
-    academicYear: "SY 2026–27",
+    dateLabel: "May 4 and May 7, 2026",
     title: "Kiro Challenge",
     description:
       "Competed and built through the Kiro Challenge experience with the community.",
@@ -74,7 +74,7 @@ export const ABOUT_EVENTS: AboutEvent[] = [
   },
   {
     id: "beyond-the-clouds",
-    academicYear: "SY 2026–27",
+    dateLabel: "May 8, 2026",
     title: "To the Clouds and Beyond",
     description:
       "Sessions aimed at taking builders past the basics and further into the cloud.",
@@ -82,7 +82,7 @@ export const ABOUT_EVENTS: AboutEvent[] = [
   },
   {
     id: "awssug-scd",
-    academicYear: "SY 2026–27",
+    dateLabel: "Sept 11, 2026",
     title: "AWSSUG Student Community Day Mega Manila 2026",
     description:
       "AWS Builders – UST served as a Platinum Partner of AWS Student User Group Philippines for Student Community Day Mega Manila 2026. This photo was taken on event day with our founder—who founded AWS Learning Club – UST, the org now known as AWS Builders – UST—and who spoke at the conference.",
