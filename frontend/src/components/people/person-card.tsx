@@ -66,6 +66,9 @@ export function PersonCard({ terms, showPager = false }: PersonCardProps) {
   const person = terms[termIndex] ?? terms[0]
   const photoSrc = person.photo ?? PERSON_AVATAR_PLACEHOLDER
   const canExpandPhoto = Boolean(person.photo)
+  const photoStyle = person.photoObjectPosition
+    ? { objectPosition: person.photoObjectPosition }
+    : undefined
   const termCount = terms.length
   const atStart = termIndex <= 0
   const atEnd = termIndex >= termCount - 1
@@ -146,6 +149,7 @@ export function PersonCard({ terms, showPager = false }: PersonCardProps) {
                       src={photoSrc}
                       alt=""
                       className="size-full object-cover"
+                      style={photoStyle}
                       {...personAvatarImageProps}
                     />
                   </ImageLightbox>
@@ -154,6 +158,7 @@ export function PersonCard({ terms, showPager = false }: PersonCardProps) {
                     src={photoSrc}
                     alt=""
                     className="size-full object-cover"
+                    style={photoStyle}
                     {...personAvatarImageProps}
                   />
                 )}
