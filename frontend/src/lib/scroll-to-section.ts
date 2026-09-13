@@ -1,29 +1,55 @@
 import { requestSectionReveal } from "@/lib/reveal-section-event"
 
-function scrollBehavior() {
+const targetCorrectionDelay = 100
+const maxTargetCorrections = 20
+
+function scrollBehavior(): ScrollBehavior {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches
     ? "instant"
     : "smooth"
 }
 
-function scrollToElement(id: string) {
-  const target = document.getElementById(id)
-  if (!target) return false
-  target.scrollIntoView({ behavior: scrollBehavior(), block: "start" })
-  return true
+function findSectionTarget(id: string) {
+  return document.getElementById(id)
+}
+
+function isDeferredPlaceholder(target: HTMLElement) {
+  return target.getAttribute("aria-hidden") === "true"
+}
+
+function scrollToTarget(target: HTMLElement, behavior = scrollBehavior()) {
+  target.scrollIntoView({ behavior, block: "start" })
 }
 
 export function scrollToSection(id: string) {
   requestSectionReveal(id)
 
-  if (scrollToElement(id)) return
+  const initialTarget = findSectionTarget(id)
+  if (initialTarget && !isDeferredPlaceholder(initialTarget)) {
+    scrollToTarget(initialTarget)
+    return
+  }
 
-  window.requestAnimationFrame(() => {
-    if (scrollToElement(id)) return
-    window.setTimeout(() => {
-      if (!scrollToElement(id)) {
+  let sawAnchor = Boolean(initialTarget)
+  let correctionCount = 0
+
+  function correctTargetPosition() {
+    const target = findSectionTarget(id)
+    if (target) {
+      sawAnchor = true
+      scrollToTarget(target, correctionCount === 0 ? scrollBehavior() : "instant")
+    }
+
+    correctionCount += 1
+    if (correctionCount >= maxTargetCorrections) {
+      if (!sawAnchor) {
         window.scrollTo({ top: 0, behavior: scrollBehavior() })
       }
-    }, 120)
-  })
+      return
+    }
+
+    window.setTimeout(correctTargetPosition, targetCorrectionDelay)
+  }
+
+  correctTargetPosition()
 }

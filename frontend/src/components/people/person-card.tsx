@@ -150,6 +150,7 @@ export function PersonCard({ terms, showPager = false }: PersonCardProps) {
                       alt=""
                       className="size-full object-cover"
                       style={photoStyle}
+                      unoptimized
                       {...personAvatarImageProps}
                     />
                   </ImageLightbox>

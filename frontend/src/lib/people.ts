@@ -78,7 +78,8 @@ const DIRECTOR_PHOTOS_BY_COMMITTEE: Partial<Record<string, string>> = {
 }
 
 const DIRECTOR_PHOTO_OBJECT_POSITION: Partial<Record<string, string>> = {
-  "Human Resources Committee": "34% 50%",
+  "Human Resources Committee": "50% 50%",
+  "Media Committee": "28% 50%",
 }
 
 /** Matches office order in `committee-groups.ts` (CEO → COO → CRO → …). */
