@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import test, { after } from "node:test";
+import test, { after, before } from "node:test";
 import { eq, inArray } from "drizzle-orm";
 import { app } from "./app";
 import {
@@ -21,8 +21,12 @@ const databaseUrl = process.env.DATABASE_URL ?? "";
 const databaseName = databaseUrl
   ? new URL(databaseUrl).pathname.replace(/^\/+/, "")
   : "";
-const hasTestDatabase =
-  Boolean(databaseUrl) && /(^|[_-])test([_-]|$)/i.test(databaseName);
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL is required for security access tests.");
+}
+if (!/(^|[_-])test([_-]|$)/i.test(databaseName)) {
+  throw new Error("Security access tests require a test database.");
+}
 
 process.env.JWT_SECRET = "security-access-test-secret";
 process.env.APPLICANT_AUTH_SECRET =
@@ -40,32 +44,27 @@ const applicationBId = randomUUID();
 let applicantAToken = "";
 let hrToken = "";
 
-if (hasTestDatabase) {
-  after(async () => {
-    try {
-      await db
-        .delete(applicationChoices)
-        .where(
-          inArray(applicationChoices.applicationId, [
-            applicationAId,
-            applicationBId,
-          ]),
-        );
-      await db
-        .delete(applications)
-        .where(inArray(applications.id, [applicationAId, applicationBId]));
-      await db
-        .delete(applicants)
-        .where(inArray(applicants.id, [applicantAId, applicantBId]));
-      await db.delete(positions).where(eq(positions.id, positionId));
-      await db.delete(committees).where(eq(committees.id, committeeId));
-    } finally {
-      await db.$client.end();
-    }
-  });
-}
+after(async () => {
+  try {
+    await db
+      .delete(applicationChoices)
+      .where(
+        inArray(applicationChoices.applicationId, [applicationAId, applicationBId]),
+      );
+    await db
+      .delete(applications)
+      .where(inArray(applications.id, [applicationAId, applicationBId]));
+    await db
+      .delete(applicants)
+      .where(inArray(applicants.id, [applicantAId, applicantBId]));
+    await db.delete(positions).where(eq(positions.id, positionId));
+    await db.delete(committees).where(eq(committees.id, committeeId));
+  } finally {
+    await db.$client.end();
+  }
+});
 
-test("setup fixtures", { skip: !hasTestDatabase }, async () => {
+before(async () => {
   await db.insert(committees).values({
     id: committeeId,
     name: "Security Test Committee",
@@ -108,12 +107,14 @@ test("setup fixtures", { skip: !hasTestDatabase }, async () => {
       id: applicationAId,
       applicantId: applicantAId,
       applicationCode: "AP-2099-700001",
+      recruitmentYear: 2099,
       status: "pending",
     },
     {
       id: applicationBId,
       applicantId: applicantBId,
       applicationCode: "AP-2099-700002",
+      recruitmentYear: 2099,
       status: "pending",
     },
   ]);
@@ -142,47 +143,35 @@ test("setup fixtures", { skip: !hasTestDatabase }, async () => {
   assert.ok(hrToken);
 });
 
-test(
-  "applicant A cannot read applicant B application",
-  { skip: !hasTestDatabase },
-  async () => {
-    const response = await app.request("/applicant/application", {
-      headers: {
-        Cookie: `${APPLICANT_AUTH_COOKIE_NAME}=${applicantAToken}`,
-      },
-    });
-    assert.equal(response.status, 200);
-    const body = (await response.json()) as { id?: string };
-    assert.equal(body.id, applicationAId);
-    assert.notEqual(body.id, applicationBId);
-  },
-);
+test("applicant A cannot read applicant B application", async () => {
+  const response = await app.request("/applicant/application", {
+    headers: {
+      Cookie: `${APPLICANT_AUTH_COOKIE_NAME}=${applicantAToken}`,
+    },
+  });
+  assert.equal(response.status, 200);
+  const body = (await response.json()) as { applicationCode?: string };
+  assert.equal(body.applicationCode, "AP-2099-700001");
+  assert.notEqual(body.applicationCode, "AP-2099-700002");
+});
 
 test("unauthenticated applicant routes return 401", async () => {
   const response = await app.request("/applicant/application");
   assert.equal(response.status, 401);
 });
 
-test(
-  "HR bearer token cannot access applicant session route",
-  { skip: !hasTestDatabase },
-  async () => {
-    const response = await app.request("/applicant/application", {
-      headers: { Authorization: `Bearer ${hrToken}` },
-    });
-    assert.equal(response.status, 401);
-  },
-);
+test("HR bearer token cannot access applicant session route", async () => {
+  const response = await app.request("/applicant/application", {
+    headers: { Authorization: `Bearer ${hrToken}` },
+  });
+  assert.equal(response.status, 401);
+});
 
-test(
-  "GET /positions?scope=all requires HR auth",
-  { skip: !hasTestDatabase },
-  async () => {
-    const publicResponse = await app.request("/positions?scope=all");
-    assert.equal(publicResponse.status, 401);
-    const hrResponse = await app.request("/positions?scope=all", {
-      headers: { Authorization: `Bearer ${hrToken}` },
-    });
-    assert.equal(hrResponse.status, 200);
-  },
-);
+test("GET /positions?scope=all requires HR auth", async () => {
+  const publicResponse = await app.request("/positions?scope=all");
+  assert.equal(publicResponse.status, 401);
+  const hrResponse = await app.request("/positions?scope=all", {
+    headers: { Authorization: `Bearer ${hrToken}` },
+  });
+  assert.equal(hrResponse.status, 200);
+});

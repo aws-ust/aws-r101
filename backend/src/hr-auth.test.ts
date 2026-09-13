@@ -9,38 +9,32 @@ const databaseUrl = process.env.DATABASE_URL ?? "";
 const databaseName = databaseUrl
   ? new URL(databaseUrl).pathname.replace(/^\/+/, "")
   : "";
-const hasTestDatabase =
-  Boolean(databaseUrl) && /(^|[_-])test([_-]|$)/i.test(databaseName);
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL is required for HR auth tests.");
+}
+if (!/(^|[_-])test([_-]|$)/i.test(databaseName)) {
+  throw new Error("HR auth tests require a test database.");
+}
 
 process.env.JWT_SECRET = "hr-auth-test-secret";
 process.env.CORS_ORIGIN = "http://localhost:3000";
 
-if (hasTestDatabase) {
-  after(async () => {
-    await db.$client.end();
-  });
-}
+after(async () => {
+  await db.$client.end();
+});
 
-test(
-  "verifyHrCredentials accepts seeded bcrypt user",
-  { skip: !hasTestDatabase },
-  async () => {
+test("verifyHrCredentials accepts seeded bcrypt user", async () => {
     const result = await verifyHrCredentials("hr@aws-ust.org", "password123");
     assert.equal(result.ok, true);
     if (result.ok) {
       assert.equal(result.email, "hr@aws-ust.org");
     }
-  },
-);
+});
 
-test(
-  "verifyHrCredentials rejects wrong password",
-  { skip: !hasTestDatabase },
-  async () => {
+test("verifyHrCredentials rejects wrong password", async () => {
     const result = await verifyHrCredentials("hr@aws-ust.org", "wrong-password");
     assert.equal(result.ok, false);
-  },
-);
+});
 
 test("expired HR JWT returns 401 on protected route", async () => {
   const exp = Math.floor(Date.now() / 1000) - 60;
@@ -55,10 +49,7 @@ test("expired HR JWT returns 401 on protected route", async () => {
   assert.equal(response.status, 401);
 });
 
-test(
-  "login omits token from JSON when ALLOW_LOGIN_TOKEN_RESPONSE is unset",
-  { skip: !hasTestDatabase },
-  async () => {
+test("login omits token from JSON when ALLOW_LOGIN_TOKEN_RESPONSE is unset", async () => {
     const previous = process.env.ALLOW_LOGIN_TOKEN_RESPONSE;
     delete process.env.ALLOW_LOGIN_TOKEN_RESPONSE;
     const response = await app.request("/auth/login", {
@@ -79,5 +70,4 @@ test(
     assert.equal(body.token, undefined);
     const setCookie = response.headers.get("set-cookie") ?? "";
     assert.match(setCookie, /hr_token=/);
-  },
-);
+});
