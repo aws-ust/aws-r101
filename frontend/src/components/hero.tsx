@@ -140,7 +140,7 @@ export function Hero() {
         y:
           clampedVertical < 0
             ? clampedVertical *
-              (isUpperRight ? upperRightUpwardLimit : upwardLimit)
+            (isUpperRight ? upperRightUpwardLimit : upwardLimit)
             : clampedVertical * downwardLimit,
       }
       queueFaceAnimation()
@@ -253,7 +253,7 @@ export function Hero() {
                 color="cyan"
                 className={`${buttonClasses} ${cyanButtonEffectClasses}`}
                 nativeButton={false}
-                render={<Link href="/careers" />}
+                render={<Link href="#careers" />}
               >
                 Explore careers
               </Button>
