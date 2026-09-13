@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { hasControlCharacters, trimSafeString } from "./text-sanitize";
+import { hasControlCharacters } from "./text-sanitize";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -18,13 +18,14 @@ const isoTimestamp = z
 const safeText = (maxLength: number) =>
   z
     .string()
-    .transform((value) => trimSafeString(value, maxLength))
+    .transform((value) => value.trim())
     .refine((value) => !hasControlCharacters(value), {
       error: "Text contains invalid control characters.",
-    });
+    })
+    .pipe(z.string().max(maxLength, { error: `Text must be at most ${maxLength} characters.` }));
 
 export const positionCreateSchema = z.object({
-  title: safeText(200).pipe(z.string().min(1, { error: "title is required." })),
+  title: safeText(150).pipe(z.string().min(1, { error: "title is required." })),
   committee_id: z.string().trim().regex(UUID_RE, {
     error: "committee_id must be a UUID.",
   }),
@@ -34,7 +35,7 @@ export const positionCreateSchema = z.object({
 
 export const positionPatchSchema = z
   .object({
-    title: safeText(200).pipe(z.string().min(1)).optional(),
+    title: safeText(150).pipe(z.string().min(1)).optional(),
     committee_id: z
       .string()
       .trim()
