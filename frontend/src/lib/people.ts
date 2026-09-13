@@ -33,6 +33,7 @@ const CURRENT_EB_PHOTOS: Partial<Record<string, string>> = {
   coo: "/people/current-ebs/COO_Axalan.jpg",
   cro: "/people/current-ebs/CRO_Olmedo.jpg",
   "corp-sec": "/people/current-ebs/SEC_Muñoz.jpg",
+  cto: "/people/current-ebs/CTO_Casas.jpg",
   chro: "/people/current-ebs/CHRO_Abas.jpg",
   cfo: "/people/current-ebs/CFO_So.jpg",
   cco: "/people/current-ebs/CCO_Escosia.png",
@@ -74,6 +75,10 @@ const DIRECTOR_PHOTOS_BY_COMMITTEE: Partial<Record<string, string>> = {
   "Documentation Committee": "/people/directors/Documentation_Agsunod.jpg",
   "Media Committee": "/people/directors/Media_Estuista.jpg",
   "Publicity Committee": "/people/directors/Publicity_Jarina.jpg",
+}
+
+const DIRECTOR_PHOTO_OBJECT_POSITION: Partial<Record<string, string>> = {
+  "Human Resources Committee": "34% 50%",
 }
 
 /** Matches office order in `committee-groups.ts` (CEO → COO → CRO → …). */
@@ -204,6 +209,7 @@ export const COMMITTEE_DIRECTORS: DirectorSeat[] =
         title: seat.title,
         academicYear: CURRENT_AY,
         photo: DIRECTOR_PHOTOS_BY_COMMITTEE[committee],
+        photoObjectPosition: DIRECTOR_PHOTO_OBJECT_POSITION[committee],
       },
     }
   })
