@@ -24,10 +24,34 @@ const cloudClasses =
 const layerClasses = "absolute inset-0 h-full w-full object-contain"
 const clickHintClasses =
   "pointer-events-none absolute -right-6 top-[12%] z-30 animate-pulse rounded-pill border border-biloba-flower/40 bg-meteorite/85 px-3 py-1 font-mono text-[0.625rem] text-blue-chalk shadow-[0_6px_16px_rgba(23,15,51,0.35)] before:absolute before:-bottom-2 before:left-4 before:size-2 before:rounded-full before:border before:border-biloba-flower/40 before:bg-meteorite/85 after:absolute after:-bottom-4 after:left-2.5 after:size-1 after:rounded-full after:bg-meteorite/85 max-md:-right-4 max-md:px-2 max-md:text-[0.55rem]"
+const rainContainerClasses =
+  "pointer-events-none absolute inset-x-[15%] top-[62%] z-[-1] h-[70%] overflow-hidden"
+const rainDropClasses =
+  "absolute top-0 h-6 w-px rounded-pill bg-blue-chalk/85 shadow-[0_0_6px_rgba(183,140,240,0.8)]"
+const rainDrops = [
+  { left: "5%", delay: 0.12, duration: 0.68 },
+  { left: "14%", delay: 0.36, duration: 0.76 },
+  { left: "25%", delay: 0.04, duration: 0.72 },
+  { left: "36%", delay: 0.28, duration: 0.82 },
+  { left: "47%", delay: 0.18, duration: 0.7 },
+  { left: "58%", delay: 0.42, duration: 0.78 },
+  { left: "68%", delay: 0.08, duration: 0.74 },
+  { left: "78%", delay: 0.32, duration: 0.8 },
+  { left: "89%", delay: 0.22, duration: 0.7 },
+] as const
 const neutralMouthPath = "M 918 1190 Q 1168 1190 1418 1190"
 const smilingMouthPath = "M 910 1158 Q 1168 1420 1428 1158"
 const frowningMouthPath = "M 910 1222 Q 1168 960 1428 1222"
 const hurtReactionDuration = 650
+const rapidClickThreshold = 4
+const rapidClickWindow = 2_000
+const rainDuration = 2_800
+const rainCooldownDuration = 6_000
+const rainDropAnimation = {
+  y: ["0%", "1800%"],
+  opacity: [0, 1, 0],
+}
+const reducedMotionRainDropAnimation = { opacity: 0.7 }
 const hurtFaceAnimation = {
   x: [0, -4, 3, -2, 1, 0],
   y: [0, 2, -2, 1, 0],
@@ -69,14 +93,20 @@ export function InteractiveHeroCloud() {
   const faceRef = useRef<HTMLDivElement>(null)
   const animationFrameRef = useRef<number | null>(null)
   const hurtTimeoutRef = useRef<number | null>(null)
+  const rainTimeoutRef = useRef<number | null>(null)
+  const rainCooldownTimeoutRef = useRef<number | null>(null)
+  const recentClickTimesRef = useRef<number[]>([])
+  const rainOnCooldownRef = useRef(false)
   const currentPositionRef = useRef({ x: 0, y: 0 })
   const targetPositionRef = useRef({ x: 0, y: 0 })
   const pointerExpressionRef = useRef<CloudExpression>("neutral")
   const focusExpressionRef = useRef<CloudExpression>("neutral")
   const [expression, setExpression] = useState<CloudExpression>("neutral")
   const [isHurt, setIsHurt] = useState(false)
+  const [isRaining, setIsRaining] = useState(false)
   const [showClickHint, setShowClickHint] = useState(true)
-  const mouthPath = isHurt
+  const isUpset = isHurt || isRaining
+  const mouthPath = isUpset
     ? frowningMouthPath
     : expression === "smile"
       ? smilingMouthPath
@@ -152,6 +182,38 @@ export function InteractiveHeroCloud() {
       setIsHurt(false)
       hurtTimeoutRef.current = null
     }, hurtReactionDuration)
+  }
+
+  function triggerRain() {
+    rainOnCooldownRef.current = true
+    setIsRaining(true)
+    rainTimeoutRef.current = window.setTimeout(() => {
+      setIsRaining(false)
+      rainTimeoutRef.current = null
+    }, rainDuration)
+    rainCooldownTimeoutRef.current = window.setTimeout(() => {
+      rainOnCooldownRef.current = false
+      rainCooldownTimeoutRef.current = null
+    }, rainCooldownDuration)
+  }
+
+  function handleCloudClick() {
+    triggerHurtReaction()
+
+    const now = Date.now()
+    const recentClickTimes = recentClickTimesRef.current.filter(
+      (time) => now - time < rapidClickWindow
+    )
+    recentClickTimes.push(now)
+    recentClickTimesRef.current = recentClickTimes
+
+    if (
+      !rainOnCooldownRef.current &&
+      recentClickTimes.length >= rapidClickThreshold
+    ) {
+      recentClickTimesRef.current = []
+      triggerRain()
+    }
   }
 
   const handlePointerMove = useEffectEvent(
@@ -259,6 +321,12 @@ export function InteractiveHeroCloud() {
       if (hurtTimeoutRef.current !== null) {
         window.clearTimeout(hurtTimeoutRef.current)
       }
+      if (rainTimeoutRef.current !== null) {
+        window.clearTimeout(rainTimeoutRef.current)
+      }
+      if (rainCooldownTimeoutRef.current !== null) {
+        window.clearTimeout(rainCooldownTimeoutRef.current)
+      }
     }
   }, [])
 
@@ -269,12 +337,40 @@ export function InteractiveHeroCloud() {
       data-interactive-hero-cloud
       className={cloudClasses}
       aria-label="Click the cloud for a reaction"
-      onClick={triggerHurtReaction}
+      onClick={handleCloudClick}
     >
       {showClickHint ? (
         <span aria-hidden className={clickHintClasses}>
           click me!
         </span>
+      ) : null}
+      {isRaining ? (
+        <LazyMotion features={domAnimation}>
+          <div aria-hidden className={rainContainerClasses}>
+            {rainDrops.map((rainDrop) => (
+              <m.span
+                key={rainDrop.left}
+                className={rainDropClasses}
+                style={{ left: rainDrop.left }}
+                animate={
+                  reducedMotion
+                    ? reducedMotionRainDropAnimation
+                    : rainDropAnimation
+                }
+                transition={
+                  reducedMotion
+                    ? mouthSnap
+                    : {
+                        duration: rainDrop.duration,
+                        delay: rainDrop.delay,
+                        ease: "linear",
+                        repeat: 3,
+                      }
+                }
+              />
+            ))}
+          </div>
+        </LazyMotion>
       ) : null}
       <Image
         src="/hero/cloud.png"
@@ -302,7 +398,7 @@ export function InteractiveHeroCloud() {
             transition={reducedMotion ? mouthSnap : hurtTransition}
           >
             <m.g
-              animate={{ opacity: isHurt ? 0 : 1 }}
+              animate={{ opacity: isUpset ? 0 : 1 }}
               initial={false}
               transition={reducedMotion ? mouthSnap : mouthTransition}
             >
@@ -310,7 +406,7 @@ export function InteractiveHeroCloud() {
               <circle cx="1696" cy="1191" r="51" fill="rgb(93 55 166)" />
             </m.g>
             <m.g
-              animate={{ opacity: isHurt ? 1 : 0 }}
+              animate={{ opacity: isUpset ? 1 : 0 }}
               initial={false}
               transition={reducedMotion ? mouthSnap : mouthTransition}
             >
