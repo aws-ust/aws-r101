@@ -252,6 +252,12 @@
   }
 }
 
+@keyframes home-splash-ring {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 main:has(#committee-quiz) .faq-section {
   padding-top: clamp(1.25rem, 2.5vw, 2rem);
 }

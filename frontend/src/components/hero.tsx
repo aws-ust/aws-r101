@@ -170,10 +170,11 @@ export function Hero() {
       className={heroClasses}
     >
       <Image
-        src="/hero/hero-background.png"
+        src="/hero/hero-background.webp"
         alt=""
         fill
         priority
+        quality={80}
         sizes="100vw"
         className={backgroundClasses}
       />
@@ -219,6 +220,8 @@ export function Hero() {
               src="/hero/cloud.png"
               alt=""
               fill
+              loading="lazy"
+              quality={85}
               sizes="(max-width: 640px) 58vw, (max-width: 768px) 34vw, 540px"
               className={cloudImageClasses}
               draggable={false}
@@ -228,6 +231,8 @@ export function Hero() {
               src="/hero/cloud-face.png"
               alt=""
               fill
+              loading="lazy"
+              quality={85}
               sizes="(max-width: 640px) 58vw, (max-width: 768px) 34vw, 540px"
               className={`${cloudImageClasses} will-change-transform`}
               draggable={false}

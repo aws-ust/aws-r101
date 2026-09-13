@@ -1,11 +1,11 @@
 "use client"
 
 import { usePathname } from "next/navigation"
-import { useReducedMotion } from "motion/react"
 import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -29,6 +29,20 @@ type NavigationMotionContextValue = {
 
 const NavigationMotionContext =
   createContext<NavigationMotionContextValue | null>(null)
+
+function usePrefersReducedMotion(): boolean {
+  const [reducedMotion, setReducedMotion] = useState(false)
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)")
+    const update = () => setReducedMotion(media.matches)
+    update()
+    media.addEventListener("change", update)
+    return () => media.removeEventListener("change", update)
+  }, [])
+
+  return reducedMotion
+}
 
 type NavigationState = {
   pathname: string
@@ -68,7 +82,7 @@ function navigationStateForPath(
 
 export function NavigationMotionProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname()
-  const reducedMotion = useReducedMotion() ?? false
+  const reducedMotion = usePrefersReducedMotion()
   const [navigation, setNavigation] = useState<NavigationState>({
     pathname,
     historyStack: [pathname],

@@ -5,6 +5,7 @@ import Image from "next/image"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import { AnimatePresence, LazyMotion, domAnimation, m, useReducedMotion } from "motion/react"
 import { ImageLightbox } from "@/components/image-lightbox"
+import { personAvatarImageProps } from "@/lib/public-gallery-image"
 import { PERSON_AVATAR_PLACEHOLDER, type PersonTerm } from "@/lib/people"
 import { cn } from "@/lib/utils"
 
@@ -29,10 +30,6 @@ const termSpring = { type: "spring" as const, stiffness: 420, damping: 34 }
 const termSnap = { duration: 0 }
 const swipeDistance = 48
 const swipeThreshold = 40
-
-function isLocalPeoplePhoto(src: string): boolean {
-  return /^\/people\/(current-ebs|previous-ebs|directors)\//.test(src)
-}
 
 function termVariants(reducedMotion: boolean | null) {
   if (reducedMotion) {
@@ -69,7 +66,6 @@ export function PersonCard({ terms, showPager = false }: PersonCardProps) {
   const person = terms[termIndex] ?? terms[0]
   const photoSrc = person.photo ?? PERSON_AVATAR_PLACEHOLDER
   const canExpandPhoto = Boolean(person.photo)
-  const localPeoplePhoto = isLocalPeoplePhoto(photoSrc)
   const termCount = terms.length
   const atStart = termIndex <= 0
   const atEnd = termIndex >= termCount - 1
@@ -142,26 +138,23 @@ export function PersonCard({ terms, showPager = false }: PersonCardProps) {
                     alt={person.name}
                     title={person.name}
                     triggerAriaLabel={`View full photo of ${person.name}`}
-                    unoptimized={localPeoplePhoto}
                     onTriggerPointerDown={(event) => event.stopPropagation()}
                     triggerClassName="size-full"
+                    unoptimized
                   >
                     <Image
                       src={photoSrc}
                       alt=""
-                      width={96}
-                      height={96}
                       className="size-full object-cover"
-                      unoptimized={localPeoplePhoto}
+                      {...personAvatarImageProps}
                     />
                   </ImageLightbox>
                 ) : (
                   <Image
                     src={photoSrc}
                     alt=""
-                    width={96}
-                    height={96}
                     className="size-full object-cover"
+                    {...personAvatarImageProps}
                   />
                 )}
               </div>

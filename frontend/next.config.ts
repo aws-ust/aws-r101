@@ -3,9 +3,18 @@ import type { NextConfig } from "next";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787";
 
 const nextConfig: NextConfig = {
+  images: {
+    formats: ["image/avif", "image/webp"],
+  },
   experimental: {
     authInterrupts: true,
-    optimizePackageImports: ["lucide-react", "motion", "react-day-picker"],
+    optimizePackageImports: [
+      "lucide-react",
+      "motion",
+      "react-day-picker",
+      "@hookform/resolvers",
+      "react-hook-form",
+    ],
   },
   async redirects() {
     return [
