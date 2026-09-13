@@ -473,7 +473,11 @@ export async function updateApplicantApplication(
           if (existingBooking.slotId !== input.slotId) {
             await tx
               .update(interviewBookings)
-              .set({ slotId: input.slotId })
+              .set({
+                slotId: input.slotId,
+                reminder24hSentAt: null,
+                reminder1hSentAt: null,
+              })
               .where(eq(interviewBookings.id, existingBooking.id));
           }
         } else {

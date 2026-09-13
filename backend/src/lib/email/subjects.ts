@@ -8,6 +8,18 @@ export function applicationSubmittedSubject(applicationCode: string): string {
   return `AWS Builders - UST | Application Received (${applicationCode})`;
 }
 
+export function applicantInterviewBookingSubject(
+  applicationCode: string,
+): string {
+  return `AWS Builders - UST | Interview Schedule Updated (${applicationCode})`;
+}
+
+export function applicantInterviewReminderSubject(
+  applicationCode: string,
+): string {
+  return `AWS Builders - UST | Interview Reminder (${applicationCode})`;
+}
+
 export function officerApplicationNoticeSubject(input: {
   firstName: string;
   lastName: string;

@@ -1,10 +1,15 @@
-import type { ApplicationJson } from "../applications";
+import { getApplicationById, type ApplicationJson } from "../applications";
 import type { ChoiceRef } from "../committee-apply";
 import { applicationRequiresDevExam } from "../committee-apply";
-import { getBookedInterviewStartsAt } from "../interview-scheduling";
+import {
+  getBookedInterviewBooking,
+  getBookedInterviewStartsAt,
+  INTERVIEW_SLOT_MINUTES,
+} from "../interview-scheduling";
 import { emailEnabled, hasGmailCredentials } from "./config";
 import { awsDevAssessmentAttachment } from "./email-assets";
 import { sendViaGmail } from "./gmail-client";
+import { interviewCalendarAttachment } from "./interview-calendar";
 import {
   loadApplicantEditEmailSnapshot,
   notifyOfficerAfterInterviewReschedule,
@@ -17,8 +22,10 @@ import { withRetry } from "./retry";
 import { lookupOfficerRecipient } from "./officer-recipients";
 import { applicantDevExamTemplate } from "./officer-edit-templates";
 import {
+  applicantInterviewBookingTemplate,
   applicantOtpTemplate,
   applicationSubmittedTemplate,
+  interviewReminderTemplate,
   officerApplicationNoticeTemplate,
   resultAcceptedTemplate,
   resultRejectedTemplate,
@@ -84,9 +91,13 @@ async function deliverNotification(input: {
         `[email] retrying ${input.messageType} without attachments after size error`,
       );
       try {
+        const calendarAttachments = input.rendered.attachments.filter(
+          (attachment) => attachment.mimeType.startsWith("text/calendar"),
+        );
         const stripped: RenderedEmail = {
           ...input.rendered,
-          attachments: undefined,
+          attachments:
+            calendarAttachments.length > 0 ? calendarAttachments : undefined,
         };
         const result = await withRetry(async () => sendOnce(stripped));
         await notifications.markSent(
@@ -111,13 +122,13 @@ async function deliverEmail(input: {
   messageType: EmailMessageType;
   recipient: string;
   rendered: RenderedEmail;
-}): Promise<void> {
+}): Promise<EmailDeliveryStatus> {
   const pending = await notifications.createPending({
     applicationId: input.applicationId,
     messageType: input.messageType,
     recipient: input.recipient,
   });
-  await deliverNotification({
+  return deliverNotification({
     notificationId: pending.id,
     messageType: input.messageType,
     recipient: input.recipient,
@@ -180,6 +191,13 @@ export function fireApplicantChoiceEditNotifications(
     }),
     "officer choice-edit notifications",
   );
+  fireAndForget(
+    sendApplicantInterviewUpdate(
+      applicationId,
+      snapshot.previousInterviewStartsAt,
+    ),
+    "applicant interview update notification",
+  );
 }
 
 export function fireInterviewRescheduleNotification(
@@ -194,6 +212,56 @@ export function fireInterviewRescheduleNotification(
     ),
     "officer interview reschedule notification",
   );
+  fireAndForget(
+    sendApplicantInterviewUpdate(
+      applicationId,
+      previousInterviewStartsAt,
+    ),
+    "applicant interview update notification",
+  );
+}
+
+async function sendApplicantInterviewUpdate(
+  applicationId: string,
+  previousInterviewStartsAt: Date | null,
+): Promise<void> {
+  const application = await getApplicationById(applicationId);
+  const booking = await getBookedInterviewBooking(applicationId);
+  const firstChoice = application?.choices.find(
+    (choice) => choice.preferenceRank === 1,
+  );
+  if (!application || !booking || !firstChoice) return;
+  if (
+    previousInterviewStartsAt &&
+    previousInterviewStartsAt.getTime() === booking.startsAt.getTime()
+  ) {
+    return;
+  }
+
+  const endsAt = new Date(
+    booking.startsAt.getTime() + INTERVIEW_SLOT_MINUTES * 60_000,
+  );
+  const rendered = applicantInterviewBookingTemplate({
+    lastName: application.lastName,
+    applicationCode: application.applicationCode,
+    committeeName: firstChoice.committee,
+    interviewStartsAt: booking.startsAt,
+    rescheduled: previousInterviewStartsAt !== null,
+  });
+  rendered.attachments = [
+    interviewCalendarAttachment({
+      applicationCode: application.applicationCode,
+      committeeName: firstChoice.committee,
+      startsAt: booking.startsAt,
+      endsAt,
+    }),
+  ];
+  await deliverEmail({
+    applicationId,
+    messageType: "interview_booking",
+    recipient: application.email,
+    rendered,
+  });
 }
 
 export { loadApplicantEditEmailSnapshot };
@@ -225,8 +293,8 @@ export async function sendApplicationSubmitted(
 ): Promise<void> {
   const firstChoice = application.choices.find((choice) => choice.preferenceRank === 1);
   const secondChoice = application.choices.find((choice) => choice.preferenceRank === 2);
-  const interviewStartsAt = await getBookedInterviewStartsAt(application.id);
-  if (!firstChoice || !secondChoice || !interviewStartsAt) {
+  const booking = await getBookedInterviewBooking(application.id);
+  if (!firstChoice || !secondChoice || !booking) {
     throw new Error(
       "Cannot send the application received email without choices and an interview slot.",
     );
@@ -242,15 +310,63 @@ export async function sendApplicationSubmitted(
     applicationCode: application.applicationCode,
     firstChoice: choiceRefs[0],
     secondChoice: choiceRefs[1],
-    interviewStartsAt,
+    interviewStartsAt: booking.startsAt,
   });
+  rendered.attachments = [
+    interviewCalendarAttachment({
+      applicationCode: application.applicationCode,
+      committeeName: firstChoice.committee,
+      startsAt: booking.startsAt,
+      endsAt: new Date(
+        booking.startsAt.getTime() + INTERVIEW_SLOT_MINUTES * 60_000,
+      ),
+    }),
+  ];
   if (applicationRequiresDevExam(choiceRefs)) {
-    rendered.attachments = [awsDevAssessmentAttachment()];
+    rendered.attachments.push(awsDevAssessmentAttachment());
   }
   await deliverEmail({
     applicationId: application.id,
     messageType: "application_submitted",
     recipient: application.email,
+    rendered,
+  });
+}
+
+export async function sendInterviewReminder(input: {
+  applicationId: string;
+  applicationCode: string;
+  lastName: string;
+  email: string;
+  committeeName: string;
+  startsAt: Date;
+  reminder: "24h" | "1h";
+}): Promise<EmailDeliveryStatus> {
+  const endsAt = new Date(
+    input.startsAt.getTime() + INTERVIEW_SLOT_MINUTES * 60_000,
+  );
+  const rendered = interviewReminderTemplate({
+    lastName: input.lastName,
+    applicationCode: input.applicationCode,
+    committeeName: input.committeeName,
+    interviewStartsAt: input.startsAt,
+    reminder: input.reminder,
+  });
+  rendered.attachments = [
+    interviewCalendarAttachment({
+      applicationCode: input.applicationCode,
+      committeeName: input.committeeName,
+      startsAt: input.startsAt,
+      endsAt,
+    }),
+  ];
+  return deliverEmail({
+    applicationId: input.applicationId,
+    messageType:
+      input.reminder === "24h"
+        ? "interview_reminder_24h"
+        : "interview_reminder_1h",
+    recipient: input.email,
     rendered,
   });
 }

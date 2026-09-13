@@ -4,6 +4,8 @@ import { devExamParagraphs, officerFirstChoiceLinkExtras } from "./choice-email-
 import { isExecutiveOfficeCommittee } from "./officer-recipients";
 import {
   applicantOtpSubject,
+  applicantInterviewBookingSubject,
+  applicantInterviewReminderSubject,
   applicationSubmittedSubject,
   officerApplicationNoticeSubject,
   resultAcceptedSubject,
@@ -163,6 +165,115 @@ ${ctaButton(statusUrl, "View your application")}
     html,
     inline: [brandedEmailHeaderInline()],
   };
+}
+
+export function applicantInterviewBookingTemplate(input: {
+  lastName: string;
+  applicationCode: string;
+  committeeName: string;
+  interviewStartsAt: Date;
+  rescheduled: boolean;
+}): RenderedEmail {
+  const statusUrl = `${appBaseUrl()}/apply/status`;
+  const subject = applicantInterviewBookingSubject(input.applicationCode);
+  const honorific = `Mx. ${input.lastName}`;
+  const interviewTime = formatInterviewSlot(input.interviewStartsAt);
+  const action = input.rescheduled ? "rescheduled" : "confirmed";
+
+  const text = `Greetings from the Clouds!
+
+Good day, ${honorific},
+
+Your interview schedule has been ${action}.
+
+Committee: ${input.committeeName}
+Interview: ${interviewTime}
+Application ID: ${input.applicationCode}
+
+An updated calendar file is attached. Open it to add the interview to your calendar.
+
+View your application: ${statusUrl}
+
+Yours in Thomasian Leadership,
+The AWS Builders - UST Executive Board`;
+
+  const html = wrapBrandedHtml({
+    eyebrow: "AWS BUILDERS – UST",
+    bannerTitle: "INTERVIEW UPDATE",
+    bannerSub: input.applicationCode,
+    heading: "Interview Schedule Updated",
+    headerImageUrl: `cid:${APPLICATION_RECEIVED_HEADER_CID}`,
+    headerImageAlt: "AWS Builders - UST — It's Always Day One",
+    inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
+<p style="margin:0 0 0;line-height:8px;font-size:8px;">&nbsp;</p>
+<p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
+<p style="margin:0 0 16px;">Your interview schedule has been ${action}.</p>
+<p style="margin:0 0 12px;"><strong>Committee</strong><br>${escapeHtml(input.committeeName)}</p>
+<p style="margin:0 0 12px;"><strong>Interview</strong><br>${escapeHtml(interviewTime)}</p>
+<p style="margin:0 0 16px;"><strong>Application ID</strong><br>${escapeHtml(input.applicationCode)}</p>
+<p style="margin:0 0 16px;">An updated calendar file is attached. Open it to add the interview to your calendar.</p>
+${ctaButton(statusUrl, "View your application")}
+<p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
+<p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
+  });
+
+  return { subject, text, html, inline: [brandedEmailHeaderInline()] };
+}
+
+export function interviewReminderTemplate(input: {
+  lastName: string;
+  applicationCode: string;
+  committeeName: string;
+  interviewStartsAt: Date;
+  reminder: "24h" | "1h";
+}): RenderedEmail {
+  const statusUrl = `${appBaseUrl()}/apply/status`;
+  const subject = applicantInterviewReminderSubject(input.applicationCode);
+  const honorific = `Mx. ${input.lastName}`;
+  const interviewTime = formatInterviewSlot(input.interviewStartsAt);
+  const timing =
+    input.reminder === "24h"
+      ? "Your interview is coming up within 24 hours."
+      : "Your interview starts within an hour.";
+
+  const text = `Greetings from the Clouds!
+
+Good day, ${honorific},
+
+${timing}
+
+Committee: ${input.committeeName}
+Interview: ${interviewTime}
+Application ID: ${input.applicationCode}
+
+The calendar file is attached again for convenience.
+
+View your application: ${statusUrl}
+
+Yours in Thomasian Leadership,
+The AWS Builders - UST Executive Board`;
+
+  const html = wrapBrandedHtml({
+    eyebrow: "AWS BUILDERS – UST",
+    bannerTitle: "INTERVIEW REMINDER",
+    bannerSub: input.applicationCode,
+    heading: "Your Interview Is Coming Up",
+    headerImageUrl: `cid:${APPLICATION_RECEIVED_HEADER_CID}`,
+    headerImageAlt: "AWS Builders - UST — It's Always Day One",
+    inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
+<p style="margin:0 0 0;line-height:8px;font-size:8px;">&nbsp;</p>
+<p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
+<p style="margin:0 0 16px;">${timing}</p>
+<p style="margin:0 0 12px;"><strong>Committee</strong><br>${escapeHtml(input.committeeName)}</p>
+<p style="margin:0 0 12px;"><strong>Interview</strong><br>${escapeHtml(interviewTime)}</p>
+<p style="margin:0 0 16px;"><strong>Application ID</strong><br>${escapeHtml(input.applicationCode)}</p>
+<p style="margin:0 0 16px;">The calendar file is attached again for convenience.</p>
+${ctaButton(statusUrl, "View your application")}
+<p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
+<p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
+  });
+
+  return { subject, text, html, inline: [brandedEmailHeaderInline()] };
 }
 
 export function officerApplicationNoticeTemplate(input: {

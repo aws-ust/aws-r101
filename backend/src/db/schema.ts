@@ -39,6 +39,8 @@ export const emailMessageType = pgEnum("email_message_type", [
   "application_submitted",
   "applicant_otp",
   "interview_booking",
+  "interview_reminder_24h",
+  "interview_reminder_1h",
   "officer_application_notice",
   "officer_first_choice_left",
   "officer_first_choice_joined",
@@ -386,6 +388,12 @@ export const interviewBookings = pgTable(
     bookedAt: timestamp("booked_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    reminder24hSentAt: timestamp("reminder_24h_sent_at", {
+      withTimezone: true,
+    }),
+    reminder1hSentAt: timestamp("reminder_1h_sent_at", {
+      withTimezone: true,
+    }),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow()

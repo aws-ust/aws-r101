@@ -1,4 +1,5 @@
 import type { ApplicantInterviewSchedule } from "@/lib/applicant-api"
+import { Button } from "@/components/ui/button"
 import {
   formatInterviewSlotLabel,
   formatSeasonBoundsRange,
@@ -9,6 +10,7 @@ const hintClasses = "mt-1 font-sans text-sm text-prelude"
 const committeeClasses = "mt-2 font-mono text-xs text-aquamarine"
 const bookingClasses =
   "mt-4 rounded-[14px] border border-aquamarine/40 bg-aquamarine/10 px-4 py-3 font-sans text-sm text-blue-chalk"
+const bookingActionsClasses = "mt-3 flex flex-wrap items-center gap-3"
 const lockClasses =
   "mt-4 rounded-[14px] border border-rose-blush/45 bg-rose-deep/20 px-4 py-3 font-sans text-sm text-rose-glow"
 
@@ -62,9 +64,24 @@ export function ApplicantInterviewSchedulerFullStatus({
       ) : null}
 
       {!previewMode && schedule?.booking ? (
-        <p className={bookingClasses}>
-          Your interview: {formatInterviewSlotLabel(schedule.booking)}
-        </p>
+        <div className={bookingClasses}>
+          <p>Your interview: {formatInterviewSlotLabel(schedule.booking)}</p>
+          <div className={bookingActionsClasses}>
+            <Button
+              color="purple"
+              size="sm"
+              nativeButton={false}
+              render={
+                <a
+                  href="/api/applicant/interview-calendar"
+                  download="aws-builders-ust-interview.ics"
+                />
+              }
+            >
+              Download calendar invite
+            </Button>
+          </div>
+        </div>
       ) : null}
 
       {!seasonConfigured && !seasonLoading ? (

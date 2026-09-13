@@ -1,14 +1,22 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import type { EmailFileAttachment } from "./types";
 
-const ASSETS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "assets");
+export function emailAssetPath(filename: string): string {
+  const lambdaRoot = process.env.LAMBDA_TASK_ROOT?.trim();
+  const candidates = [
+    ...(lambdaRoot ? [resolve(lambdaRoot, "assets")] : []),
+    resolve(process.cwd(), "src/lib/email/assets"),
+    resolve(process.cwd(), "backend/src/lib/email/assets"),
+  ];
+  const assetsDirectory = candidates.find((candidate) => existsSync(candidate));
+  return resolve(assetsDirectory ?? candidates[0], filename);
+}
 
 export const AWS_DEV_ASSESSMENT_FILENAME = "AWS Dev Assessment.pdf";
 
 export function awsDevAssessmentAttachment(): EmailFileAttachment {
-  const path = resolve(ASSETS_DIR, AWS_DEV_ASSESSMENT_FILENAME);
+  const path = emailAssetPath(AWS_DEV_ASSESSMENT_FILENAME);
   return {
     filename: AWS_DEV_ASSESSMENT_FILENAME,
     mimeType: "application/pdf",

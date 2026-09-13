@@ -15,10 +15,18 @@ import type { Construct } from "constructs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const emailAssetBundlingHooks = {
+  beforeBundling(): string[] {
+    return [];
+  },
+  beforeInstall(): string[] {
+    return [];
+  },
   afterBundling(_inputDir: string, outputDir: string): string[] {
     const assets = path.join(__dirname, "../src/lib/email/assets");
     const dest = path.join(outputDir, "assets");
-    return [`mkdir -p "${dest}"`, `cp -R "${assets}/." "${dest}/"`];
+    return [
+      `node -e "require('node:fs').cpSync(process.argv[1], process.argv[2], { recursive: true })" "${assets}" "${dest}"`,
+    ];
   },
 };
 
@@ -135,6 +143,26 @@ class BackendStack extends cdk.Stack {
       resources: [documentBucket.bucketArn],
     }));
 
+    const interviewReminderFunction = new NodejsFunction(
+      this,
+      "InterviewReminderFunction",
+      {
+        entry: path.join(__dirname, "../src/interview-reminder-worker.ts"),
+        handler: "handler",
+        runtime: lambda.Runtime.NODEJS_22_X,
+        timeout: cdk.Duration.seconds(30),
+        reservedConcurrentExecutions: 1,
+        logRetention: logs.RetentionDays.ONE_WEEK,
+        depsLockFilePath: path.join(__dirname, "../../pnpm-lock.yaml"),
+        bundling: {
+          minify: true,
+          sourceMap: true,
+          commandHooks: emailAssetBundlingHooks,
+        },
+        environment,
+      },
+    );
+
     const integration = new HttpLambdaIntegration("ApiIntegration", apiFunction);
     const httpApi = new apigateway.HttpApi(this, "HttpApi", {
       defaultIntegration: integration,
@@ -172,6 +200,27 @@ class BackendStack extends cdk.Stack {
       },
     });
     cleanupSchedule.addOverride("Properties.ActionAfterCompletion", "DELETE");
+
+    const interviewReminderRole = new iam.Role(
+      this,
+      "InterviewReminderScheduleRole",
+      {
+        assumedBy: new iam.ServicePrincipal("scheduler.amazonaws.com"),
+      },
+    );
+    interviewReminderFunction.grantInvoke(interviewReminderRole);
+    new scheduler.CfnSchedule(this, "InterviewReminderSchedule", {
+      flexibleTimeWindow: { mode: "OFF" },
+      scheduleExpression: "rate(15 minutes)",
+      target: {
+        arn: interviewReminderFunction.functionArn,
+        roleArn: interviewReminderRole.roleArn,
+        retryPolicy: {
+          maximumEventAgeInSeconds: 3600,
+          maximumRetryAttempts: 2,
+        },
+      },
+    });
 
     const subscriber = [{ address: budgetAlertEmail, subscriptionType: "EMAIL" }];
     new budgets.CfnBudget(this, "FreePlanBudget", {

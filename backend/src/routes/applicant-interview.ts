@@ -6,6 +6,10 @@ import {
 import { unavailableApiError } from "../lib/api-errors";
 import { fireInterviewRescheduleNotification } from "../lib/email/service";
 import {
+  INTERVIEW_CALENDAR_FILENAME,
+  interviewCalendarAttachment,
+} from "../lib/email/interview-calendar";
+import {
   bookApplicantInterview,
   getApplicantInterviewSchedule,
   getBookedInterviewBooking,
@@ -57,6 +61,43 @@ applicantInterviewRoutes.get("/interview-slots", async (c) => {
       error,
       "applicant interview slots",
       "Interview scheduling is temporarily unavailable. Try again in a moment.",
+    );
+  }
+});
+
+applicantInterviewRoutes.get("/interview-calendar", async (c) => {
+  const session = getApplicantSession(c);
+  try {
+    const schedule = await getApplicantInterviewSchedule(
+      session.applicationId,
+    );
+    if (!schedule.booking) {
+      return c.json({ error: "No interview has been booked." }, 404);
+    }
+
+    const attachment = interviewCalendarAttachment({
+      applicationCode: session.applicationCode,
+      committeeName: schedule.committee.name,
+      startsAt: new Date(schedule.booking.startsAt),
+      endsAt: new Date(schedule.booking.endsAt),
+    });
+    c.header("Cache-Control", "no-store");
+    c.header("Content-Type", attachment.mimeType);
+    c.header(
+      "Content-Disposition",
+      `attachment; filename="${INTERVIEW_CALENDAR_FILENAME}"`,
+    );
+    return c.body(attachment.content.toString("utf8"));
+  } catch (error) {
+    if (error instanceof InterviewScheduleError) {
+      const result = schedulingError(error);
+      return c.json(result.body, result.status);
+    }
+    return unavailableApiError(
+      c,
+      error,
+      "applicant interview calendar",
+      "Could not create your calendar invite. Try again in a moment.",
     );
   }
 });

@@ -327,6 +327,17 @@ test("interview scheduling backend", async (t) => {
     assert.equal(schedulePayload.canSchedule, true);
     assert.equal(schedulePayload.lockReason, null);
 
+    const calendar = await applicantRequest(
+      0,
+      "/applicant/interview-calendar",
+    );
+    assert.equal(calendar.status, 200);
+    assert.match(calendar.headers.get("content-type") ?? "", /text\/calendar/);
+    assert.match(
+      await calendar.text(),
+      new RegExp(`UID:${applicationCodes[0]}@aws-ust-recruitment`),
+    );
+
     const occupied = await applicantRequest(
       1,
       "/applicant/interview-booking",
@@ -342,6 +353,14 @@ test("interview scheduling backend", async (t) => {
     );
     assert.equal(closeBooked.status, 409);
 
+    await db
+      .update(interviewBookings)
+      .set({
+        reminder24hSentAt: new Date(),
+        reminder1hSentAt: new Date(),
+      })
+      .where(eq(interviewBookings.applicationId, applicationIds[0]));
+
     const rescheduled = await applicantRequest(
       0,
       "/applicant/interview-booking",
@@ -356,10 +375,20 @@ test("interview scheduling backend", async (t) => {
     assert.equal(rescheduledPayload.booking.rescheduled, true);
 
     const rows = await db
-      .select({ slotId: interviewBookings.slotId })
+      .select({
+        slotId: interviewBookings.slotId,
+        reminder24hSentAt: interviewBookings.reminder24hSentAt,
+        reminder1hSentAt: interviewBookings.reminder1hSentAt,
+      })
       .from(interviewBookings)
       .where(eq(interviewBookings.applicationId, applicationIds[0]));
-    assert.deepEqual(rows, [{ slotId: slotA2Id }]);
+    assert.deepEqual(rows, [
+      {
+        slotId: slotA2Id,
+        reminder24hSentAt: null,
+        reminder1hSentAt: null,
+      },
+    ]);
   });
 
   await t.test("locks scheduling as soon as HR review starts", async () => {

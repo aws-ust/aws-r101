@@ -229,6 +229,8 @@ request PATCH "/interview-window" '{"startsAt":"2099-01-01T00:00:00.000Z","endsA
 expect "PATCH /interview-window (no token)" 401
 request GET "/applicant/interview-slots"
 expect "GET  /applicant/interview-slots (no session)" 401
+request GET "/applicant/interview-calendar"
+expect "GET  /applicant/interview-calendar (no session)" 401
 request PUT "/applicant/interview-booking" '{"slotId":"00000000-0000-4000-8000-000000000000"}'
 expect "PUT  /applicant/interview-booking (no session)" 401
 request POST "/applicant-auth/request-code" '{"applicationCode":"invalid","email":"invalid"}'

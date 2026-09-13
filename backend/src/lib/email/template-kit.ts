@@ -1,6 +1,5 @@
 import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { emailAssetPath } from "./email-assets";
 
 export const APPLICATION_RECEIVED_HEADER_CID =
   "application-received-header@aws-ust";
@@ -17,11 +16,7 @@ export function escapeHtmlForEmail(value: string): string {
 }
 
 function applicationReceivedHeaderBytes(): Buffer {
-  const path = resolve(
-    dirname(fileURLToPath(import.meta.url)),
-    "assets/application-received-header.png",
-  );
-  return readFileSync(path);
+  return readFileSync(emailAssetPath("application-received-header.png"));
 }
 
 export function brandedEmailHeaderInline() {

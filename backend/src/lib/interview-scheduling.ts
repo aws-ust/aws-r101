@@ -749,7 +749,11 @@ export async function bookApplicantInterview(
         } else {
           [booking] = await tx
             .update(interviewBookings)
-            .set({ slotId })
+            .set({
+              slotId,
+              reminder24hSentAt: null,
+              reminder1hSentAt: null,
+            })
             .where(eq(interviewBookings.id, existing.id))
             .returning({
               id: interviewBookings.id,
