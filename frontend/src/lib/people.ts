@@ -33,6 +33,7 @@ const CURRENT_EB_PHOTOS: Partial<Record<string, string>> = {
   coo: "/people/current-ebs/COO_Axalan.jpg",
   cro: "/people/current-ebs/CRO_Olmedo.jpg",
   "corp-sec": "/people/current-ebs/SEC_Muñoz.jpg",
+  chro: "/people/current-ebs/CHRO_Abas.jpg",
   cfo: "/people/current-ebs/CFO_So.jpg",
   cco: "/people/current-ebs/CCO_Escosia.png",
 }
