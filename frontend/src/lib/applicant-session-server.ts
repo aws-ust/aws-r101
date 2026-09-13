@@ -1,6 +1,6 @@
 import { cookies } from "next/headers"
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787"
+const API_BASE = process.env.API_URL ?? "http://localhost:8787"
 const APPLICANT_AUTH_COOKIE_NAME = "applicant_token"
 
 export async function getApplicantServerSession(): Promise<{

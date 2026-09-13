@@ -1,6 +1,6 @@
 import { cookies } from "next/headers"
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787"
+const API_BASE = process.env.API_URL ?? "http://localhost:8787"
 
 export async function getServerSession(): Promise<{ email: string } | null> {
   const cookieStore = await cookies()

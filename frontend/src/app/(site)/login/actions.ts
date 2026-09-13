@@ -4,7 +4,7 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getServerSession } from "@/lib/session-server"
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787"
+const API_BASE = process.env.API_URL ?? "http://localhost:8787"
 const AUTH_COOKIE_NAME = "hr_token"
 const DEFAULT_EXPIRES_SECONDS = 8 * 60 * 60
 

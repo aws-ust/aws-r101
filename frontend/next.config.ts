@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787";
+const apiUrl = process.env.API_URL ?? "http://localhost:8787";
 
 const isProd = process.env.NODE_ENV === "production";
 const appBase = process.env.APP_BASE_URL ?? process.env.CORS_ORIGIN ?? "";

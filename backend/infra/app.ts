@@ -103,7 +103,6 @@ class BackendStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_22_X,
       memorySize: 512,
       timeout: cdk.Duration.seconds(30),
-      reservedConcurrentExecutions: 5,
       logRetention: logs.RetentionDays.ONE_WEEK,
       depsLockFilePath: path.join(__dirname, "../../pnpm-lock.yaml"),
       bundling: {
@@ -127,7 +126,6 @@ class BackendStack extends cdk.Stack {
       handler: "handler",
       runtime: lambda.Runtime.NODEJS_22_X,
       timeout: cdk.Duration.seconds(30),
-      reservedConcurrentExecutions: 1,
       logRetention: logs.RetentionDays.ONE_WEEK,
       depsLockFilePath: path.join(__dirname, "../../pnpm-lock.yaml"),
       bundling: { minify: true, sourceMap: true },
@@ -150,7 +148,6 @@ class BackendStack extends cdk.Stack {
         handler: "handler",
         runtime: lambda.Runtime.NODEJS_22_X,
         timeout: cdk.Duration.seconds(30),
-        reservedConcurrentExecutions: 1,
         logRetention: logs.RetentionDays.ONE_WEEK,
         depsLockFilePath: path.join(__dirname, "../../pnpm-lock.yaml"),
         bundling: {

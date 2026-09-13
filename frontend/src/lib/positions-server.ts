@@ -1,6 +1,6 @@
 import type { Position } from "@/lib/positions"
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787"
+const API_BASE = process.env.API_URL ?? "http://localhost:8787"
 
 type PositionApiRow = Omit<Position, "responsibilities"> & {
   responsibilities: string
