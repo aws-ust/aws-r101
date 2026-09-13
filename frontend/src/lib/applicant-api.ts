@@ -1,4 +1,8 @@
-import { ApiError } from "./api-client"
+import {
+  ApiError,
+  type UploadPresignRequest,
+  type UploadPresignResponse,
+} from "./api-client"
 import {
   readApiErrorMessage,
   userFacingApiError,
@@ -130,15 +134,19 @@ export function updateApplicantChoices(body: {
 }
 
 export function updateApplicantDocuments(body: {
-  documents: {
-    documentType: ApplicantDocument["documentType"]
-    fileName: string
-    s3Key: string
-  }[]
+  uploadSessionId: string
+  documentTypes: ApplicantDocument["documentType"][]
 }) {
   return applicantFetch<ApplicantApplication>("/applicant/application", {
     method: "PATCH",
     body: JSON.stringify(body),
+  })
+}
+
+export function createApplicantUploadSession(input: UploadPresignRequest) {
+  return applicantFetch<UploadPresignResponse>("/applicant/uploads/presign", {
+    method: "POST",
+    body: JSON.stringify(input),
   })
 }
 

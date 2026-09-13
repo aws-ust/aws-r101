@@ -10,9 +10,16 @@ import {
   documentUploadFileHint,
   isApplicationDocumentPdfWithinSizeLimit,
 } from "@/lib/apply-field-validation"
-import { updateApplicantDocuments } from "@/lib/applicant-api"
+import {
+  createApplicantUploadSession,
+  updateApplicantDocuments,
+} from "@/lib/applicant-api"
 import type { ApplicantApplication, ApplicantDocument } from "@/lib/applicant-api"
 import type { DocumentType } from "@/lib/application-types"
+import {
+  documentUploadMetadata,
+  uploadDocumentFiles,
+} from "@/lib/document-upload"
 
 const stackClasses = "mt-8 flex flex-col gap-5"
 const headingClasses = "font-sans text-sm font-semibold text-biloba-flower"
@@ -89,12 +96,16 @@ export function ApplicantDocumentEditor({
 
     setPending(true)
     try {
-      const documents = pendingDocs.map((doc) => ({
-        documentType: doc.documentType,
-        fileName: doc.file.name,
-        s3Key: `dev/uploads/${crypto.randomUUID()}/${doc.file.name}`,
-      }))
-      onUpdated(await updateApplicantDocuments({ documents }))
+      const session = await createApplicantUploadSession({
+        documents: await documentUploadMetadata(pendingDocs),
+      })
+      await uploadDocumentFiles(pendingDocs, session)
+      onUpdated(
+        await updateApplicantDocuments({
+          uploadSessionId: session.uploadSessionId,
+          documentTypes: pendingDocs.map((doc) => doc.documentType),
+        }),
+      )
       setResume(null)
       setRegistration(null)
       setSuccess("Documents updated.")
