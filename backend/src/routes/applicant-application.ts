@@ -7,13 +7,16 @@ import {
   ApplicantEditError,
   getApplicantEditableApplication,
   updateApplicantApplication,
-  type ApplicantDocumentInput,
   type UpdateApplicantApplicationInput,
 } from "../lib/applicant-editing";
 import {
   fireApplicantChoiceEditNotifications,
   loadApplicantEditEmailSnapshot,
 } from "../lib/email/service";
+import {
+  createUploadSessionFromRequest,
+  UploadError,
+} from "./uploads";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -22,62 +25,35 @@ const EDITABLE_FIELDS = new Set([
   "slotId",
   "portfolioUrl",
   "githubUrl",
-  "documents",
+  "uploadSessionId",
+  "documentTypes",
 ]);
 
-function parseDocuments(
+function parseDocumentTypes(
   value: unknown,
-): { ok: true; value: ApplicantDocumentInput[] } | { ok: false; error: string } {
+): { ok: true; value: ("resume" | "registration")[] } | { ok: false; error: string } {
   if (!Array.isArray(value) || value.length === 0 || value.length > 2) {
     return {
       ok: false,
-      error: "documents must contain one or two items.",
+      error: "documentTypes must contain one or two items.",
     };
   }
 
-  const documents: ApplicantDocumentInput[] = [];
-  const types = new Set<ApplicantDocumentInput["documentType"]>();
-
-  for (const doc of value) {
-    if (!doc || typeof doc !== "object" || Array.isArray(doc)) {
-      return { ok: false, error: "Each document must be an object." };
-    }
-    const row = doc as Record<string, unknown>;
-    if (
-      row.documentType !== "resume" &&
-      row.documentType !== "registration"
-    ) {
+  const types = new Set<"resume" | "registration">();
+  for (const documentType of value) {
+    if (documentType !== "resume" && documentType !== "registration") {
       return {
         ok: false,
-        error: "documentType must be resume or registration.",
+        error: "documentTypes must contain resume or registration.",
       };
     }
-    const documentType = row.documentType;
     if (types.has(documentType)) {
       return { ok: false, error: "Each document type may only appear once." };
     }
     types.add(documentType);
-
-    if (
-      typeof row.fileName !== "string" ||
-      !row.fileName.trim() ||
-      typeof row.s3Key !== "string" ||
-      !row.s3Key.trim()
-    ) {
-      return {
-        ok: false,
-        error: "Each document needs a fileName and non-empty s3Key.",
-      };
-    }
-
-    documents.push({
-      documentType,
-      fileName: row.fileName.trim(),
-      s3Key: row.s3Key.trim(),
-    });
   }
 
-  return { ok: true, value: documents };
+  return { ok: true, value: [...types] };
 }
 
 function parseEditBody(
@@ -112,22 +88,27 @@ function parseEditBody(
   }
 
   const hasChoices = input.choices !== undefined;
-  const hasDocuments = input.documents !== undefined;
+  const hasDocumentUpload =
+    input.uploadSessionId !== undefined || input.documentTypes !== undefined;
 
-  if (!hasChoices && !hasDocuments) {
+  if (!hasChoices && !hasDocumentUpload) {
     return {
       ok: false,
       error: "The request must include choices or documents to update.",
     };
   }
 
-  let documents: ApplicantDocumentInput[] | undefined;
-  if (hasDocuments) {
-    const parsedDocuments = parseDocuments(input.documents);
-    if (!parsedDocuments.ok) {
-      return parsedDocuments;
+  let documentUpload: UpdateApplicantApplicationInput["documentUpload"];
+  if (hasDocumentUpload) {
+    if (typeof input.uploadSessionId !== "string" || !UUID_RE.test(input.uploadSessionId)) {
+      return { ok: false, error: "uploadSessionId must be a UUID." };
     }
-    documents = parsedDocuments.value;
+    const parsedDocumentTypes = parseDocumentTypes(input.documentTypes);
+    if (!parsedDocumentTypes.ok) return parsedDocumentTypes;
+    documentUpload = {
+      uploadSessionId: input.uploadSessionId,
+      documentTypes: parsedDocumentTypes.value,
+    };
   }
 
   let choices: UpdateApplicantApplicationInput["choices"];
@@ -209,7 +190,7 @@ function parseEditBody(
       ...(typeof input.slotId === "string" ? { slotId: input.slotId } : {}),
       ...(portfolioUrl !== undefined ? { portfolioUrl } : {}),
       ...(githubUrl !== undefined ? { githubUrl } : {}),
-      ...(documents ? { documents } : {}),
+      ...(documentUpload ? { documentUpload } : {}),
     },
   };
 }
@@ -239,6 +220,35 @@ applicantApplicationRoutes.get("/application", async (c) => {
     return c.json({ error: "Application not found." }, 404);
   }
   return c.json(application);
+});
+
+applicantApplicationRoutes.post("/uploads/presign", async (c) => {
+  const applicantSession = getApplicantSession(c);
+  const application = await getApplicantEditableApplication(
+    applicantSession.applicationId,
+  );
+  if (!application) return c.json({ error: "Application not found." }, 404);
+  if (!application.canEdit) {
+    return c.json(
+      { error: application.lockReason ?? "This application cannot be edited." },
+      409,
+    );
+  }
+
+  try {
+    return c.json(
+      await createUploadSessionFromRequest(
+        await c.req.json().catch(() => null),
+        applicantSession.applicationId,
+      ),
+      201,
+    );
+  } catch (error) {
+    if (error instanceof UploadError) {
+      return c.json({ error: error.message }, error.status);
+    }
+    throw error;
+  }
 });
 
 applicantApplicationRoutes.patch("/application", async (c) => {

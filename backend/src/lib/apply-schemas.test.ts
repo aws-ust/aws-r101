@@ -86,14 +86,15 @@ test("create schema keeps existing validation messages", () => {
   }
 });
 
-test("presign schema requires both documents and enforces the SI size limit", () => {
+test("presign schema permits one or two documents and enforces the SI size limit", () => {
   assert.equal(uploadPresignSchema.safeParse({ documents: documents() }).success, true);
+  assert.equal(uploadPresignSchema.safeParse({ documents: documents().slice(0, 1) }).success, true);
   const oversized = uploadPresignSchema.safeParse({ documents: documents(10_000_001) });
   assert.equal(oversized.success, false);
   if (!oversized.success) assert.equal(oversized.error.issues[0].message, "sizeBytes must be from 1 through 10000000.");
-  const missing = uploadPresignSchema.safeParse({ documents: documents().slice(0, 1) });
+  const missing = uploadPresignSchema.safeParse({ documents: [] });
   assert.equal(missing.success, false);
-  if (!missing.success) assert.equal(missing.error.issues[0].message, "documents must contain one resume and one registration form.");
+  if (!missing.success) assert.equal(missing.error.issues[0].message, "documents must contain one or two items.");
 });
 
 test("presign schema keeps existing leaf-error messages", () => {
@@ -103,7 +104,7 @@ test("presign schema keeps existing leaf-error messages", () => {
     [{ documents: [{ ...documents()[0], documentType: "transcript" }, ...documents().slice(1)] }, "documentType must be resume or registration."],
     [{ documents: [{ ...documents()[0], fileName: "resume.txt" }, ...documents().slice(1)] }, "fileName must be a PDF name with 255 characters or fewer."],
     [{ documents: [{ ...documents()[0], checksumSha256: "bad" }, ...documents().slice(1)] }, "checksumSha256 must be a base64 SHA-256 checksum."],
-    [{ documents: [{ ...documents()[0] }, { ...documents()[0] }] }, "documents must contain one resume and one registration form."],
+    [{ documents: [{ ...documents()[0] }, { ...documents()[0] }] }, "Each document type may only appear once."],
   ] as const;
   for (const [input, message] of cases) {
     const result = uploadPresignSchema.safeParse(input);

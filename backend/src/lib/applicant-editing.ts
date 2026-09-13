@@ -9,16 +9,21 @@ import {
   interviewBookings,
   interviewSlots,
   positions,
+  uploadSessions,
 } from "../db/schema";
 import { resolveApplicantEditEligibility } from "./applicant-edit-policy";
 import {
   documentFileNameMatches,
-  isValidDevUploadS3Key,
   validateChoiceUrls,
 } from "./apply-field-validation";
 import { formatBirthday } from "./applications";
 import {
+  applicationKey,
+  copyIncomingDocuments,
+  deleteKeys,
+  incomingKey,
   UPLOAD_DOCUMENT_TYPES,
+  validateIncomingDocument,
   type DocumentType,
   type UploadDocumentType,
 } from "./documents";
@@ -28,10 +33,9 @@ export type ApplicantChoiceInput = {
   preferenceRank: 1 | 2;
 };
 
-export type ApplicantDocumentInput = {
-  documentType: UploadDocumentType;
-  fileName: string;
-  s3Key: string;
+export type ApplicantDocumentUploadInput = {
+  uploadSessionId: string;
+  documentTypes: UploadDocumentType[];
 };
 
 export type UpdateApplicantApplicationInput = {
@@ -39,7 +43,7 @@ export type UpdateApplicantApplicationInput = {
   slotId?: string;
   portfolioUrl?: string;
   githubUrl?: string;
-  documents?: ApplicantDocumentInput[];
+  documentUpload?: ApplicantDocumentUploadInput;
 };
 
 export type ApplicantEditErrorCode =
@@ -226,7 +230,8 @@ export async function updateApplicantApplication(
   }
 
   const documentsOnly =
-    input.documents !== undefined && input.choices === undefined;
+    input.documentUpload !== undefined && input.choices === undefined;
+  let committedUpload: ApplicantDocumentUploadInput | undefined;
 
   try {
     await db.transaction(async (tx) => {
@@ -252,50 +257,80 @@ export async function updateApplicantApplication(
         );
       }
 
-      if (input.documents?.length) {
-        const types = new Set<UploadDocumentType>();
-        for (const doc of input.documents) {
-          if (types.has(doc.documentType)) {
-            throw new ApplicantEditError(
-              "application_locked",
-              "Each document type may only appear once.",
-            );
-          }
-          types.add(doc.documentType);
-          if (
-            !documentFileNameMatches(
-              doc.documentType,
-              doc.fileName,
-              application.lastName,
-            )
-          ) {
-            throw new ApplicantEditError(
-              "application_locked",
-              "Document file names must match CV_ and RegForm_ followed by your last name and .pdf.",
-            );
-          }
-          if (
-            !isValidDevUploadS3Key(
-              doc.s3Key,
-              doc.documentType,
-              application.lastName,
-            )
-          ) {
-            throw new ApplicantEditError(
-              "application_locked",
-              "Document upload path is invalid.",
-            );
-          }
+      if (input.documentUpload) {
+        const [uploadSession] = await tx
+          .select()
+          .from(uploadSessions)
+          .where(eq(uploadSessions.id, input.documentUpload.uploadSessionId))
+          .limit(1)
+          .for("update");
+        if (
+          !uploadSession ||
+          uploadSession.applicationId !== applicationId ||
+          uploadSession.status !== "active" ||
+          uploadSession.expiresAt <= new Date()
+        ) {
+          throw new ApplicantEditError(
+            "application_locked",
+            "Document upload session is invalid or expired.",
+          );
         }
 
-        for (const doc of input.documents) {
+        const documents = input.documentUpload.documentTypes.map((documentType) => {
+          const document =
+            documentType === "resume"
+              ? {
+                  fileName: uploadSession.resumeFileName,
+                  sizeBytes: uploadSession.resumeSizeBytes,
+                  checksumSha256: uploadSession.resumeChecksumSha256,
+                }
+              : {
+                  fileName: uploadSession.registrationFileName,
+                  sizeBytes: uploadSession.registrationSizeBytes,
+                  checksumSha256: uploadSession.registrationChecksumSha256,
+                };
+          if (
+            !document.fileName ||
+            !document.sizeBytes ||
+            !document.checksumSha256 ||
+            !documentFileNameMatches(
+              documentType,
+              document.fileName,
+              application.lastName,
+            )
+          ) {
+            throw new ApplicantEditError(
+              "application_locked",
+              "Document upload session is invalid or expired.",
+            );
+          }
+          return {
+            documentType,
+            fileName: document.fileName,
+            sizeBytes: document.sizeBytes,
+            checksumSha256: document.checksumSha256,
+          };
+        });
+
+        await Promise.all(
+          documents.map((document) =>
+            validateIncomingDocument(uploadSession.id, document),
+          ),
+        );
+        await copyIncomingDocuments(
+          uploadSession.id,
+          applicationId,
+          input.documentUpload.documentTypes,
+        );
+
+        for (const document of documents) {
           const [existing] = await tx
             .select({ id: applicationDocuments.id })
             .from(applicationDocuments)
             .where(
               and(
                 eq(applicationDocuments.applicationId, applicationId),
-                eq(applicationDocuments.documentType, doc.documentType),
+                eq(applicationDocuments.documentType, document.documentType),
               ),
             )
             .limit(1);
@@ -304,20 +339,28 @@ export async function updateApplicantApplication(
             await tx
               .update(applicationDocuments)
               .set({
-                fileName: doc.fileName,
-                s3Key: doc.s3Key,
+                fileName: document.fileName,
+                fileSizeBytes: document.sizeBytes,
+                s3Key: applicationKey(applicationId, document.documentType),
                 uploadedAt: new Date(),
               })
               .where(eq(applicationDocuments.id, existing.id));
           } else {
             await tx.insert(applicationDocuments).values({
               applicationId,
-              documentType: doc.documentType,
-              fileName: doc.fileName,
-              s3Key: doc.s3Key,
+              documentType: document.documentType,
+              fileName: document.fileName,
+              fileSizeBytes: document.sizeBytes,
+              s3Key: applicationKey(applicationId, document.documentType),
             });
           }
         }
+
+        await tx
+          .update(uploadSessions)
+          .set({ status: "consumed", consumedAt: new Date() })
+          .where(eq(uploadSessions.id, uploadSession.id));
+        committedUpload = input.documentUpload;
       }
 
       if (documentsOnly) {
@@ -525,6 +568,15 @@ export async function updateApplicantApplication(
       );
     }
     throw error;
+  }
+
+  if (committedUpload) {
+    const { documentTypes, uploadSessionId } = committedUpload;
+    await deleteKeys(
+      documentTypes.map((type) =>
+        incomingKey(uploadSessionId, type),
+      ),
+    ).catch((error) => console.error("Could not remove incoming documents", error));
   }
 
   const updated = await getApplicantEditableApplication(applicationId);

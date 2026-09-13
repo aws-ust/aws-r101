@@ -4,7 +4,6 @@ import {
   documentFileNameMatches,
   hasValidLastNameFileToken,
   isValidApplicantName,
-  isValidDevUploadS3Key,
   isValidGithubUrl,
   isValidGoogleDriveUrl,
   isValidMotivation,
@@ -19,25 +18,13 @@ test("section format", () => {
   assert.equal(isValidSection("BSCS"), false);
 });
 
-test("applicant text and upload guards", () => {
+test("applicant text guards", () => {
   assert.equal(isValidApplicantName("Juan Dela Cruz"), true);
   assert.equal(isValidApplicantName("Juan123"), false);
   assert.equal(isValidUstApplicantEmail("juan@ust.edu.ph"), true);
   assert.equal(isValidUstApplicantEmail("juan@gmail.com"), false);
   assert.equal(isValidMotivation("I want to join."), true);
   assert.equal(hasValidLastNameFileToken("---"), false);
-  assert.equal(
-    isValidDevUploadS3Key(
-      "dev/uploads/550e8400-e29b-41d4-a716-446655440000/CV_olmedo.pdf",
-      "resume",
-      "Olmedo",
-    ),
-    true,
-  );
-  assert.equal(
-    isValidDevUploadS3Key("dev/uploads/evil/CV_olmedo.pdf", "resume", "Olmedo"),
-    false,
-  );
 });
 
 test("document file names", () => {

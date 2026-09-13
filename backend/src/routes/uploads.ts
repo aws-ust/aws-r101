@@ -23,7 +23,7 @@ type UploadDocument = {
   checksumSha256: string;
 };
 
-class UploadError extends Error {
+export class UploadError extends Error {
   constructor(readonly status: 400 | 403 | 409, message: string) {
     super(message);
   }
@@ -40,9 +40,18 @@ function numeric(value: unknown): number {
   return Number.isFinite(number) ? number : 0;
 }
 
-async function createUploadSession(documents: UploadDocument[]) {
-  const resume = documents.find((document) => document.documentType === "resume")!;
-  const registration = documents.find((document) => document.documentType === "registration")!;
+async function createUploadSession(
+  documents: UploadDocument[],
+  applicationId?: string,
+) {
+  const resume = documents.find((document) => document.documentType === "resume");
+  const registration = documents.find(
+    (document) => document.documentType === "registration",
+  );
+  const uploadSizeBytes = documents.reduce(
+    (total, document) => total + document.sizeBytes,
+    0,
+  );
   const now = new Date();
   const uploadExpiresAt = new Date(now.getTime() + UPLOAD_EXPIRY_SECONDS * 1000);
   const expiresAt = new Date(now.getTime() + SESSION_EXPIRY_MS);
@@ -52,17 +61,26 @@ async function createUploadSession(documents: UploadDocument[]) {
     const [{ count }] = await tx.select({ count: sql<number>`count(*)::int` }).from(uploadSessions).where(inArray(uploadSessions.status, ["active", "consumed"]));
     if (numeric(count) >= SESSION_CAP) throw new UploadError(409, "The application upload-session cap has been reached.");
     const [{ committedBytes }] = await tx.select({ committedBytes: sql<number>`coalesce(sum(${applicationDocuments.fileSizeBytes}), 0)::bigint` }).from(applicationDocuments);
-    const [{ reservedBytes }] = await tx.select({ reservedBytes: sql<number>`coalesce(sum(${uploadSessions.resumeSizeBytes} + ${uploadSessions.registrationSizeBytes}), 0)::bigint` }).from(uploadSessions).where(and(eq(uploadSessions.status, "active"), gt(uploadSessions.expiresAt, now)));
-    if (numeric(committedBytes) + numeric(reservedBytes) + resume.sizeBytes + registration.sizeBytes > STORAGE_CAP_BYTES) {
+    const [{ reservedBytes }] = await tx.select({ reservedBytes: sql<number>`coalesce(sum(coalesce(${uploadSessions.resumeSizeBytes}, 0) + coalesce(${uploadSessions.registrationSizeBytes}, 0)), 0)::bigint` }).from(uploadSessions).where(and(eq(uploadSessions.status, "active"), gt(uploadSessions.expiresAt, now)));
+    if (numeric(committedBytes) + numeric(reservedBytes) + uploadSizeBytes > STORAGE_CAP_BYTES) {
       throw new UploadError(409, "The document storage cap has been reached.");
     }
     return tx.insert(uploadSessions).values({
-      resumeFileName: resume.fileName,
-      resumeSizeBytes: resume.sizeBytes,
-      resumeChecksumSha256: resume.checksumSha256,
-      registrationFileName: registration.fileName,
-      registrationSizeBytes: registration.sizeBytes,
-      registrationChecksumSha256: registration.checksumSha256,
+      ...(resume
+        ? {
+            resumeFileName: resume.fileName,
+            resumeSizeBytes: resume.sizeBytes,
+            resumeChecksumSha256: resume.checksumSha256,
+          }
+        : {}),
+      ...(registration
+        ? {
+            registrationFileName: registration.fileName,
+            registrationSizeBytes: registration.sizeBytes,
+            registrationChecksumSha256: registration.checksumSha256,
+          }
+        : {}),
+      ...(applicationId ? { applicationId } : {}),
       uploadExpiresAt,
       expiresAt,
     }).returning({ id: uploadSessions.id });
@@ -74,16 +92,33 @@ async function createUploadSession(documents: UploadDocument[]) {
   return { uploadSessionId: session.id, uploadExpiresAt: uploadExpiresAt.toISOString(), sessionExpiresAt: expiresAt.toISOString(), uploads };
 }
 
+export async function createUploadSessionFromRequest(
+  body: unknown,
+  applicationId?: string,
+) {
+  const season = await resolveRecruitmentSeasonStatus();
+  if (!season.open) {
+    throw new UploadError(403, season.message ?? "Applications are closed.");
+  }
+  if (uploadsAreClosed()) {
+    throw new UploadError(
+      403,
+      "Uploads are closed during the final seven days of the AWS Free Plan.",
+    );
+  }
+  return createUploadSession(parseBody(body), applicationId);
+}
+
 export const uploadsRoutes = new Hono();
 
 uploadsRoutes.post("/presign", async (c) => {
-  const season = await resolveRecruitmentSeasonStatus();
-  if (!season.open) {
-    return c.json({ error: season.message ?? "Applications are closed." }, 403);
-  }
-  if (uploadsAreClosed()) return c.json({ error: "Uploads are closed during the final seven days of the AWS Free Plan." }, 403);
   try {
-    return c.json(await createUploadSession(parseBody(await c.req.json().catch(() => null))), 201);
+    return c.json(
+      await createUploadSessionFromRequest(
+        await c.req.json().catch(() => null),
+      ),
+      201,
+    );
   } catch (error) {
     if (error instanceof UploadError) return c.json({ error: error.message }, error.status);
     return internalApiError(

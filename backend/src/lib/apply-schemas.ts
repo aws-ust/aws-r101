@@ -180,16 +180,17 @@ const uploadDocumentSchema = z.object({
 export const uploadPresignSchema = z
   .object({
     documents: z
-      .array(uploadDocumentSchema, { error: "documents must contain one resume and one registration form." })
-      .length(UPLOAD_DOCUMENT_TYPES.length, {
-        error: "documents must contain one resume and one registration form.",
+      .array(uploadDocumentSchema, { error: "documents must contain one or two items." })
+      .min(1, { error: "documents must contain one or two items." })
+      .max(UPLOAD_DOCUMENT_TYPES.length, {
+        error: "documents must contain one or two items.",
       }),
   }, { error: "Request body must be a JSON object." })
   .superRefine((value, ctx) => {
-    if (new Set(value.documents.map((document) => document.documentType)).size !== UPLOAD_DOCUMENT_TYPES.length) {
+    if (new Set(value.documents.map((document) => document.documentType)).size !== value.documents.length) {
       ctx.addIssue({
         code: "custom",
-        message: "documents must contain one resume and one registration form.",
+        message: "Each document type may only appear once.",
         path: ["documents"],
       });
     }

@@ -87,9 +87,6 @@ export function isValidGithubUrl(value: string): boolean {
 
 const APPLICANT_NAME_RE = /^[\p{L}\s'-]+$/u;
 const MOTIVATION_MAX_LENGTH = 4000;
-const DEV_UPLOAD_KEY_RE =
-  /^dev\/uploads\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\//i;
-
 export function isValidApplicantName(value: string): boolean {
   const trimmed = value.trim();
   return (
@@ -144,17 +141,6 @@ export function documentFileNameMatches(
   if (!hasValidLastNameFileToken(lastName)) return false;
   const expected = expectedDocumentFileName(documentType, lastName);
   return fileName.trim().toLowerCase() === expected.toLowerCase();
-}
-
-export function isValidDevUploadS3Key(
-  s3Key: string,
-  documentType: DocumentType,
-  lastName: string,
-): boolean {
-  const trimmed = s3Key.trim();
-  if (!DEV_UPLOAD_KEY_RE.test(trimmed)) return false;
-  const fileName = trimmed.slice(trimmed.lastIndexOf("/") + 1);
-  return documentFileNameMatches(documentType, fileName, lastName);
 }
 
 export function canonicalizeHttpsUrl(value: string): string | null {

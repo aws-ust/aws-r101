@@ -341,21 +341,17 @@ test("applicant editing", async (t) => {
     assert.equal(profileEdit.status, 400);
     assert.match(await responseError(profileEdit), /committee choices/i);
 
-    const transcriptEdit = await applicantRequest(
+    const clientKeyEdit = await applicantRequest(
       "/applicant/application",
       "PATCH",
       {
-        documents: [
-          {
-            documentType: "transcript",
-            fileName: "TOR_applicant.pdf",
-            s3Key: `dev/uploads/${randomUUID()}/TOR_applicant.pdf`,
-          },
-        ],
+        uploadSessionId: randomUUID(),
+        documentTypes: ["resume"],
+        s3Key: `applications/${blockerApplicationId}/resume.pdf`,
       },
     );
-    assert.equal(transcriptEdit.status, 400);
-    assert.match(await responseError(transcriptEdit), /resume or registration/i);
+    assert.equal(clientKeyEdit.status, 400);
+    assert.match(await responseError(clientKeyEdit), /non-editable field/i);
   });
 
   await t.test("returns safe prefill data and edit eligibility", async () => {

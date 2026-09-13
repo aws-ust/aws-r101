@@ -30,16 +30,21 @@ function configuredBucket(): string {
 }
 
 function s3Client(): S3Client {
+  const region = process.env.S3_REGION ?? process.env.AWS_REGION ?? "us-east-1";
   const endpoint = process.env.S3_ENDPOINT;
-  const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+  // Deployed Lambda functions use the refreshable default credential provider
+  // chain, including the execution role's session token.
+  if (!endpoint) return new S3Client({ region });
+
+  // LocalStack needs static credentials and path-style addressing.
   return new S3Client({
-    region: process.env.S3_REGION ?? process.env.AWS_REGION ?? "us-east-1",
-    ...(endpoint ? { endpoint } : {}),
+    region,
+    endpoint,
     forcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true",
-    ...(accessKeyId && secretAccessKey
-      ? { credentials: { accessKeyId, secretAccessKey } }
-      : {}),
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? "test",
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? "test",
+    },
   });
 }
 
@@ -110,11 +115,12 @@ export async function validateIncomingDocument(
 export async function copyIncomingDocuments(
   sessionId: string,
   applicationId: string,
+  types: readonly UploadDocumentType[] = UPLOAD_DOCUMENT_TYPES,
 ): Promise<void> {
   const bucket = configuredBucket();
   const client = s3Client();
   await Promise.all(
-    UPLOAD_DOCUMENT_TYPES.map((type) =>
+    types.map((type) =>
       client.send(
         new CopyObjectCommand({
           Bucket: bucket,

@@ -487,18 +487,18 @@ export const uploadSessions = pgTable(
     applicationId: uuid("application_id").references(() => applications.id, {
       onDelete: "set null",
     }),
-    resumeFileName: varchar("resume_file_name", { length: 255 }).notNull(),
-    resumeSizeBytes: integer("resume_size_bytes").notNull(),
+    resumeFileName: varchar("resume_file_name", { length: 255 }),
+    resumeSizeBytes: integer("resume_size_bytes"),
     resumeChecksumSha256: varchar("resume_checksum_sha256", {
       length: 44,
-    }).notNull(),
+    }),
     registrationFileName: varchar("registration_file_name", {
       length: 255,
-    }).notNull(),
-    registrationSizeBytes: integer("registration_size_bytes").notNull(),
+    }),
+    registrationSizeBytes: integer("registration_size_bytes"),
     registrationChecksumSha256: varchar("registration_checksum_sha256", {
       length: 44,
-    }).notNull(),
+    }),
     uploadExpiresAt: timestamp("upload_expires_at", {
       withTimezone: true,
     }).notNull(),
@@ -511,6 +511,6 @@ export const uploadSessions = pgTable(
   (t) => [
     index("idx_upload_sessions_status").on(t.status),
     index("idx_upload_sessions_expires_at").on(t.expiresAt),
-    unique().on(t.applicationId),
+    index("idx_upload_sessions_application").on(t.applicationId),
   ],
 );

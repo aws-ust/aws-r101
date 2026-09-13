@@ -518,6 +518,18 @@ export async function createApplication(
         }
         throw new Error("Upload session has expired.");
       }
+      if (
+        !session.resumeFileName ||
+        !session.resumeSizeBytes ||
+        !session.resumeChecksumSha256 ||
+        !session.registrationFileName ||
+        !session.registrationSizeBytes ||
+        !session.registrationChecksumSha256
+      ) {
+        throw new Error(
+          "Upload session must contain both resume and registration documents.",
+        );
+      }
 
       const documents = [
         {
