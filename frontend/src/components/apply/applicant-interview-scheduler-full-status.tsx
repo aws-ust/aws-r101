@@ -75,6 +75,7 @@ export function ApplicantInterviewSchedulerFullStatus({
                 <a
                   href="/api/applicant/interview-calendar"
                   download="aws-builders-ust-interview.ics"
+                  aria-label="Download interview calendar invite"
                 />
               }
             >
