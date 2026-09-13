@@ -335,7 +335,7 @@ export const POSITION_SEEDS: PositionSeed[] = [
       "Help facilitate communication between technical committees",
       "Act as the CTO's associate",
     ],
-    isOpen: true,
+    isOpen: false,
   },
   {
     name: "Technicals Committee Staff",
