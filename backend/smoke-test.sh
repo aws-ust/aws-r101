@@ -11,16 +11,16 @@ HR_PASSWORD="${HR_PASSWORD:-password123}"
 TRUSTED_ORIGIN="${TRUSTED_ORIGIN:-http://localhost:3000}"
 EMAIL_ENABLED="${EMAIL_ENABLED:-false}"
 export EMAIL_ENABLED
-export ALLOW_LOGIN_TOKEN_RESPONSE=true
 
 pass=0
 fail=0
 LAST_STATUS=""
 LAST_BODY=""
+HEADER_FILE="/tmp/aws-ust-smoke-headers"
 
 request() {
   local method="$1" path="$2" data="${3:-}" auth="${4:-}"
-  local args=(-sS -o /tmp/aws-ust-smoke-body -w '%{http_code}' -X "$method")
+  local args=(-sS -D "$HEADER_FILE" -o /tmp/aws-ust-smoke-body -w '%{http_code}' -X "$method")
   case "$method" in
     POST|PUT|PATCH|DELETE)
       args+=(-H "Origin: ${TRUSTED_ORIGIN}")
@@ -266,7 +266,8 @@ expect "POST /auth/login" 200
 
 token=""
 if [[ "$LAST_STATUS" == "200" ]]; then
-  token=$(json_field token || true)
+  token=$(sed -n 's/^[Ss]et-[Cc]ookie: *hr_token=\([^;]*\).*/\1/p' "$HEADER_FILE" | head -1)
+  token="${token:-$(json_field token || true)}"
 fi
 
 if [[ -z "$token" ]]; then
