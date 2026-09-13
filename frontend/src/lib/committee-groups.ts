@@ -65,12 +65,14 @@ export const COMMITTEE_OFFICE_GROUPS: CommitteeOfficeGroup[] = [
 
 export function groupedCommitteesForPicker(available: string[]) {
   const open = new Set(available)
-  return COMMITTEE_OFFICE_GROUPS
-    .map((group) => ({
-      office: group.office,
-      committees: group.committees.filter((committee) => open.has(committee)),
-    }))
-    .filter((group) => group.committees.length > 0)
+  const grouped: { office: string; committees: string[] }[] = []
+  for (const group of COMMITTEE_OFFICE_GROUPS) {
+    const committees = group.committees.filter((committee) => open.has(committee))
+    if (committees.length > 0) {
+      grouped.push({ office: group.office, committees })
+    }
+  }
+  return grouped
 }
 
 export function officeForCommittee(committee: string) {

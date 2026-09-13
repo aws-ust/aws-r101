@@ -79,7 +79,6 @@ function ApplicantInterviewSchedulerGridBlock({
 }
 
 type SchedulerShellProps = {
-  previewMode: boolean
   schedule: ApplicantInterviewSchedule | null
   seasonConfigured: boolean
   seasonLoading: boolean
@@ -87,21 +86,42 @@ type SchedulerShellProps = {
   days: Date[]
   cells: Map<string, SlotGridCell>
   loading: boolean
-  weekLabel: string
-  weekNavDisabled: boolean
-  canGoPrevWeek: boolean
-  canGoNextWeek: boolean
-  onPrevWeek: () => void
-  onNextWeek: () => void
+  weekNav: WeekNavProps
   gridLocked: boolean
   onCellClick: (cell: SlotGridCell) => void
   gridEmptyMessage: string
   error: string
-  success: string
-  canConfirm: boolean
+}
+
+type ApplicantInterviewSchedulerConfirmProps = {
   pending: boolean
+  enabled: boolean
   onConfirm: () => void
-  showConfirm: boolean
+}
+
+function ApplicantInterviewSchedulerConfirm({
+  pending,
+  enabled,
+  onConfirm,
+}: ApplicantInterviewSchedulerConfirmProps) {
+  return (
+    <div className={actionsClasses}>
+      <Button
+        type="button"
+        color="cyan"
+        disabled={pending || !enabled}
+        onClick={onConfirm}
+      >
+        {pending ? "Confirming…" : "Confirm Interview Slot"}
+      </Button>
+    </div>
+  )
+}
+
+type ApplicantInterviewSchedulerFullProps = SchedulerShellProps & {
+  previewMode: boolean
+  success: string
+  confirm?: ApplicantInterviewSchedulerConfirmProps
 }
 
 export function ApplicantInterviewSchedulerFull({
@@ -113,22 +133,14 @@ export function ApplicantInterviewSchedulerFull({
   days,
   cells,
   loading,
-  weekLabel,
-  weekNavDisabled,
-  canGoPrevWeek,
-  canGoNextWeek,
-  onPrevWeek,
-  onNextWeek,
+  weekNav,
   gridLocked,
   onCellClick,
   gridEmptyMessage,
   error,
   success,
-  canConfirm,
-  pending,
-  onConfirm,
-  showConfirm,
-}: SchedulerShellProps) {
+  confirm,
+}: ApplicantInterviewSchedulerFullProps) {
   return (
     <section className={sectionClasses}>
       <ApplicantInterviewSchedulerIntro previewMode={previewMode} />
@@ -140,14 +152,7 @@ export function ApplicantInterviewSchedulerFull({
         seasonBounds={seasonBounds}
       />
 
-      <ApplicantInterviewWeekNav
-        weekLabel={weekLabel}
-        disabled={weekNavDisabled}
-        canGoPrev={canGoPrevWeek}
-        canGoNext={canGoNextWeek}
-        onPrev={onPrevWeek}
-        onNext={onNextWeek}
-      />
+      <ApplicantInterviewWeekNav {...weekNav} />
 
       <ApplicantInterviewSchedulerGridBlock
         seasonConfigured={seasonConfigured}
@@ -159,18 +164,7 @@ export function ApplicantInterviewSchedulerFull({
         onCellClick={onCellClick}
       />
 
-      {showConfirm ? (
-        <div className={actionsClasses}>
-          <Button
-            type="button"
-            color="cyan"
-            disabled={pending || !canConfirm}
-            onClick={onConfirm}
-          >
-            {pending ? "Confirming…" : "Confirm Interview Slot"}
-          </Button>
-        </div>
-      ) : null}
+      {confirm ? <ApplicantInterviewSchedulerConfirm {...confirm} /> : null}
 
       {error ? <ActionFeedback type="error" message={error} /> : null}
       {success ? <ActionFeedback type="success" message={success} /> : null}
@@ -185,26 +179,12 @@ export function ApplicantInterviewSchedulerCompact({
   days,
   cells,
   loading,
-  weekLabel,
-  weekNavDisabled,
-  canGoPrevWeek,
-  canGoNextWeek,
-  onPrevWeek,
-  onNextWeek,
+  weekNav,
   gridLocked,
   onCellClick,
   gridEmptyMessage,
   error,
-}: Omit<
-  SchedulerShellProps,
-  | "previewMode"
-  | "seasonBounds"
-  | "success"
-  | "canConfirm"
-  | "pending"
-  | "onConfirm"
-  | "showConfirm"
->) {
+}: Omit<SchedulerShellProps, "seasonBounds">) {
   return (
     <div className="mt-4">
       {schedule && !schedule.canSchedule && schedule.lockReason ? (
@@ -217,14 +197,7 @@ export function ApplicantInterviewSchedulerCompact({
         </p>
       ) : null}
 
-      <ApplicantInterviewWeekNav
-        weekLabel={weekLabel}
-        disabled={weekNavDisabled}
-        canGoPrev={canGoPrevWeek}
-        canGoNext={canGoNextWeek}
-        onPrev={onPrevWeek}
-        onNext={onNextWeek}
-      />
+      <ApplicantInterviewWeekNav {...weekNav} />
 
       <ApplicantInterviewSchedulerGridBlock
         seasonConfigured={seasonConfigured}

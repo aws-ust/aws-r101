@@ -11,7 +11,7 @@ import { useSectionSpy } from "@/hooks/use-section-spy"
 import { logoutApplicant } from "@/lib/applicant-api"
 import { scrollToSection } from "@/lib/scroll-to-section"
 import { SITE_NAV_ITEMS } from "@/lib/site-nav"
-import { chromeBarClasses, chromeInsetClasses } from "@/lib/surface"
+import { chromeBarClasses } from "@/lib/surface"
 import { cn } from "@/lib/utils"
 
 const NAV_ITEMS = SITE_NAV_ITEMS
@@ -21,9 +21,9 @@ const HOME_SECTION_IDS = NAV_ITEMS.flatMap((item) =>
 
 const headerClasses = "fixed inset-x-0 top-0 z-50"
 const barInnerClasses =
-  `mx-auto flex max-w-[1180px] items-center justify-between gap-4 py-2.5 ${chromeInsetClasses}`
+  "mx-auto flex w-full items-center justify-between gap-3 px-4 py-2.5 sm:px-7 lg:justify-center lg:gap-6 lg:px-8 xl:gap-8"
 const mobileOverlayClasses =
-  "fixed inset-0 z-40 transition-[opacity,visibility] duration-300 md:hidden"
+  "fixed inset-0 z-40 transition-[opacity,visibility] duration-300 lg:hidden"
 const mobileOverlayOpenClasses = "visible pointer-events-auto opacity-100"
 const mobileOverlayClosedClasses = "invisible pointer-events-none opacity-0"
 const mobileBackdropClasses = "absolute inset-0 glass bg-haiti/80"
@@ -34,7 +34,10 @@ const mobileCloseButtonClasses =
 const mobileNavLinkClasses =
   "rounded-pill px-5 py-2 transition-colors hover:bg-biloba-flower/15 hover:text-blue-chalk"
 const activeNavLinkClasses = "bg-aquamarine text-haiti hover:text-haiti"
-const logoLinkClasses = "flex items-center gap-2 font-bold"
+const logoLinkClasses = "flex shrink-0 items-center gap-2 font-bold"
+const logoWordmarkClasses = "hidden sm:inline lg:hidden xl:inline"
+const desktopCtaWrapClasses = "hidden lg:block"
+const mobileMenuButtonWrapClasses = "lg:hidden"
 
 export function Navbar() {
   const [open, setOpen] = useState(false)
@@ -85,7 +88,7 @@ export function Navbar() {
             onClick={(event) => navigateToSection(event, NAV_ITEMS[0])}
           >
             <Image src="/aws-logo.png" alt="AWS Builders – UST" width={117} height={66} className="h-8 w-auto" />
-            <span className="hidden sm:inline">AWS Builders – UST</span>
+            <span className={logoWordmarkClasses}>AWS Builders – UST</span>
           </Link>
 
           {isApplicantSignedIn ? null : (
@@ -96,7 +99,7 @@ export function Navbar() {
             />
           )}
 
-          <div className={cn(isApplicantSignedIn ? "flex" : "hidden md:block")}>
+          <div className={cn(isApplicantSignedIn ? "flex" : desktopCtaWrapClasses)}>
             {isApplicantSignedIn ? (
               <Button type="button" color="purple" onClick={() => void onApplicantSignOut()}>
                 Sign out
@@ -109,7 +112,7 @@ export function Navbar() {
           </div>
 
           {isApplicantSignedIn ? null : (
-            <div className="md:hidden">
+            <div className={mobileMenuButtonWrapClasses}>
               <button
                 type="button"
                 aria-label="Show menu"
