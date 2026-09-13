@@ -166,6 +166,7 @@ type PositionApiRow = {
   description: string;
   responsibilities: string;
   isOpen: boolean;
+  openSlots: number;
 };
 
 export type BrowserPosition = {
@@ -177,6 +178,7 @@ export type BrowserPosition = {
   description: string;
   responsibilities: string[];
   isOpen: boolean;
+  openSlots: number;
 };
 
 let openPositionsCache: Position[] | null = null;
@@ -206,6 +208,7 @@ function mapBrowserPosition(row: PositionApiRow): BrowserPosition {
       .map((line) => line.trim())
       .filter(Boolean),
     isOpen: row.isOpen,
+    openSlots: row.openSlots,
   };
 }
 

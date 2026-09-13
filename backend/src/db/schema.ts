@@ -132,6 +132,7 @@ export const positions = pgTable(
     description: text(),
     responsibilities: text(),
     isOpen: boolean("is_open").notNull().default(true),
+    openSlots: integer("open_slots").notNull().default(4),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
