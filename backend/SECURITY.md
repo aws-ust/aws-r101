@@ -6,6 +6,9 @@
 - **Applicants** use email + application code + OTP. OTP codes are HMAC-hashed before storage; they are not stored in plaintext.
 - HR JWT lifetime defaults to 8 hours (`JWT_EXPIRES_IN`). Applicant sessions default to 1 hour.
 
+Integration tests require `DATABASE_URL` to point at a dedicated database whose name matches
+`/(^|[_-])test([_-]|$)/`, such as `aws_ust_recruitment_test`; `testdb` does not match.
+
 ## Public endpoints (no HR/applicant session)
 
 | Method | Path | Notes |
@@ -35,4 +38,4 @@ Mutating requests (`POST`, `PUT`, `PATCH`, `DELETE`) require an `Origin` or `Ref
 
 ## Dependencies
 
-`pnpm audit` is run at release time. Dev-only `esbuild` findings under `drizzle-kit` are pinned via `esbuild: ">=0.25.0"` in `pnpm-workspace.yaml` overrides.
+`pnpm audit` is run at release time. Dev-only `esbuild` findings under `drizzle-kit` are pinned via `esbuild: "^0.25.0"` in `pnpm-workspace.yaml` overrides.
