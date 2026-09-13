@@ -7,6 +7,8 @@ export type PersonTerm = {
   title: string
   academicYear: string
   photo?: string
+  /** CSS `object-position` for circular avatar crop (e.g. `50% 40%`). */
+  photoObjectPosition?: string
 }
 
 export type OfficerSeat = {
@@ -38,19 +40,39 @@ const CURRENT_EB_PHOTOS: Partial<Record<string, string>> = {
 /** Outgoing EB photos in `public/people/previous-ebs/` keyed by `OfficerSeat.id`. */
 const PREVIOUS_EB_PHOTOS: Partial<Record<string, string>> = {
   ceo: "/people/previous-ebs/CEO_Viray.JPG",
+  coo: "/people/previous-ebs/COO_Axalan.jpg",
+  cro: "/people/previous-ebs/CRO_Sigua.jpg",
+  "corp-sec": "/people/previous-ebs/Sec_Elleazar.JPG",
   cfo: "/people/previous-ebs/CFO_Palanog.JPG",
   chro: "/people/previous-ebs/CHRO_To.png",
-  "corp-sec": "/people/previous-ebs/Sec_Elleazar.JPG",
+  cco: "/people/previous-ebs/CCO_Padua.JPG",
+}
+
+/** Previous EB headshots that need a lower focal point in the avatar circle. */
+const PREVIOUS_EB_PHOTO_OBJECT_POSITION: Partial<Record<string, string>> = {
+  ceo: "50% 30%",
+  cro: "50% 28%",
+  "corp-sec": "50% 26%",
+  cfo: "50% 28%",
+  chro: "50% 26%",
 }
 
 /** Committee director photos in `public/people/directors/` keyed by seeded committee name. */
 const DIRECTOR_PHOTOS_BY_COMMITTEE: Partial<Record<string, string>> = {
   "Logistics Committee": "/people/directors/Logistics_Ladia.jpg",
+  "Community Development Committee":
+    "/people/directors/ComDev_Mariveles.jpg",
+  "Sponsorship Committee": "/people/directors/Sponsorships_Paco.png",
+  "Marketing Committee": "/people/directors/Marketing_Lopez.jpg",
+  "External Affairs Committee": "/people/directors/Externals_Alcantara.PNG",
   "Secretariat Committee": "/people/directors/Secretary_de%20Mesa.jpg",
   "Technicals Committee": "/people/directors/Technicals_Lapuebla.jpeg",
+  "Development Committee": "/people/directors/Development_Ferrer.jpg",
   "Finance Committee": "/people/directors/Finance_Gamban.jpg",
   "Human Resources Committee": "/people/directors/HR_Tamondong.jpg",
-  "Marketing Committee": "/people/directors/Marketing_Lopez.jpg",
+  "Documentation Committee": "/people/directors/Documentation_Agsunod.jpg",
+  "Media Committee": "/people/directors/Media_Estuista.jpg",
+  "Publicity Committee": "/people/directors/Publicity_Jarina.jpg",
 }
 
 /** Matches office order in `committee-groups.ts` (CEO → COO → CRO → …). */
@@ -75,6 +97,7 @@ function officer(
       title,
       academicYear: PREVIOUS_AY,
       photo: PREVIOUS_EB_PHOTOS[id],
+      photoObjectPosition: PREVIOUS_EB_PHOTO_OBJECT_POSITION[id],
     },
   }
 }

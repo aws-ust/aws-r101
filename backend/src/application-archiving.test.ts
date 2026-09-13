@@ -13,6 +13,7 @@ import {
   positions,
   users,
 } from "./db/schema";
+import { originHeaders } from "./test-support/request";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -53,10 +54,10 @@ function archiveRequest(
 ) {
   return app.request(`/applications/${id}/archive`, {
     method: "PATCH",
-    headers: {
+    headers: originHeaders({
       "content-type": "application/json",
       ...(authenticated ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    }),
     body: JSON.stringify({ archived }),
   });
 }
@@ -131,10 +132,10 @@ test("HR application archiving", async (t) => {
       (
         await app.request(`/applications/${applicationId}/archive`, {
           method: "PATCH",
-          headers: {
+          headers: originHeaders({
             "content-type": "application/json",
             Authorization: `Bearer ${token}`,
-          },
+          }),
           body: JSON.stringify({}),
         })
       ).status,

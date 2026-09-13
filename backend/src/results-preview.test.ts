@@ -14,6 +14,7 @@ import {
   positions,
   users,
 } from "./db/schema";
+import { originHeaders } from "./test-support/request";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -59,21 +60,21 @@ after(async () => {
 
 function hrRequest() {
   return app.request("/results/preview", {
-    headers: { Authorization: `Bearer ${hrToken}` },
+    headers: originHeaders({ Authorization: `Bearer ${hrToken}` }),
   });
 }
 
 function releaseRequest() {
   return app.request("/results/release", {
     method: "POST",
-    headers: { Authorization: `Bearer ${hrToken}` },
+    headers: originHeaders({ Authorization: `Bearer ${hrToken}` }),
   });
 }
 
 function retryFailedEmailsRequest() {
   return app.request("/results/emails/retry-failed", {
     method: "POST",
-    headers: { Authorization: `Bearer ${hrToken}` },
+    headers: originHeaders({ Authorization: `Bearer ${hrToken}` }),
   });
 }
 
@@ -201,6 +202,7 @@ test("results release preview", async (t) => {
       (
         await app.request("/results/release", {
           method: "POST",
+          headers: originHeaders(),
         })
       ).status,
       401,
@@ -209,6 +211,7 @@ test("results release preview", async (t) => {
       (
         await app.request("/results/emails/retry-failed", {
           method: "POST",
+          headers: originHeaders(),
         })
       ).status,
       401,

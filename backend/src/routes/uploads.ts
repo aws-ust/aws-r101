@@ -9,6 +9,7 @@ import {
 import { uploadPresignSchema } from "../lib/apply-schemas";
 import { uploadsAreClosed } from "../lib/free-plan";
 import { resolveRecruitmentSeasonStatus } from "../lib/recruitment-window";
+import { internalApiError } from "../lib/api-errors";
 
 const UPLOAD_EXPIRY_SECONDS = 10 * 60;
 const SESSION_EXPIRY_MS = 24 * 60 * 60 * 1000;
@@ -89,7 +90,11 @@ uploadsRoutes.post("/presign", async (c) => {
     return c.json(await createUploadSession(parseBody(await c.req.json().catch(() => null))), 201);
   } catch (error) {
     if (error instanceof UploadError) return c.json({ error: error.message }, error.status);
-    console.error("Could not create upload session", error);
-    return c.json({ error: "Could not create an upload session." }, 503);
+    return internalApiError(
+      c,
+      error,
+      "Could not create upload session",
+      "Could not create an upload session.",
+    );
   }
 });

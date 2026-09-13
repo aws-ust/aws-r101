@@ -20,6 +20,7 @@ import {
   recruitmentWindows,
   interviewWindows,
 } from "./db/schema";
+import { originHeaders } from "./test-support/request";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -80,10 +81,10 @@ function jsonRequest(
 ) {
   return app.request(path, {
     method,
-    headers: {
+    headers: originHeaders({
       ...(body ? { "content-type": "application/json" } : {}),
       ...headers,
-    },
+    }),
     body: body ? JSON.stringify(body) : undefined,
   });
 }

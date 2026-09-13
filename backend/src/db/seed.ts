@@ -1,4 +1,5 @@
 import { eq, inArray } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 import { db } from "./index";
 import {
   applicants,
@@ -12,9 +13,8 @@ import {
 } from "./schema";
 import { POSITION_SEEDS } from "./position-seeds";
 
-// Dev password for both seeded users is "password123" — local/dev only.
-const DEV_PASSWORD_HASH =
-  "$2b$10$CwTycUXWue0Thq9StjUM0uJ8yTaSGE3Va8p8V6b8Vqjc.gBFm9UhK";
+// Local/dev only.
+const DEV_PASSWORD = "password123";
 const LEGACY_POSITION_NAMES = [
   "Web Developer",
   "Cloud Engineer",
@@ -25,19 +25,21 @@ const LEGACY_POSITION_NAMES = [
 ];
 
 async function main() {
+  const devPasswordHash = await bcrypt.hash(DEV_PASSWORD, 10);
+
   await db
     .insert(users)
     .values([
       {
         email: "hr@aws-ust.org",
-        passwordHash: DEV_PASSWORD_HASH,
+        passwordHash: devPasswordHash,
         firstName: "Hazel",
         lastName: "Reyes",
         role: "hr",
       },
       {
         email: "admin@aws-ust.org",
-        passwordHash: DEV_PASSWORD_HASH,
+        passwordHash: devPasswordHash,
         firstName: "Marco",
         lastName: "Villanueva",
         role: "admin",

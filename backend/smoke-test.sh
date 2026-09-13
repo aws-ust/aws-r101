@@ -7,7 +7,8 @@ BASE_URL="${1:-http://localhost:8787}"
 BASE_URL="${BASE_URL%/}"
 UNKNOWN_ID="00000000-0000-4000-8000-000000000000"
 HR_EMAIL="${HR_EMAIL:-hr@aws-ust.org}"
-HR_PASSWORD="${HR_PASSWORD:-changeme}"
+HR_PASSWORD="${HR_PASSWORD:-password123}"
+TRUSTED_ORIGIN="${TRUSTED_ORIGIN:-http://localhost:3000}"
 EMAIL_ENABLED="${EMAIL_ENABLED:-false}"
 export EMAIL_ENABLED
 
@@ -15,10 +16,16 @@ pass=0
 fail=0
 LAST_STATUS=""
 LAST_BODY=""
+HEADER_FILE="/tmp/aws-ust-smoke-headers"
 
 request() {
   local method="$1" path="$2" data="${3:-}" auth="${4:-}"
-  local args=(-sS -o /tmp/aws-ust-smoke-body -w '%{http_code}' -X "$method")
+  local args=(-sS -D "$HEADER_FILE" -o /tmp/aws-ust-smoke-body -w '%{http_code}' -X "$method")
+  case "$method" in
+    POST|PUT|PATCH|DELETE)
+      args+=(-H "Origin: ${TRUSTED_ORIGIN}")
+      ;;
+  esac
   [[ -n "$data" ]] && args+=(-H 'content-type: application/json' -d "$data")
   [[ -n "$auth" ]] && args+=(-H "Authorization: Bearer $auth")
   LAST_STATUS=$(curl "${args[@]}" "$BASE_URL$path")
@@ -244,6 +251,14 @@ expect "POST /applicant-auth/logout" 204
 
 request POST "/auth/login" '{"email":"wrong@example.com","password":"nope"}'
 expect "POST /auth/login (bad credentials)" 401
+curl -sS -o /tmp/aws-ust-smoke-body -w '%{http_code}' -X POST \
+  -H 'content-type: application/json' \
+  -H 'Origin: https://evil.example' \
+  -d '{"email":"wrong@example.com","password":"nope"}' \
+  "$BASE_URL/auth/login" > /tmp/aws-ust-smoke-status || true
+LAST_STATUS=$(< /tmp/aws-ust-smoke-status)
+LAST_BODY=$(< /tmp/aws-ust-smoke-body)
+expect "POST /auth/login (bad Origin)" 403
 request POST "/auth/logout"
 expect "POST /auth/logout (no token)" 204
 
@@ -253,7 +268,8 @@ expect "POST /auth/login" 200
 
 token=""
 if [[ "$LAST_STATUS" == "200" ]]; then
-  token=$(json_field token || true)
+  token=$(sed -n 's/^[Ss]et-[Cc]ookie: *hr_token=\([^;]*\).*/\1/p' "$HEADER_FILE" | head -1)
+  token="${token:-$(json_field token || true)}"
 fi
 
 if [[ -z "$token" ]]; then

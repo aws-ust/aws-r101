@@ -7,6 +7,12 @@ import {
   resetInterviewScheduleForCommittee,
   setInterviewSlotOpen,
 } from "../lib/interview-scheduling";
+import {
+  interviewSlotCreateSchema,
+  interviewSlotPatchSchema,
+  zodErrorMessage,
+} from "../lib/hr-schemas";
+import { logHrAudit } from "../lib/hr-audit";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -76,19 +82,12 @@ interviewSlotsRoutes.delete("/", async (c) => {
 
 interviewSlotsRoutes.post("/", async (c) => {
   const body = await c.req.json().catch(() => null);
-  if (!body || typeof body !== "object") {
-    return c.json({ error: "Request body must be a JSON object." }, 400);
+  const parsed = interviewSlotCreateSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: zodErrorMessage(parsed.error) }, 400);
   }
 
-  const input = body as Record<string, unknown>;
-  if (typeof input.committeeId !== "string" || !isUuid(input.committeeId)) {
-    return c.json({ error: "committeeId must be a UUID." }, 400);
-  }
-  if (typeof input.startsAt !== "string") {
-    return c.json({ error: "startsAt must be an ISO timestamp." }, 400);
-  }
-
-  const startsAt = parseDate(input.startsAt);
+  const startsAt = parseDate(parsed.data.startsAt);
   if (!startsAt) {
     return c.json(
       { error: "startsAt must be an ISO timestamp with a timezone." },
@@ -110,7 +109,14 @@ interviewSlotsRoutes.post("/", async (c) => {
   }
 
   try {
-    const slot = await createInterviewSlot(input.committeeId, startsAt);
+    const slot = await createInterviewSlot(parsed.data.committeeId, startsAt);
+    const jwt = c.get("jwtPayload") as { sub?: unknown };
+    logHrAudit({
+      actorEmail: typeof jwt.sub === "string" ? jwt.sub : undefined,
+      action: "interview_slot.create",
+      resourceType: "interview_slot",
+      resourceId: slot.id,
+    });
     return c.json(slot, 201);
   } catch (error) {
     const result = schedulingError(error);
@@ -125,16 +131,13 @@ interviewSlotsRoutes.patch("/:id", async (c) => {
   }
 
   const body = await c.req.json().catch(() => null);
-  const isOpen =
-    body && typeof body === "object"
-      ? (body as Record<string, unknown>).isOpen
-      : undefined;
-  if (typeof isOpen !== "boolean") {
-    return c.json({ error: "isOpen must be a boolean." }, 400);
+  const parsed = interviewSlotPatchSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: zodErrorMessage(parsed.error) }, 400);
   }
 
   try {
-    const slot = await setInterviewSlotOpen(id, isOpen);
+    const slot = await setInterviewSlotOpen(id, parsed.data.isOpen);
     return c.json(slot);
   } catch (error) {
     const result = schedulingError(error);
