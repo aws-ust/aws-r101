@@ -16,8 +16,8 @@ import { isApplicantGender } from "@/lib/applicant-gender"
 import { needsCreativesPortfolio, needsDevelopmentGithub } from "@/lib/committee-apply"
 import { isValidBirthdayYmd } from "@/lib/date-local"
 
-const FILE_ERROR = "Please attach your Curriculum Vitae, Transcript of Records, and Registration Form."
-const PDF_ERROR = "Please attach all three files as PDFs (.pdf), then try again."
+const FILE_ERROR = "Please attach your Curriculum Vitae and Registration Form."
+const PDF_ERROR = "Please attach both files as PDFs (.pdf), then try again."
 const nameIsValid = (value: string) =>
   Boolean(value.trim()) && value.trim().length <= 100 && /^[\p{L}\s'-]+$/u.test(value.trim())
 
@@ -60,10 +60,8 @@ export const committeeSchema = z.object({
 
 export const uploadSchema = z.object({
   resume: fileSchema,
-  transcript: fileSchema,
   registration: fileSchema,
   resumeDisplayName: z.string().optional(),
-  transcriptDisplayName: z.string().optional(),
   registrationDisplayName: z.string().optional(),
 })
 
@@ -137,7 +135,7 @@ export const applySchema = z
       issue(["committee", "githubUrl"], "Use your GitHub profile link only (https://github.com/username), not a repository URL.")
     }
 
-    for (const type of ["resume", "transcript", "registration"] as const) {
+    for (const type of ["resume", "registration"] as const) {
       const file = value.upload[type]
       if (!file) {
         issue(["upload", type], FILE_ERROR)
@@ -166,7 +164,7 @@ export const applyFormDefaults: ApplyFormValues = {
     secondPositionTitle: "",
     motivation: "", slotId: "", portfolioUrl: "", githubUrl: "",
   },
-  upload: { resume: null, transcript: null, registration: null },
+  upload: { resume: null, registration: null },
 }
 
 export type PrivacyValues = z.infer<typeof privacySchema>
@@ -187,7 +185,6 @@ export const applyFormDraftSchema = z.object({
   }),
   upload: z.object({
     resumeDisplayName: z.string().optional(),
-    transcriptDisplayName: z.string().optional(),
     registrationDisplayName: z.string().optional(),
   }),
 })

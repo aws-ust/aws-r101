@@ -1,4 +1,4 @@
-import type { DocumentType } from "./documents";
+import type { DocumentType, UploadDocumentType } from "./documents";
 import {
   type ChoiceRef,
   isCreativesCommittee,
@@ -163,9 +163,8 @@ export function canonicalizeHttpsUrl(value: string): string | null {
   return url.href;
 }
 
-const REQUIRED_DOCUMENT_TYPES: DocumentType[] = [
+const REQUIRED_DOCUMENT_TYPES: UploadDocumentType[] = [
   "resume",
-  "transcript",
   "registration",
 ];
 

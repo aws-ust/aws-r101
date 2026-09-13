@@ -25,10 +25,11 @@ import {
 import {
   applicationKey,
   copyIncomingDocuments,
-  DOCUMENT_TYPES,
   deleteKeys,
   incomingKey,
+  UPLOAD_DOCUMENT_TYPES,
   type DocumentType,
+  type UploadDocumentType,
   validateIncomingDocument,
 } from "./documents";
 import { freePlanEndDate } from "./free-plan";
@@ -51,7 +52,7 @@ export type ApplicationChoiceJson = {
 };
 
 export type ApplicationDocumentJson = {
-  documentType: DocumentType;
+  documentType: UploadDocumentType;
   fileName: string;
   fileSizeBytes: number;
   uploadedAt: string;
@@ -225,7 +226,12 @@ async function attachRelations(
       availableUntil: applicationDocuments.availableUntil,
     })
     .from(applicationDocuments)
-    .where(inArray(applicationDocuments.applicationId, ids));
+    .where(
+      and(
+        inArray(applicationDocuments.applicationId, ids),
+        inArray(applicationDocuments.documentType, [...UPLOAD_DOCUMENT_TYPES]),
+      ),
+    );
 
   const choicesByApp = new Map<string, ApplicationChoiceJson[]>();
   for (const choice of choiceRows) {
@@ -244,7 +250,7 @@ async function attachRelations(
   for (const doc of documentRows) {
     const list = documentsByApp.get(doc.applicationId) ?? [];
     list.push({
-      documentType: doc.documentType,
+      documentType: doc.documentType as UploadDocumentType,
       fileName: doc.fileName,
       fileSizeBytes: doc.fileSizeBytes,
       uploadedAt: iso(doc.uploadedAt),
@@ -521,12 +527,6 @@ export async function createApplication(
           checksumSha256: session.resumeChecksumSha256,
         },
         {
-          documentType: "transcript" as const,
-          fileName: session.transcriptFileName,
-          sizeBytes: session.transcriptSizeBytes,
-          checksumSha256: session.transcriptChecksumSha256,
-        },
-        {
           documentType: "registration" as const,
           fileName: session.registrationFileName,
           sizeBytes: session.registrationSizeBytes,
@@ -662,7 +662,7 @@ export async function createApplication(
 
     if (result.created) {
       await deleteKeys(
-        DOCUMENT_TYPES.map((type) => incomingKey(input.uploadSessionId, type)),
+        UPLOAD_DOCUMENT_TYPES.map((type) => incomingKey(input.uploadSessionId, type)),
       ).catch((error) => console.error("Could not remove incoming documents", error));
     }
     const application = await getApplicationById(result.id);
@@ -672,7 +672,7 @@ export async function createApplication(
     if (!transactionComplete && copiedApplicationId) {
       const applicationId = copiedApplicationId;
       await deleteKeys(
-        DOCUMENT_TYPES.map((type) => applicationKey(applicationId, type)),
+        UPLOAD_DOCUMENT_TYPES.map((type) => applicationKey(applicationId, type)),
       ).catch(() => undefined);
     }
     throw error;

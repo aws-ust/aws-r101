@@ -65,7 +65,6 @@ function fieldErrors<T extends object>(errors: Record<string, { message?: string
 function draftUploadMeta(upload: UploadValues): ApplyFormDraft["upload"] {
   return {
     resumeDisplayName: upload.resume?.name ?? upload.resumeDisplayName,
-    transcriptDisplayName: upload.transcript?.name ?? upload.transcriptDisplayName,
     registrationDisplayName: upload.registration?.name ?? upload.registrationDisplayName,
   }
 }
@@ -81,7 +80,7 @@ function persistApplyFormDraft(step: FormStep, values: ApplyFormValues) {
   })
 }
 
-const draftDocumentKeys: DraftDocumentKey[] = ["resume", "transcript", "registration"]
+const draftDocumentKeys: DraftDocumentKey[] = ["resume", "registration"]
 
 type ApplyFormProps = { initialPositionId?: string }
 
@@ -137,10 +136,8 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
           },
           upload: {
             resume: files.resume ?? null,
-            transcript: files.transcript ?? null,
             registration: files.registration ?? null,
             resumeDisplayName: files.resume?.name ?? draft.upload.resumeDisplayName,
-            transcriptDisplayName: files.transcript?.name ?? draft.upload.transcriptDisplayName,
             registrationDisplayName: files.registration?.name ?? draft.upload.registrationDisplayName,
           },
         })

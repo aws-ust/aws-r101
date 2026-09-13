@@ -35,6 +35,19 @@ export function messengerGcLink(): string {
   return process.env.MESSENGER_GC_LINK ?? "";
 }
 
+export function membershipPaymentLink(): string {
+  const value = process.env.MEMBERSHIP_PAYMENT_LINK?.trim();
+  if (!value) return "";
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:"
+      ? url.href
+      : "";
+  } catch {
+    return "";
+  }
+}
+
 export function fromHeader(): string {
   return `${senderName()} <${senderEmail()}>`;
 }

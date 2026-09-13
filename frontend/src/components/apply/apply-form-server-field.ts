@@ -59,7 +59,6 @@ function serverFieldForMessage(message: string): {
   if (
     lower.includes("document") ||
     lower.includes("resume") ||
-    lower.includes("transcript") ||
     lower.includes("registration")
   ) {
     return { name: "upload.resume", step: 4 }

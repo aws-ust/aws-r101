@@ -115,18 +115,12 @@ export function expectedDocumentFileName(
   lastName: string
 ): string {
   const token = lastNameFileToken(lastName)
-  const prefix =
-    documentType === "resume"
-      ? "CV"
-      : documentType === "transcript"
-        ? "TOR"
-        : "RegForm"
+  const prefix = documentType === "resume" ? "CV" : "RegForm"
   return `${prefix}_${token}.pdf`
 }
 
 const DOCUMENT_FILE_PREFIX: Record<DocumentType, string> = {
   resume: "CV",
-  transcript: "TOR",
   registration: "RegForm",
 }
 
@@ -153,7 +147,7 @@ export function documentFileNameFormatExample(documentType: DocumentType): strin
 }
 
 export function documentFileNameFormatMessage(): string {
-  return `Name each PDF exactly: ${documentFileNameFormatExample("resume")}, ${documentFileNameFormatExample("transcript")}, and ${documentFileNameFormatExample("registration")}.`
+  return `Name each PDF exactly: ${documentFileNameFormatExample("resume")} and ${documentFileNameFormatExample("registration")}.`
 }
 
 export function documentFileNameMatches(

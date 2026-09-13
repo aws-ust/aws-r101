@@ -10,7 +10,6 @@ import {
   type ApplicantDocumentInput,
   type UpdateApplicantApplicationInput,
 } from "../lib/applicant-editing";
-import type { DocumentType } from "../lib/applications";
 import {
   fireApplicantChoiceEditNotifications,
   loadApplicantEditEmailSnapshot,
@@ -29,15 +28,15 @@ const EDITABLE_FIELDS = new Set([
 function parseDocuments(
   value: unknown,
 ): { ok: true; value: ApplicantDocumentInput[] } | { ok: false; error: string } {
-  if (!Array.isArray(value) || value.length === 0 || value.length > 3) {
+  if (!Array.isArray(value) || value.length === 0 || value.length > 2) {
     return {
       ok: false,
-      error: "documents must contain one to three items.",
+      error: "documents must contain one or two items.",
     };
   }
 
   const documents: ApplicantDocumentInput[] = [];
-  const types = new Set<DocumentType>();
+  const types = new Set<ApplicantDocumentInput["documentType"]>();
 
   for (const doc of value) {
     if (!doc || typeof doc !== "object" || Array.isArray(doc)) {
@@ -46,15 +45,14 @@ function parseDocuments(
     const row = doc as Record<string, unknown>;
     if (
       row.documentType !== "resume" &&
-      row.documentType !== "transcript" &&
       row.documentType !== "registration"
     ) {
       return {
         ok: false,
-        error: "documentType must be resume, transcript, or registration.",
+        error: "documentType must be resume or registration.",
       };
     }
-    const documentType = row.documentType as DocumentType;
+    const documentType = row.documentType;
     if (types.has(documentType)) {
       return { ok: false, error: "Each document type may only appear once." };
     }

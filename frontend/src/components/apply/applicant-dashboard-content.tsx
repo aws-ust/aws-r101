@@ -44,9 +44,6 @@ function ApplicantDashboardDocuments({
   onApplicationUpdated: (application: ApplicantApplication) => void
 }) {
   const resume = application.documents.find((doc) => doc.documentType === "resume")
-  const transcript = application.documents.find(
-    (doc) => doc.documentType === "transcript",
-  )
   const registration = application.documents.find(
     (doc) => doc.documentType === "registration",
   )
@@ -63,7 +60,6 @@ function ApplicantDashboardDocuments({
   return (
     <div className={docsClasses}>
       <p>CV: {resume?.fileName ?? "—"}</p>
-      <p className="mt-1">TOR: {transcript?.fileName ?? "—"}</p>
       <p className="mt-1">RegForm: {registration?.fileName ?? "—"}</p>
     </div>
   )

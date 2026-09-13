@@ -37,7 +37,6 @@ export async function submitApplyForm(
 ): Promise<ApplyFormSubmitSuccess> {
   const files = [
     { documentType: "resume" as const, file: values.upload.resume! },
-    { documentType: "transcript" as const, file: values.upload.transcript! },
     { documentType: "registration" as const, file: values.upload.registration! },
   ]
   const documents = await Promise.all(

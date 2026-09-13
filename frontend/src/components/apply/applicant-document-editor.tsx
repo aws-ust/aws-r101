@@ -21,11 +21,10 @@ const errorClasses = "text-sm text-rose-glow"
 const successClasses = "text-sm text-aquamarine"
 const submitClasses = "h-10 w-fit px-5 text-xs"
 
-type DocKey = "resume" | "transcript" | "registration"
+type DocKey = DocumentType
 
 const DOC_LABELS: Record<DocKey, string> = {
   resume: "Curriculum Vitae",
-  transcript: "Transcript of Records (TOR)",
   registration: "Registration Form",
 }
 
@@ -46,7 +45,6 @@ export function ApplicantDocumentEditor({
   onUpdated,
 }: ApplicantDocumentEditorProps) {
   const [resume, setResume] = useState<File | null>(null)
-  const [transcript, setTranscript] = useState<File | null>(null)
   const [registration, setRegistration] = useState<File | null>(null)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
@@ -62,7 +60,7 @@ export function ApplicantDocumentEditor({
       return applicationDocumentPdfSizeLimitMessage()
     }
     if (!documentFileNameMatches(type, file.name, lastName)) {
-      return `Name each replacement PDF exactly: ${documentFileNameFormatExample("resume")}, ${documentFileNameFormatExample("transcript")}, and ${documentFileNameFormatExample("registration")}.`
+      return `Name each replacement PDF exactly: ${documentFileNameFormatExample("resume")} and ${documentFileNameFormatExample("registration")}.`
     }
     return null
   }
@@ -72,7 +70,6 @@ export function ApplicantDocumentEditor({
     setSuccess("")
     const pendingDocs: { documentType: DocumentType; file: File }[] = []
     if (resume) pendingDocs.push({ documentType: "resume", file: resume })
-    if (transcript) pendingDocs.push({ documentType: "transcript", file: transcript })
     if (registration) {
       pendingDocs.push({ documentType: "registration", file: registration })
     }
@@ -99,7 +96,6 @@ export function ApplicantDocumentEditor({
       }))
       onUpdated(await updateApplicantDocuments({ documents }))
       setResume(null)
-      setTranscript(null)
       setRegistration(null)
       setSuccess("Documents updated.")
     } catch (err) {
@@ -126,16 +122,6 @@ export function ApplicantDocumentEditor({
         displayName={resume ? undefined : currentName(application.documents, "resume")}
         required={false}
         onFile={setResume}
-      />
-      <PdfFileDrop
-        label={DOC_LABELS.transcript}
-        hint={fileHint("transcript")}
-        file={transcript}
-        displayName={
-          transcript ? undefined : currentName(application.documents, "transcript")
-        }
-        required={false}
-        onFile={setTranscript}
       />
       <PdfFileDrop
         label={DOC_LABELS.registration}

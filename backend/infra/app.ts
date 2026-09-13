@@ -91,6 +91,7 @@ class BackendStack extends cdk.Stack {
       ...(process.env.GOOGLE_REPLY_TO_EMAIL ? { GOOGLE_REPLY_TO_EMAIL: process.env.GOOGLE_REPLY_TO_EMAIL } : {}),
       ...(process.env.GOOGLE_SIGNATORY_NAME ? { GOOGLE_SIGNATORY_NAME: process.env.GOOGLE_SIGNATORY_NAME } : {}),
       ...(process.env.MESSENGER_GC_LINK ? { MESSENGER_GC_LINK: process.env.MESSENGER_GC_LINK } : {}),
+      ...(process.env.MEMBERSHIP_PAYMENT_LINK ? { MEMBERSHIP_PAYMENT_LINK: process.env.MEMBERSHIP_PAYMENT_LINK } : {}),
       ...(process.env.APP_BASE_URL ? { APP_BASE_URL: process.env.APP_BASE_URL } : {}),
       ...(process.env.EMAIL_ENABLED ? { EMAIL_ENABLED: process.env.EMAIL_ENABLED } : {}),
       ...(process.env.RECRUITMENT_YEAR ? { RECRUITMENT_YEAR: process.env.RECRUITMENT_YEAR } : {}),

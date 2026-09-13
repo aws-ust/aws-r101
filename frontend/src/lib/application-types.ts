@@ -1,6 +1,6 @@
 export type ApplicationStatus = "pending" | "approved" | "rejected"
 
-export type DocumentType = "resume" | "transcript" | "registration"
+export type DocumentType = "resume" | "registration"
 
 export type Position = {
   id: string

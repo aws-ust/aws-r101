@@ -39,6 +39,7 @@ If using a personal Google account, add `aws.cics@ust.edu.ph` as a **Send mail a
 | `GOOGLE_REPLY_TO_EMAIL` | Reply-To header |
 | `GOOGLE_SIGNATORY_NAME` | Email sign-off (Claire) |
 | `MESSENGER_GC_LINK` | Accepted-result template GC URL |
+| `MEMBERSHIP_PAYMENT_LINK` | Payment page URL used by accepted and rejected result emails; when empty, no payment button is shown |
 | `APP_BASE_URL` | Links in submission email |
 | `EMAIL_ENABLED` | `false` in smoke/CI; `true` for live sends |
 | `RECRUITMENT_YEAR` | Application code year segment |

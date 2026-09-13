@@ -491,13 +491,6 @@ export const uploadSessions = pgTable(
     resumeChecksumSha256: varchar("resume_checksum_sha256", {
       length: 44,
     }).notNull(),
-    transcriptFileName: varchar("transcript_file_name", {
-      length: 255,
-    }).notNull(),
-    transcriptSizeBytes: integer("transcript_size_bytes").notNull(),
-    transcriptChecksumSha256: varchar("transcript_checksum_sha256", {
-      length: 44,
-    }).notNull(),
     registrationFileName: varchar("registration_file_name", {
       length: 255,
     }).notNull(),

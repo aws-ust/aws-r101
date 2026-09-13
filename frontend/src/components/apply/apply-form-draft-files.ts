@@ -2,7 +2,7 @@ const DB_NAME = "aws-ust-apply-draft-files"
 const STORE = "files"
 const DB_VERSION = 1
 
-export type DraftDocumentKey = "resume" | "transcript" | "registration"
+export type DraftDocumentKey = "resume" | "registration"
 
 type StoredFile = {
   name: string
@@ -68,7 +68,7 @@ export async function loadDraftDocument(key: DraftDocumentKey): Promise<File | n
 export async function loadAllDraftDocuments(): Promise<
   Partial<Record<DraftDocumentKey, File>>
 > {
-  const keys: DraftDocumentKey[] = ["resume", "transcript", "registration"]
+  const keys: DraftDocumentKey[] = ["resume", "registration"]
   const entries = await Promise.all(
     keys.map(async (key) => [key, await loadDraftDocument(key)] as const),
   )

@@ -4,7 +4,7 @@ import { db } from "../db";
 import { applicationDocuments, uploadSessions } from "../db/schema";
 import {
   createDocumentUpload,
-  type DocumentType,
+  type UploadDocumentType,
 } from "../lib/documents";
 import { uploadPresignSchema } from "../lib/apply-schemas";
 import { uploadsAreClosed } from "../lib/free-plan";
@@ -17,7 +17,7 @@ const STORAGE_CAP_BYTES = 4_000_000_000;
 const SESSION_CAP = 200;
 
 type UploadDocument = {
-  documentType: DocumentType;
+  documentType: UploadDocumentType;
   fileName: string;
   sizeBytes: number;
   checksumSha256: string;
@@ -42,7 +42,6 @@ function numeric(value: unknown): number {
 
 async function createUploadSession(documents: UploadDocument[]) {
   const resume = documents.find((document) => document.documentType === "resume")!;
-  const transcript = documents.find((document) => document.documentType === "transcript")!;
   const registration = documents.find((document) => document.documentType === "registration")!;
   const now = new Date();
   const uploadExpiresAt = new Date(now.getTime() + UPLOAD_EXPIRY_SECONDS * 1000);
@@ -53,17 +52,14 @@ async function createUploadSession(documents: UploadDocument[]) {
     const [{ count }] = await tx.select({ count: sql<number>`count(*)::int` }).from(uploadSessions).where(inArray(uploadSessions.status, ["active", "consumed"]));
     if (numeric(count) >= SESSION_CAP) throw new UploadError(409, "The application upload-session cap has been reached.");
     const [{ committedBytes }] = await tx.select({ committedBytes: sql<number>`coalesce(sum(${applicationDocuments.fileSizeBytes}), 0)::bigint` }).from(applicationDocuments);
-    const [{ reservedBytes }] = await tx.select({ reservedBytes: sql<number>`coalesce(sum(${uploadSessions.resumeSizeBytes} + ${uploadSessions.transcriptSizeBytes} + ${uploadSessions.registrationSizeBytes}), 0)::bigint` }).from(uploadSessions).where(and(eq(uploadSessions.status, "active"), gt(uploadSessions.expiresAt, now)));
-    if (numeric(committedBytes) + numeric(reservedBytes) + resume.sizeBytes + transcript.sizeBytes + registration.sizeBytes > STORAGE_CAP_BYTES) {
+    const [{ reservedBytes }] = await tx.select({ reservedBytes: sql<number>`coalesce(sum(${uploadSessions.resumeSizeBytes} + ${uploadSessions.registrationSizeBytes}), 0)::bigint` }).from(uploadSessions).where(and(eq(uploadSessions.status, "active"), gt(uploadSessions.expiresAt, now)));
+    if (numeric(committedBytes) + numeric(reservedBytes) + resume.sizeBytes + registration.sizeBytes > STORAGE_CAP_BYTES) {
       throw new UploadError(409, "The document storage cap has been reached.");
     }
     return tx.insert(uploadSessions).values({
       resumeFileName: resume.fileName,
       resumeSizeBytes: resume.sizeBytes,
       resumeChecksumSha256: resume.checksumSha256,
-      transcriptFileName: transcript.fileName,
-      transcriptSizeBytes: transcript.sizeBytes,
-      transcriptChecksumSha256: transcript.checksumSha256,
       registrationFileName: registration.fileName,
       registrationSizeBytes: registration.sizeBytes,
       registrationChecksumSha256: registration.checksumSha256,

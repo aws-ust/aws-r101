@@ -3,6 +3,7 @@ import {
   readApiErrorMessage,
   userFacingApiError,
 } from "./api-error-message"
+import type { DocumentType } from "./application-types"
 
 export type ApplicantChoice = {
   preferenceRank: 1 | 2
@@ -13,7 +14,7 @@ export type ApplicantChoice = {
 }
 
 export type ApplicantDocument = {
-  documentType: "resume" | "transcript" | "registration"
+  documentType: DocumentType
   fileName: string
 }
 

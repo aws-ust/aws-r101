@@ -10,11 +10,14 @@ import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export const MAX_DOCUMENT_SIZE_BYTES = 10_000_000;
+// Keep transcript as a stored type so existing applications remain readable.
 export const DOCUMENT_TYPES = ["resume", "transcript", "registration"] as const;
 export type DocumentType = (typeof DOCUMENT_TYPES)[number];
+export const UPLOAD_DOCUMENT_TYPES = ["resume", "registration"] as const;
+export type UploadDocumentType = (typeof UPLOAD_DOCUMENT_TYPES)[number];
 
 type UploadDocument = {
-  documentType: DocumentType;
+  documentType: UploadDocumentType;
   fileName: string;
   sizeBytes: number;
   checksumSha256: string;
@@ -111,7 +114,7 @@ export async function copyIncomingDocuments(
   const bucket = configuredBucket();
   const client = s3Client();
   await Promise.all(
-    DOCUMENT_TYPES.map((type) =>
+    UPLOAD_DOCUMENT_TYPES.map((type) =>
       client.send(
         new CopyObjectCommand({
           Bucket: bucket,

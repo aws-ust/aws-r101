@@ -340,6 +340,22 @@ test("applicant editing", async (t) => {
     );
     assert.equal(profileEdit.status, 400);
     assert.match(await responseError(profileEdit), /committee choices/i);
+
+    const transcriptEdit = await applicantRequest(
+      "/applicant/application",
+      "PATCH",
+      {
+        documents: [
+          {
+            documentType: "transcript",
+            fileName: "TOR_applicant.pdf",
+            s3Key: `dev/uploads/${randomUUID()}/TOR_applicant.pdf`,
+          },
+        ],
+      },
+    );
+    assert.equal(transcriptEdit.status, 400);
+    assert.match(await responseError(transcriptEdit), /resume or registration/i);
   });
 
   await t.test("returns safe prefill data and edit eligibility", async () => {
@@ -359,6 +375,10 @@ test("applicant editing", async (t) => {
     assert.ok(payload.editDeadline);
     assert.equal(payload.choices[0].positionId, positionA1Id);
     assert.ok(payload.documents.every((document) => !("s3Key" in document)));
+    assert.deepEqual(
+      payload.documents.map((document) => document.documentType),
+      ["resume"],
+    );
     assert.equal(payload.result, null);
     assert.doesNotMatch(JSON.stringify(payload), /decisionStatus|memberId/);
   });

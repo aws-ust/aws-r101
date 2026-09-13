@@ -60,8 +60,8 @@ export function mapApplyApiError(message: string): string {
   if (lower.includes("dataprivacy") || lower.includes("data privacy")) {
     return "You must agree to the Data Privacy Agreement to continue."
   }
-  if (lower.includes("document") || lower.includes("resume") || lower.includes("transcript") || lower.includes("registration") || lower.includes("s3key")) {
-    return "Please attach your Curriculum Vitae, Transcript of Records, and Registration Form."
+  if (lower.includes("document") || lower.includes("resume") || lower.includes("registration") || lower.includes("s3key")) {
+    return "Please attach your Curriculum Vitae and Registration Form."
   }
   if (lower.includes("already submitted") || lower.includes("one application per year") || lower.includes("recruitment cycle")) {
     return "You already applied for this recruitment cycle with this UST email. Only one application per year is allowed."

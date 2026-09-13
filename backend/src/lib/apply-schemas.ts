@@ -13,7 +13,10 @@ import {
   normalizeSection,
 } from "./apply-field-validation";
 import { parseApplicantGender } from "./applicant-gender";
-import { DOCUMENT_TYPES, MAX_DOCUMENT_SIZE_BYTES } from "./documents";
+import {
+  MAX_DOCUMENT_SIZE_BYTES,
+  UPLOAD_DOCUMENT_TYPES,
+} from "./documents";
 
 const REQUIRED_FIELDS_ERROR =
   "firstName, lastName, email, section, studentNumber, contactNumber, facebookUrl, and motivation are required.";
@@ -153,8 +156,8 @@ export const createApplicationSchema = z
   }));
 
 const uploadDocumentSchema = z.object({
-  documentType: z.enum(DOCUMENT_TYPES, {
-    error: "documentType must be resume, transcript, or registration.",
+  documentType: z.enum(UPLOAD_DOCUMENT_TYPES, {
+    error: "documentType must be resume or registration.",
   }),
   fileName: z
     .string({ error: "fileName must be a PDF name with 255 characters or fewer." })
@@ -177,16 +180,16 @@ const uploadDocumentSchema = z.object({
 export const uploadPresignSchema = z
   .object({
     documents: z
-      .array(uploadDocumentSchema, { error: "documents must contain one resume, one transcript, and one registration form." })
-      .length(DOCUMENT_TYPES.length, {
-        error: "documents must contain one resume, one transcript, and one registration form.",
+      .array(uploadDocumentSchema, { error: "documents must contain one resume and one registration form." })
+      .length(UPLOAD_DOCUMENT_TYPES.length, {
+        error: "documents must contain one resume and one registration form.",
       }),
   }, { error: "Request body must be a JSON object." })
   .superRefine((value, ctx) => {
-    if (new Set(value.documents.map((document) => document.documentType)).size !== DOCUMENT_TYPES.length) {
+    if (new Set(value.documents.map((document) => document.documentType)).size !== UPLOAD_DOCUMENT_TYPES.length) {
       ctx.addIssue({
         code: "custom",
-        message: "documents must contain one resume, one transcript, and one registration form.",
+        message: "documents must contain one resume and one registration form.",
         path: ["documents"],
       });
     }

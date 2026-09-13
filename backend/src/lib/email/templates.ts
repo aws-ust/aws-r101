@@ -1,5 +1,9 @@
 import type { RenderedEmail } from "./types";
-import { appBaseUrl, messengerGcLink } from "./config";
+import {
+  appBaseUrl,
+  membershipPaymentLink,
+  messengerGcLink,
+} from "./config";
 import { devExamParagraphs, officerFirstChoiceLinkExtras } from "./choice-email-extras";
 import { isExecutiveOfficeCommittee } from "./officer-recipients";
 import {
@@ -372,8 +376,15 @@ export function resultAcceptedTemplate(input: {
   memberId: string;
 }): RenderedEmail {
   const gcLink = messengerGcLink();
+  const paymentLink = membershipPaymentLink();
   const subject = resultAcceptedSubject;
   const honorific = `Mx. ${input.lastName}`;
+  const paymentText = paymentLink
+    ? `Proceed to payment: ${paymentLink}`
+    : "Payment instructions will be shared separately.";
+  const paymentHtml = paymentLink
+    ? ctaButton(paymentLink, "Proceed to payment")
+    : '<p style="margin:0 0 16px;">Payment instructions will be shared separately.</p>';
 
   const text = `Greetings from the Clouds!
 
@@ -388,6 +399,10 @@ Membership ID: ${input.memberId}
 Position: ${input.position}
 
 Your Membership ID is how we will recognize you in the org. Keep it somewhere you can find it.
+
+To complete your membership, please pay the ₱250 membership fee.
+
+${paymentText}
 
 Please join our official Messenger group chat here: ${gcLink}
 
@@ -417,6 +432,8 @@ The AWS Builders - UST Executive Board`;
   </tr>
 </table>
 <p style="margin:0 0 16px;">Your Membership ID is how we will recognize you in the org. Keep it somewhere you can find it.</p>
+<p style="margin:0 0 16px;">To complete your membership, please pay the <strong>₱250 membership fee</strong>.</p>
+${paymentHtml}
 ${ctaButton(gcLink, "Join the Messenger group chat")}
 <p style="margin:0 0 16px;">Welcome to the team, ${escapeHtml(honorific)}. It is always Day One — and yours starts now.</p>
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
@@ -434,8 +451,15 @@ ${ctaButton(gcLink, "Join the Messenger group chat")}
 export function resultRejectedTemplate(input: {
   lastName: string;
 }): RenderedEmail {
+  const paymentLink = membershipPaymentLink();
   const subject = resultRejectedSubject;
   const honorific = `Mx. ${input.lastName}`;
+  const paymentText = paymentLink
+    ? `Proceed to payment: ${paymentLink}`
+    : "Payment instructions will be shared separately.";
+  const paymentHtml = paymentLink
+    ? ctaButton(paymentLink, "Proceed to payment")
+    : '<p style="margin:0 0 16px;">Payment instructions will be shared separately.</p>';
 
   const text = `Greetings from the Clouds!
 
@@ -444,7 +468,11 @@ Good day, ${honorific},
 
 Thank you for applying to AWS Builders - UST and for the time and care you put into R101. We saw the effort you brought to this process, and it meant a lot to us.
 
-After careful deliberation, we regret to inform you that you were not selected to join the organization this term. This was not an easy decision. We had a highly competitive pool of applicants, and choosing among so many strong builders was genuinely difficult.
+After careful deliberation, we regret to inform you that you were not selected for a committee position this term. This was not an easy decision. We had a highly competitive pool of applicants, and choosing among so many strong builders was genuinely difficult.
+
+You can still join AWS Builders - UST as a member by paying the ₱250 membership fee.
+
+${paymentText}
 
 Please know that this outcome does not take away from what you showed us. We would be glad to see you at our events and workshops, and we hope you will consider applying again in a future cycle.
 
@@ -464,7 +492,9 @@ The AWS Builders - UST Executive Board`;
 <p style="margin:0 0 0;line-height:8px;font-size:8px;">&nbsp;</p>
 <p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
 <p style="margin:0 0 16px;">Thank you for applying to AWS Builders - UST and for the time and care you put into R101. We saw the effort you brought to this process, and it meant a lot to us.</p>
-<p style="margin:0 0 16px;">After careful deliberation, we regret to inform you that you were not selected to join the organization this term. This was not an easy decision. We had a highly competitive pool of applicants, and choosing among so many strong builders was genuinely difficult.</p>
+<p style="margin:0 0 16px;">After careful deliberation, we regret to inform you that you were not selected for a committee position this term. This was not an easy decision. We had a highly competitive pool of applicants, and choosing among so many strong builders was genuinely difficult.</p>
+<p style="margin:0 0 16px;">You can still join AWS Builders - UST as a member by paying the <strong>₱250 membership fee</strong>.</p>
+${paymentHtml}
 <p style="margin:0 0 16px;">Please know that this outcome does not take away from what you showed us. We would be glad to see you at our events and workshops, and we hope you will consider applying again in a future cycle.</p>
 <p style="margin:0 0 16px;">Thank you again, ${escapeHtml(honorific)}. We wish you the very best, and we hope our paths still cross in the cloud.</p>
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>

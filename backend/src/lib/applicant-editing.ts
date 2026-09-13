@@ -16,7 +16,12 @@ import {
   isValidDevUploadS3Key,
   validateChoiceUrls,
 } from "./apply-field-validation";
-import { formatBirthday, type DocumentType } from "./applications";
+import { formatBirthday } from "./applications";
+import {
+  UPLOAD_DOCUMENT_TYPES,
+  type DocumentType,
+  type UploadDocumentType,
+} from "./documents";
 
 export type ApplicantChoiceInput = {
   positionId: string;
@@ -24,7 +29,7 @@ export type ApplicantChoiceInput = {
 };
 
 export type ApplicantDocumentInput = {
-  documentType: DocumentType;
+  documentType: UploadDocumentType;
   fileName: string;
   s3Key: string;
 };
@@ -118,7 +123,12 @@ export async function getApplicantEditableApplication(applicationId: string) {
       fileName: applicationDocuments.fileName,
     })
     .from(applicationDocuments)
-    .where(eq(applicationDocuments.applicationId, applicationId));
+    .where(
+      and(
+        eq(applicationDocuments.applicationId, applicationId),
+        inArray(applicationDocuments.documentType, [...UPLOAD_DOCUMENT_TYPES]),
+      ),
+    );
 
   const eligibility = await resolveApplicantEditEligibility(application, choices);
   const sortedChoices = [...choices].sort(
@@ -243,7 +253,7 @@ export async function updateApplicantApplication(
       }
 
       if (input.documents?.length) {
-        const types = new Set<DocumentType>();
+        const types = new Set<UploadDocumentType>();
         for (const doc of input.documents) {
           if (types.has(doc.documentType)) {
             throw new ApplicantEditError(
@@ -261,7 +271,7 @@ export async function updateApplicantApplication(
           ) {
             throw new ApplicantEditError(
               "application_locked",
-              "Document file names must match CV_, TOR_, and RegForm_ followed by your last name and .pdf.",
+              "Document file names must match CV_ and RegForm_ followed by your last name and .pdf.",
             );
           }
           if (

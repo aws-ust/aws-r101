@@ -23,7 +23,7 @@ const whyLabelClasses =
   "mt-8 font-sans text-sm font-semibold text-biloba-flower"
 const whyBodyClasses = "mt-2 font-sans text-sm leading-relaxed text-blue-chalk"
 const downloadsClasses =
-  "mt-8 grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
+  "mt-8 grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2"
 const archiveRowClasses = "mt-8 flex justify-center"
 const archiveActionClasses = "h-9 rounded-pill px-5 font-mono text-xs"
 const archivedNoticeClasses =
@@ -52,7 +52,6 @@ export function HrApplicationDetailPanel({
   const first = application.choices.find((choice) => choice.preferenceRank === 1)
   const second = application.choices.find((choice) => choice.preferenceRank === 2)
   const resume = documentFor(application, "resume")
-  const transcript = documentFor(application, "transcript")
   const registration = documentFor(application, "registration")
   const facebookHref = safeExternalHref(application.facebookUrl, "facebook")
   const portfolioHref = safeExternalHref(application.portfolioUrl, "portfolio")
@@ -171,7 +170,6 @@ export function HrApplicationDetailPanel({
       <p className={whyBodyClasses}>{application.motivation || "—"}</p>
       <div className={downloadsClasses}>
         <HrApplicationDocumentActions applicationId={application.id} document={resume} />
-        <HrApplicationDocumentActions applicationId={application.id} document={transcript} />
         <HrApplicationDocumentActions applicationId={application.id} document={registration} />
       </div>
       <div className={archiveRowClasses}>

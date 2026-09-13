@@ -109,7 +109,16 @@ test("applicant email templates use compact, plain formatting", async (t) => {
     assert.equal(email.inline?.length, 1);
   });
 
-  await t.test("personalizes accepted and rejected result emails", () => {
+  await t.test("personalizes accepted and rejected result emails", (t) => {
+    const originalPaymentLink = process.env.MEMBERSHIP_PAYMENT_LINK;
+    t.after(() => {
+      if (originalPaymentLink === undefined) {
+        delete process.env.MEMBERSHIP_PAYMENT_LINK;
+      } else {
+        process.env.MEMBERSHIP_PAYMENT_LINK = originalPaymentLink;
+      }
+    });
+    process.env.MEMBERSHIP_PAYMENT_LINK = "https://payments.example/membership";
     const accepted = resultAcceptedTemplate({
       lastName: "Dela Cruz",
       position: "Development Committee Staff",
@@ -125,11 +134,18 @@ test("applicant email templates use compact, plain formatting", async (t) => {
     assert.match(accepted.text, /Membership ID: AWS-2026-0001/);
     assert.match(accepted.html, /AWS-2026-0001/);
     assert.match(accepted.html, /cid:application-received-header@aws-ust/);
+    assert.match(accepted.text, /₱250 membership fee/);
+    assert.match(accepted.html, /https:\/\/payments\.example\/membership/);
+    assert.match(accepted.html, />Proceed to payment</);
     assert.match(accepted.html, />Join the Messenger group chat</);
     assert.doesNotMatch(accepted.html, /Best regards/);
     assert.match(rejected.text, /Mx\. Dela Cruz/);
     assert.match(rejected.subject, /R101/);
-    assert.match(rejected.text, /were not selected/);
+    assert.match(rejected.text, /not selected for a committee position/);
+    assert.match(rejected.text, /still join AWS Builders - UST as a member/);
+    assert.match(rejected.text, /₱250 membership fee/);
+    assert.match(rejected.html, /https:\/\/payments\.example\/membership/);
+    assert.match(rejected.html, />Proceed to payment</);
     assert.doesNotMatch(rejected.text, /Membership ID/);
     assert.match(rejected.html, /Yours in Thomasian Leadership,/);
   });

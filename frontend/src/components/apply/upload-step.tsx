@@ -59,26 +59,6 @@ export function UploadStep({ values, onChange, errors }: UploadStepProps) {
 
       <PdfFileDrop
 
-        label="Transcript of Records (TOR)"
-
-        hint={fileHint("transcript")}
-
-        file={values.transcript}
-
-        displayName={values.transcriptDisplayName}
-
-        error={errors?.transcript}
-
-        onFile={(transcript) =>
-
-          onChange({ transcript, transcriptDisplayName: transcript?.name })
-
-        }
-
-      />
-
-      <PdfFileDrop
-
         label="Registration Form"
 
         hint={fileHint("registration")}

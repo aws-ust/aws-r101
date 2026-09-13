@@ -28,7 +28,7 @@ function validForm() {
       githubUrl: "",
     },
     upload: {
-      resume: file("CV_delacruz.pdf"), transcript: file("TOR_delacruz.pdf"), registration: file("RegForm_delacruz.pdf"),
+      resume: file("CV_delacruz.pdf"), registration: file("RegForm_delacruz.pdf"),
     },
   }
 }
