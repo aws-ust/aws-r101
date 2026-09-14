@@ -57,7 +57,7 @@ class BackendStack extends cdk.Stack {
 
     const databaseUrl = requiredEnvironment("DATABASE_URL");
     const corsOrigin =
-      process.env.FRONTEND_URL?.trim() || requiredEnvironment("CORS_ORIGIN");
+      process.env.APP_BASE_URL?.trim() || requiredEnvironment("CORS_ORIGIN");
     const budgetAlertEmail = requiredEnvironment("BUDGET_ALERT_EMAIL");
     const freePlanEnd = freePlanEndDate();
     const documentBucket = new s3.Bucket(this, "DocumentBucket", {

@@ -5,7 +5,7 @@ const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 function collectConfiguredOrigins(): string[] {
   const values = [
     process.env.CORS_ORIGIN,
-    process.env.FRONTEND_URL,
+    process.env.APP_BASE_URL,
     process.env.APP_BASE_URL,
   ].filter((value): value is string => Boolean(value?.trim()));
 

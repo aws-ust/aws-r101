@@ -3,7 +3,7 @@ export function usesSecureCookies(): boolean {
   const candidates = [
     process.env.CORS_ORIGIN,
     process.env.APP_BASE_URL,
-    process.env.FRONTEND_URL,
+    process.env.APP_BASE_URL,
   ];
   return candidates.some((value) => value?.trim().toLowerCase().startsWith("https://"));
 }
