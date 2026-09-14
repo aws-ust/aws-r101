@@ -118,6 +118,7 @@ export type ListFilters = {
   section?: string;
   query?: string;
   status?: ApplicationStatus;
+  applicationType?: ApplicationType;
   archive?: "active" | "archived" | "all";
   page?: number;
   pageSize?: number;
@@ -399,6 +400,10 @@ export async function listApplications(filters: ListFilters): Promise<{
 
   if (filters.status) {
     conditions.push(eq(applications.status, filters.status));
+  }
+
+  if (filters.applicationType) {
+    conditions.push(eq(applications.applicationType, filters.applicationType));
   }
 
   if (filters.committee) {

@@ -31,8 +31,8 @@ const reviewerId = randomUUID();
 const reviewerEmail = `listing-${reviewerId}@aws-ust.org`;
 const committeeIds = [randomUUID(), randomUUID()];
 const positionIds = [randomUUID(), randomUUID()];
-const applicantIds = [randomUUID(), randomUUID(), randomUUID()];
-const applicationIds = [randomUUID(), randomUUID(), randomUUID()];
+const applicantIds = [randomUUID(), randomUUID(), randomUUID(), randomUUID()];
+const applicationIds = [randomUUID(), randomUUID(), randomUUID(), randomUUID()];
 const suffix = randomUUID().slice(0, 8);
 const applicationCodeBase = randomInt(900_000);
 const committeeName = `Listing Committee ${suffix}`;
@@ -115,6 +115,13 @@ test("HR application listing filters and paginates on the server", async (t) => 
       email: `page-gamma-${suffix}@ust.edu.ph`,
       section,
     },
+    {
+      id: applicantIds[3],
+      firstName: "PageMember",
+      lastName: `Applicant${suffix}`,
+      email: `page-member-${suffix}@ust.edu.ph`,
+      section,
+    },
   ]);
   await db.insert(applications).values([
     {
@@ -142,6 +149,15 @@ test("HR application listing filters and paginates on the server", async (t) => 
       archivedAt: new Date("2094-01-04T00:00:00.000Z"),
       submittedAt: new Date("2094-01-01T00:00:00.000Z"),
     },
+    {
+      id: applicationIds[3],
+      applicantId: applicantIds[3],
+      applicationCode: applicationCode(3),
+      recruitmentYear: 2094,
+      status: "approved",
+      applicationType: "member",
+      submittedAt: new Date("2094-01-04T00:00:00.000Z"),
+    },
   ]);
   await db.insert(applicationChoices).values([
     {
@@ -167,6 +183,7 @@ test("HR application listing filters and paginates on the server", async (t) => 
     assert.equal((await list({ page: "1.5" })).status, 400);
     assert.equal((await list({ pageSize: "101" })).status, 400);
     assert.equal((await list({ status: "reviewing" })).status, 400);
+    assert.equal((await list({ applicationType: "reviewing" })).status, 400);
   });
 
   await t.test("returns bounded pages with the full filtered total", async () => {
@@ -187,14 +204,14 @@ test("HR application listing filters and paginates on the server", async (t) => 
 
     const first = await payload(firstResponse);
     const second = await payload(secondResponse);
-    assert.equal(first.total, 3);
+    assert.equal(first.total, 4);
     assert.equal(first.applications.length, 1);
-    assert.equal(second.total, 3);
+    assert.equal(second.total, 4);
     assert.equal(second.applications.length, 1);
     assert.notEqual(first.applications[0]?.id, second.applications[0]?.id);
   });
 
-  await t.test("filters by name, committee, status, and archive", async () => {
+  await t.test("filters by name, committee, status, application type, and archive", async () => {
     const byName = await payload(
       await list({
         archive: "all",
@@ -213,8 +230,16 @@ test("HR application listing filters and paginates on the server", async (t) => 
     const byStatus = await payload(
       await list({ archive: "all", section, status: "approved" }),
     );
-    assert.equal(byStatus.total, 1);
-    assert.equal(byStatus.applications[0]?.id, applicationIds[1]);
+    assert.equal(byStatus.total, 2);
+    assert.ok(
+      byStatus.applications.some((application) => application.id === applicationIds[1]),
+    );
+
+    const members = await payload(
+      await list({ archive: "all", section, applicationType: "member" }),
+    );
+    assert.equal(members.total, 1);
+    assert.equal(members.applications[0]?.id, applicationIds[3]);
 
     const archived = await payload(await list({ archive: "archived", section }));
     assert.equal(archived.total, 1);

@@ -64,6 +64,7 @@ export function useApplications(params: ApplicationListParams) {
     query = "",
     committeeName = "",
     status,
+    applicationType,
     archive = "active",
     page = 1,
     pageSize = 10,
@@ -83,6 +84,7 @@ export function useApplications(params: ApplicationListParams) {
           query,
           committeeName,
           status,
+          applicationType,
           archive,
           page,
           pageSize,
@@ -111,7 +113,7 @@ export function useApplications(params: ApplicationListParams) {
       cancelled = true
       window.clearTimeout(timeout)
     }
-  }, [archive, committeeName, page, pageSize, query, reloadVersion, status])
+  }, [applicationType, archive, committeeName, page, pageSize, query, reloadVersion, status])
 
   const refreshApplications = useCallback(() => {
     setReloadVersion((current) => current + 1)
