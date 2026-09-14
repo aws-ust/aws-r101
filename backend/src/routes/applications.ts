@@ -8,6 +8,8 @@ import {
   listApplications,
   positionsExist,
   setApplicationArchived,
+  deleteArchivedApplication,
+  DeleteArchivedApplicationError,
   type CreateApplicationInput,
 } from "../lib/applications";
 import {
@@ -299,6 +301,35 @@ applicationsRoutes.patch("/:id/archive", requireAuth, async (c) => {
     resourceId: id,
   });
   return c.json(updated);
+});
+
+applicationsRoutes.delete("/:id", requireAuth, async (c) => {
+  const id = c.req.param("id");
+  if (!isUuid(id)) {
+    return c.json({ error: "Invalid application id." }, 400);
+  }
+
+  const payload = c.get("jwtPayload") as { sub?: unknown };
+  const reviewerEmail =
+    typeof payload.sub === "string" ? payload.sub : undefined;
+
+  try {
+    await deleteArchivedApplication(id);
+  } catch (error) {
+    if (error instanceof DeleteArchivedApplicationError) {
+      const status = error.code === "not_found" ? 404 : 409;
+      return c.json({ error: error.message }, status);
+    }
+    throw error;
+  }
+
+  logHrAudit({
+    actorEmail: reviewerEmail,
+    action: "application.delete",
+    resourceType: "application",
+    resourceId: id,
+  });
+  return c.body(null, 204);
 });
 
 applicationsRoutes.get("/:id", requireAuth, async (c) => {

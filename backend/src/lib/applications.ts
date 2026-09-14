@@ -741,3 +741,67 @@ export async function setApplicationArchived(
 
   return found ? getApplicationById(id) : null;
 }
+
+export class DeleteArchivedApplicationError extends Error {
+  readonly code: "not_found" | "not_archived";
+
+  constructor(code: "not_found" | "not_archived", message: string) {
+    super(message);
+    this.name = "DeleteArchivedApplicationError";
+    this.code = code;
+  }
+}
+
+export async function deleteArchivedApplication(id: string): Promise<void> {
+  const s3Keys = await db.transaction(async (tx) => {
+    const [application] = await tx
+      .select({
+        id: applications.id,
+        applicantId: applications.applicantId,
+        archivedAt: applications.archivedAt,
+      })
+      .from(applications)
+      .where(eq(applications.id, id))
+      .limit(1)
+      .for("update");
+
+    if (!application) {
+      throw new DeleteArchivedApplicationError(
+        "not_found",
+        "Application not found.",
+      );
+    }
+    if (!application.archivedAt) {
+      throw new DeleteArchivedApplicationError(
+        "not_archived",
+        "Only archived applications can be deleted.",
+      );
+    }
+
+    const documents = await tx
+      .select({ s3Key: applicationDocuments.s3Key })
+      .from(applicationDocuments)
+      .where(eq(applicationDocuments.applicationId, id));
+
+    await tx.delete(applications).where(eq(applications.id, id));
+
+    const [{ total }] = await tx
+      .select({ total: count() })
+      .from(applications)
+      .where(eq(applications.applicantId, application.applicantId));
+
+    if (Number(total) === 0) {
+      await tx
+        .delete(applicants)
+        .where(eq(applicants.id, application.applicantId));
+    }
+
+    return documents.map((row) => row.s3Key);
+  });
+
+  if (s3Keys.length > 0) {
+    await deleteKeys(s3Keys).catch((error) =>
+      console.error("Could not remove application documents", error),
+    );
+  }
+}
