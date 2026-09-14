@@ -5,5 +5,11 @@ export function hrApplicationListNoticeFeedback(notice?: string) {
   if (notice === "restored") {
     return { type: "success" as const, message: "Applicant restored." }
   }
+  if (notice === "deleted") {
+    return {
+      type: "success" as const,
+      message: "Applicant deleted. Their interview slot is now open.",
+    }
+  }
   return null
 }
