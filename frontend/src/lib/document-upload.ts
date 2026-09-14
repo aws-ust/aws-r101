@@ -60,7 +60,9 @@ export async function uploadDocumentFiles(
       )
       form.append("file", match.file)
       const response = await fetch(signedUpload.url, { method: "POST", body: form })
-      if (!response.ok) throw new Error("Could not upload the PDF files.")
+      if (!response.ok) {
+        throw new Error("Could not upload the PDF files.")
+      }
     }),
   )
 }

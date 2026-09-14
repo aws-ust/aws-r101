@@ -1,3 +1,28 @@
+export const APPLY_UNEXPECTED_ERROR =
+  "An unexpected error occurred. Please try again."
+
+export const APPLY_MISSING_DOCUMENTS_ERROR =
+  "Please attach your Curriculum Vitae and Registration Form."
+
+export function isApplicantUploadFailureMessage(message: string): boolean {
+  if (message === APPLY_UNEXPECTED_ERROR) return true
+  const lower = message.toLowerCase()
+  return (
+    lower.includes("upload session") ||
+    lower.includes("could not upload the pdf") ||
+    lower.includes("could not create an upload") ||
+    lower.includes("failed to fetch")
+  )
+}
+
+/** Replaces generic backend/dev upload failures with applicant-safe copy. */
+export function sanitizeApplicantApiMessage(message: string): string {
+  if (isApplicantUploadFailureMessage(message)) {
+    return APPLY_UNEXPECTED_ERROR
+  }
+  return message
+}
+
 export async function readApiErrorMessage(
   response: Response
 ): Promise<string | null> {
@@ -23,7 +48,7 @@ export function userFacingApiError(
   serverMessage: string | null,
   fallback = "Something went wrong. Please try again."
 ): string {
-  if (serverMessage) return serverMessage
+  if (serverMessage) return sanitizeApplicantApiMessage(serverMessage)
 
   if (status === 401) {
     return "Your session expired. Sign in again to continue."
