@@ -10,6 +10,8 @@ import {
   applicationChoices,
   applications,
   committees,
+  interviewBookings,
+  interviewSlots,
   positions,
   users,
 } from "./db/schema";
@@ -34,6 +36,7 @@ const positionIds = [randomUUID(), randomUUID()];
 const applicantId = randomUUID();
 const applicationId = randomUUID();
 const unknownApplicationId = randomUUID();
+const slotId = randomUUID();
 const applicationCode = `AP-2092-${String(randomInt(1_000_000)).padStart(6, "0")}`;
 let token = "";
 
@@ -59,6 +62,15 @@ function archiveRequest(
       ...(authenticated ? { Authorization: `Bearer ${token}` } : {}),
     }),
     body: JSON.stringify({ archived }),
+  });
+}
+
+function deleteRequest(id: string = applicationId, authenticated = true) {
+  return app.request(`/applications/${id}`, {
+    method: "DELETE",
+    headers: originHeaders({
+      ...(authenticated ? { Authorization: `Bearer ${token}` } : {}),
+    }),
   });
 }
 
@@ -205,5 +217,54 @@ test("HR application archiving", async (t) => {
     assert.equal(stored.archivedBy, null);
     assert.equal(stored.archiveReason, null);
     assert.ok((await listedIds()).includes(applicationId));
+  });
+
+  await t.test("delete requires auth and validates input", async () => {
+    assert.equal((await deleteRequest(applicationId, false)).status, 401);
+    assert.equal((await deleteRequest("not-a-uuid")).status, 400);
+    assert.equal((await deleteRequest(unknownApplicationId)).status, 404);
+  });
+
+  await t.test("rejects delete while application is active", async () => {
+    const response = await deleteRequest();
+    assert.equal(response.status, 409);
+    const body = (await response.json()) as { error: string };
+    assert.match(body.error, /archived/i);
+  });
+
+  await t.test("deletes archived application and frees interview slot", async () => {
+    const startsAt = new Date("2092-06-02T09:00:00.000Z");
+    await db.insert(interviewSlots).values({
+      id: slotId,
+      committeeId: committeeIds[0],
+      startsAt,
+    });
+    await db.insert(interviewBookings).values({
+      applicationId,
+      slotId,
+    });
+
+    assert.equal((await archiveRequest(true)).status, 200);
+
+    const response = await deleteRequest();
+    assert.equal(response.status, 204);
+
+    const apps = await db
+      .select({ id: applications.id })
+      .from(applications)
+      .where(eq(applications.id, applicationId));
+    assert.equal(apps.length, 0);
+
+    const bookings = await db
+      .select({ id: interviewBookings.id })
+      .from(interviewBookings)
+      .where(eq(interviewBookings.slotId, slotId));
+    assert.equal(bookings.length, 0);
+
+    const remainingApplicants = await db
+      .select({ id: applicants.id })
+      .from(applicants)
+      .where(eq(applicants.id, applicantId));
+    assert.equal(remainingApplicants.length, 0);
   });
 });
