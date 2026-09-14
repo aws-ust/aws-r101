@@ -112,6 +112,16 @@ try {
   `);
 
   await sql.unsafe(
+    "ALTER TABLE upload_sessions DROP COLUMN IF EXISTS transcript_file_name",
+  );
+  await sql.unsafe(
+    "ALTER TABLE upload_sessions DROP COLUMN IF EXISTS transcript_size_bytes",
+  );
+  await sql.unsafe(
+    "ALTER TABLE upload_sessions DROP COLUMN IF EXISTS transcript_checksum_sha256",
+  );
+
+  await sql.unsafe(
     "CREATE INDEX IF NOT EXISTS idx_upload_sessions_status ON upload_sessions(status)",
   );
   await sql.unsafe(
@@ -131,6 +141,13 @@ try {
         ADD CONSTRAINT upload_sessions_application_id_unique UNIQUE (application_id)
     `);
   }
+
+  await sql.unsafe(
+    "ALTER TABLE interview_bookings ADD COLUMN IF NOT EXISTS reminder_24h_sent_at timestamptz",
+  );
+  await sql.unsafe(
+    "ALTER TABLE interview_bookings ADD COLUMN IF NOT EXISTS reminder_1h_sent_at timestamptz",
+  );
 
   await sql.unsafe(`
     CREATE TABLE IF NOT EXISTS interview_windows (
