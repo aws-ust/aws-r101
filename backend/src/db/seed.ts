@@ -15,7 +15,7 @@ import { POSITION_SEEDS } from "./position-seeds";
 import { resolvePositionOpenSlots } from "./position-open-slots";
 
 // Local/dev only.
-const DEV_PASSWORD = "password123";
+const DEV_PASSWORD = process.env.DEV_PASSWORD || "password123";
 const LEGACY_POSITION_NAMES = [
   "Web Developer",
   "Cloud Engineer",
