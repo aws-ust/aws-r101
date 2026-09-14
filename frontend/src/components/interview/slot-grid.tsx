@@ -1,6 +1,6 @@
 "use client"
 
-import { memo } from "react"
+import { memo, useRef } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   formatDisplayDate,
@@ -36,6 +36,9 @@ type SlotGridProps = {
   days: Date[]
   cells: Map<string, SlotGridCell>
   onCellClick?: (cell: SlotGridCell) => void
+  onCellPointerDown?: (cell: SlotGridCell) => void
+  onCellPointerEnter?: (cell: SlotGridCell) => void
+  draggedCellKeys?: ReadonlySet<string>
   loading?: boolean
   sparse?: boolean
   scrollable?: boolean
@@ -53,19 +56,19 @@ const stickyTimeColumnClasses =
   "sticky left-0 z-10 bg-meteorite/95 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.45)]"
 const tableWideClasses = "min-w-full border-collapse text-left"
 const tableScrollClasses = "w-max min-w-full border-collapse text-left"
-const timeColumnClasses = "px-1 text-center sm:px-2"
+const timeColumnClasses = "border border-blue-chalk/25 px-1 text-center sm:px-2"
 const timeColumnWideClasses = `${timeColumnClasses} ${stickyTimeColumnClasses} w-[4.75rem] min-w-[4.75rem] max-w-[4.75rem]`
 const timeColumnScrollClasses = `${timeColumnClasses} ${stickyTimeColumnClasses} w-[4.25rem] min-w-[4.25rem] max-w-[4.25rem] sm:w-[4.75rem] sm:min-w-[4.75rem] sm:max-w-[4.75rem]`
 const dayHeaderWideClasses =
-  "min-w-[5rem] px-1.5 py-1.5 text-center font-sans text-xs font-semibold text-blue-chalk"
+  "min-w-[5rem] border border-blue-chalk/25 px-1.5 py-1.5 text-center font-sans text-xs font-semibold text-blue-chalk"
 const dayHeaderScrollClasses =
-  "min-w-[4.75rem] px-1 py-1.5 text-center font-sans text-[0.65rem] font-semibold leading-tight text-blue-chalk sm:min-w-[5.5rem] sm:px-1.5 sm:text-xs"
+  "min-w-[4.75rem] border border-blue-chalk/25 px-1 py-1.5 text-center font-sans text-[0.65rem] font-semibold leading-tight text-blue-chalk sm:min-w-[5.5rem] sm:px-1.5 sm:text-xs"
 const daySubheaderClasses =
   "block font-mono text-[0.55rem] font-normal text-prelude sm:text-[0.65rem]"
 const cellWideClasses =
-  "relative h-10 min-w-[5rem] border border-haiti/40 p-0"
+  "relative h-10 min-w-[5rem] border border-blue-chalk/25 p-0"
 const cellScrollClasses =
-  "relative h-10 min-w-[4.75rem] border border-haiti/40 p-0 sm:min-w-[5.5rem]"
+  "relative h-10 min-w-[4.75rem] border border-blue-chalk/25 p-0 sm:min-w-[5.5rem]"
 const slotButtonClasses =
   "absolute inset-0 flex touch-manipulation flex-col items-center justify-center p-0.5 text-blue-chalk transition-colors"
 const unavailableClasses =
@@ -77,6 +80,7 @@ const selectedClasses =
   "cursor-pointer bg-aquamarine text-haiti ring-2 ring-inset ring-aquamarine shadow-[0_0_0_1px_var(--haiti)]"
 const currentClasses =
   "cursor-pointer bg-aquamarine/60 ring-2 ring-inset ring-aquamarine"
+const draggedClasses = "ring-2 ring-inset ring-aquamarine/80"
 const hiddenClasses = "bg-transparent border-transparent"
 const slotTimeClasses =
   "pointer-events-none flex flex-col items-center font-mono text-[0.5rem] leading-none sm:text-[0.6rem] sm:leading-tight"
@@ -150,6 +154,9 @@ export const SlotGrid = memo(function SlotGrid({
   days,
   cells,
   onCellClick,
+  onCellPointerDown,
+  onCellPointerEnter,
+  draggedCellKeys,
   loading = false,
   sparse = false,
   scrollable = false,
@@ -159,6 +166,27 @@ export const SlotGrid = memo(function SlotGrid({
   const timeLabels = INTERVIEW_TIME_LABELS
   const rowCount =
     (INTERVIEW_GRID_END_HOUR - INTERVIEW_GRID_START_HOUR) * 2
+  const suppressNextClickRef = useRef(false)
+
+  function onSlotClick(cell: SlotGridCell) {
+    if (suppressNextClickRef.current) {
+      suppressNextClickRef.current = false
+      return
+    }
+    onCellClick?.(cell)
+  }
+
+  function onSlotPointerDown(cell: SlotGridCell) {
+    if (!onCellPointerDown) return
+    suppressNextClickRef.current = true
+    onCellPointerDown(cell)
+  }
+
+  function slotClasses(cell: SlotGridCell) {
+    return `${slotButtonClasses} ${slotButtonStateClasses(cell.state)} ${
+      draggedCellKeys?.has(cell.key) ? draggedClasses : ""
+    }`
+  }
 
   if (loading) {
     return (
@@ -243,8 +271,14 @@ export const SlotGrid = memo(function SlotGrid({
                       <td key={fallback.key} className={cellTdClasses(scrollable)}>
                         <button
                           type="button"
-                          className={`${slotButtonClasses} ${unavailableClasses}`}
-                          onClick={() => onCellClick?.(fallback)}
+                          className={slotClasses(fallback)}
+                          onClick={() => onSlotClick(fallback)}
+                          onPointerDown={(event) => {
+                            if (!onCellPointerDown) return
+                            event.preventDefault()
+                            onSlotPointerDown(fallback)
+                          }}
+                          onPointerEnter={() => onCellPointerEnter?.(fallback)}
                           aria-label={`Unavailable ${formatDisplayDateTime(startsAt, {
                             dateStyle: "medium",
                             timeStyle: "short",
@@ -270,8 +304,14 @@ export const SlotGrid = memo(function SlotGrid({
                       {clickable ? (
                         <button
                           type="button"
-                          className={`${slotButtonClasses} ${slotButtonStateClasses(cell.state)}`}
-                          onClick={() => onCellClick?.(cell)}
+                          className={slotClasses(cell)}
+                          onClick={() => onSlotClick(cell)}
+                          onPointerDown={(event) => {
+                            if (!onCellPointerDown) return
+                            event.preventDefault()
+                            onSlotPointerDown(cell)
+                          }}
+                          onPointerEnter={() => onCellPointerEnter?.(cell)}
                           aria-label={ariaLabel}
                           aria-pressed={
                             cell.state === "selected" || cell.state === "current"
@@ -284,7 +324,7 @@ export const SlotGrid = memo(function SlotGrid({
                         </button>
                       ) : (
                         <span
-                          className={`${slotButtonClasses} ${slotButtonStateClasses(cell.state)}`}
+                          className={slotClasses(cell)}
                           title={ariaLabel}
                         >
                           {slotButtonLabel(cell.state, cell.startsAt, cell.detail)}

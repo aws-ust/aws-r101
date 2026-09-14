@@ -71,6 +71,9 @@ function HrInterviewGridBody({
   loading,
   fetching,
   onCellClick,
+  onCellPointerDown,
+  onCellPointerEnter,
+  draggedCellKeys,
 }: Pick<
   HrInterviewGridViewProps,
   | "seasonConfigured"
@@ -81,6 +84,9 @@ function HrInterviewGridBody({
   | "loading"
   | "fetching"
   | "onCellClick"
+  | "onCellPointerDown"
+  | "onCellPointerEnter"
+  | "draggedCellKeys"
 >) {
   if (!seasonConfigured && !seasonLoading) {
     return (
@@ -109,6 +115,9 @@ function HrInterviewGridBody({
         scrollable
         scrollShellClassName="max-h-[min(40rem,calc(100vh-14rem))] overflow-x-auto overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]"
         onCellClick={onCellClick}
+        onCellPointerDown={onCellPointerDown}
+        onCellPointerEnter={onCellPointerEnter}
+        draggedCellKeys={draggedCellKeys}
         emptyMessage="No Monday–Saturday days fall in this interview week."
       />
     </div>
@@ -138,6 +147,9 @@ export function HrInterviewGridView({
   resetOpen,
   setResetOpen,
   onCellClick,
+  onCellPointerDown,
+  onCellPointerEnter,
+  draggedCellKeys,
   resetSchedule,
 }: HrInterviewGridViewProps) {
   return (
@@ -147,9 +159,8 @@ export function HrInterviewGridView({
       </h2>
       <p className={hintClasses}>
         Weeks run Sunday–Saturday; interviews are Monday–Saturday, 7:00 AM–9:30
-        PM. Open 30-minute cells when a Director or Executive Boards member is
-        free. Booked slots stay locked until you close them or reset the
-        committee schedule.
+        PM. Drag through cells to open or close several slots at once. Booked
+        slots stay locked until you close them or reset the committee schedule.
       </p>
       <div className={`${hintClasses} ${seasonClasses}`}>
         Interview Season:{" "}
@@ -221,6 +232,9 @@ export function HrInterviewGridView({
         loading={loading}
         fetching={fetching}
         onCellClick={onCellClick}
+        onCellPointerDown={onCellPointerDown}
+        onCellPointerEnter={onCellPointerEnter}
+        draggedCellKeys={draggedCellKeys}
       />
 
       <Dialog
