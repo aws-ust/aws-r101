@@ -81,6 +81,7 @@ applicationsRoutes.get("/", requireAuth, async (c) => {
   const section = c.req.query("section") ?? "";
   const query = (c.req.query("query") ?? "").trim();
   const status = c.req.query("status") ?? "";
+  const applicationType = c.req.query("applicationType") ?? "";
   const archive = c.req.query("archive") ?? "active";
   const page = parsePositiveInteger(c.req.query("page"), 1);
   const pageSize = parsePositiveInteger(c.req.query("pageSize"), 10, 100);
@@ -103,6 +104,12 @@ applicationsRoutes.get("/", requireAuth, async (c) => {
   ) {
     return c.json(
       { error: "status must be pending, approved, or rejected." },
+      400,
+    );
+  }
+  if (applicationType && !["position", "member"].includes(applicationType)) {
+    return c.json(
+      { error: "applicationType must be position or member." },
       400,
     );
   }
@@ -130,6 +137,9 @@ applicationsRoutes.get("/", requireAuth, async (c) => {
     query: query || undefined,
     status: status
       ? (status as "pending" | "approved" | "rejected")
+      : undefined,
+    applicationType: applicationType
+      ? (applicationType as "position" | "member")
       : undefined,
     archive: archive as "active" | "archived" | "all",
     page,

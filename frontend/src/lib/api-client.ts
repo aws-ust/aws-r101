@@ -1,5 +1,6 @@
 import type {
   Application,
+  ApplicationType,
   CreateApplicationInput,
   DocumentType,
   Position,
@@ -64,6 +65,7 @@ export type ApplicationListParams = {
   query?: string;
   committeeName?: string;
   status?: "pending" | "approved" | "rejected";
+  applicationType?: ApplicationType;
   archive?: "active" | "archived" | "all";
   page?: number;
   pageSize?: number;
@@ -79,6 +81,9 @@ export function listApplications(params: ApplicationListParams = {}) {
   if (params.query) query.set("query", params.query);
   if (params.committeeName) query.set("committeeName", params.committeeName);
   if (params.status) query.set("status", params.status);
+  if (params.applicationType) {
+    query.set("applicationType", params.applicationType);
+  }
   query.set("archive", params.archive ?? "active");
   query.set("page", String(params.page ?? 1));
   query.set("pageSize", String(params.pageSize ?? 10));
