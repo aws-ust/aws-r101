@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
+  Archive,
   CalendarRange,
   ClipboardList,
   LayoutDashboard,
@@ -63,7 +64,8 @@ function isApplicationsActive(pathname: string) {
   if (pathname === "/admin/hr") return true
   const match = /^\/admin\/hr\/([^/]+)$/.exec(pathname)
   if (!match) return false
-  return match[1] !== "season" && match[1] !== "results"
+  const segment = match[1]
+  return segment !== "season" && segment !== "results" && segment !== "archive"
 }
 
 const navItems = [
@@ -72,6 +74,12 @@ const navItems = [
     href: "/admin/hr",
     icon: ClipboardList,
     isActive: isApplicationsActive,
+  },
+  {
+    label: "Archive",
+    href: "/admin/hr/archive",
+    icon: Archive,
+    isActive: (pathname: string) => pathname.startsWith("/admin/hr/archive"),
   },
   {
     label: "Results",

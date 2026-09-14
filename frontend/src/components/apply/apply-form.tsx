@@ -124,16 +124,10 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
       const files = await loadAllDraftDocuments()
       if (cancelled) return
       if (draft) {
-        // Committee choices and interview slots are not restored from session draft —
-        // only a ?position= deep link pre-fills first choice (see effect below).
-        const step: FormStep = draft.step > 3 ? 3 : draft.step
         reset({
           privacy: draft.privacy,
           general: draft.general,
-          committee: {
-            ...applyFormDefaults.committee,
-            motivation: draft.committee.motivation,
-          },
+          committee: draft.committee,
           upload: {
             resume: files.resume ?? null,
             registration: files.registration ?? null,
@@ -141,7 +135,7 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
             registrationDisplayName: files.registration?.name ?? draft.upload.registrationDisplayName,
           },
         })
-        setStep(step)
+        setStep(draft.step)
       }
       setDraftReady(true)
     })()
@@ -164,6 +158,11 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
       if (timer) clearTimeout(timer)
     }
   }, [draftReady, getValues, step, watch])
+
+  useEffect(() => {
+    if (!draftReady) return
+    persistApplyFormDraft(step, getValues())
+  }, [draftReady, getValues, step])
 
   useEffect(() => {
     if (!draftReady || !initialPositionId) return
@@ -232,6 +231,7 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
         setError,
         setStep,
         setServerError,
+        Boolean(values.upload.resume && values.upload.registration),
       )
     } finally {
       setSubmitting(false)

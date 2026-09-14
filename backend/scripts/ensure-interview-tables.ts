@@ -22,6 +22,8 @@ await sql`
     slot_id uuid NOT NULL REFERENCES interview_slots(id) ON DELETE restrict,
     application_id uuid NOT NULL REFERENCES applications(id) ON DELETE cascade,
     booked_at timestamptz DEFAULT now() NOT NULL,
+    reminder_24h_sent_at timestamptz,
+    reminder_1h_sent_at timestamptz,
     updated_at timestamptz DEFAULT now() NOT NULL,
     CONSTRAINT interview_bookings_slot_unique UNIQUE(slot_id),
     CONSTRAINT interview_bookings_application_unique UNIQUE(application_id)
@@ -36,6 +38,15 @@ await sql`
 await sql`
   CREATE INDEX IF NOT EXISTS idx_interview_bookings_application
   ON interview_bookings (application_id)
+`;
+
+await sql`
+  ALTER TABLE interview_bookings
+    ADD COLUMN IF NOT EXISTS reminder_24h_sent_at timestamptz
+`;
+await sql`
+  ALTER TABLE interview_bookings
+    ADD COLUMN IF NOT EXISTS reminder_1h_sent_at timestamptz
 `;
 
 await sql`

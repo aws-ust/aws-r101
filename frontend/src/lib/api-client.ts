@@ -156,6 +156,12 @@ export function patchApplicationArchivedRequest(id: string, archived: boolean) {
   });
 }
 
+export function deleteArchivedApplicationRequest(id: string) {
+  return apiFetch<void>(`/applications/${id}`, {
+    method: "DELETE",
+  });
+}
+
 type PositionApiRow = {
   id: string;
   title: string;

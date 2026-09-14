@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Archive, ChevronRight, RotateCcw } from "lucide-react"
+import { Archive, ChevronRight, RotateCcw, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { StatusPill } from "@/components/hr/status-pill"
 import { cn } from "@/lib/utils"
@@ -25,6 +25,9 @@ const archiveIconButtonClasses =
   "size-8 shrink-0 rounded-full border-rose-blush/45 bg-rose-deep/25 text-rose-glow hover:border-rose-blush/65 hover:bg-rose-deep/45 hover:text-blue-chalk"
 const restoreIconButtonClasses =
   "size-8 shrink-0 rounded-full border-aquamarine/45 bg-aquamarine/10 text-aquamarine hover:border-aquamarine/70 hover:bg-aquamarine/20 hover:text-blue-chalk"
+const deleteIconButtonClasses =
+  "size-8 shrink-0 rounded-full border-rose-blush/45 bg-rose-deep/25 text-rose-glow hover:border-rose-blush/65 hover:bg-rose-deep/45 hover:text-blue-chalk"
+const rowActionsClasses = "flex shrink-0 items-center gap-1"
 const archivedClasses =
   "rounded-pill bg-daisy-bush/55 px-3 py-0.5 font-mono text-[11px] text-blue-chalk"
 
@@ -32,35 +35,52 @@ type ApplicationRowProps = {
   application: HrApplication
   emphasized?: boolean
   onArchive: (application: HrApplication) => void
+  onDelete?: (application: HrApplication) => void
 }
 
 export function ApplicationRow({
   application,
   emphasized,
   onArchive,
+  onDelete,
 }: ApplicationRowProps) {
   const name = fullName(application)
   const archived = Boolean(application.archivedAt)
 
   return (
     <div className={cn(rowClasses, emphasized && firstRowClasses)}>
-      <Button
-        type="button"
-        color={archived ? "cyan" : "danger"}
-        variant="ghost"
-        size="icon-sm"
-        className={
-          archived ? restoreIconButtonClasses : archiveIconButtonClasses
-        }
-        aria-label={archived ? `Restore ${name}` : `Archive ${name}`}
-        onClick={() => onArchive(application)}
-      >
-        {archived ? (
-          <RotateCcw className={actionIconClasses} />
-        ) : (
-          <Archive className={actionIconClasses} />
-        )}
-      </Button>
+      <div className={rowActionsClasses}>
+        <Button
+          type="button"
+          color={archived ? "cyan" : "danger"}
+          variant="ghost"
+          size="icon-sm"
+          className={
+            archived ? restoreIconButtonClasses : archiveIconButtonClasses
+          }
+          aria-label={archived ? `Restore ${name}` : `Archive ${name}`}
+          onClick={() => onArchive(application)}
+        >
+          {archived ? (
+            <RotateCcw className={actionIconClasses} />
+          ) : (
+            <Archive className={actionIconClasses} />
+          )}
+        </Button>
+        {archived && onDelete ? (
+          <Button
+            type="button"
+            color="danger"
+            variant="ghost"
+            size="icon-sm"
+            className={deleteIconButtonClasses}
+            aria-label={`Delete ${name} permanently`}
+            onClick={() => onDelete(application)}
+          >
+            <Trash2 className={actionIconClasses} />
+          </Button>
+        ) : null}
+      </div>
       <Link href={`/admin/hr/${application.id}`} className={linkClasses}>
         <div className={nameBlockClasses}>
           <span className={nameClasses}>{name}</span>

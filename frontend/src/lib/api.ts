@@ -15,6 +15,7 @@ import {
   listOpenPositions,
   peekOpenPositions,
   patchApplicationArchivedRequest,
+  deleteArchivedApplicationRequest,
   patchApplicationDecisionRequest,
   postApplication,
   postUploadPresign,
@@ -226,6 +227,10 @@ export function patchApplicationDecision(
 
 export function setApplicationArchived(id: string, archived: boolean) {
   return patchApplicationArchivedRequest(id, archived)
+}
+
+export function deleteArchivedApplication(id: string) {
+  return deleteArchivedApplicationRequest(id)
 }
 
 export function fullName(app: Application) {

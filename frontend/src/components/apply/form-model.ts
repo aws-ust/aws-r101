@@ -5,6 +5,11 @@ import type {
   UploadValues,
 } from "@/components/apply/apply-schema"
 import type { CreateApplicationInput } from "@/lib/application-types"
+import {
+  APPLY_MISSING_DOCUMENTS_ERROR,
+  APPLY_UNEXPECTED_ERROR,
+  isApplicantUploadFailureMessage,
+} from "@/lib/api-error-message"
 import { formatContactDigits, sanitizeSectionInput } from "@/lib/apply-field-validation"
 import { needsCreativesPortfolio, needsDevelopmentGithub } from "@/lib/committee-apply"
 
@@ -54,20 +59,33 @@ export function toCreateApplicationInput(
   }
 }
 
+function isMissingDocumentsMessage(message: string): boolean {
+  const lower = message.toLowerCase()
+  return (
+    lower.includes("please attach") ||
+    lower.includes("must attach") ||
+    lower.includes("missing document") ||
+    ((lower.includes("required") || lower.includes("required field")) &&
+      (lower.includes("resume") ||
+        lower.includes("registration") ||
+        lower.includes("curriculum")))
+  )
+}
+
 /** Maps API failures that cannot be attached to one local field. */
 export function mapApplyApiError(message: string): string {
   const lower = message.toLowerCase()
   if (lower.includes("dataprivacy") || lower.includes("data privacy")) {
     return "You must agree to the Data Privacy Agreement to continue."
   }
-  if (lower.includes("document") || lower.includes("resume") || lower.includes("registration") || lower.includes("s3key")) {
-    return "Please attach your Curriculum Vitae and Registration Form."
-  }
   if (lower.includes("already submitted") || lower.includes("one application per year") || lower.includes("recruitment cycle")) {
     return "You already applied for this recruitment cycle with this UST email. Only one application per year is allowed."
   }
-  if (lower.includes("failed to fetch")) {
-    return "Could not upload your PDFs. Make sure LocalStack is running (pnpm db:up), then run pnpm s3:cors and try again. Using http://localhost:3000/apply also avoids LAN upload issues."
+  if (isApplicantUploadFailureMessage(message)) {
+    return APPLY_UNEXPECTED_ERROR
   }
-  return message
+  if (isMissingDocumentsMessage(message)) {
+    return APPLY_MISSING_DOCUMENTS_ERROR
+  }
+  return APPLY_UNEXPECTED_ERROR
 }

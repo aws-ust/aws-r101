@@ -15,6 +15,7 @@ type ApplicationListResultsProps = {
   page: number
   onPageChange: (page: number) => void
   onArchive: (application: HrApplication) => void
+  onDelete?: (application: HrApplication) => void
 }
 
 export function ApplicationListResults({
@@ -25,6 +26,7 @@ export function ApplicationListResults({
   page,
   onPageChange,
   onArchive,
+  onDelete,
 }: ApplicationListResultsProps) {
   if (loading) {
     return <ApplicationListSkeleton />
@@ -48,6 +50,7 @@ export function ApplicationListResults({
               application={application}
               emphasized={safePage === 1 && index === 0}
               onArchive={onArchive}
+              onDelete={onDelete}
             />
           </li>
         ))}

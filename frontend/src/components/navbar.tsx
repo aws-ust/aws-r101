@@ -21,7 +21,10 @@ const HOME_SECTION_IDS = NAV_ITEMS.flatMap((item) =>
 
 const headerClasses = "fixed inset-x-0 top-0 z-50"
 const barInnerClasses =
-  "mx-auto flex w-full items-center justify-between gap-3 px-4 py-2.5 sm:px-7 lg:justify-center lg:gap-6 lg:px-8 xl:gap-8"
+  "mx-auto flex w-full max-w-[1180px] items-center justify-between gap-3 px-4 py-2.5 sm:px-7 lg:px-8 xl:gap-8"
+const barInnerMarketingClasses =
+  "lg:justify-center lg:gap-6"
+const barInnerApplicantClasses = "justify-between"
 const mobileOverlayClasses =
   "fixed inset-0 z-40 transition-[opacity,visibility] duration-300 lg:hidden"
 const mobileOverlayOpenClasses = "visible pointer-events-auto opacity-100"
@@ -81,14 +84,30 @@ export function Navbar() {
   return (
     <header className={headerClasses}>
       <nav aria-label="Primary" className={chromeBarClasses}>
-        <div className={barInnerClasses}>
+        <div
+          className={cn(
+            barInnerClasses,
+            isApplicantSignedIn
+              ? barInnerApplicantClasses
+              : barInnerMarketingClasses
+          )}
+        >
           <Link
-            href="/"
+            href={isApplicantSignedIn ? "/apply/dashboard" : "/"}
             className={logoLinkClasses}
-            onClick={(event) => navigateToSection(event, NAV_ITEMS[0])}
+            onClick={(event) => {
+              if (isApplicantSignedIn) return
+              navigateToSection(event, NAV_ITEMS[0])
+            }}
           >
             <Image src="/aws-logo.png" alt="AWS Builders – UST" width={117} height={66} className="h-8 w-auto" />
-            <span className={logoWordmarkClasses}>AWS Builders – UST</span>
+            <span
+              className={
+                isApplicantSignedIn ? "inline text-blue-chalk" : logoWordmarkClasses
+              }
+            >
+              AWS Builders – UST
+            </span>
           </Link>
 
           {isApplicantSignedIn ? null : (
@@ -99,9 +118,18 @@ export function Navbar() {
             />
           )}
 
-          <div className={cn(isApplicantSignedIn ? "flex" : desktopCtaWrapClasses)}>
+          <div
+            className={cn(
+              isApplicantSignedIn ? "ml-auto shrink-0" : desktopCtaWrapClasses
+            )}
+          >
             {isApplicantSignedIn ? (
-              <Button type="button" color="purple" onClick={() => void onApplicantSignOut()}>
+              <Button
+                type="button"
+                color="purple"
+                className="h-9 rounded-pill px-4 font-mono text-xs"
+                onClick={() => void onApplicantSignOut()}
+              >
                 Sign out
               </Button>
             ) : (

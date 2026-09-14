@@ -24,7 +24,7 @@ const whyLabelClasses =
 const whyBodyClasses = "mt-2 font-sans text-sm leading-relaxed text-blue-chalk"
 const downloadsClasses =
   "mt-8 grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2"
-const archiveRowClasses = "mt-8 flex justify-center"
+const archiveRowClasses = "mt-8 flex flex-wrap justify-center gap-3"
 const archiveActionClasses = "h-9 rounded-pill px-5 font-mono text-xs"
 const archivedNoticeClasses =
   "mt-8 rounded-[14px] border border-biloba-flower/35 bg-daisy-bush/20 px-4 py-3 font-sans text-sm text-blue-chalk"
@@ -42,12 +42,14 @@ type HrApplicationDetailPanelProps = {
   application: HrApplication
   onUpdated: (application: HrApplication) => void
   onArchiveClick: () => void
+  onDeleteClick?: () => void
 }
 
 export function HrApplicationDetailPanel({
   application,
   onUpdated,
   onArchiveClick,
+  onDeleteClick,
 }: HrApplicationDetailPanelProps) {
   const first = application.choices.find((choice) => choice.preferenceRank === 1)
   const second = application.choices.find((choice) => choice.preferenceRank === 2)
@@ -180,6 +182,15 @@ export function HrApplicationDetailPanel({
         >
           {application.archivedAt ? "Restore applicant" : "Archive applicant"}
         </Button>
+        {application.archivedAt && onDeleteClick ? (
+          <Button
+            color="danger"
+            className={archiveActionClasses}
+            onClick={onDeleteClick}
+          >
+            Delete permanently
+          </Button>
+        ) : null}
       </div>
     </>
   )
