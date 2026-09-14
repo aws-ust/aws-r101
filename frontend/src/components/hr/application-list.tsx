@@ -54,6 +54,8 @@ const emptyFilters: HrFilters = {
 
   status: "",
 
+  applicationType: "",
+
 }
 
 
@@ -92,6 +94,8 @@ export function HrApplicationList({
 
       status: filters.status || undefined,
 
+      applicationType: filters.applicationType || undefined,
+
       archive: variant,
 
       page,
@@ -118,7 +122,17 @@ export function HrApplicationList({
 
   function onFiltersChange(patch: Partial<HrFilters>) {
 
-    setFilters((current) => ({ ...current, ...patch }))
+    setFilters((current) => {
+
+      const next = { ...current, ...patch }
+
+      return next.applicationType === "member"
+
+        ? { ...next, committee: "" }
+
+        : next
+
+    })
 
     setPage(1)
 
@@ -183,6 +197,8 @@ export function HrApplicationList({
             committeeName: filters.committee || undefined,
 
             status: filters.status || undefined,
+
+            applicationType: filters.applicationType || undefined,
 
             archive: variant,
 
