@@ -163,12 +163,14 @@ applicationsRoutes.post("/", async (c) => {
   try {
     const result = await createApplication(parsed.value);
     if (result.created) {
-      void sendApplicationSubmitted(result.application).catch((err) => {
-        logApiError(c, err, "submission email failed");
-      });
-      void sendOfficerApplicationNotice(result.application).catch((err) => {
-        logApiError(c, err, "officer application notice failed");
-      });
+      await Promise.all([
+        sendApplicationSubmitted(result.application).catch((err) => {
+          logApiError(c, err, "submission email failed");
+        }),
+        sendOfficerApplicationNotice(result.application).catch((err) => {
+          logApiError(c, err, "officer application notice failed");
+        }),
+      ]);
     }
     return c.json(result.application, result.created ? 201 : 200);
   } catch (error) {
