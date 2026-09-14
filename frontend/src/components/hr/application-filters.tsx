@@ -14,12 +14,16 @@ import { groupedCommitteesForPicker } from "@/lib/committee-groups"
 import { fieldControlClasses } from "@/lib/surface"
 import { useOpenPositions } from "@/lib/api"
 import { cn } from "@/lib/utils"
-import type { ApplicationStatus } from "@/lib/application-types"
+import type {
+  ApplicationStatus,
+  ApplicationType,
+} from "@/lib/application-types"
 
 const rowClasses =
   "flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center xl:flex-nowrap"
 const searchClasses = `${fieldControlClasses} md:flex-1`
 const statusSelectClasses = cn(fieldControlClasses, "justify-between md:w-52")
+const typeSelectClasses = cn(fieldControlClasses, "justify-between md:w-52")
 
 const STATUS_LABELS: Record<ApplicationStatus, string> = {
   pending: "Pending",
@@ -27,10 +31,16 @@ const STATUS_LABELS: Record<ApplicationStatus, string> = {
   rejected: "Rejected",
 }
 
+const APPLICATION_TYPE_LABELS: Record<ApplicationType, string> = {
+  position: "Committee positions",
+  member: "Member-only",
+}
+
 export type HrFilters = {
   query: string
   committee: string
   status: "" | ApplicationStatus
+  applicationType: "" | ApplicationType
 }
 
 type ApplicationFiltersProps = {
@@ -54,6 +64,32 @@ export function ApplicationFilters({ value, onChange }: ApplicationFiltersProps)
         className={searchClasses}
         aria-label="Search applicant name"
       />
+      <Select
+        value={value.applicationType || "all"}
+        onValueChange={(next) =>
+          onChange({
+            applicationType: (!next || next === "all"
+              ? ""
+              : next) as HrFilters["applicationType"],
+          })
+        }
+      >
+        <SelectTrigger
+          className={typeSelectClasses}
+          aria-label="Filter by application type"
+        >
+          <SelectValue placeholder="All application types">
+            {value.applicationType
+              ? APPLICATION_TYPE_LABELS[value.applicationType]
+              : "All application types"}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All application types</SelectItem>
+          <SelectItem value="position">Committee positions</SelectItem>
+          <SelectItem value="member">Member-only</SelectItem>
+        </SelectContent>
+      </Select>
       <HrCommitteeFilterPicker
         value={value.committee}
         groups={committeeGroups}
