@@ -6,7 +6,7 @@ import { useState } from "react"
 
 import Link from "next/link"
 
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 
 import { StatusPill } from "@/components/hr/status-pill"
 
@@ -61,6 +61,7 @@ export function HrApplicationDetail() {
   const { id } = useParams<{ id: string }>()
 
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const { application, setApplication, loading, error, notFound } =
 
@@ -124,12 +125,11 @@ export function HrApplicationDetail() {
 
 
 
-  const listHref = application.archivedAt ? "/admin/hr/archive" : "/admin/hr"
-
-  const backLabel = application.archivedAt
-
+  const fromArchive = searchParams.get("source") === "archive"
+  const viewingArchive = Boolean(application.archivedAt) || fromArchive
+  const listHref = viewingArchive ? "/admin/hr/archive" : "/admin/hr"
+  const backLabel = viewingArchive
     ? "← Back to Archive"
-
     : "← Back to Applications"
 
 
@@ -140,7 +140,7 @@ export function HrApplicationDetail() {
 
       <p className={eyebrowClasses}>
 
-        {application.archivedAt ? "// ARCHIVE" : "// APPLICATIONS"}
+        {viewingArchive ? "// ARCHIVE" : "// APPLICATIONS"}
 
       </p>
 
@@ -160,7 +160,7 @@ export function HrApplicationDetail() {
 
         <StatusPill status={application.status} />
 
-        {application.archivedAt ? (
+        {viewingArchive ? (
 
           <span className={archivedPillClasses}>Archived</span>
 
@@ -195,9 +195,7 @@ export function HrApplicationDetail() {
           router.replace(
 
             updated.archivedAt
-
-              ? "/admin/hr?notice=archived"
-
+              ? "/admin/hr/archive?notice=archived"
               : "/admin/hr?notice=restored"
 
           )

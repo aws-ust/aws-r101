@@ -81,7 +81,14 @@ export function ApplicationRow({
           </Button>
         ) : null}
       </div>
-      <Link href={`/admin/hr/${application.id}`} className={linkClasses}>
+      <Link
+        href={
+          archived
+            ? `/admin/hr/${application.id}?source=archive`
+            : `/admin/hr/${application.id}`
+        }
+        className={linkClasses}
+      >
         <div className={nameBlockClasses}>
           <span className={nameClasses}>{name}</span>
           <span className={codeClasses}>{application.applicationCode}</span>

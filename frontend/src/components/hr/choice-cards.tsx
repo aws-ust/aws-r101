@@ -10,15 +10,21 @@ const choicePositionClasses = "mt-1 font-sans text-sm text-aquamarine"
 function ChoiceCard({
   label,
   choice,
+  memberOnly = false,
 }: {
   label: string
   choice: ApplicationChoice | undefined
+  memberOnly?: boolean
 }) {
   return (
     <div className={choiceCardClasses}>
       <p className={choiceEyebrowClasses}>{label}</p>
-      <p className={choiceTitleClasses}>{choice?.committee}</p>
-      <p className={choicePositionClasses}>Position: {choice?.title}</p>
+      <p className={choiceTitleClasses}>
+        {memberOnly ? "MEMBER" : choice?.committee}
+      </p>
+      {memberOnly ? null : (
+        <p className={choicePositionClasses}>Position: {choice?.title}</p>
+      )}
     </div>
   )
 }
@@ -26,14 +32,22 @@ function ChoiceCard({
 export function ChoiceCards({
   first,
   second,
+  memberOnly = false,
 }: {
   first: ApplicationChoice | undefined
   second: ApplicationChoice | undefined
+  memberOnly?: boolean
 }) {
   return (
     <div className={choicesClasses}>
-      <ChoiceCard label="First Choice" choice={first} />
-      <ChoiceCard label="Second Choice" choice={second} />
+      {memberOnly ? (
+        <ChoiceCard label="Application type" choice={undefined} memberOnly />
+      ) : (
+        <>
+          <ChoiceCard label="First Choice" choice={first} />
+          <ChoiceCard label="Second Choice" choice={second} />
+        </>
+      )}
     </div>
   )
 }

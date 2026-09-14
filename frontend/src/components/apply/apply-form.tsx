@@ -90,6 +90,7 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
   const [direction, setDirection] = useState(1)
   const [serverError, setServerError] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const submittingRef = useRef(false)
   const completedUploadRef = useRef<CompletedUploadSession | null>(null)
   const [applicationCode, setApplicationCode] = useState("")
   const [successApplicationType, setSuccessApplicationType] = useState<
@@ -219,26 +220,31 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
   }
 
   async function submit() {
+    if (submittingRef.current) return
+    submittingRef.current = true
     setServerError("")
-    if (!(await trigger(undefined, { shouldFocus: true }))) return
-    const values = getValues()
     setSubmitting(true)
     try {
-      const result = await submitApplyForm(values, UST_EMAIL_DOMAIN, completedUploadRef)
-      setApplicationCode(result.applicationCode)
-      setSuccessApplicationType(result.applicationType)
-      setSuccessChoices(result.successChoices)
-      setStep(6)
-      setDirection(1)
-    } catch (error) {
-      applyMappedServerError(
-        error instanceof Error ? error.message : "Could not submit application.",
-        setError,
-        setStep,
-        setServerError,
-        Boolean(values.upload.resume && values.upload.registration),
-      )
+      if (!(await trigger(undefined, { shouldFocus: true }))) return
+      const values = getValues()
+      try {
+        const result = await submitApplyForm(values, UST_EMAIL_DOMAIN, completedUploadRef)
+        setApplicationCode(result.applicationCode)
+        setSuccessApplicationType(result.applicationType)
+        setSuccessChoices(result.successChoices)
+        setStep(6)
+        setDirection(1)
+      } catch (error) {
+        applyMappedServerError(
+          error instanceof Error ? error.message : "Could not submit application.",
+          setError,
+          setStep,
+          setServerError,
+          Boolean(values.upload.resume && values.upload.registration),
+        )
+      }
     } finally {
+      submittingRef.current = false
       setSubmitting(false)
     }
   }
@@ -289,7 +295,26 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
           </div>
           {step !== 6 ? (
             <div className={actionsClasses}>
-              {step === 1 ? <Button color="purple" className={ghostPillButtonClasses} nativeButton={false} render={<Link href="/apply/positions" />}>← Back</Button> : <Button type="button" color="purple" className={ghostPillButtonClasses} onClick={goBack}>← Back</Button>}
+              {step === 1 ? (
+                <Button
+                  color="purple"
+                  className={ghostPillButtonClasses}
+                  nativeButton={false}
+                  render={<Link href="/apply/positions" />}
+                >
+                  ← Back
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  color="purple"
+                  className={ghostPillButtonClasses}
+                  onClick={goBack}
+                  disabled={submitting}
+                >
+                  ← Back
+                </Button>
+              )}
               {step === 5 ? <Button type="button" color="cyan" className={nextButtonClasses} onClick={submit} disabled={submitting}>Submit Application</Button> : <Button type="button" color="cyan" className={nextButtonClasses} onClick={goNext}>Next → Step {step + 1}</Button>}
             </div>
           ) : null}
