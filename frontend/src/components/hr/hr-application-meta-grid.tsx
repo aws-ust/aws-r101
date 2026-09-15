@@ -1,5 +1,4 @@
 import { formatAppliedDate } from "@/lib/api"
-import type { ApplicationDocument } from "@/lib/application-types"
 import type { HrApplication } from "@/lib/hr-application-types"
 import { formatApplicantGender } from "@/lib/applicant-gender"
 import { formatDateDisplay } from "@/lib/date-local"
@@ -13,13 +12,6 @@ const metaLabelClasses = "mr-2 text-prelude"
 const metaValueClasses = "min-w-0 [overflow-wrap:anywhere]"
 const linkClasses =
   "text-aquamarine underline-offset-2 hover:text-blue-chalk hover:underline"
-
-function documentFor(
-  application: HrApplication,
-  type: ApplicationDocument["documentType"],
-) {
-  return application.documents.find((doc) => doc.documentType === type)
-}
 
 type HrApplicationMetaGridProps = {
   application: HrApplication
@@ -125,11 +117,4 @@ export function HrApplicationMetaGrid({ application }: HrApplicationMetaGridProp
       </p>
     </div>
   )
-}
-
-export function hrApplicationDocuments(application: HrApplication) {
-  return {
-    resume: documentFor(application, "resume"),
-    registration: documentFor(application, "registration"),
-  }
 }

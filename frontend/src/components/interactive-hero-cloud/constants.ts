@@ -102,6 +102,24 @@ export const mouthTransition = {
 }
 export const mouthSnap = { duration: 0 }
 
+export function heroCloudFaceColor(isRaining: boolean) {
+  return isRaining ? stormFaceColor : normalFaceColor
+}
+
+export function heroCloudFaceMotion(
+  isHurt: boolean,
+  isRaining: boolean,
+  reducedMotion: boolean | null,
+) {
+  if (!reducedMotion && isRaining) {
+    return { animation: stormFaceAnimation, transition: stormShakeTransition }
+  }
+  if (!reducedMotion && isHurt) {
+    return { animation: hurtFaceAnimation, transition: hurtTransition }
+  }
+  return { animation: restingFaceAnimation, transition: mouthSnap }
+}
+
 export type CloudExpression = "neutral" | "smile" | "frown"
 
 export function isPrimaryNavigationTab(target: EventTarget | null) {

@@ -4,10 +4,8 @@ import { Button } from "@/components/ui/button"
 import type { HrApplication } from "@/lib/hr-application-types"
 import { HrApplicationDocumentActions } from "@/components/hr/hr-application-document-actions"
 import { HrApplicationCommitteeSection } from "@/components/hr/hr-application-committee-section"
-import {
-  HrApplicationMetaGrid,
-  hrApplicationDocuments,
-} from "@/components/hr/hr-application-meta-grid"
+import { HrApplicationMetaGrid } from "@/components/hr/hr-application-meta-grid"
+import { hrApplicationDocuments } from "@/lib/hr-application-documents"
 
 const whyLabelClasses =
   "mt-8 font-sans text-sm font-semibold text-biloba-flower"
