@@ -24,6 +24,10 @@ const stateClasses =
   "flex min-h-72 flex-col items-center justify-center gap-3 rounded-[28px] border border-blue-chalk/20 bg-haiti px-6 text-center"
 const stateTitleClasses = "font-sans text-xl font-semibold text-blue-chalk"
 const stateCopyClasses = "max-w-lg font-sans text-sm leading-relaxed text-prelude"
+const detailEmptyClasses =
+  "flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-6 py-12 text-center"
+const detailEmptyTitleClasses = "font-sans text-lg font-semibold text-blue-chalk"
+const detailEmptyCopyClasses = "max-w-sm font-sans text-sm leading-relaxed text-prelude"
 
 type PositionsBrowserProps = {
   positions: Position[]
@@ -38,10 +42,9 @@ export function PositionsBrowser({
 }: PositionsBrowserProps) {
   const officeGroups = groupPositionsByOfficeHierarchy(positions)
   const officeCount = officeGroups.length
-  const [selectedId, setSelectedId] = useState(positions[0]?.id ?? "")
+  const [selectedId, setSelectedId] = useState("")
   const [mobileShowsDetail, setMobileShowsDetail] = useState(false)
-  const selected =
-    positions.find((position) => position.id === selectedId) ?? positions[0]
+  const selected = positions.find((position) => position.id === selectedId)
 
   function selectPosition(id: string) {
     setSelectedId(id)
@@ -76,7 +79,7 @@ export function PositionsBrowser({
         </p>
       </div>
 
-      {selected ? (
+      {positions.length > 0 ? (
         <div className={boardClasses}>
           <div
             className={cn(
@@ -86,7 +89,7 @@ export function PositionsBrowser({
           >
             <PositionsList
               officeGroups={officeGroups}
-              selectedId={selected.id}
+              selectedId={selectedId}
               onSelect={selectPosition}
             />
           </div>
@@ -96,14 +99,29 @@ export function PositionsBrowser({
               !mobileShowsDetail && "hidden lg:flex"
             )}
           >
-            <button
-              type="button"
-              className={backButtonClasses}
-              onClick={() => setMobileShowsDetail(false)}
-            >
-              ← All roles
-            </button>
-            <PositionDetail position={selected} applicationsOpen={applicationsOpen} />
+            {mobileShowsDetail ? (
+              <button
+                type="button"
+                className={backButtonClasses}
+                onClick={() => setMobileShowsDetail(false)}
+              >
+                ← All roles
+              </button>
+            ) : null}
+            {selected ? (
+              <PositionDetail
+                position={selected}
+                applicationsOpen={applicationsOpen}
+              />
+            ) : (
+              <div className={detailEmptyClasses}>
+                <p className={detailEmptyTitleClasses}>Select a role</p>
+                <p className={detailEmptyCopyClasses}>
+                  Choose a position from the list to read the full description and
+                  apply.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       ) : (
