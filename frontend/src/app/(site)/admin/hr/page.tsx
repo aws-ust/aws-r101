@@ -1,12 +1,18 @@
 import { HrApplicationList } from "@/components/hr/application-list"
+import {
+  firstSearchParam,
+  hrListSearchFromPageSearchParams,
+} from "@/lib/hr-filters-search-params"
 
 export default async function HrApplicationsPage({
   searchParams,
 }: PageProps<"/admin/hr">) {
-  const { notice } = await searchParams
+  const params = await searchParams
+  const notice = firstSearchParam(params.notice)
   return (
     <HrApplicationList
-      notice={typeof notice === "string" ? notice : undefined}
+      notice={notice}
+      listSearch={hrListSearchFromPageSearchParams(params)}
     />
   )
 }

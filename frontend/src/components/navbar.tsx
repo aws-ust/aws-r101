@@ -1,42 +1,24 @@
 "use client"
 
-import { useEffect, useState, type MouseEvent } from "react"
+import { useState, type MouseEvent } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DesktopNavLinks, type DesktopNavItem } from "@/components/desktop-nav-links"
-import { useSectionSpy } from "@/hooks/use-section-spy"
+import { NavbarMobileMenu } from "@/components/navbar-mobile-menu"
+import { useNavbarActiveHref } from "@/hooks/use-navbar-active-href"
 import { logoutApplicant } from "@/lib/applicant-api"
 import { scrollToSection } from "@/lib/scroll-to-section"
-import { SITE_NAV_ITEMS } from "@/lib/site-nav"
 import { chromeBarClasses } from "@/lib/surface"
 import { cn } from "@/lib/utils"
-
-const NAV_ITEMS = SITE_NAV_ITEMS
-const HOME_SECTION_IDS = NAV_ITEMS.flatMap((item) =>
-  item.path === "/" && "sectionId" in item ? [item.sectionId] : []
-)
 
 const headerClasses = "fixed inset-x-0 top-0 z-50"
 const barInnerClasses =
   "mx-auto flex w-full max-w-[1180px] items-center justify-between gap-3 px-4 py-2.5 sm:px-7 lg:px-8 xl:gap-8"
-const barInnerMarketingClasses =
-  "lg:justify-center lg:gap-6"
+const barInnerMarketingClasses = "lg:justify-center lg:gap-6"
 const barInnerApplicantClasses = "justify-between"
-const mobileOverlayClasses =
-  "fixed inset-0 z-40 transition-[opacity,visibility] duration-300 lg:hidden"
-const mobileOverlayOpenClasses = "visible pointer-events-auto opacity-100"
-const mobileOverlayClosedClasses = "invisible pointer-events-none opacity-0"
-const mobileBackdropClasses = "absolute inset-0 glass bg-haiti/80"
-const mobilePanelInnerClasses =
-  "relative mx-auto flex h-full max-w-[1180px] flex-col items-center justify-center gap-3 px-4 font-mono text-2xl text-prelude"
-const mobileCloseButtonClasses =
-  "absolute top-4 right-4 inline-flex size-10 cursor-pointer items-center justify-center rounded-pill text-blue-chalk transition-colors hover:bg-biloba-flower/15 hover:text-aquamarine focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-aquamarine"
-const mobileNavLinkClasses =
-  "rounded-pill px-5 py-2 transition-colors hover:bg-biloba-flower/15 hover:text-blue-chalk"
-const activeNavLinkClasses = "bg-aquamarine text-haiti hover:text-haiti"
 const logoLinkClasses = "flex shrink-0 items-center gap-2 font-bold"
 const logoWordmarkClasses = "hidden sm:inline lg:hidden xl:inline"
 const desktopCtaWrapClasses = "hidden lg:block"
@@ -44,34 +26,19 @@ const mobileMenuButtonWrapClasses = "lg:hidden"
 
 export function Navbar() {
   const [open, setOpen] = useState(false)
-  const [pendingSectionHref, setPendingSectionHref] = useState<string | null>(
-    null,
-  )
   const pathname = usePathname()
   const router = useRouter()
-  const activeSectionId = useSectionSpy(pathname, HOME_SECTION_IDS)
-  const spyActiveHref =
-    pathname === "/"
-      ? NAV_ITEMS.find((item) => "sectionId" in item && item.sectionId === activeSectionId)?.href ?? "/"
-      : NAV_ITEMS.find((item) => item.path === pathname)?.href ?? ""
-  const activeHref = pendingSectionHref ?? spyActiveHref
-
-  useEffect(() => {
-    if (pendingSectionHref && pendingSectionHref === spyActiveHref) {
-      setPendingSectionHref(null)
-    }
-  }, [pendingSectionHref, spyActiveHref])
+  const { activeHref, navItems } = useNavbarActiveHref(pathname)
   const isApplicantSignedIn = pathname.startsWith("/apply/dashboard")
 
   if (pathname.startsWith("/admin") || pathname === "/login") return null
 
   function navigateToSection(
     event: MouseEvent<HTMLAnchorElement>,
-    item: DesktopNavItem
+    item: DesktopNavItem,
   ) {
     if (pathname !== item.path || !item.sectionId) return
     event.preventDefault()
-    setPendingSectionHref(item.href)
     scrollToSection(item.sectionId)
     window.history.replaceState(null, "", item.href)
   }
@@ -89,7 +56,7 @@ export function Navbar() {
             barInnerClasses,
             isApplicantSignedIn
               ? barInnerApplicantClasses
-              : barInnerMarketingClasses
+              : barInnerMarketingClasses,
           )}
         >
           <Link
@@ -97,10 +64,16 @@ export function Navbar() {
             className={logoLinkClasses}
             onClick={(event) => {
               if (isApplicantSignedIn) return
-              navigateToSection(event, NAV_ITEMS[0])
+              navigateToSection(event, navItems[0])
             }}
           >
-            <Image src="/aws-logo.png" alt="AWS Builders – UST" width={117} height={66} className="h-8 w-auto" />
+            <Image
+              src="/aws-logo.png"
+              alt="AWS Builders – UST"
+              width={117}
+              height={66}
+              className="h-8 w-auto"
+            />
             <span
               className={
                 isApplicantSignedIn ? "inline text-blue-chalk" : logoWordmarkClasses
@@ -112,7 +85,7 @@ export function Navbar() {
 
           {isApplicantSignedIn ? null : (
             <DesktopNavLinks
-              items={NAV_ITEMS}
+              items={navItems}
               activeHref={activeHref}
               onNavigate={navigateToSection}
             />
@@ -120,7 +93,7 @@ export function Navbar() {
 
           <div
             className={cn(
-              isApplicantSignedIn ? "ml-auto shrink-0" : desktopCtaWrapClasses
+              isApplicantSignedIn ? "ml-auto shrink-0" : desktopCtaWrapClasses,
             )}
           >
             {isApplicantSignedIn ? (
@@ -133,7 +106,11 @@ export function Navbar() {
                 Sign out
               </Button>
             ) : (
-              <Button color="cyan" nativeButton={false} render={<Link href="/apply/positions" />}>
+              <Button
+                color="cyan"
+                nativeButton={false}
+                render={<Link href="/apply/positions" />}
+              >
                 Apply now!
               </Button>
             )}
@@ -155,40 +132,15 @@ export function Navbar() {
         </div>
       </nav>
 
-      <div
-        className={cn(
-          mobileOverlayClasses,
-          open && !isApplicantSignedIn ? mobileOverlayOpenClasses : mobileOverlayClosedClasses,
-        )}
-      >
-        <button type="button" className={mobileBackdropClasses} aria-label="Close menu" onClick={() => setOpen(false)} />
-        <div className={mobilePanelInnerClasses}>
-          <button type="button" className={mobileCloseButtonClasses} aria-label="Close menu" onClick={() => setOpen(false)}>
-            <X aria-hidden="true" className="size-6" />
-          </button>
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={(event) => {
-                navigateToSection(event, item)
-                setOpen(false)
-              }}
-              className={cn(mobileNavLinkClasses, activeHref === item.href && activeNavLinkClasses)}
-            >
-              {item.label}
-            </Link>
-          ))}
-          <Button
-            color="cyan"
-            className="mt-2"
-            nativeButton={false}
-            render={<Link href="/apply/positions" onClick={() => setOpen(false)} />}
-          >
-            Apply now!
-          </Button>
-        </div>
-      </div>
+      {isApplicantSignedIn ? null : (
+        <NavbarMobileMenu
+          open={open}
+          activeHref={activeHref}
+          items={navItems}
+          onClose={() => setOpen(false)}
+          onNavigate={navigateToSection}
+        />
+      )}
     </header>
   )
 }
