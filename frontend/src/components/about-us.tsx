@@ -1,7 +1,7 @@
 import { SectionHeader } from "@/components/section-header"
 
 const INTRO =
-  "AWS Builders – UST is a chapter of a global, student-led network of AWS User Groups — we don't stay inside campus walls. We're part of a thriving cloud and AI community spread across chapters in the Philippines and around the world."
+  "AWS Builders – UST is a chapter of a global, student-led network of AWS Student Builder Groups — we don't stay inside campus walls. We're part of a thriving cloud and AI community spread across chapters in the Philippines and around the world."
 
 const emphasisClasses = "italic text-blue-chalk"
 
