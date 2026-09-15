@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { SlotGridCell } from "@/components/interview/slot-grid"
 import {
   createInterviewSlot,
@@ -13,16 +13,22 @@ import type { InterviewSeasonBounds } from "@/lib/interview-season"
 import {
   clampWeekStart,
   formatWeekRange,
+  slotKeyFromIso,
   startOfWeek,
   weekDaysInSeason,
   weekQueryRange,
 } from "@/lib/interview-season"
-import { handleHrInterviewGridCellClick } from "@/components/hr/hr-interview-grid-cell"
+
 import {
   buildHrInterviewGridCells,
   committeeOptions,
   upsertHrInterviewSlot,
 } from "@/components/hr/hr-interview-grid-utils"
+
+type SlotDrag = {
+  action: "open" | "close"
+  cells: Map<string, SlotGridCell>
+}
 
 export function useHrInterviewGrid(seasonBounds: InterviewSeasonBounds, seasonConfigured: boolean) {
   const { positions, committees, loading: positionsLoading } = useOpenPositions()
@@ -35,6 +41,10 @@ export function useHrInterviewGrid(seasonBounds: InterviewSeasonBounds, seasonCo
   const [committeeName, setCommitteeName] = useState("")
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
   const [slots, setSlots] = useState<HrInterviewSlot[]>([])
+  const dragRef = useRef<SlotDrag | null>(null)
+  const [draggedCellKeys, setDraggedCellKeys] = useState<Set<string>>(
+    () => new Set(),
+  )
   const [gridReady, setGridReady] = useState(false)
   const [fetching, setFetching] = useState(false)
   const [pending, setPending] = useState(false)
@@ -67,51 +77,34 @@ export function useHrInterviewGrid(seasonBounds: InterviewSeasonBounds, seasonCo
 
   useEffect(() => {
     if (!committeeId || !seasonConfigured) {
-      setFetching(false)
       return
     }
     let cancelled = false
-    setFetching(true)
-    fetchSlots()
-      .then((rows) => {
-        if (!cancelled) {
-          setSlots(rows)
-          setGridReady(true)
-        }
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return
-        setError(
-          err instanceof Error ? err.message : "Could not load interview slots.",
-        )
-      })
-      .finally(() => {
-        if (!cancelled) setFetching(false)
-      })
+    queueMicrotask(() => {
+      if (cancelled) return
+      setFetching(true)
+      fetchSlots()
+        .then((rows) => {
+          if (!cancelled) {
+            setSlots(rows)
+            setGridReady(true)
+          }
+        })
+        .catch((err: unknown) => {
+          if (cancelled) return
+          setError(
+            err instanceof Error ? err.message : "Could not load interview slots.",
+          )
+        })
+        .finally(() => {
+          if (!cancelled) setFetching(false)
+        })
+    })
     return () => {
       cancelled = true
     }
   }, [committeeId, fetchSlots, seasonConfigured])
 
-  const openSlot = useCallback(
-    async (startsAt: Date, existing?: HrInterviewSlot) => {
-      if (!committeeId) return
-      setPending(true)
-      setError("")
-      try {
-        const next = existing
-          ? await patchInterviewSlotOpen(existing.id, true)
-          : await createInterviewSlot(committeeId, startsAt.toISOString())
-        setSlots((current) => upsertHrInterviewSlot(current, next))
-        setSuccess(existing ? "Slot reopened." : "Slot opened.")
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Could not open slot.")
-      } finally {
-        setPending(false)
-      }
-    },
-    [committeeId],
-  )
 
   const resetSchedule = useCallback(async () => {
     if (!committeeId) return
@@ -139,36 +132,104 @@ export function useHrInterviewGrid(seasonBounds: InterviewSeasonBounds, seasonCo
     }
   }, [committeeId, fetchSlots])
 
-  const closeSlot = useCallback(async (slot: HrInterviewSlot) => {
+
+  const startSlotDrag = useCallback(
+    (cell: SlotGridCell) => {
+      if (pending || !committeeId || !seasonConfigured || cell.state === "booked") {
+        return
+      }
+      dragRef.current = {
+        action: cell.state === "available" ? "close" : "open",
+        cells: new Map([[cell.key, cell]]),
+      }
+      setDraggedCellKeys(new Set([cell.key]))
+    },
+    [committeeId, pending, seasonConfigured],
+  )
+
+  const extendSlotDrag = useCallback((cell: SlotGridCell) => {
+    const drag = dragRef.current
+    if (!drag || cell.state === "booked") return
+    drag.cells.set(cell.key, cell)
+    setDraggedCellKeys(new Set(drag.cells.keys()))
+  }, [])
+
+  const finishSlotDrag = useCallback(async () => {
+    const drag = dragRef.current
+    if (!drag) return
+    dragRef.current = null
+    setDraggedCellKeys(new Set())
+    if (pending || !committeeId) return
+
+    const slotsById = new Map(slots.map((slot) => [slot.id, slot]))
+    const slotsByStart = new Map(
+      slots.map((slot) => [slotKeyFromIso(slot.startsAt), slot]),
+    )
+    const requests: Promise<HrInterviewSlot | null>[] = []
+    for (const cell of drag.cells.values()) {
+      const existing = cell.slotId
+        ? slotsById.get(cell.slotId)
+        : slotsByStart.get(cell.key)
+      if (existing?.booking) continue
+      if (drag.action === "open") {
+        if (!existing) {
+          requests.push(createInterviewSlot(committeeId, cell.startsAt.toISOString()))
+        } else if (!existing.isOpen) {
+          requests.push(patchInterviewSlotOpen(existing.id, true))
+        }
+      } else if (existing?.isOpen) {
+        requests.push(patchInterviewSlotOpen(existing.id, false))
+      }
+    }
+    if (requests.length === 0) return
+
     setPending(true)
     setError("")
+    setSuccess("")
     try {
-      const next = await patchInterviewSlotOpen(slot.id, false)
-      setSlots((current) => upsertHrInterviewSlot(current, next))
-      setSuccess("Slot closed.")
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not close slot.")
+      const results = await Promise.allSettled(requests)
+      const updatedSlots = results.flatMap((result) =>
+        result.status === "fulfilled" && result.value ? [result.value] : [],
+      )
+      if (updatedSlots.length > 0) {
+        setSlots((current) =>
+          updatedSlots.reduce(upsertHrInterviewSlot, current),
+        )
+      }
+      if (results.some((result) => result.status === "rejected")) {
+        setError("Some interview slots could not be updated. Refresh and try again.")
+        return
+      }
+      const action = drag.action === "open" ? "Opened" : "Closed"
+      setSuccess(
+        `${action} ${updatedSlots.length} slot${updatedSlots.length === 1 ? "" : "s"}.`,
+      )
     } finally {
       setPending(false)
     }
-  }, [])
+  }, [committeeId, pending, slots])
+
+  useEffect(() => {
+    window.addEventListener("pointerup", finishSlotDrag)
+    window.addEventListener("pointercancel", finishSlotDrag)
+    return () => {
+      window.removeEventListener("pointerup", finishSlotDrag)
+      window.removeEventListener("pointercancel", finishSlotDrag)
+    }
+  }, [finishSlotDrag])
 
   const onCellClick = useCallback(
     (cell: SlotGridCell) => {
-      handleHrInterviewGridCellClick(cell, {
-        pending,
-        committeeId,
-        seasonConfigured,
-        slots,
-        openSlot,
-        closeSlot,
-      })
+      startSlotDrag(cell)
+      void finishSlotDrag()
     },
-    [closeSlot, committeeId, openSlot, pending, seasonConfigured, slots],
+    [finishSlotDrag, startSlotDrag],
   )
 
   const selectCommittee = useCallback((name: string) => {
     setCommitteeName(name)
+    dragRef.current = null
+    setDraggedCellKeys(new Set())
     setSlots([])
     setGridReady(false)
     setError("")
@@ -198,6 +259,9 @@ export function useHrInterviewGrid(seasonBounds: InterviewSeasonBounds, seasonCo
     resetOpen,
     setResetOpen,
     onCellClick,
+    onCellPointerDown: startSlotDrag,
+    onCellPointerEnter: extendSlotDrag,
+    draggedCellKeys,
     resetSchedule,
   }
 }
