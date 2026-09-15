@@ -54,6 +54,14 @@ const archivedPillClasses =
 
 const missingClasses = "font-sans text-sm text-prelude"
 
+function listHrefFromSearchParams(searchParams: URLSearchParams) {
+  const returnTo = searchParams.get("returnTo")
+  if (!returnTo) return undefined
+  const pathname = returnTo.split("?", 1)[0]
+  return pathname === "/admin/hr" || pathname === "/admin/hr/archive"
+    ? returnTo
+    : undefined
+}
 
 
 export function HrApplicationDetail() {
@@ -62,6 +70,7 @@ export function HrApplicationDetail() {
 
   const router = useRouter()
   const searchParams = useSearchParams()
+  const returnTo = listHrefFromSearchParams(searchParams)
 
   const { application, setApplication, loading, error, notFound } =
 
@@ -87,7 +96,7 @@ export function HrApplicationDetail() {
 
       <main className={pageShellClasses}>
 
-        <Link href="/admin/hr" className={backClasses}>
+        <Link href={returnTo ?? "/admin/hr"} className={backClasses}>
 
           ← Back to Applications
 
@@ -109,7 +118,7 @@ export function HrApplicationDetail() {
 
       <main className={pageShellClasses}>
 
-        <Link href="/admin/hr" className={backClasses}>
+        <Link href={returnTo ?? "/admin/hr"} className={backClasses}>
 
           ← Back to Applications
 
@@ -126,8 +135,11 @@ export function HrApplicationDetail() {
 
 
   const fromArchive = searchParams.get("source") === "archive"
-  const viewingArchive = Boolean(application.archivedAt) || fromArchive
-  const listHref = viewingArchive ? "/admin/hr/archive" : "/admin/hr"
+  const viewingArchive = returnTo
+    ? returnTo.startsWith("/admin/hr/archive")
+    : Boolean(application.archivedAt) || fromArchive
+  const listHref =
+    returnTo ?? (viewingArchive ? "/admin/hr/archive" : "/admin/hr")
   const backLabel = viewingArchive
     ? "← Back to Archive"
     : "← Back to Applications"
@@ -223,5 +235,4 @@ export function HrApplicationDetail() {
   )
 
 }
-
 

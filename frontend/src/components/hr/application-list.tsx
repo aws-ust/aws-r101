@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { ActionFeedback } from "@/components/action-feedback"
 import { SectionHeader } from "@/components/section-header"
 import {
@@ -43,18 +43,12 @@ export function HrApplicationList({
   listSearch,
 }: HrApplicationListProps) {
   const isArchivedView = variant === "archived"
-  const router = useRouter()
   const pathname = usePathname()
   const [filters, setFilters] = useState(() =>
     hrFiltersFromListSearch(listSearch),
   )
   const [page, setPage] = useState(() => hrPageFromListSearch(listSearch))
   const urlSyncTimeoutRef = useRef<number | null>(null)
-
-  useEffect(() => {
-    setFilters(hrFiltersFromListSearch(listSearch))
-    setPage(hrPageFromListSearch(listSearch))
-  }, [listSearch])
 
   useEffect(() => {
     return () => {
@@ -84,7 +78,7 @@ export function HrApplicationList({
 
   function replaceListUrl(nextFilters: HrFilters, nextPage: number) {
     const query = buildHrListQueryString(nextFilters, nextPage, { notice })
-    router.replace(`${pathname}${query}`)
+    window.history.replaceState(null, "", `${pathname}${query}`)
   }
 
   function scheduleListUrlSync(
@@ -114,6 +108,18 @@ export function HrApplicationList({
     setPage(nextPage)
     replaceListUrl(filters, nextPage)
   }
+
+  function onDetailNavigate() {
+    if (urlSyncTimeoutRef.current !== null) {
+      window.clearTimeout(urlSyncTimeoutRef.current)
+      urlSyncTimeoutRef.current = null
+    }
+    replaceListUrl(filters, page)
+  }
+
+  const listHref = `${pathname}${buildHrListQueryString(filters, page, {
+    notice,
+  })}`
 
   return (
     <main className={cn(pageShellClasses, "min-w-0 max-w-full overflow-x-clip")}>
@@ -157,7 +163,9 @@ export function HrApplicationList({
         applications={applications}
         total={total}
         page={page}
+        returnTo={listHref}
         onPageChange={onPageChange}
+        onDetailNavigate={onDetailNavigate}
         onArchive={setArchiveTarget}
         onDelete={isArchivedView ? setDeleteTarget : undefined}
       />
