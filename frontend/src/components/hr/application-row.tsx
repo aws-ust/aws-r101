@@ -34,15 +34,19 @@ const archivedClasses =
 type ApplicationRowProps = {
   application: HrApplication
   emphasized?: boolean
+  returnTo: string
   onArchive: (application: HrApplication) => void
   onDelete?: (application: HrApplication) => void
+  onNavigate: () => void
 }
 
 export function ApplicationRow({
   application,
   emphasized,
+  returnTo,
   onArchive,
   onDelete,
+  onNavigate,
 }: ApplicationRowProps) {
   const name = fullName(application)
   const archived = Boolean(application.archivedAt)
@@ -81,7 +85,11 @@ export function ApplicationRow({
           </Button>
         ) : null}
       </div>
-      <Link href={`/admin/hr/${application.id}`} className={linkClasses}>
+      <Link
+        href={`/admin/hr/${application.id}?returnTo=${encodeURIComponent(returnTo)}`}
+        className={linkClasses}
+        onClick={onNavigate}
+      >
         <div className={nameBlockClasses}>
           <span className={nameClasses}>{name}</span>
           <span className={codeClasses}>{application.applicationCode}</span>

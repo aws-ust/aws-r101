@@ -1,7 +1,11 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+<<<<<<< HEAD
 import { usePathname, useRouter } from "next/navigation"
+=======
+import { usePathname } from "next/navigation"
+>>>>>>> f44a685539fd8a7e005776c9ad19bf0f12fc28b3
 import { ActionFeedback } from "@/components/action-feedback"
 import { SectionHeader } from "@/components/section-header"
 import {
@@ -43,7 +47,10 @@ export function HrApplicationList({
   listSearch,
 }: HrApplicationListProps) {
   const isArchivedView = variant === "archived"
+<<<<<<< HEAD
   const router = useRouter()
+=======
+>>>>>>> f44a685539fd8a7e005776c9ad19bf0f12fc28b3
   const pathname = usePathname()
   const [filters, setFilters] = useState(() =>
     hrFiltersFromListSearch(listSearch),
@@ -52,11 +59,14 @@ export function HrApplicationList({
   const urlSyncTimeoutRef = useRef<number | null>(null)
 
   useEffect(() => {
+<<<<<<< HEAD
     setFilters(hrFiltersFromListSearch(listSearch))
     setPage(hrPageFromListSearch(listSearch))
   }, [listSearch])
 
   useEffect(() => {
+=======
+>>>>>>> f44a685539fd8a7e005776c9ad19bf0f12fc28b3
     return () => {
       if (urlSyncTimeoutRef.current !== null) {
         window.clearTimeout(urlSyncTimeoutRef.current)
@@ -84,7 +94,11 @@ export function HrApplicationList({
 
   function replaceListUrl(nextFilters: HrFilters, nextPage: number) {
     const query = buildHrListQueryString(nextFilters, nextPage, { notice })
+<<<<<<< HEAD
     router.replace(`${pathname}${query}`)
+=======
+    window.history.replaceState(null, "", `${pathname}${query}`)
+>>>>>>> f44a685539fd8a7e005776c9ad19bf0f12fc28b3
   }
 
   function scheduleListUrlSync(
@@ -114,6 +128,21 @@ export function HrApplicationList({
     setPage(nextPage)
     replaceListUrl(filters, nextPage)
   }
+<<<<<<< HEAD
+=======
+
+  function onDetailNavigate() {
+    if (urlSyncTimeoutRef.current !== null) {
+      window.clearTimeout(urlSyncTimeoutRef.current)
+      urlSyncTimeoutRef.current = null
+    }
+    replaceListUrl(filters, page)
+  }
+
+  const listHref = `${pathname}${buildHrListQueryString(filters, page, {
+    notice,
+  })}`
+>>>>>>> f44a685539fd8a7e005776c9ad19bf0f12fc28b3
 
   return (
     <main className={cn(pageShellClasses, "min-w-0 max-w-full overflow-x-clip")}>
@@ -157,7 +186,13 @@ export function HrApplicationList({
         applications={applications}
         total={total}
         page={page}
+<<<<<<< HEAD
         onPageChange={onPageChange}
+=======
+        returnTo={listHref}
+        onPageChange={onPageChange}
+        onDetailNavigate={onDetailNavigate}
+>>>>>>> f44a685539fd8a7e005776c9ad19bf0f12fc28b3
         onArchive={setArchiveTarget}
         onDelete={isArchivedView ? setDeleteTarget : undefined}
       />

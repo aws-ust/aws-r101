@@ -58,8 +58,13 @@ export function hrPageFromListSearch(
 ): number {
   const raw = input?.page
   if (!raw) return 1
+<<<<<<< HEAD
   const parsed = Number.parseInt(raw, 10)
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1
+=======
+  const parsed = Number(raw)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 1
+>>>>>>> f44a685539fd8a7e005776c9ad19bf0f12fc28b3
 }
 
 export function mergeHrFilters(

@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import {
   Archive,
   CalendarRange,
@@ -60,12 +60,16 @@ const logoutButtonClasses =
   "h-10 w-full justify-start gap-2 px-4 text-xs group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
 const logoutLabelClasses = "group-data-[collapsible=icon]:sr-only"
 
-function isApplicationsActive(pathname: string) {
-  if (pathname === "/admin/hr") return true
+function isApplicationDetailPath(pathname: string) {
   const match = /^\/admin\/hr\/([^/]+)$/.exec(pathname)
   if (!match) return false
   const segment = match[1]
   return segment !== "season" && segment !== "results" && segment !== "archive"
+}
+
+function isApplicationsActive(pathname: string, source: string | null) {
+  if (pathname === "/admin/hr") return true
+  return isApplicationDetailPath(pathname) && source !== "archive"
 }
 
 const navItems = [
@@ -79,7 +83,9 @@ const navItems = [
     label: "Archive",
     href: "/admin/hr/archive",
     icon: Archive,
-    isActive: (pathname: string) => pathname.startsWith("/admin/hr/archive"),
+    isActive: (pathname: string, source: string | null) =>
+      pathname.startsWith("/admin/hr/archive") ||
+      (source === "archive" && isApplicationDetailPath(pathname)),
   },
   {
     label: "Results",
@@ -101,6 +107,7 @@ function onLogout() {
 
 export function HrSidebar() {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const { isMobile } = useSidebar()
 
   return (
@@ -127,7 +134,10 @@ export function HrSidebar() {
           <SidebarGroupContent>
             <SidebarMenu className={sidebarMenuClasses}>
               {navItems.map((item) => {
-                const active = item.isActive(pathname)
+                const active = item.isActive(
+                  pathname,
+                  searchParams.get("source"),
+                )
                 const Icon = item.icon
                 return (
                   <SidebarMenuItem
