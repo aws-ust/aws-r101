@@ -1,13 +1,9 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-<<<<<<< HEAD
-import { usePathname, useRouter } from "next/navigation"
-=======
 import { usePathname } from "next/navigation"
->>>>>>> f44a685539fd8a7e005776c9ad19bf0f12fc28b3
-import { ActionFeedback } from "@/components/action-feedback"
-import { SectionHeader } from "@/components/section-header"
+import { ActionFeedback } from "@/components/shared/action-feedback"
+import { SectionHeader } from "@/components/shared/section-header"
 import {
   ApplicationFilters,
   type HrFilters,
@@ -25,10 +21,10 @@ import {
   hrPageFromListSearch,
   mergeHrFilters,
   type HrListSearchParamsInput,
-} from "@/lib/hr-filters-search-params"
-import { pageShellClasses } from "@/lib/surface"
+} from "@/lib/hr/filters-search-params"
+import { pageShellClasses } from "@/lib/site/surface"
 import { cn } from "@/lib/utils"
-import type { HrApplication } from "@/lib/hr-application-types"
+import type { HrApplication } from "@/lib/types/hr-application"
 
 const toolbarClasses =
   "mt-8 flex flex-col gap-3 xl:flex-row xl:items-center"
@@ -47,10 +43,6 @@ export function HrApplicationList({
   listSearch,
 }: HrApplicationListProps) {
   const isArchivedView = variant === "archived"
-<<<<<<< HEAD
-  const router = useRouter()
-=======
->>>>>>> f44a685539fd8a7e005776c9ad19bf0f12fc28b3
   const pathname = usePathname()
   const [filters, setFilters] = useState(() =>
     hrFiltersFromListSearch(listSearch),
@@ -59,14 +51,6 @@ export function HrApplicationList({
   const urlSyncTimeoutRef = useRef<number | null>(null)
 
   useEffect(() => {
-<<<<<<< HEAD
-    setFilters(hrFiltersFromListSearch(listSearch))
-    setPage(hrPageFromListSearch(listSearch))
-  }, [listSearch])
-
-  useEffect(() => {
-=======
->>>>>>> f44a685539fd8a7e005776c9ad19bf0f12fc28b3
     return () => {
       if (urlSyncTimeoutRef.current !== null) {
         window.clearTimeout(urlSyncTimeoutRef.current)
@@ -94,11 +78,7 @@ export function HrApplicationList({
 
   function replaceListUrl(nextFilters: HrFilters, nextPage: number) {
     const query = buildHrListQueryString(nextFilters, nextPage, { notice })
-<<<<<<< HEAD
-    router.replace(`${pathname}${query}`)
-=======
     window.history.replaceState(null, "", `${pathname}${query}`)
->>>>>>> f44a685539fd8a7e005776c9ad19bf0f12fc28b3
   }
 
   function scheduleListUrlSync(
@@ -128,8 +108,6 @@ export function HrApplicationList({
     setPage(nextPage)
     replaceListUrl(filters, nextPage)
   }
-<<<<<<< HEAD
-=======
 
   function onDetailNavigate() {
     if (urlSyncTimeoutRef.current !== null) {
@@ -142,7 +120,6 @@ export function HrApplicationList({
   const listHref = `${pathname}${buildHrListQueryString(filters, page, {
     notice,
   })}`
->>>>>>> f44a685539fd8a7e005776c9ad19bf0f12fc28b3
 
   return (
     <main className={cn(pageShellClasses, "min-w-0 max-w-full overflow-x-clip")}>
@@ -186,13 +163,9 @@ export function HrApplicationList({
         applications={applications}
         total={total}
         page={page}
-<<<<<<< HEAD
-        onPageChange={onPageChange}
-=======
         returnTo={listHref}
         onPageChange={onPageChange}
         onDetailNavigate={onDetailNavigate}
->>>>>>> f44a685539fd8a7e005776c9ad19bf0f12fc28b3
         onArchive={setArchiveTarget}
         onDelete={isArchivedView ? setDeleteTarget : undefined}
       />
