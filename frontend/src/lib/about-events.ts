@@ -27,7 +27,7 @@ export const ABOUT_EVENTS: AboutEvent[] = [
   {
     id: "lightsail",
     dateLabel: "Nov 24, 2025",
-    title: "The Lighsail Expedition",
+    title: "The Lightsail Expedition",
     description:
       "Hands-on labs and sessions exploring Amazon Lightsail and core cloud building blocks.",
     imageSrc: "/events/sy-25-26/lightsail-2526.jpg",
