@@ -1,6 +1,5 @@
 "use client"
 
-import { useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { DatePicker } from "@/components/ui/date-picker"
 import {
@@ -53,16 +52,14 @@ function contactDigitsOnly(value: string) {
   return value.replace(/\D/g, "").slice(0, 10)
 }
 
+function ageDisplayFromBirthday(birthday: string): string {
+  if (!birthday) return ""
+  const computed = ageFromBirthdayYmd(birthday)
+  return computed === null ? "" : String(computed)
+}
+
 export function GeneralInfoStep({ values, onChange, errors }: GeneralInfoStepProps) {
-  useEffect(() => {
-    if (!values.birthday) {
-      if (values.age) onChange({ age: "" })
-      return
-    }
-    const computed = ageFromBirthdayYmd(values.birthday)
-    const nextAge = computed === null ? "" : String(computed)
-    if (values.age !== nextAge) onChange({ age: nextAge })
-  }, [values.birthday, values.age, onChange]) // onChange: stable patch from apply-form
+  const displayAge = ageDisplayFromBirthday(values.birthday)
 
   return (
     <div className={gridClasses}>
@@ -98,13 +95,7 @@ export function GeneralInfoStep({ values, onChange, errors }: GeneralInfoStepPro
             id="birthday"
             required
             value={values.birthday}
-            onChange={(birthday) => {
-              const computed = birthday ? ageFromBirthdayYmd(birthday) : null
-              onChange({
-                birthday,
-                age: computed === null ? "" : String(computed),
-              })
-            }}
+            onChange={(birthday) => onChange({ birthday })}
             placeholder="Select birthday"
           />
         </Field>
@@ -118,7 +109,7 @@ export function GeneralInfoStep({ values, onChange, errors }: GeneralInfoStepPro
             tabIndex={-1}
             aria-readonly="true"
             placeholder="From birthday"
-            value={values.age}
+            value={displayAge}
             className={readOnlyAgeClasses}
           />
         </Field>
