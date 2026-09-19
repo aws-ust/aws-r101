@@ -6,20 +6,12 @@ import { useParams, useSearchParams } from "next/navigation"
 import { HrApplicationDetailContent } from "@/components/hr/hr-application-detail-content"
 import { HrApplicationDetailSkeleton } from "@/components/hr/application-detail-skeleton"
 import { useApplication } from "@/lib/api"
+import { sanitizeReturnToFromSearchParams } from "@/lib/hr/return-to"
 import { pageShellClasses } from "@/lib/site/surface"
 
 const backClasses =
   "mb-3 mt-3 inline-flex font-mono text-xs text-prelude hover:text-blue-chalk"
 const missingClasses = "font-sans text-sm text-prelude"
-
-function listHrefFromSearchParams(searchParams: URLSearchParams) {
-  const returnTo = searchParams.get("returnTo")
-  if (!returnTo) return undefined
-  const pathname = returnTo.split("?", 1)[0]
-  return pathname === "/admin/hr" || pathname === "/admin/hr/archive"
-    ? returnTo
-    : undefined
-}
 
 function HrApplicationDetailFallback({
   listHref,
@@ -41,7 +33,7 @@ function HrApplicationDetailFallback({
 export function HrApplicationDetail() {
   const { id } = useParams<{ id: string }>()
   const searchParams = useSearchParams()
-  const returnTo = listHrefFromSearchParams(searchParams)
+  const returnTo = sanitizeReturnToFromSearchParams(searchParams)
   const { application, setApplication, loading, error } = useApplication(id)
   const [archiveOpen, setArchiveOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
