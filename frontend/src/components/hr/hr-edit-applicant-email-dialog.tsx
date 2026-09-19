@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -41,24 +41,24 @@ type HrEditApplicantEmailDialogProps = {
   onChanged: (application: HrApplication) => void
 }
 
-export function HrEditApplicantEmailDialog({
+type HrEditApplicantEmailFormProps = {
+  application: HrApplication
+  onOpenChange: (open: boolean) => void
+  onChanged: (application: HrApplication) => void
+}
+
+function HrEditApplicantEmailForm({
   application,
   onOpenChange,
   onChanged,
-}: HrEditApplicantEmailDialogProps) {
-  const [emailLocal, setEmailLocal] = useState("")
+}: HrEditApplicantEmailFormProps) {
+  const [emailLocal, setEmailLocal] = useState(() =>
+    sanitizeEmailLocalInput(application.email),
+  )
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
 
-  useEffect(() => {
-    if (application) {
-      setEmailLocal(sanitizeEmailLocalInput(application.email))
-      setError("")
-    }
-  }, [application])
-
   async function confirm() {
-    if (!application) return
     setPending(true)
     setError("")
     try {
@@ -79,59 +79,77 @@ export function HrEditApplicantEmailDialog({
 
   return (
     <Dialog
-      open={application !== null}
+      open
       onOpenChange={(open) => {
         if (pending) return
-        if (!open) setError("")
-        onOpenChange(open)
+        if (!open) onOpenChange(false)
       }}
     >
       <DialogContent showCloseButton={false}>
-        <DialogHeader>
-          <DialogTitle>Edit applicant email</DialogTitle>
-          <DialogDescription>
-            This updates the email stored on the applicant record. Enter the
-            UST username before @ust.edu.ph. You can resend the success email
-            afterward.
-          </DialogDescription>
-        </DialogHeader>
-        <div className={fieldClasses}>
-          <Label htmlFor="applicant-email">Email</Label>
-          <div className={emailWrapClasses}>
-            <Input
-              id="applicant-email"
-              type="text"
-              autoComplete="off"
-              placeholder="juan.delacruz"
-              value={emailLocal}
-              disabled={pending}
-              onChange={(event) =>
-                setEmailLocal(sanitizeEmailLocalInput(event.target.value))
-              }
-              onPaste={(event) => {
-                event.preventDefault()
-                const pasted = event.clipboardData.getData("text")
-                setEmailLocal(sanitizeEmailLocalInput(pasted))
-              }}
-              className={emailInputClasses}
-            />
-            <span className={emailDomainClasses}>{UST_EMAIL_DOMAIN}</span>
-          </div>
-        </div>
-        {error ? <p className={errorClasses}>{error}</p> : null}
-        <DialogFooter>
-          <Button
-            color="purple"
+      <DialogHeader>
+        <DialogTitle>Edit applicant email</DialogTitle>
+        <DialogDescription>
+          This updates the email stored on the applicant record. Enter the UST
+          username before @ust.edu.ph. You can resend the success email
+          afterward.
+        </DialogDescription>
+      </DialogHeader>
+      <div className={fieldClasses}>
+        <Label htmlFor="applicant-email">Email</Label>
+        <div className={emailWrapClasses}>
+          <Input
+            id="applicant-email"
+            type="text"
+            autoComplete="off"
+            placeholder="juan.delacruz"
+            value={emailLocal}
             disabled={pending}
-            onClick={() => onOpenChange(false)}
-          >
-            Cancel
-          </Button>
-          <Button disabled={pending} onClick={() => void confirm()}>
-            {pending ? "Saving…" : "Save Email"}
-          </Button>
-        </DialogFooter>
+            onChange={(event) =>
+              setEmailLocal(sanitizeEmailLocalInput(event.target.value))
+            }
+            onPaste={(event) => {
+              event.preventDefault()
+              const pasted = event.clipboardData.getData("text")
+              setEmailLocal(sanitizeEmailLocalInput(pasted))
+            }}
+            className={emailInputClasses}
+          />
+          <span className={emailDomainClasses}>{UST_EMAIL_DOMAIN}</span>
+        </div>
+      </div>
+      {error ? <p className={errorClasses}>{error}</p> : null}
+      <DialogFooter>
+        <Button
+          color="purple"
+          disabled={pending}
+          onClick={() => onOpenChange(false)}
+        >
+          Cancel
+        </Button>
+        <Button disabled={pending} onClick={() => void confirm()}>
+          {pending ? "Saving…" : "Save Email"}
+        </Button>
+      </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+export function HrEditApplicantEmailDialog({
+  application,
+  onOpenChange,
+  onChanged,
+}: HrEditApplicantEmailDialogProps) {
+  if (!application) {
+    return null
+  }
+
+  return (
+    <HrEditApplicantEmailForm
+      key={application.id}
+      application={application}
+      onOpenChange={onOpenChange}
+      onChanged={onChanged}
+    />
   )
 }
