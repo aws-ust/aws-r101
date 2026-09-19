@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "docker compose up postgres localstack & pnpm -r --parallel dev",
+    "dev": "docker compose up -d postgres localstack && pnpm s3:cors && pnpm -r --parallel dev",
     "db:up": "docker compose up -d postgres localstack && pnpm s3:cors",
     "db:down": "docker compose down",
     "db:reset": "docker compose down -v && docker compose up -d postgres",
