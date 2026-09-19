@@ -17,6 +17,8 @@ import {
   patchApplicationArchivedRequest,
   deleteArchivedApplicationRequest,
   patchApplicationDecisionRequest,
+  patchApplicantEmailRequest,
+  resendApplicationSubmittedEmailRequest,
   postApplication,
   postUploadPresign,
   type ApplicationListParams,
@@ -233,6 +235,17 @@ export function setApplicationArchived(id: string, archived: boolean) {
 
 export function deleteArchivedApplication(id: string) {
   return deleteArchivedApplicationRequest(id)
+}
+
+export function patchApplicantEmail(id: string, email: string) {
+  return patchApplicantEmailRequest(id, email).then((updated) => {
+    applicationPromises.set(id, Promise.resolve(updated))
+    return updated
+  })
+}
+
+export function resendApplicationSubmittedEmail(id: string) {
+  return resendApplicationSubmittedEmailRequest(id)
 }
 
 export function fullName(app: Application) {

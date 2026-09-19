@@ -167,6 +167,20 @@ export function deleteArchivedApplicationRequest(id: string) {
   });
 }
 
+export function patchApplicantEmailRequest(id: string, email: string) {
+  return apiFetch<HrApplication>(`/applications/${id}/email`, {
+    method: "PATCH",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function resendApplicationSubmittedEmailRequest(id: string) {
+  return apiFetch<{ sent: boolean; recipient: string }>(
+    `/applications/${id}/emails/resend-submitted`,
+    { method: "POST" },
+  );
+}
+
 type PositionApiRow = {
   id: string;
   title: string;
