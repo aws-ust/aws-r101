@@ -2,7 +2,10 @@
 
 import { cn } from "@/lib/utils"
 
-export type PeopleView = "executive-board" | "committee-directors"
+export type PeopleView =
+  | "executive-board"
+  | "committee-directors"
+  | "advisers"
 
 const shellClasses = "flex flex-wrap gap-2"
 const tabClasses =
@@ -43,6 +46,18 @@ export function BoardToggle({ value, onChange }: BoardToggleProps) {
         onClick={() => onChange("committee-directors")}
       >
         Committee Directors
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={value === "advisers"}
+        className={cn(
+          tabClasses,
+          value === "advisers" ? activeTabClasses : inactiveTabClasses
+        )}
+        onClick={() => onChange("advisers")}
+      >
+        Advisers
       </button>
     </div>
   )

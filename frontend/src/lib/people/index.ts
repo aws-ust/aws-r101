@@ -24,6 +24,12 @@ export type DirectorSeat = {
   current: PersonTerm
 }
 
+export type AdviserSeat = {
+  id: string
+  rank: number
+  current: PersonTerm
+}
+
 const CURRENT_AY = "AY 2026-2027"
 const PREVIOUS_AY = "AY 2025-2026"
 
@@ -195,6 +201,40 @@ const COMMITTEE_DIRECTOR_BY_COMMITTEE: Record<
     name: "Elleinrich Jarina",
   },
 }
+
+/** Adviser photos in `public/advisers/`. */
+export const ADVISERS: AdviserSeat[] = [
+  {
+    id: "adviser-tayuan",
+    rank: 1,
+    current: {
+      name: "Ronina Tayuan",
+      title: "Asst. Prof., MSCS",
+      academicYear: CURRENT_AY,
+      photo: "/advisers/Adviser_Tayuan.jpg",
+    },
+  },
+  {
+    id: "adviser-domantay",
+    rank: 2,
+    current: {
+      name: "John Matthew Domantay",
+      title: "Technical Adviser",
+      academicYear: CURRENT_AY,
+      photo: "/advisers/Adviser_Domantay.jpg",
+    },
+  },
+  {
+    id: "adviser-de-guzman",
+    rank: 3,
+    current: {
+      name: "Edwin De Guzman",
+      title: "Asst. Prof., MCP, DIT",
+      academicYear: CURRENT_AY,
+      photo: "/advisers/Adviser_De%20Guzman.jpg",
+    },
+  },
+].sort((a, b) => a.rank - b.rank)
 
 export const COMMITTEE_DIRECTORS: DirectorSeat[] =
   staffCommitteeSeedNamesInOrgOrder().map((committee, index) => {
