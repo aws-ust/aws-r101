@@ -291,7 +291,7 @@ export async function sendApplicantOtp(input: {
 
 export async function sendApplicationSubmitted(
   application: ApplicationJson,
-): Promise<void> {
+): Promise<EmailDeliveryStatus> {
   const firstChoice = application.choices.find((choice) => choice.preferenceRank === 1);
   const secondChoice = application.choices.find((choice) => choice.preferenceRank === 2);
   const booking = await getBookedInterviewBooking(application.id);
@@ -326,7 +326,7 @@ export async function sendApplicationSubmitted(
   if (applicationRequiresDevExam(choiceRefs)) {
     rendered.attachments.push(awsDevAssessmentAttachment());
   }
-  await deliverEmail({
+  return deliverEmail({
     applicationId: application.id,
     messageType: "application_submitted",
     recipient: application.email,
@@ -336,12 +336,12 @@ export async function sendApplicationSubmitted(
 
 export async function sendMemberRegistration(
   application: ApplicationJson,
-): Promise<void> {
+): Promise<EmailDeliveryStatus> {
   const rendered = memberRegistrationTemplate({
     lastName: application.lastName,
     applicationCode: application.applicationCode,
   });
-  await deliverEmail({
+  return deliverEmail({
     applicationId: application.id,
     messageType: "member_registration",
     recipient: application.email,

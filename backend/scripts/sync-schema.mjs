@@ -179,11 +179,14 @@ try {
   `);
 
   for (const value of [
+    "interview_reminder_24h",
+    "interview_reminder_1h",
     "officer_application_notice",
     "officer_first_choice_left",
     "officer_first_choice_joined",
     "officer_interview_rescheduled",
     "applicant_dev_exam",
+    "member_registration",
   ]) {
     await sql.unsafe(`
       DO $$ BEGIN

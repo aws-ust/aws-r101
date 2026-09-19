@@ -764,6 +764,79 @@ export async function setApplicationArchived(
   return found ? getApplicationById(id) : null;
 }
 
+export class ApplicantEmailError extends Error {
+  readonly code: "not_found" | "archived" | "email_taken";
+
+  constructor(code: "not_found" | "archived" | "email_taken", message: string) {
+    super(message);
+    this.name = "ApplicantEmailError";
+    this.code = code;
+  }
+}
+
+export async function updateApplicantEmail(
+  applicationId: string,
+  email: string,
+): Promise<ApplicationJson> {
+  await db.transaction(async (tx) => {
+    const [application] = await tx
+      .select({
+        applicantId: applications.applicantId,
+        archivedAt: applications.archivedAt,
+      })
+      .from(applications)
+      .where(eq(applications.id, applicationId))
+      .limit(1)
+      .for("update");
+
+    if (!application) {
+      throw new ApplicantEmailError("not_found", "Application not found.");
+    }
+    if (application.archivedAt) {
+      throw new ApplicantEmailError(
+        "archived",
+        "Email cannot be changed for an archived application.",
+      );
+    }
+
+    const [current] = await tx
+      .select({ email: applicants.email })
+      .from(applicants)
+      .where(eq(applicants.id, application.applicantId))
+      .limit(1)
+      .for("update");
+
+    if (!current) {
+      throw new ApplicantEmailError("not_found", "Application not found.");
+    }
+    if (current.email === email) return;
+
+    const [owner] = await tx
+      .select({ id: applicants.id })
+      .from(applicants)
+      .where(eq(applicants.email, email))
+      .limit(1);
+
+    if (owner && owner.id !== application.applicantId) {
+      throw new ApplicantEmailError(
+        "email_taken",
+        "Another applicant already uses that email.",
+      );
+    }
+
+    await tx
+      .update(applicants)
+      .set({ email })
+      .where(eq(applicants.id, application.applicantId));
+  });
+
+  const updated = await getApplicationById(applicationId);
+  if (!updated) {
+    throw new ApplicantEmailError("not_found", "Application not found.");
+  }
+  return updated;
+}
+
 export class DeleteArchivedApplicationError extends Error {
   readonly code: "not_found" | "not_archived";
 

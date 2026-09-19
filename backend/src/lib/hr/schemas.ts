@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { hasControlCharacters } from "../core/text-sanitize";
+import { isValidUstApplicantEmail } from "../apply/field-validation";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -96,6 +97,16 @@ export const applicationDecisionPatchSchema = z
 
 export const applicationArchivePatchSchema = z.object({
   archived: z.boolean({ error: "archived must be a boolean." }),
+});
+
+export const applicationEmailPatchSchema = z.object({
+  email: z
+    .string({ error: "email is required." })
+    .trim()
+    .transform((value) => value.toLowerCase())
+    .refine(isValidUstApplicantEmail, {
+      error: "email must be a valid @ust.edu.ph address.",
+    }),
 });
 
 export function zodErrorMessage(error: z.ZodError): string {

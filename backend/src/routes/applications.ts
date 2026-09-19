@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import {
   ApplicationAlreadySubmittedError,
+  ApplicantEmailError,
   choiceRefsForPositions,
   createApplication,
   getApplicationDocument,
@@ -10,6 +11,7 @@ import {
   setApplicationArchived,
   deleteArchivedApplication,
   DeleteArchivedApplicationError,
+  updateApplicantEmail,
   type CreateApplicationInput,
 } from "../lib/applications/applications";
 import {
@@ -33,6 +35,7 @@ import { resolveRecruitmentSeasonStatus } from "../lib/recruitment/window";
 import {
   applicationArchivePatchSchema,
   applicationDecisionPatchSchema,
+  applicationEmailPatchSchema,
   zodErrorMessage,
 } from "../lib/hr/schemas";
 import { logHrAudit } from "../lib/hr/audit";
@@ -279,6 +282,90 @@ applicationsRoutes.patch("/:id/decisions", requireAuth, async (c) => {
       return c.json({ error: error.message }, status);
     }
     throw error;
+  }
+});
+
+applicationsRoutes.patch("/:id/email", requireAuth, async (c) => {
+  const id = c.req.param("id");
+  if (!isUuid(id)) {
+    return c.json({ error: "Invalid application id." }, 400);
+  }
+
+  const body = await c.req.json().catch(() => null);
+  const parsed = applicationEmailPatchSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: zodErrorMessage(parsed.error) }, 400);
+  }
+
+  const payload = c.get("jwtPayload") as { sub?: unknown };
+  const reviewerEmail =
+    typeof payload.sub === "string" ? payload.sub : undefined;
+
+  try {
+    const updated = await updateApplicantEmail(id, parsed.data.email);
+    logHrAudit({
+      actorEmail: reviewerEmail,
+      action: "application.email.update",
+      resourceType: "application",
+      resourceId: id,
+    });
+    return c.json(updated);
+  } catch (error) {
+    if (error instanceof ApplicantEmailError) {
+      const status = error.code === "not_found" ? 404 : 409;
+      return c.json({ error: error.message }, status);
+    }
+    throw error;
+  }
+});
+
+applicationsRoutes.post("/:id/emails/resend-submitted", requireAuth, async (c) => {
+  const id = c.req.param("id");
+  if (!isUuid(id)) {
+    return c.json({ error: "Invalid application id." }, 400);
+  }
+
+  const application = await getApplicationById(id);
+  if (!application) {
+    return c.json({ error: "Application not found." }, 404);
+  }
+  if (application.archivedAt) {
+    return c.json(
+      { error: "Success email cannot be resent for an archived application." },
+      409,
+    );
+  }
+
+  const payload = c.get("jwtPayload") as { sub?: unknown };
+  const reviewerEmail =
+    typeof payload.sub === "string" ? payload.sub : undefined;
+
+  try {
+    const status =
+      application.applicationType === "member"
+        ? await sendMemberRegistration(application)
+        : await sendApplicationSubmitted(application);
+    logHrAudit({
+      actorEmail: reviewerEmail,
+      action: "application.email.resend_submitted",
+      resourceType: "application",
+      resourceId: id,
+    });
+    return c.json({
+      sent: status === "sent",
+      recipient: application.email,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes("without choices and an interview slot")) {
+      return c.json({ error: message }, 409);
+    }
+    return internalApiError(
+      c,
+      error,
+      "Could not resend success email",
+      "Could not resend the success email.",
+    );
   }
 });
 
