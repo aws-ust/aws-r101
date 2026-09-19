@@ -1,10 +1,14 @@
 "use client"
 
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { StatusPill } from "@/components/hr/status-pill"
 import { HrArchiveApplicantDialog } from "@/components/hr/hr-archive-applicant-dialog"
 import { HrDeleteApplicantDialog } from "@/components/hr/hr-delete-applicant-dialog"
+import { HrEditApplicantEmailDialog } from "@/components/hr/hr-edit-applicant-email-dialog"
+import { HrResendSuccessEmailDialog } from "@/components/hr/hr-resend-success-email-dialog"
 import { HrApplicationDetailPanel } from "@/components/hr/hr-application-detail-panel"
+import { ActionFeedback } from "@/components/shared/action-feedback"
 import type { HrApplication } from "@/lib/types/hr-application"
 import {
   displayTitleLeadingClasses,
@@ -46,9 +50,16 @@ export function HrApplicationDetailContent({
   onUpdated,
 }: HrApplicationDetailContentProps) {
   const router = useRouter()
+  const [emailOpen, setEmailOpen] = useState(false)
+  const [resendOpen, setResendOpen] = useState(false)
+  const [feedback, setFeedback] = useState<{
+    type: "success" | "error"
+    message: string
+  } | null>(null)
   const backLabel = viewingArchive
     ? "← Back to Archive"
     : "← Back to Applications"
+  const canManageEmail = !application.archivedAt
 
   return (
     <main className={cn(pageShellClasses, "min-w-0 max-w-full overflow-x-clip")}>
@@ -67,12 +78,19 @@ export function HrApplicationDetailContent({
           <span className={archivedPillClasses}>Archived</span>
         ) : null}
       </div>
+      {feedback ? (
+        <ActionFeedback type={feedback.type} message={feedback.message} />
+      ) : null}
       <div className={panelClasses}>
         <HrApplicationDetailPanel
           application={application}
           onUpdated={onUpdated}
           onArchiveClick={() => onArchiveOpenChange(true)}
           onDeleteClick={() => onDeleteOpenChange(true)}
+          onEditEmail={canManageEmail ? () => setEmailOpen(true) : undefined}
+          onResendSuccessEmail={
+            canManageEmail ? () => setResendOpen(true) : undefined
+          }
         />
       </div>
       <HrArchiveApplicantDialog
@@ -90,6 +108,22 @@ export function HrApplicationDetailContent({
         application={deleteOpen ? application : null}
         onOpenChange={onDeleteOpenChange}
         onDeleted={() => router.replace("/admin/hr/archive?notice=deleted")}
+      />
+      <HrEditApplicantEmailDialog
+        application={emailOpen ? application : null}
+        onOpenChange={setEmailOpen}
+        onChanged={(updated) => {
+          onUpdated(updated)
+          setFeedback({
+            type: "success",
+            message: `Applicant email updated to ${updated.email}.`,
+          })
+        }}
+      />
+      <HrResendSuccessEmailDialog
+        application={resendOpen ? application : null}
+        onOpenChange={setResendOpen}
+        onSent={(message) => setFeedback({ type: "success", message })}
       />
     </main>
   )

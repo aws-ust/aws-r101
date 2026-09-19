@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { DatePicker } from "@/components/ui/date-picker"
 import {
@@ -17,6 +18,7 @@ import {
 import { sanitizeSectionInput } from "@/lib/apply/field-validation"
 import { fieldControlClasses } from "@/lib/site/surface"
 import { UST_EMAIL_DOMAIN } from "@/lib/constants"
+import { ageFromBirthdayYmd } from "@/lib/datetime/date-local"
 import type { GeneralInfoValues } from "@/components/apply/apply-schema"
 
 const gridClasses = "grid gap-5 sm:grid-cols-2"
@@ -31,6 +33,7 @@ const composedAffixClasses =
   "flex h-12 shrink-0 items-center font-sans text-sm text-prelude"
 const composedPrefixClasses = `${composedAffixClasses} border-r border-blue-chalk/20 pl-4 pr-3`
 const composedSuffixClasses = `${composedAffixClasses} border-l border-blue-chalk/20 pl-3 pr-4`
+const readOnlyAgeClasses = `${fieldControlClasses} cursor-default opacity-90`
 
 type GeneralInfoStepProps = {
   values: GeneralInfoValues
@@ -42,12 +45,6 @@ function lettersOnly(value: string) {
   return value.replace(/[^\p{L}\s'-]/gu, "")
 }
 
-function positiveDigits(value: string) {
-  const digits = value.replace(/\D/g, "")
-  if (digits === "" || Number(digits) <= 0) return ""
-  return String(Number(digits))
-}
-
 function studentDigits(value: string) {
   return value.replace(/\D/g, "").slice(0, 10)
 }
@@ -57,6 +54,16 @@ function contactDigitsOnly(value: string) {
 }
 
 export function GeneralInfoStep({ values, onChange, errors }: GeneralInfoStepProps) {
+  useEffect(() => {
+    if (!values.birthday) {
+      if (values.age) onChange({ age: "" })
+      return
+    }
+    const computed = ageFromBirthdayYmd(values.birthday)
+    const nextAge = computed === null ? "" : String(computed)
+    if (values.age !== nextAge) onChange({ age: nextAge })
+  }, [values.birthday, values.age, onChange]) // onChange: stable patch from apply-form
+
   return (
     <div className={gridClasses}>
       <Field label="First Name" htmlFor="firstName" required error={errors?.firstName}>
@@ -86,28 +93,33 @@ export function GeneralInfoStep({ values, onChange, errors }: GeneralInfoStepPro
         />
       </Field>
       <div className={personalRowClasses}>
+        <Field label="Birthday" htmlFor="birthday" required error={errors?.birthday}>
+          <DatePicker
+            id="birthday"
+            required
+            value={values.birthday}
+            onChange={(birthday) => {
+              const computed = birthday ? ageFromBirthdayYmd(birthday) : null
+              onChange({
+                birthday,
+                age: computed === null ? "" : String(computed),
+              })
+            }}
+            placeholder="Select birthday"
+          />
+        </Field>
         <Field label="Age" htmlFor="age" required error={errors?.age}>
           <Input
             id="age"
             name="age"
             required
             type="text"
-            inputMode="numeric"
-            pattern="[1-9][0-9]*"
-            min={1}
-            placeholder="21"
+            readOnly
+            tabIndex={-1}
+            aria-readonly="true"
+            placeholder="From birthday"
             value={values.age}
-            onChange={(e) => onChange({ age: positiveDigits(e.target.value) })}
-            className={fieldControlClasses}
-          />
-        </Field>
-        <Field label="Birthday" htmlFor="birthday" required error={errors?.birthday}>
-          <DatePicker
-            id="birthday"
-            required
-            value={values.birthday}
-            onChange={(birthday) => onChange({ birthday })}
-            placeholder="Select birthday"
+            className={readOnlyAgeClasses}
           />
         </Field>
         <Field label="Gender" htmlFor="gender" required error={errors?.gender}>

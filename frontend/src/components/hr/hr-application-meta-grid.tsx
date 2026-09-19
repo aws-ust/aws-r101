@@ -1,3 +1,6 @@
+"use client"
+
+import { Button } from "@/components/ui/button"
 import { formatAppliedDate } from "@/lib/api"
 import type { HrApplication } from "@/lib/types/hr-application"
 import { formatApplicantGender } from "@/lib/apply/applicant-gender"
@@ -12,15 +15,25 @@ const metaLabelClasses = "mr-2 text-prelude"
 const metaValueClasses = "min-w-0 [overflow-wrap:anywhere]"
 const linkClasses =
   "text-aquamarine underline-offset-2 hover:text-blue-chalk hover:underline"
+const emailRowClasses = "mt-1 flex flex-wrap items-start gap-3"
+const emailActionsClasses = "flex flex-wrap gap-2"
+const emailActionClasses = "h-7 rounded-pill px-3 font-mono text-[11px]"
 
 type HrApplicationMetaGridProps = {
   application: HrApplication
+  onEditEmail?: () => void
+  onResendSuccessEmail?: () => void
 }
 
-export function HrApplicationMetaGrid({ application }: HrApplicationMetaGridProps) {
+export function HrApplicationMetaGrid({
+  application,
+  onEditEmail,
+  onResendSuccessEmail,
+}: HrApplicationMetaGridProps) {
   const facebookHref = safeExternalHref(application.facebookUrl, "facebook")
   const portfolioHref = safeExternalHref(application.portfolioUrl, "portfolio")
   const githubHref = safeExternalHref(application.githubUrl, "github")
+  const canManageEmail = Boolean(onEditEmail || onResendSuccessEmail)
 
   return (
     <div className={metaGridClasses}>
@@ -50,12 +63,37 @@ export function HrApplicationMetaGrid({ application }: HrApplicationMetaGridProp
           {formatApplicantGender(application.gender)}
         </span>
       </p>
-      <p className={metaEmailItemClasses}>
+      <div className={metaEmailItemClasses}>
         <span className="block text-prelude">Email:</span>
-        <span className={metaValueClasses} title={application.email}>
-          {application.email}
-        </span>
-      </p>
+        <div className={emailRowClasses}>
+          <span className={metaValueClasses} title={application.email}>
+            {application.email}
+          </span>
+          {canManageEmail ? (
+            <div className={emailActionsClasses}>
+              {onEditEmail ? (
+                <Button
+                  type="button"
+                  color="purple"
+                  className={emailActionClasses}
+                  onClick={onEditEmail}
+                >
+                  Edit Email
+                </Button>
+              ) : null}
+              {onResendSuccessEmail ? (
+                <Button
+                  type="button"
+                  className={emailActionClasses}
+                  onClick={onResendSuccessEmail}
+                >
+                  Resend Success Email
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      </div>
       <p className={metaItemClasses}>
         <span className={metaLabelClasses}>Student No.:</span>
         <span className={metaValueClasses}>

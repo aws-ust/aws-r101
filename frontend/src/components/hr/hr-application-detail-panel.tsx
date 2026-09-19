@@ -20,6 +20,8 @@ type HrApplicationDetailPanelProps = {
   onUpdated: (application: HrApplication) => void
   onArchiveClick: () => void
   onDeleteClick?: () => void
+  onEditEmail?: () => void
+  onResendSuccessEmail?: () => void
 }
 
 export function HrApplicationDetailPanel({
@@ -27,12 +29,18 @@ export function HrApplicationDetailPanel({
   onUpdated,
   onArchiveClick,
   onDeleteClick,
+  onEditEmail,
+  onResendSuccessEmail,
 }: HrApplicationDetailPanelProps) {
   const { resume, registration } = hrApplicationDocuments(application)
 
   return (
     <>
-      <HrApplicationMetaGrid application={application} />
+      <HrApplicationMetaGrid
+        application={application}
+        onEditEmail={onEditEmail}
+        onResendSuccessEmail={onResendSuccessEmail}
+      />
       <HrApplicationCommitteeSection
         application={application}
         onUpdated={onUpdated}
@@ -59,7 +67,7 @@ export function HrApplicationDetailPanel({
             className={archiveActionClasses}
             onClick={onDeleteClick}
           >
-            Delete permanently
+            Delete Permanently
           </Button>
         ) : null}
       </div>

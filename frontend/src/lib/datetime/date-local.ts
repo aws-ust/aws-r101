@@ -52,6 +52,24 @@ export function isValidBirthdayYmd(value: string) {
   return date <= today
 }
 
+/** Completed years as of today in local time; null if invalid or future. */
+export function ageFromBirthdayYmd(value: string): number | null {
+  const birth = parseDateYmd(value)
+  if (!birth) return null
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  if (birth > today) return null
+
+  let age = today.getFullYear() - birth.getFullYear()
+  const monthDiff = today.getMonth() - birth.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age -= 1
+  }
+
+  return age > 0 ? age : null
+}
+
 export function birthdayYearOptions() {
   const current = new Date().getFullYear()
   const years: number[] = []

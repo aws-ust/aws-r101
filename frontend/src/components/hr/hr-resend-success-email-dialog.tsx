@@ -10,22 +10,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { deleteArchivedApplication, fullName } from "@/lib/api"
+import { resendApplicationSubmittedEmail } from "@/lib/api"
 import type { HrApplication } from "@/lib/types/hr-application"
 
 const errorClasses = "text-sm text-rose-glow"
 
-type HrDeleteApplicantDialogProps = {
+type HrResendSuccessEmailDialogProps = {
   application: HrApplication | null
   onOpenChange: (open: boolean) => void
-  onDeleted: () => void
+  onSent: (message: string) => void
 }
 
-export function HrDeleteApplicantDialog({
+export function HrResendSuccessEmailDialog({
   application,
   onOpenChange,
-  onDeleted,
-}: HrDeleteApplicantDialogProps) {
+  onSent,
+}: HrResendSuccessEmailDialogProps) {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
 
@@ -34,14 +34,20 @@ export function HrDeleteApplicantDialog({
     setPending(true)
     setError("")
     try {
-      await deleteArchivedApplication(application.id)
-      onDeleted()
+      const result = await resendApplicationSubmittedEmail(application.id)
+      if (!result.sent) {
+        setError(
+          `Could not send to ${result.recipient}. Check email delivery settings and try again.`,
+        )
+        return
+      }
+      onSent(`Success email sent to ${result.recipient}.`)
       onOpenChange(false)
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "Could not delete applicant."
+          : "Could not resend the success email.",
       )
     } finally {
       setPending(false)
@@ -59,10 +65,10 @@ export function HrDeleteApplicantDialog({
     >
       <DialogContent showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>Delete applicant permanently?</DialogTitle>
+          <DialogTitle>Resend Success Email?</DialogTitle>
           <DialogDescription>
             {application
-              ? `${fullName(application)} (${application.applicationCode}) will be removed. Their interview slot will be open again and they can apply with the same UST email. This cannot be undone.`
+              ? `This sends the application received email to ${application.email}.`
               : null}
           </DialogDescription>
         </DialogHeader>
@@ -75,8 +81,8 @@ export function HrDeleteApplicantDialog({
           >
             Cancel
           </Button>
-          <Button color="danger" disabled={pending} onClick={confirm}>
-            {pending ? "Deleting…" : "Delete Permanently"}
+          <Button disabled={pending} onClick={() => void confirm()}>
+            {pending ? "Sending…" : "Resend Success Email"}
           </Button>
         </DialogFooter>
       </DialogContent>

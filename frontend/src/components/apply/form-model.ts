@@ -11,6 +11,7 @@ import {
   isApplicantUploadFailureMessage,
 } from "@/lib/api/error-message"
 import { formatContactDigits, sanitizeSectionInput } from "@/lib/apply/field-validation"
+import { ageFromBirthdayYmd, isValidBirthdayYmd } from "@/lib/datetime/date-local"
 import { needsCreativesPortfolio, needsDevelopmentGithub } from "@/lib/apply/committee"
 
 /** Converts validated form values into the API's create-application payload. */
@@ -34,11 +35,16 @@ export function toCreateApplicationInput(
     committee.secondPositionTitle,
   )
 
+  const age =
+    isValidBirthdayYmd(general.birthday)
+      ? ageFromBirthdayYmd(general.birthday) ?? Number(general.age)
+      : Number(general.age)
+
   return {
     firstName: general.firstName.trim(),
     lastName: general.lastName.trim(),
     email: `${general.emailLocal.trim()}${emailDomain}`,
-    age: Number(general.age),
+    age,
     birthday: general.birthday,
     gender: general.gender,
     section: sanitizeSectionInput(general.section),
