@@ -138,10 +138,7 @@ async function queryResultsPreview(
     (row) => row.archivedAt === null && row.resultsReleasedAt !== null,
   ).length;
   const pendingRows = rows.filter(
-    (row) =>
-      row.archivedAt === null &&
-      row.resultsReleasedAt === null &&
-      row.status === "pending",
+    (row) => row.archivedAt === null && row.resultsReleasedAt === null,
   );
   const pendingIds = pendingRows.map((row) => row.id);
 
