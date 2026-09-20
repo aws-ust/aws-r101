@@ -32,7 +32,7 @@ function serverFieldForMessage(message: string): {
 } | null {
   const lower = message.toLowerCase()
   if (lower.includes("dataprivacy") || lower.includes("data privacy")) {
-    return { name: "privacy.dataPrivacyAgreed", step: 1 }
+    return { name: "privacy.dataPrivacyAgreed", step: 3 }
   }
   if (lower.includes("firstname") || lower.includes("lastname")) {
     return { name: "general.firstName", step: 2 }
@@ -62,14 +62,14 @@ function serverFieldForMessage(message: string): {
     return { name: "general.emailLocal", step: 2 }
   }
   if (lower.includes("portfolio")) {
-    return { name: "committee.portfolioUrl", step: 3 }
+    return { name: "committee.portfolioUrl", step: 1 }
   }
-  if (lower.includes("github")) return { name: "committee.githubUrl", step: 3 }
+  if (lower.includes("github")) return { name: "committee.githubUrl", step: 1 }
   if (lower.includes("choice") || lower.includes("position")) {
-    return { name: "committee.firstPositionId", step: 3 }
+    return { name: "committee.firstPositionId", step: 1 }
   }
   if (lower.includes("slot") || lower.includes("interview")) {
-    return { name: "committee.slotId", step: 3 }
+    return { name: "committee.slotId", step: 1 }
   }
   return null
 }

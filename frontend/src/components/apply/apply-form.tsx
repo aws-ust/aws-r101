@@ -207,7 +207,7 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
 
   async function goNext() {
     setServerError("")
-    const name = step === 1 ? "privacy" : step === 2 ? "general" : step === 3 ? "committee" : "upload"
+    const name = step === 1 ? "committee" : step === 2 ? "general" : step === 3 ? "privacy" : "upload"
     if (!(await trigger(name, { shouldFocus: true }))) return
     setDirection(1)
     setStep((current) => (current + 1) as FormStep)
@@ -257,7 +257,7 @@ export function ApplyForm({ initialPositionId }: ApplyFormProps) {
     committee: fieldErrors<CommitteeValues>(errors.committee as never),
     upload: fieldErrors<UploadValues>(errors.upload as never),
   }
-  const panelWidth = step === 3 || step === 5 ? "max-w-6xl" : "max-w-2xl"
+  const panelWidth = step === 1 || step === 5 ? "max-w-6xl" : "max-w-2xl"
 
   return (
     <main className={applyFlowShellClasses}>

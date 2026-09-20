@@ -5,9 +5,9 @@ import { m, useReducedMotion } from "motion/react"
 import { cn } from "@/lib/utils"
 
 const STEPS = [
-  { n: 1, label: "Privacy" },
+  { n: 1, label: "Application Type" },
   { n: 2, label: "General Info" },
-  { n: 3, label: "Committee" },
+  { n: 3, label: "Privacy" },
   { n: 4, label: "Documents" },
   { n: 5, label: "Review" },
   { n: 6, label: "Success" },
