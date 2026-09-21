@@ -260,6 +260,20 @@ test("HR committee decisions", async (t) => {
     };
     assert.equal(payload.status, "rejected");
     assert.equal(payload.finalPlacement, null);
+
+    const reloaded = await app.request(`/applications/${applicationId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    assert.equal(reloaded.status, 200);
+    const reloadedPayload = (await reloaded.json()) as {
+      status: string;
+      choices: { decisionStatus: string }[];
+    };
+    assert.equal(reloadedPayload.status, "rejected");
+    assert.deepEqual(
+      reloadedPayload.choices.map((choice) => choice.decisionStatus),
+      ["rejected", "rejected"],
+    );
   });
 
   await t.test("rejects unknown and released applications", async () => {
