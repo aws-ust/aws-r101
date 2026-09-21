@@ -77,10 +77,10 @@ export function ApplyFormSteps({
         transition={transition}
       >
         {step === 1 ? (
-          <PrivacyStep
-            values={privacy}
-            onChange={updatePrivacy}
-            errors={currentStepErrors.privacy}
+          <CommitteeStep
+            values={committee}
+            onChange={updateCommittee}
+            errors={currentStepErrors.committee}
           />
         ) : null}
         {step === 2 ? (
@@ -91,10 +91,10 @@ export function ApplyFormSteps({
           />
         ) : null}
         {step === 3 ? (
-          <CommitteeStep
-            values={committee}
-            onChange={updateCommittee}
-            errors={currentStepErrors.committee}
+          <PrivacyStep
+            values={privacy}
+            onChange={updatePrivacy}
+            errors={currentStepErrors.privacy}
           />
         ) : null}
         {step === 4 ? (
