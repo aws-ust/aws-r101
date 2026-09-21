@@ -8,7 +8,10 @@ import {
   positions,
 } from "../../db/schema";
 import { recruitmentYearInt } from "../applications/application-code";
-import type { ApplicationStatus } from "../applications/applications";
+import type {
+  ApplicationStatus,
+  ApplicationType,
+} from "../applications/applications";
 
 export type ResultClassification = "accepted" | "rejected" | "incomplete";
 export type ChoiceDecisionStatus = "pending" | "approved" | "rejected";
@@ -25,6 +28,7 @@ export type ResultPreviewChoice = {
 export type ResultPreviewApplication = {
   id: string;
   applicationCode: string;
+  applicationType: ApplicationType;
   applicant: {
     fullName: string;
     email: string;
@@ -118,6 +122,7 @@ async function queryResultsPreview(
       id: applications.id,
       applicationCode: applications.applicationCode,
       status: applications.status,
+      applicationType: applications.applicationType,
       finalPositionId: applications.finalPositionId,
       memberId: applications.memberId,
       resultsReleasedAt: applications.resultsReleasedAt,
@@ -185,7 +190,17 @@ async function queryResultsPreview(
       const choices = (choicesByApplication.get(row.id) ?? []).sort(
         (a, b) => a.preferenceRank - b.preferenceRank,
       );
-      const result = classifyApplication(choices, row.finalPositionId);
+      const result: Classification =
+        row.applicationType === "member"
+          ? row.status === "approved"
+            ? { classification: "accepted", blockingReason: null }
+            : row.status === "rejected"
+              ? { classification: "rejected", blockingReason: null }
+              : {
+                  classification: "incomplete",
+                  blockingReason: "Member-only application must be approved before release.",
+                }
+          : classifyApplication(choices, row.finalPositionId);
       if (result.classification === "accepted") accepted += 1;
       if (result.classification === "rejected") rejected += 1;
       if (result.classification === "incomplete") incomplete += 1;
@@ -197,6 +212,7 @@ async function queryResultsPreview(
       return {
         id: row.id,
         applicationCode: row.applicationCode,
+        applicationType: row.applicationType,
         applicant: {
           fullName: `${row.firstName} ${row.lastName}`,
           email: row.email,
@@ -216,7 +232,9 @@ async function queryResultsPreview(
         choices,
         willGenerateMemberId:
           result.classification === "accepted" && row.memberId === null,
-        willSendEmail: result.classification !== "incomplete",
+        willSendEmail:
+          row.applicationType === "position" &&
+          result.classification !== "incomplete",
       };
     },
   );

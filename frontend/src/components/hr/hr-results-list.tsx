@@ -25,6 +25,11 @@ const pillClasses: Record<ResultClassification, string> = {
 }
 
 function resultDetail(application: ResultPreviewApplication) {
+  if (application.applicationType === "member") {
+    return application.classification === "accepted"
+      ? "Member-only application is approved."
+      : application.blockingReason ?? "Member-only application is incomplete."
+  }
   if (application.classification === "accepted") {
     return application.finalPlacement
       ? `${application.finalPlacement.committee} — ${application.finalPlacement.title}`
