@@ -32,24 +32,24 @@ function serverFieldForMessage(message: string): {
 } | null {
   const lower = message.toLowerCase()
   if (lower.includes("dataprivacy") || lower.includes("data privacy")) {
-    return { name: "privacy.dataPrivacyAgreed", step: 3 }
+    return { name: "privacy.dataPrivacyAgreed", step: 1 }
   }
   if (lower.includes("firstname") || lower.includes("lastname")) {
-    return { name: "general.firstName", step: 2 }
+    return { name: "general.firstName", step: 3 }
   }
   if (lower.includes("studentnumber")) {
-    return { name: "general.studentNumber", step: 2 }
+    return { name: "general.studentNumber", step: 3 }
   }
   if (lower.includes("contactnumber")) {
-    return { name: "general.contactDigits", step: 2 }
+    return { name: "general.contactDigits", step: 3 }
   }
   if (lower.includes("facebookurl")) {
-    return { name: "general.facebookUrl", step: 2 }
+    return { name: "general.facebookUrl", step: 3 }
   }
-  if (lower.includes("age")) return { name: "general.age", step: 2 }
-  if (lower.includes("birthday")) return { name: "general.birthday", step: 2 }
-  if (lower.includes("gender")) return { name: "general.gender", step: 2 }
-  if (lower.includes("section")) return { name: "general.section", step: 2 }
+  if (lower.includes("age")) return { name: "general.age", step: 3 }
+  if (lower.includes("birthday")) return { name: "general.birthday", step: 3 }
+  if (lower.includes("gender")) return { name: "general.gender", step: 3 }
+  if (lower.includes("section")) return { name: "general.section", step: 3 }
   if (
     lower.includes("emaillocal") ||
     lower.includes("ust email") ||
@@ -59,17 +59,17 @@ function serverFieldForMessage(message: string): {
         lower.includes("must be") ||
         lower.includes("already")))
   ) {
-    return { name: "general.emailLocal", step: 2 }
+    return { name: "general.emailLocal", step: 3 }
   }
   if (lower.includes("portfolio")) {
-    return { name: "committee.portfolioUrl", step: 1 }
+    return { name: "committee.portfolioUrl", step: 2 }
   }
-  if (lower.includes("github")) return { name: "committee.githubUrl", step: 1 }
+  if (lower.includes("github")) return { name: "committee.githubUrl", step: 2 }
   if (lower.includes("choice") || lower.includes("position")) {
-    return { name: "committee.firstPositionId", step: 1 }
+    return { name: "committee.firstPositionId", step: 2 }
   }
   if (lower.includes("slot") || lower.includes("interview")) {
-    return { name: "committee.slotId", step: 1 }
+    return { name: "committee.slotId", step: 2 }
   }
   return null
 }
