@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, lt, sql } from "drizzle-orm";
+import { and, eq, gt, lt, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db";
 import { applicationDocuments, uploadSessions } from "../db/schema";
@@ -58,7 +58,7 @@ async function createUploadSession(
   const [session] = await db.transaction(async (tx) => {
     await tx.execute(sql`LOCK TABLE "upload_sessions", "application_documents" IN SHARE ROW EXCLUSIVE MODE`);
     await tx.update(uploadSessions).set({ status: "expired" }).where(and(eq(uploadSessions.status, "active"), lt(uploadSessions.expiresAt, now)));
-    const [{ count }] = await tx.select({ count: sql<number>`count(*)::int` }).from(uploadSessions).where(inArray(uploadSessions.status, ["active", "consumed"]));
+    const [{ count }] = await tx.select({ count: sql<number>`count(*)::int` }).from(uploadSessions).where(and(eq(uploadSessions.status, "active"), gt(uploadSessions.expiresAt, now)));
     if (numeric(count) >= SESSION_CAP) throw new UploadError(409, "The application upload-session cap has been reached.");
     const [{ committedBytes }] = await tx.select({ committedBytes: sql<number>`coalesce(sum(${applicationDocuments.fileSizeBytes}), 0)::bigint` }).from(applicationDocuments);
     const [{ reservedBytes }] = await tx.select({ reservedBytes: sql<number>`coalesce(sum(coalesce(${uploadSessions.resumeSizeBytes}, 0) + coalesce(${uploadSessions.registrationSizeBytes}, 0)), 0)::bigint` }).from(uploadSessions).where(and(eq(uploadSessions.status, "active"), gt(uploadSessions.expiresAt, now)));
