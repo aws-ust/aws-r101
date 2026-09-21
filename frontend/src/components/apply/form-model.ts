@@ -4,14 +4,15 @@ import type {
   PrivacyValues,
   UploadValues,
 } from "@/components/apply/apply-schema"
-import type { CreateApplicationInput } from "@/lib/application-types"
+import type { CreateApplicationInput } from "@/lib/types/application"
 import {
   APPLY_MISSING_DOCUMENTS_ERROR,
   APPLY_UNEXPECTED_ERROR,
   isApplicantUploadFailureMessage,
-} from "@/lib/api-error-message"
-import { formatContactDigits, sanitizeSectionInput } from "@/lib/apply-field-validation"
-import { needsCreativesPortfolio, needsDevelopmentGithub } from "@/lib/committee-apply"
+} from "@/lib/api/error-message"
+import { formatContactDigits, sanitizeSectionInput } from "@/lib/apply/field-validation"
+import { ageFromBirthdayYmd, isValidBirthdayYmd } from "@/lib/datetime/date-local"
+import { needsCreativesPortfolio, needsDevelopmentGithub } from "@/lib/apply/committee"
 
 /** Converts validated form values into the API's create-application payload. */
 export function toCreateApplicationInput(
@@ -34,11 +35,16 @@ export function toCreateApplicationInput(
     committee.secondPositionTitle,
   )
 
+  const age =
+    isValidBirthdayYmd(general.birthday)
+      ? ageFromBirthdayYmd(general.birthday) ?? Number(general.age)
+      : Number(general.age)
+
   return {
     firstName: general.firstName.trim(),
     lastName: general.lastName.trim(),
     email: `${general.emailLocal.trim()}${emailDomain}`,
-    age: Number(general.age),
+    age,
     birthday: general.birthday,
     gender: general.gender,
     section: sanitizeSectionInput(general.section),

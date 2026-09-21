@@ -11,10 +11,10 @@ import {
   isValidGoogleDriveUrl,
   isValidSection,
   isValidStudentNumber,
-} from "@/lib/apply-field-validation";
-import { isApplicantGender } from "@/lib/applicant-gender";
-import { needsCreativesPortfolio, needsDevelopmentGithub } from "@/lib/committee-apply";
-import { isValidBirthdayYmd } from "@/lib/date-local";
+} from "@/lib/apply/field-validation";
+import { isApplicantGender } from "@/lib/apply/applicant-gender";
+import { needsCreativesPortfolio, needsDevelopmentGithub } from "@/lib/apply/committee";
+import { ageFromBirthdayYmd, isValidBirthdayYmd } from "@/lib/datetime/date-local";
 
 const FILE_ERROR = "Please attach your Curriculum Vitae and Registration Form.";
 const PDF_ERROR = "Please attach both files as PDFs (.pdf), then try again.";
@@ -93,15 +93,16 @@ export const applySchema = z
         "Please use letters only for your name so we can match it to your application.",
       );
     }
-    const age = Number(value.general.age);
+    if (!isValidBirthdayYmd(value.general.birthday)) {
+      issue(["general", "birthday"], "Pick a valid birthday that is not in the future.");
+    }
+    const ageFromBirthday = ageFromBirthdayYmd(value.general.birthday);
+    const age = ageFromBirthday ?? Number(value.general.age);
     if (!Number.isInteger(age) || age <= 0) {
       issue(
         ["general", "age"],
-        "Age must be a positive number so we can confirm your eligibility for R101.",
+        "Pick a valid birthday so we can confirm your eligibility for R101.",
       );
-    }
-    if (!isValidBirthdayYmd(value.general.birthday)) {
-      issue(["general", "birthday"], "Pick a valid birthday that is not in the future.");
     }
     if (!isApplicantGender(value.general.gender)) {
       issue(["general", "gender"], "Select your gender.");

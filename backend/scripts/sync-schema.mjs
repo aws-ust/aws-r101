@@ -51,6 +51,21 @@ try {
     "ALTER TABLE applications ADD COLUMN IF NOT EXISTS github_url text",
   );
 
+  await sql.unsafe(`
+    DO $$ BEGIN
+      CREATE TYPE application_type AS ENUM ('position', 'member');
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END $$;
+  `);
+  await sql.unsafe(`
+    ALTER TABLE applications
+      ADD COLUMN IF NOT EXISTS application_type application_type NOT NULL DEFAULT 'position'
+  `);
+  await sql.unsafe(
+    "CREATE INDEX IF NOT EXISTS idx_applications_type ON applications(application_type)",
+  );
+
   await sql.unsafe(
     "ALTER TABLE application_documents ADD COLUMN IF NOT EXISTS file_size_bytes integer NOT NULL DEFAULT 0",
   );
@@ -164,11 +179,14 @@ try {
   `);
 
   for (const value of [
+    "interview_reminder_24h",
+    "interview_reminder_1h",
     "officer_application_notice",
     "officer_first_choice_left",
     "officer_first_choice_joined",
     "officer_interview_rescheduled",
     "applicant_dev_exam",
+    "member_registration",
   ]) {
     await sql.unsafe(`
       DO $$ BEGIN

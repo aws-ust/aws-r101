@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { deleteArchivedApplication, fullName } from "@/lib/api"
-import type { HrApplication } from "@/lib/hr-application-types"
+import type { HrApplication } from "@/lib/types/hr-application"
 
 const errorClasses = "text-sm text-rose-glow"
 
@@ -76,7 +76,7 @@ export function HrDeleteApplicantDialog({
             Cancel
           </Button>
           <Button color="danger" disabled={pending} onClick={confirm}>
-            {pending ? "Deleting…" : "Delete permanently"}
+            {pending ? "Deleting…" : "Delete Permanently"}
           </Button>
         </DialogFooter>
       </DialogContent>
