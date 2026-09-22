@@ -4,6 +4,7 @@ import { SectionHeader } from "@/components/shared/section-header"
 import { HrInterviewGrid } from "@/components/hr/hr-interview-grid"
 import { HrInterviewWindow } from "@/components/hr/hr-interview-window"
 import { HrRecruitmentWindow } from "@/components/hr/hr-recruitment-window"
+import { HrCommitteeApplicationControls } from "@/components/hr/hr-committee-application-controls"
 import { useInterviewWindow } from "@/hooks/use-interview-window"
 import { pageShellClasses } from "@/lib/site/surface"
 
@@ -23,10 +24,11 @@ export function HrSeasonPage() {
       <SectionHeader
         eyebrow="// SEASON"
         title="Recruitment Week & Interviews"
-        subtitle="Set the application window and manage interview slot availability."
+        subtitle="Set the application window, committee availability, and interview slots."
       />
       <div className={stackClasses}>
         <HrRecruitmentWindow />
+        <HrCommitteeApplicationControls />
         <HrInterviewWindow
           key={`${seasonBounds?.startsAt.toISOString() ?? ""}:${seasonBounds?.endsAt.toISOString() ?? ""}`}
           seasonBounds={seasonBounds}

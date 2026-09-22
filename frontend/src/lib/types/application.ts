@@ -11,6 +11,7 @@ export type Position = {
   committee: string
   /** Present on API rows; omitted in legacy mock fixtures. */
   committee_id?: string
+  acceptingApplications?: boolean
   title: string
   description: string
 }
