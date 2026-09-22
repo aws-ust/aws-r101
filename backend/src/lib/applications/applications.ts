@@ -133,6 +133,15 @@ export class ApplicationAlreadySubmittedError extends Error {
   }
 }
 
+export class ApplicationPositionUnavailableError extends Error {
+  constructor() {
+    super(
+      "One or more selected committees or positions are no longer accepting applications. Please choose another option.",
+    );
+    this.name = "ApplicationPositionUnavailableError";
+  }
+}
+
 function isApplicationCodeCollision(err: unknown): boolean {
   const inspect = (value: unknown): boolean => {
     if (!value || typeof value !== "object") return false;
@@ -478,13 +487,22 @@ export async function listApplications(filters: ListFilters): Promise<{
   return { applications: mapped, total: totalRows[0]?.total ?? 0 };
 }
 
-export async function positionsExist(positionIds: string[]): Promise<boolean> {
+export async function positionsAcceptApplications(
+  positionIds: string[],
+): Promise<boolean> {
   if (positionIds.length === 0) return false;
   const uniqueIds = [...new Set(positionIds)];
   const rows = await db
     .select({ id: positions.id })
     .from(positions)
-    .where(inArray(positions.id, uniqueIds));
+    .innerJoin(committees, eq(positions.committeeId, committees.id))
+    .where(
+      and(
+        inArray(positions.id, uniqueIds),
+        eq(positions.isOpen, true),
+        eq(committees.acceptingApplications, true),
+      ),
+    );
   return rows.length === uniqueIds.length;
 }
 
@@ -532,6 +550,32 @@ export async function createApplication(
             .where(eq(uploadSessions.id, session.id));
         }
         throw new Error("Upload session has expired.");
+      }
+
+      if (input.applicationType === "position") {
+        const positionIds = [
+          ...new Set(input.choices.map((choice) => choice.positionId)),
+        ];
+        const selectedPositions = await tx
+          .select({
+            id: positions.id,
+            isOpen: positions.isOpen,
+            committeeAcceptingApplications: committees.acceptingApplications,
+          })
+          .from(positions)
+          .innerJoin(committees, eq(positions.committeeId, committees.id))
+          .where(inArray(positions.id, positionIds))
+          .for("update");
+
+        if (
+          selectedPositions.length !== positionIds.length ||
+          selectedPositions.some(
+            (position) =>
+              !position.isOpen || !position.committeeAcceptingApplications,
+          )
+        ) {
+          throw new ApplicationPositionUnavailableError();
+        }
       }
       if (
         !session.resumeFileName ||

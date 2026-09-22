@@ -116,6 +116,9 @@ export const committees = pgTable("committees", {
   id: uuid().primaryKey().defaultRandom(),
   name: varchar({ length: 100 }).notNull().unique(),
   description: text(),
+  acceptingApplications: boolean("accepting_applications")
+    .notNull()
+    .default(true),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

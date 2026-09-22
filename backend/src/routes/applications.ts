@@ -1,13 +1,14 @@
 import { Hono } from "hono";
 import {
   ApplicationAlreadySubmittedError,
+  ApplicationPositionUnavailableError,
   ApplicantEmailError,
   choiceRefsForPositions,
   createApplication,
   getApplicationDocument,
   getApplicationById,
   listApplications,
-  positionsExist,
+  positionsAcceptApplications,
   setApplicationArchived,
   deleteArchivedApplication,
   DeleteArchivedApplicationError,
@@ -165,9 +166,15 @@ applicationsRoutes.post("/", async (c) => {
 
   if (parsed.value.applicationType === "position") {
     const positionIds = parsed.value.choices.map((choice) => choice.positionId);
-    const known = await positionsExist(positionIds);
-    if (!known) {
-      return c.json({ error: "One or more positions do not exist." }, 400);
+    const available = await positionsAcceptApplications(positionIds);
+    if (!available) {
+      return c.json(
+        {
+          error:
+            "One or more selected committees or positions are no longer accepting applications. Please choose another option.",
+        },
+        409,
+      );
     }
 
     const choiceRefs = await choiceRefsForPositions(positionIds);
@@ -202,6 +209,9 @@ applicationsRoutes.post("/", async (c) => {
     return c.json(result.application, result.created ? 201 : 200);
   } catch (error) {
     if (error instanceof ApplicationAlreadySubmittedError) {
+      return c.json({ error: error.message }, 409);
+    }
+    if (error instanceof ApplicationPositionUnavailableError) {
       return c.json({ error: error.message }, 409);
     }
     if (error instanceof InterviewScheduleError) {
