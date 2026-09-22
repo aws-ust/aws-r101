@@ -379,6 +379,41 @@ test("applicant editing", async (t) => {
     assert.doesNotMatch(JSON.stringify(payload), /decisionStatus|memberId/);
   });
 
+  await t.test("keeps current choices when a committee closes", async () => {
+    await resetApplication();
+    await db
+      .update(committees)
+      .set({ acceptingApplications: false })
+      .where(eq(committees.id, committeeAId));
+
+    try {
+      const unchanged = await applicantRequest(
+        "/applicant/application",
+        "PATCH",
+        choicesEditBody(),
+      );
+      assert.equal(unchanged.status, 200);
+
+      const newlySelected = await applicantRequest(
+        "/applicant/application",
+        "PATCH",
+        choicesEditBody({
+          choices: [
+            { positionId: positionA2Id, preferenceRank: 1 },
+            { positionId: positionB1Id, preferenceRank: 2 },
+          ],
+        }),
+      );
+      assert.equal(newlySelected.status, 409);
+      assert.match(await responseError(newlySelected), /unavailable/i);
+    } finally {
+      await db
+        .update(committees)
+        .set({ acceptingApplications: true })
+        .where(eq(committees.id, committeeAId));
+    }
+  });
+
   await t.test("reveals decisions only after results are released", async () => {
     await resetApplication();
     const releasedAt = new Date("2096-09-30T12:00:00.000Z");
