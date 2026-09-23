@@ -42,6 +42,10 @@ export function PositionsBrowser({
 }: PositionsBrowserProps) {
   const officeGroups = groupPositionsByOfficeHierarchy(positions)
   const officeCount = officeGroups.length
+  const acceptingCount = positions.filter(
+    (position) =>
+      position.isOpen && position.acceptingApplications !== false,
+  ).length
   const [selectedId, setSelectedId] = useState("")
   const [mobileShowsDetail, setMobileShowsDetail] = useState(false)
   const selected = positions.find((position) => position.id === selectedId)
@@ -67,7 +71,7 @@ export function PositionsBrowser({
               Find a role that <span className={accentClasses}>fits</span>.
             </>
           }
-          subtitle="Browse open executive assistant and committee staff roles. Select a role to read the full description, then apply."
+          subtitle="Browse executive assistant and committee staff roles. Select a role to read the full description and application status."
           className="items-start"
           titleClassName="mx-0"
         />
@@ -75,7 +79,7 @@ export function PositionsBrowser({
         <p className={metaClasses}>
         {loadError
           ? "positions unavailable"
-          : `${positions.length} open roles · ${officeCount} offices`}
+          : `${acceptingCount} roles accepting applications · ${officeCount} offices`}
         </p>
       </div>
 

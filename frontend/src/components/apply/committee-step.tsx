@@ -31,13 +31,7 @@ type CommitteeStepProps = {
 
 export function CommitteeStep({ values, onChange, errors }: CommitteeStepProps) {
   const { positions: openPositions, loading, error } = useOpenPositions()
-  const positions = useMemo(
-    () =>
-      openPositions.filter(
-        (position) => position.acceptingApplications !== false,
-      ),
-    [openPositions],
-  )
+  const positions = openPositions
   const committees = useMemo(
     () => [...new Set(positions.map((position) => position.committee))],
     [positions],

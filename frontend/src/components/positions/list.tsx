@@ -11,6 +11,9 @@ const officeHeaderClasses =
   "font-mono text-[11px] font-medium uppercase tracking-wide text-aquamarine text-left"
 const committeeLabelClasses =
   "font-mono text-[10px] uppercase tracking-wide text-prelude/75 text-left"
+const committeeHeaderClasses = "flex flex-wrap items-center justify-between gap-2"
+const closedCommitteePillClasses =
+  "rounded-pill border border-rose-blush/35 bg-rose-deep/20 px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-rose-glow"
 const rowClasses =
   "relative w-full cursor-pointer rounded-[14px] border border-transparent px-3 py-2.5 text-left transition-colors hover:bg-biloba-flower/10"
 const activeRowClasses =
@@ -20,6 +23,7 @@ const titleClasses = "font-sans text-sm font-medium text-blue-chalk"
 const snippetClasses = "mt-1 font-sans text-xs leading-relaxed text-prelude"
 const spotsClasses =
   "mt-2 font-mono text-[10px] uppercase tracking-wide text-aquamarine"
+const closedSpotsClasses = "text-rose-glow"
 const pillClasses =
   "shrink-0 rounded-pill border border-biloba-flower/35 bg-daisy-bush/40 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-blue-chalk"
 const assistantPillClasses =
@@ -37,13 +41,22 @@ export function PositionsList({
   onSelect,
 }: PositionsListProps) {
   return (
-    <nav aria-label="Open positions" className={cn(listClasses, "reveal")}>
+    <nav aria-label="Positions" className={cn(listClasses, "reveal")}>
       {officeGroups.map((officeGroup) => (
         <div key={officeGroup.office} className="flex flex-col gap-3">
           <p className={officeHeaderClasses}>{officeGroup.office}</p>
           {officeGroup.committees.map((committeeGroup) => (
             <div key={committeeGroup.committee} className="flex flex-col gap-1.5">
-              <p className={committeeLabelClasses}>{committeeGroup.committee}</p>
+              <div className={committeeHeaderClasses}>
+                <p className={committeeLabelClasses}>{committeeGroup.committee}</p>
+                {committeeGroup.positions.every(
+                  (position) => position.acceptingApplications === false,
+                ) ? (
+                  <span className={closedCommitteePillClasses}>
+                    Applications closed
+                  </span>
+                ) : null}
+              </div>
               <ul className="flex flex-col gap-1">
                 {committeeGroup.positions.map((position) => {
                   const selected = selectedId === position.id
@@ -73,8 +86,16 @@ export function PositionsList({
                           </span>
                         </span>
                         <p className={snippetClasses}>{snippet}</p>
-                        <p className={spotsClasses}>
-                          {spots} {spots === 1 ? "spot" : "spots"} available
+                        <p
+                          className={cn(
+                            spotsClasses,
+                            position.acceptingApplications === false &&
+                              closedSpotsClasses,
+                          )}
+                        >
+                          {position.acceptingApplications === false
+                            ? "Committee applications closed"
+                            : `${spots} ${spots === 1 ? "spot" : "spots"} available`}
                         </p>
                       </button>
                     </li>

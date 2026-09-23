@@ -9,6 +9,7 @@ export type Position = {
   description: string
   responsibilities: string[]
   isOpen: boolean
+  acceptingApplications?: boolean
   openSlots: number
 }
 
