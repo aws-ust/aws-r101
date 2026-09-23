@@ -391,6 +391,7 @@ export type ResultClassification = "accepted" | "rejected" | "incomplete";
 export type ResultPreviewApplication = {
   id: string;
   applicationCode: string;
+  applicationType: ApplicationType;
   applicant: { fullName: string; email: string };
   submittedAt: string;
   classification: ResultClassification;

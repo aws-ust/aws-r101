@@ -32,6 +32,10 @@ function loadApplication(id: string) {
   if (existing) return existing
   const request = getApplicationById(id)
   applicationPromises.set(id, request)
+  void request.then(
+    () => applicationPromises.delete(id),
+    () => applicationPromises.delete(id)
+  )
   return request
 }
 
@@ -238,10 +242,7 @@ export function deleteArchivedApplication(id: string) {
 }
 
 export function patchApplicantEmail(id: string, email: string) {
-  return patchApplicantEmailRequest(id, email).then((updated) => {
-    applicationPromises.set(id, Promise.resolve(updated))
-    return updated
-  })
+  return patchApplicantEmailRequest(id, email)
 }
 
 export function resendApplicationSubmittedEmail(id: string) {

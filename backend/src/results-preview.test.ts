@@ -39,6 +39,8 @@ const positionAId = randomUUID();
 const positionBId = randomUUID();
 const applicantIds = Array.from({ length: 7 }, () => randomUUID());
 const applicationIds = Array.from({ length: 7 }, () => randomUUID());
+const memberApplicantId = randomUUID();
+const memberApplicationId = randomUUID();
 const applicationCodes = applicationIds.map(
   (_, index) => `AP-2095-${String(610001 + index).padStart(6, "0")}`,
 );
@@ -48,7 +50,9 @@ let hrToken = "";
 
 after(async () => {
   try {
-    await db.delete(applicants).where(inArray(applicants.id, applicantIds));
+    await db
+      .delete(applicants)
+      .where(inArray(applicants.id, [...applicantIds, memberApplicantId]));
     await db.delete(users).where(eq(users.id, hrUserId));
     await db
       .delete(committees)
@@ -648,5 +652,123 @@ test("results release preview", async (t) => {
       ).length,
       6,
     );
+  });
+
+  await t.test("counts member-only applications as accepted results", async () => {
+    await db.insert(applicants).values({
+      id: memberApplicantId,
+      firstName: "Member",
+      lastName: "Applicant",
+      email: `member-${runId}@ust.edu.ph`,
+      age: 20,
+      section: "TEST-1",
+    });
+    await db.insert(applications).values({
+      id: memberApplicationId,
+      applicantId: memberApplicantId,
+      applicationCode: "AP-2095-619999",
+      recruitmentYear: 2095,
+      motivation: "Member-only results test",
+      applicationType: "member",
+      status: "approved",
+    });
+
+    const previewResponse = await hrRequest();
+    assert.equal(previewResponse.status, 200);
+    const preview = (await previewResponse.json()) as {
+      summary: {
+        pendingRelease: number;
+        accepted: number;
+        rejected: number;
+        incomplete: number;
+        canRelease: boolean;
+      };
+      applications: {
+        id: string;
+        applicationCode: string;
+        applicant: { fullName: string; email: string };
+        applicationStatus: string;
+        applicationType: "position" | "member";
+        submittedAt: string;
+        classification: "accepted" | "rejected" | "incomplete";
+        blockingReason: string | null;
+        finalPlacement: unknown;
+        choices: unknown[];
+        willGenerateMemberId: boolean;
+        willSendEmail: boolean;
+      }[];
+    };
+    assert.deepEqual(preview.summary, {
+      pendingRelease: 1,
+      accepted: 1,
+      rejected: 0,
+      incomplete: 0,
+      alreadyReleased: 6,
+      archived: 1,
+      canRelease: true,
+    });
+    assert.deepEqual(preview.applications, [
+      {
+        id: memberApplicationId,
+        applicationCode: "AP-2095-619999",
+        applicant: {
+          fullName: "Member Applicant",
+          email: `member-${runId}@ust.edu.ph`,
+        },
+        applicationStatus: "approved",
+        applicationType: "member",
+        submittedAt: preview.applications[0]?.submittedAt,
+        classification: "accepted",
+        blockingReason: null,
+        finalPlacement: null,
+        choices: [],
+        willGenerateMemberId: true,
+        willSendEmail: false,
+      },
+    ]);
+
+    const releaseResponse = await releaseRequest();
+    assert.equal(releaseResponse.status, 200);
+    const release = (await releaseResponse.json()) as {
+      released: number;
+      accepted: number;
+      rejected: number;
+      memberIdsGenerated: number;
+      emailDelivery: { queued: number; sent: number; failed: number };
+    };
+    assert.deepEqual(
+      {
+        released: release.released,
+        accepted: release.accepted,
+        rejected: release.rejected,
+        memberIdsGenerated: release.memberIdsGenerated,
+        emailDelivery: release.emailDelivery,
+      },
+      {
+        released: 1,
+        accepted: 1,
+        rejected: 0,
+        memberIdsGenerated: 1,
+        emailDelivery: { queued: 0, sent: 0, failed: 0 },
+      },
+    );
+
+    const [releasedMember] = await db
+      .select({
+        status: applications.status,
+        memberId: applications.memberId,
+        resultsReleasedAt: applications.resultsReleasedAt,
+      })
+      .from(applications)
+      .where(eq(applications.id, memberApplicationId));
+    assert.equal(releasedMember.status, "approved");
+    assert.match(releasedMember.memberId ?? "", /^AWS-2095-\d{4}$/);
+    assert.ok(releasedMember.resultsReleasedAt instanceof Date);
+
+    const memberNotifications = await db
+      .select({ id: emailNotifications.id })
+      .from(emailNotifications)
+      .where(eq(emailNotifications.applicationId, memberApplicationId));
+    assert.equal(memberNotifications.length, 0);
   });
 });

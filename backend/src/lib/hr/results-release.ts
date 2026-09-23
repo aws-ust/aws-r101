@@ -105,6 +105,8 @@ export async function releaseResults(
           ),
         );
 
+      if (!application.willSendEmail) continue;
+
       const [notification] = await tx
         .insert(emailNotifications)
         .values({
