@@ -325,6 +325,7 @@ positionsRoutes.patch("/:id", requireAuth, async (c) => {
     parsed.data.description ?? existing.description ?? "";
   const responsibilities =
     parsed.data.responsibilities ?? existing.responsibilities ?? "";
+  const openSlots = parsed.data.open_slots ?? existing.openSlots;
 
   if (
     committeeId !== existing.committeeId &&
@@ -347,6 +348,7 @@ positionsRoutes.patch("/:id", requireAuth, async (c) => {
       committeeId,
       description,
       responsibilities,
+      openSlots,
     })
     .where(eq(positions.id, id));
 
