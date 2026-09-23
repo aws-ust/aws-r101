@@ -191,8 +191,15 @@ type PositionApiRow = {
   description: string;
   responsibilities: string;
   isOpen: boolean;
+  committeeAcceptingApplications?: boolean;
   openSlots: number;
 };
+
+export type CommitteeApplicationStatus = {
+  id: string
+  name: string
+  acceptingApplications: boolean
+}
 
 export type BrowserPosition = {
   id: string;
@@ -215,6 +222,7 @@ function mapOpenPosition(row: PositionApiRow): Position {
     id: row.id,
     committee: row.committee,
     committee_id: row.committee_id,
+    acceptingApplications: row.committeeAcceptingApplications !== false,
     title: row.title,
     description: row.description ?? "",
   };
@@ -232,7 +240,7 @@ function mapBrowserPosition(row: PositionApiRow): BrowserPosition {
       .split(/\r?\n/)
       .map((line) => line.trim())
       .filter(Boolean),
-    isOpen: row.isOpen,
+    isOpen: row.isOpen && row.committeeAcceptingApplications !== false,
     openSlots: row.openSlots,
   };
 }
@@ -263,7 +271,9 @@ export function peekBrowserPositions() {
 
 export function listOpenPositions() {
   if (typeof window === "undefined") {
-    return apiFetch<PositionApiRow[]>("/positions").then((rows) => rows.map(mapOpenPosition));
+    return apiFetch<PositionApiRow[]>("/positions").then((rows) =>
+      rows.map(mapOpenPosition)
+    );
   }
   return ensurePositionsLoaded().then(() => openPositionsCache ?? []);
 }
@@ -273,6 +283,27 @@ export function listBrowserPositions() {
     return apiFetch<PositionApiRow[]>("/positions").then((rows) => rows.map(mapBrowserPosition));
   }
   return ensurePositionsLoaded().then(() => browserPositionsCache ?? []);
+}
+
+export function listCommitteeApplicationStatuses() {
+  return apiFetch<CommitteeApplicationStatus[]>("/positions/committees")
+}
+
+export function patchCommitteeApplicationStatus(
+  id: string,
+  acceptingApplications: boolean,
+) {
+  return apiFetch<CommitteeApplicationStatus>(
+    `/positions/committees/${id}/application-status`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ acceptingApplications }),
+    },
+  ).then((updated) => {
+    openPositionsCache = null
+    browserPositionsCache = null
+    return updated
+  })
 }
 
 export type PositionInterviewSlots = {

@@ -51,7 +51,29 @@ export function useApplicantChoiceEditorState(
 ) {
   const first = application.choices.find((choice) => choice.preferenceRank === 1)
   const second = application.choices.find((choice) => choice.preferenceRank === 2)
-  const { positions, committees, loading } = useOpenPositions()
+  const { positions: openPositions, loading } = useOpenPositions()
+  const positions = useMemo(() => {
+    const available = new Map(
+      openPositions
+        .filter((position) => position.acceptingApplications !== false)
+        .map((position) => [position.id, position]),
+    )
+    for (const choice of application.choices) {
+      if (available.has(choice.positionId)) continue
+      available.set(choice.positionId, {
+        id: choice.positionId,
+        committee: choice.committee,
+        committee_id: choice.committeeId,
+        title: choice.title,
+        description: "",
+      })
+    }
+    return [...available.values()]
+  }, [application.choices, openPositions])
+  const committees = useMemo(
+    () => [...new Set(positions.map((position) => position.committee))],
+    [positions],
+  )
   const groups = groupedCommitteesForPicker(committees)
 
   const [firstCommittee, setFirstCommittee] = useState(first?.committee ?? "")

@@ -19,6 +19,7 @@
     "test:archive": "tsx --test --test-concurrency=1 src/application-archiving.test.ts",
     "test:listing": "tsx --test --test-concurrency=1 src/application-listing.test.ts",
     "test:uploads": "tsx --test --test-concurrency=1 src/upload-sessions.test.ts",
+    "test:committee-status": "tsx --test --test-concurrency=1 src/committee-application-status.test.ts",
     "test:season": "tsx --test src/lib/recruitment/window.test.ts && tsx --env-file=../.env --test --test-concurrency=1 src/recruitment-season.test.ts",
     "test:security": "tsx --test src/trusted-origin.test.ts && tsx --env-file=../.env --test --test-concurrency=1 src/hr-auth.test.ts src/security-access.test.ts",
     "cdk": "cdk",

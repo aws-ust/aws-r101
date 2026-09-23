@@ -435,18 +435,28 @@ export async function updateApplicantApplication(
           committeeId: positions.committeeId,
           committee: committees.name,
           isOpen: positions.isOpen,
+          committeeAcceptingApplications: committees.acceptingApplications,
         })
         .from(positions)
         .innerJoin(committees, eq(positions.committeeId, committees.id))
-        .where(inArray(positions.id, positionIds));
+        .where(inArray(positions.id, positionIds))
+        .for("update");
 
+      const currentPositionIds = new Set(
+        currentChoices.map((choice) => choice.positionId),
+      );
       if (
         selectedPositions.length !== 2 ||
-        selectedPositions.some((position) => !position.isOpen)
+        selectedPositions.some(
+          (position) =>
+            !position.isOpen ||
+            (!position.committeeAcceptingApplications &&
+              !currentPositionIds.has(position.id)),
+        )
       ) {
         throw new ApplicantEditError(
           "position_unavailable",
-          "One or more selected positions are unavailable.",
+          "One or more newly selected committees or positions are unavailable.",
         );
       }
 

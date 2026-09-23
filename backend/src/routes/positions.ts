@@ -8,6 +8,7 @@ import {
   listOpenInterviewSlotsForPosition,
 } from "../lib/interview/scheduling";
 import {
+  committeeApplicationStatusPatchSchema,
   positionCreateSchema,
   positionPatchSchema,
   zodErrorMessage,
@@ -38,6 +39,7 @@ type PositionResponse = {
   description: string;
   responsibilities: string;
   isOpen: boolean;
+  committeeAcceptingApplications: boolean;
   openSlots: number;
 };
 
@@ -51,7 +53,14 @@ type PositionRow = {
   description: string | null;
   responsibilities: string | null;
   isOpen: boolean;
+  committeeAcceptingApplications: boolean;
   openSlots: number;
+};
+
+type CommitteeApplicationStatusResponse = {
+  id: string;
+  name: string;
+  acceptingApplications: boolean;
 };
 
 function toPositionResponse(row: PositionRow): PositionResponse {
@@ -65,8 +74,22 @@ function toPositionResponse(row: PositionRow): PositionResponse {
     description: row.description ?? "",
     responsibilities: row.responsibilities ?? "",
     isOpen: row.isOpen,
+    committeeAcceptingApplications: row.committeeAcceptingApplications,
     openSlots: row.openSlots,
   };
+}
+
+async function selectCommitteeApplicationStatuses(): Promise<
+  CommitteeApplicationStatusResponse[]
+> {
+  return db
+    .select({
+      id: committees.id,
+      name: committees.name,
+      acceptingApplications: committees.acceptingApplications,
+    })
+    .from(committees)
+    .orderBy(asc(committees.name));
 }
 
 async function selectAllPositions() {
@@ -81,6 +104,7 @@ async function selectAllPositions() {
       description: positions.description,
       responsibilities: positions.responsibilities,
       isOpen: positions.isOpen,
+      committeeAcceptingApplications: committees.acceptingApplications,
       openSlots: positions.openSlots,
     })
     .from(positions)
@@ -100,6 +124,7 @@ async function selectOpenPositions() {
       description: positions.description,
       responsibilities: positions.responsibilities,
       isOpen: positions.isOpen,
+      committeeAcceptingApplications: committees.acceptingApplications,
       openSlots: positions.openSlots,
     })
     .from(positions)
@@ -120,6 +145,7 @@ async function selectPositionById(id: string) {
       description: positions.description,
       responsibilities: positions.responsibilities,
       isOpen: positions.isOpen,
+      committeeAcceptingApplications: committees.acceptingApplications,
       openSlots: positions.openSlots,
     })
     .from(positions)
@@ -154,6 +180,50 @@ async function hasDuplicateTitle(committeeId: string, title: string, excludeId?:
 }
 
 export const positionsRoutes = new Hono();
+
+positionsRoutes.get("/committees", requireAuth, async (c) => {
+  return c.json(await selectCommitteeApplicationStatuses());
+});
+
+positionsRoutes.patch(
+  "/committees/:id/application-status",
+  requireAuth,
+  async (c) => {
+    const id = c.req.param("id");
+    if (!isUuid(id)) {
+      return c.json({ error: "Invalid committee id." }, 400);
+    }
+
+    const body = await c.req.json().catch(() => null);
+    const parsed = committeeApplicationStatusPatchSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: zodErrorMessage(parsed.error) }, 400);
+    }
+
+    const [updated] = await db
+      .update(committees)
+      .set({ acceptingApplications: parsed.data.acceptingApplications })
+      .where(eq(committees.id, id))
+      .returning({
+        id: committees.id,
+        name: committees.name,
+        acceptingApplications: committees.acceptingApplications,
+      });
+
+    if (!updated) {
+      return c.json({ error: "Committee not found." }, 404);
+    }
+
+    const jwt = c.get("jwtPayload") as { sub?: unknown };
+    logHrAudit({
+      actorEmail: typeof jwt.sub === "string" ? jwt.sub : undefined,
+      action: "committee.application_status",
+      resourceType: "committee",
+      resourceId: id,
+    });
+    return c.json(updated);
+  },
+);
 
 positionsRoutes.get("/", async (c) => {
   const scope = c.req.query("scope");

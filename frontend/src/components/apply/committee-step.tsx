@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import { Textarea } from "@/components/ui/textarea"
 import { Field } from "@/components/shared/field"
 import { groupedCommitteesForPicker } from "@/lib/apply/committee-groups"
@@ -29,7 +30,18 @@ type CommitteeStepProps = {
 }
 
 export function CommitteeStep({ values, onChange, errors }: CommitteeStepProps) {
-  const { positions, committees, loading, error } = useOpenPositions()
+  const { positions: openPositions, loading, error } = useOpenPositions()
+  const positions = useMemo(
+    () =>
+      openPositions.filter(
+        (position) => position.acceptingApplications !== false,
+      ),
+    [openPositions],
+  )
+  const committees = useMemo(
+    () => [...new Set(positions.map((position) => position.committee))],
+    [positions],
+  )
   const committeeGroups = groupedCommitteesForPicker(committees)
   const positionApplication = values.applicationType === "position"
   const positionTitle = (positionId: string) =>

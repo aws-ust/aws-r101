@@ -49,6 +49,12 @@ export const positionPatchSchema = z
     error: "At least one field is required.",
   });
 
+export const committeeApplicationStatusPatchSchema = z.object({
+  acceptingApplications: z.boolean({
+    error: "acceptingApplications must be a boolean.",
+  }),
+});
+
 export const interviewSlotCreateSchema = z.object({
   committeeId: z.string().trim().regex(UUID_RE, {
     error: "committeeId must be a UUID.",
