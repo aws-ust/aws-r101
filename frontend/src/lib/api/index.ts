@@ -49,6 +49,8 @@ export {
   listPositionInterviewSlots,
   listCommitteeApplicationStatuses,
   patchCommitteeApplicationStatus,
+  listPositionApprovalTargets,
+  patchPositionApprovalTarget,
   peekOpenPositions,
   peekBrowserPositions,
   getRecruitmentWindow,
@@ -66,6 +68,7 @@ export type {
   HrInterviewSlot,
   HrInterviewSlotBooking,
   CommitteeApplicationStatus,
+  PositionApprovalTarget,
 } from "@/lib/api/client"
 
 export function useApplications(params: ApplicationListParams) {

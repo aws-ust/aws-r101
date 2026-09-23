@@ -5,6 +5,7 @@ import { HrInterviewGrid } from "@/components/hr/hr-interview-grid"
 import { HrInterviewWindow } from "@/components/hr/hr-interview-window"
 import { HrRecruitmentWindow } from "@/components/hr/hr-recruitment-window"
 import { HrCommitteeApplicationControls } from "@/components/hr/hr-committee-application-controls"
+import { HrPositionApprovalTargets } from "@/components/hr/hr-position-approval-targets"
 import { useInterviewWindow } from "@/hooks/use-interview-window"
 import { pageShellClasses } from "@/lib/site/surface"
 
@@ -29,6 +30,7 @@ export function HrSeasonPage() {
       <div className={stackClasses}>
         <HrRecruitmentWindow />
         <HrCommitteeApplicationControls />
+        <HrPositionApprovalTargets />
         <HrInterviewWindow
           key={`${seasonBounds?.startsAt.toISOString() ?? ""}:${seasonBounds?.endsAt.toISOString() ?? ""}`}
           seasonBounds={seasonBounds}
