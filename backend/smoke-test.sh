@@ -309,8 +309,18 @@ if [[ -n "$committee_id" ]]; then
   fi
 
   if [[ -n "$created_id" ]]; then
-    request PATCH "/positions/$created_id" '{"title":"Smoke Test Role Updated"}' "$token"
+    request PATCH "/positions/$created_id" '{"title":"Smoke Test Role Updated","open_slots":6}' "$token"
     expect "PATCH /positions/:id" 200
+    if [[ "$LAST_STATUS" == "200" ]] && [[ "$(json_field openSlots || true)" == "6" ]]; then
+      echo "PASS  PATCH /positions/:id persists approval target"
+      pass=$((pass + 1))
+    else
+      echo "FAIL  PATCH /positions/:id expected openSlots 6"
+      echo "      body: $LAST_BODY"
+      fail=$((fail + 1))
+    fi
+    request PATCH "/positions/$created_id" '{"open_slots":-1}' "$token"
+    expect "PATCH /positions/:id rejects negative approval target" 400
   else
     echo "FAIL  POST /positions did not return an id"
     fail=$((fail + 1))
