@@ -210,6 +210,7 @@ export type BrowserPosition = {
   description: string;
   responsibilities: string[];
   isOpen: boolean;
+  acceptingApplications: boolean;
   openSlots: number;
 };
 
@@ -240,7 +241,8 @@ function mapBrowserPosition(row: PositionApiRow): BrowserPosition {
       .split(/\r?\n/)
       .map((line) => line.trim())
       .filter(Boolean),
-    isOpen: row.isOpen && row.committeeAcceptingApplications !== false,
+    isOpen: row.isOpen,
+    acceptingApplications: row.committeeAcceptingApplications !== false,
     openSlots: row.openSlots,
   };
 }

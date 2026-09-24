@@ -54,9 +54,7 @@ export function useApplicantChoiceEditorState(
   const { positions: openPositions, loading } = useOpenPositions()
   const positions = useMemo(() => {
     const available = new Map(
-      openPositions
-        .filter((position) => position.acceptingApplications !== false)
-        .map((position) => [position.id, position]),
+      openPositions.map((position) => [position.id, position]),
     )
     for (const choice of application.choices) {
       if (available.has(choice.positionId)) continue
@@ -64,6 +62,7 @@ export function useApplicantChoiceEditorState(
         id: choice.positionId,
         committee: choice.committee,
         committee_id: choice.committeeId,
+        acceptingApplications: false,
         title: choice.title,
         description: "",
       })

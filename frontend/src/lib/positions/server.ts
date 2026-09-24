@@ -2,8 +2,12 @@ import type { Position } from "@/lib/positions"
 
 const API_BASE = process.env.API_URL ?? "http://localhost:8787"
 
-type PositionApiRow = Omit<Position, "responsibilities"> & {
+type PositionApiRow = Omit<
+  Position,
+  "responsibilities" | "acceptingApplications"
+> & {
   responsibilities: string
+  committeeAcceptingApplications?: boolean
 }
 
 export async function listServerBrowserPositions(): Promise<Position[]> {
@@ -11,8 +15,9 @@ export async function listServerBrowserPositions(): Promise<Position[]> {
   if (!response.ok) throw new Error("Could not load open positions.")
 
   const rows = (await response.json()) as PositionApiRow[]
-  return rows.map((row) => ({
+  return rows.map(({ committeeAcceptingApplications, ...row }) => ({
     ...row,
+    acceptingApplications: committeeAcceptingApplications !== false,
     responsibilities: row.responsibilities
       .split(/\r?\n/)
       .map((line) => line.trim())

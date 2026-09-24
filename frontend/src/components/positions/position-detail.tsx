@@ -35,13 +35,63 @@ type PositionDetailProps = {
   applicationsOpen?: boolean
 }
 
+type PositionAvailability = {
+  canApply: boolean
+  status: string
+  hint: string
+  action: string
+}
+
+function getPositionAvailability(
+  position: Position,
+  applicationsOpen: boolean,
+): PositionAvailability {
+  const spots = openSpots(position)
+  const status =
+    position.acceptingApplications === false
+      ? "committee applications closed"
+      : position.isOpen
+        ? `${spots} ${spots === 1 ? "spot" : "spots"} available`
+        : "not open"
+
+  if (!applicationsOpen) {
+    return {
+      canApply: false,
+      status,
+      hint: "Applications are not open yet.",
+      action: "Applications not open",
+    }
+  }
+  if (position.acceptingApplications === false) {
+    return {
+      canApply: false,
+      status,
+      hint: "This committee is no longer accepting new applicants.",
+      action: "Committee applications closed",
+    }
+  }
+  if (!position.isOpen) {
+    return {
+      canApply: false,
+      status,
+      hint: "This role is part of the org chart but is not accepting applications.",
+      action: "Applications closed",
+    }
+  }
+  return {
+    canApply: true,
+    status,
+    hint: "Ready to ship with us?",
+    action: "Apply now",
+  }
+}
+
 export function PositionDetail({
   position,
   applicationsOpen = true,
 }: PositionDetailProps) {
   const assistant = isAssistantRole(position)
-  const spots = openSpots(position)
-  const showApplyAction = position.isOpen && applicationsOpen
+  const availability = getPositionAvailability(position, applicationsOpen)
 
   return (
     <article className={articleClasses}>
@@ -55,9 +105,7 @@ export function PositionDetail({
                 {assistant ? "executive assistant" : "committee staff"}
               </span>
               <span className={cn(pillClasses, assistantPillClasses)}>
-                {position.isOpen
-                  ? `${spots} ${spots === 1 ? "spot" : "spots"} available`
-                  : "not open"}
+                {availability.status}
               </span>
             </div>
           </div>
@@ -88,14 +136,8 @@ export function PositionDetail({
         </div>
 
         <div className={footerClasses}>
-          <p className={footerHintClasses}>
-            {showApplyAction
-              ? "Ready to ship with us?"
-              : !applicationsOpen
-                ? "Applications are not open yet."
-                : "This role is part of the org chart but is not accepting applications."}
-          </p>
-          {showApplyAction ? (
+          <p className={footerHintClasses}>{availability.hint}</p>
+          {availability.canApply ? (
             <Link
               href={`/apply/form?position=${position.id}`}
               className={applyLinkClasses}
@@ -103,9 +145,7 @@ export function PositionDetail({
               Apply now →
             </Link>
           ) : (
-            <span className={closedHintClasses}>
-              {!applicationsOpen ? "Applications not open" : "Applications closed"}
-            </span>
+            <span className={closedHintClasses}>{availability.action}</span>
           )}
         </div>
       </div>

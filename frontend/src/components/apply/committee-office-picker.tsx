@@ -1,6 +1,6 @@
 "use client"
 
-import { CheckIcon, ChevronDownIcon } from "lucide-react"
+import { CheckIcon, ChevronDownIcon, LockIcon } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +33,10 @@ const itemHoverClasses =
 const officeSelectedClasses = "bg-meteorite/80"
 const committeeCopyClasses = "flex min-w-0 flex-1 flex-col gap-0.5 text-left"
 const metaClasses = "font-mono text-[0.65rem] leading-snug opacity-80"
+const closedMetaClasses = "font-mono text-[0.65rem] leading-snug text-rose-glow"
+const closedItemClasses =
+  "cursor-not-allowed border border-rose-blush/20 bg-rose-deep/10 opacity-70"
+const closedIconClasses = "size-3.5 shrink-0 text-rose-glow"
 const selectedIconClasses = "size-4 shrink-0 text-aquamarine group-hover/dropdown-menu-item:text-haiti data-highlighted:text-haiti"
 const subMenuClasses =
   "min-w-[16rem] rounded-[14px] border border-blue-chalk/25 bg-haiti p-1 text-blue-chalk shadow-md ring-1 ring-blue-chalk/15"
@@ -41,6 +45,15 @@ type PositionOption = {
   id: string
   committee: string
   title: string
+  acceptingApplications?: boolean
+}
+
+function committeeIsClosed(committee: string, positions: PositionOption[]) {
+  const roles = positions.filter((position) => position.committee === committee)
+  return (
+    roles.length > 0 &&
+    roles.every((position) => position.acceptingApplications === false)
+  )
 }
 
 type CommitteeOfficePickerProps = {
@@ -69,6 +82,7 @@ export function CommitteeOfficePicker({
   const office = officeForCommittee(committee)
   const selectedTitle = positions.find((position) => position.id === positionId)
     ?.title
+  const selectedCommitteeClosed = committeeIsClosed(committee, positions)
 
   return (
     <DropdownMenu>
@@ -87,6 +101,9 @@ export function CommitteeOfficePicker({
               {committee}
               {selectedTitle ? ` · ${selectedTitle}` : ""}
             </span>
+            {selectedCommitteeClosed ? (
+              <span className={closedMetaClasses}>Applications closed</span>
+            ) : null}
           </span>
         ) : (
           <span className={cn(triggerCopyClasses, triggerPlaceholderClasses)}>
@@ -107,17 +124,25 @@ export function CommitteeOfficePicker({
               {group.office}
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className={subMenuClasses}>
-              {group.committees.map((name) => (
-                <CommitteeMenuRow
-                  key={name}
-                  committee={name}
-                  selected={committee === name}
-                  selectedPositionId={positionId}
-                  disabledPositionId={disabledPositionId}
-                  roles={positions.filter((position) => position.committee === name)}
-                  onSelect={onSelect}
-                />
-              ))}
+              {[...group.committees]
+                .sort(
+                  (left, right) =>
+                    Number(committeeIsClosed(left, positions)) -
+                    Number(committeeIsClosed(right, positions)),
+                )
+                .map((name) => (
+                  <CommitteeMenuRow
+                    key={name}
+                    committee={name}
+                    selected={committee === name}
+                    selectedPositionId={positionId}
+                    disabledPositionId={disabledPositionId}
+                    roles={positions.filter(
+                      (position) => position.committee === name,
+                    )}
+                    onSelect={onSelect}
+                  />
+                ))}
             </DropdownMenuSubContent>
           </DropdownMenuSub>
         ))}
@@ -142,11 +167,29 @@ function CommitteeMenuRow({
   onSelect: (next: { committee: string; positionId: string }) => void
 }) {
   const onlyRole = roles.length === 1 ? roles[0] : null
+  const applicationsClosed = roles.every(
+    (role) => role.acceptingApplications === false,
+  )
 
   if (roles.length === 0) {
     return (
       <DropdownMenuItem disabled className={itemHoverClasses}>
         {committee}
+      </DropdownMenuItem>
+    )
+  }
+
+  if (applicationsClosed) {
+    return (
+      <DropdownMenuItem
+        disabled
+        className={cn(itemHoverClasses, closedItemClasses)}
+      >
+        <span className={committeeCopyClasses}>
+          <span>{committee}</span>
+          <span className={closedMetaClasses}>Applications closed</span>
+        </span>
+        <LockIcon className={closedIconClasses} />
       </DropdownMenuItem>
     )
   }
