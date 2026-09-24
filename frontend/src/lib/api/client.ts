@@ -308,6 +308,39 @@ export function patchCommitteeApplicationStatus(
   })
 }
 
+export type PositionApprovalTarget = {
+  id: string
+  title: string
+  committee: string
+  openSlots: number
+}
+
+function mapPositionApprovalTarget(row: PositionApiRow): PositionApprovalTarget {
+  return {
+    id: row.id,
+    title: row.title,
+    committee: row.committee,
+    openSlots: row.openSlots,
+  }
+}
+
+export function listPositionApprovalTargets() {
+  return apiFetch<PositionApiRow[]>("/positions?scope=all").then((rows) =>
+    rows.map(mapPositionApprovalTarget),
+  )
+}
+
+export function patchPositionApprovalTarget(id: string, openSlots: number) {
+  return apiFetch<PositionApiRow>(`/positions/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ open_slots: openSlots }),
+  }).then((updated) => {
+    openPositionsCache = null
+    browserPositionsCache = null
+    return mapPositionApprovalTarget(updated)
+  })
+}
+
 export type PositionInterviewSlots = {
   committee: { id: string; name: string };
   slots: { id: string; startsAt: string; endsAt: string }[];

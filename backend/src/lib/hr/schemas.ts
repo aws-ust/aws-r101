@@ -44,6 +44,11 @@ export const positionPatchSchema = z
       .optional(),
     description: safeText(10_000).optional(),
     responsibilities: safeText(10_000).optional(),
+    open_slots: z
+      .number()
+      .int({ error: "open_slots must be a whole number." })
+      .min(0, { error: "open_slots must be at least 0." })
+      .optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {
     error: "At least one field is required.",
