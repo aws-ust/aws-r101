@@ -118,3 +118,44 @@ export function landingCommitteeCardOrder(): string[] {
     (committee) => LANDING_COMMITTEE_TITLE_BY_SEED[committee] ?? committee,
   )
 }
+
+/** All seeded committees and executive offices in CEO → CCO order. */
+export function allCommitteesInOrgHierarchyOrder(): string[] {
+  return COMMITTEE_OFFICE_GROUPS.flatMap((group) => [...group.committees])
+}
+
+export function compareCommitteeNames(a: string, b: string): number {
+  const order = allCommitteesInOrgHierarchyOrder()
+  const indexA = order.indexOf(a)
+  const indexB = order.indexOf(b)
+  return (indexA === -1 ? 9999 : indexA) - (indexB === -1 ? 9999 : indexB)
+}
+
+/** Executive assistants first, then committee staff, then directors. */
+export function positionTitleHierarchyRank(title: string): number {
+  if (title.startsWith("Executive Assistant")) return 0
+  if (title.includes(" Committee Staff")) return 1
+  if (title.includes("Director")) return 2
+  return 3
+}
+
+export function comparePositionHierarchy(
+  a: { committee: string; title: string },
+  b: { committee: string; title: string },
+): number {
+  const byCommittee = compareCommitteeNames(a.committee, b.committee)
+  if (byCommittee !== 0) return byCommittee
+  return positionTitleHierarchyRank(a.title) - positionTitleHierarchyRank(b.title)
+}
+
+export function isExecutiveOfficeCommittee(name: string): boolean {
+  return name.startsWith("Office of the ")
+}
+
+export function groupedOfficesForCommitteeNames(committeeNames: string[]) {
+  const open = new Set(committeeNames)
+  return COMMITTEE_OFFICE_GROUPS.map((group) => ({
+    office: group.office,
+    committees: group.committees.filter((committee) => open.has(committee)),
+  })).filter((group) => group.committees.length > 0)
+}
