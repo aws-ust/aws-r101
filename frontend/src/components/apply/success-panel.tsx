@@ -102,7 +102,7 @@ export function SuccessPanel({
           nativeButton={false}
           render={<Link href="/apply/status" />}
         >
-          Go to dashboard
+          Go To Dashboard
         </Button>
         <Button
           color="purple"
@@ -110,7 +110,7 @@ export function SuccessPanel({
           nativeButton={false}
           render={<Link href="/apply/positions" />}
         >
-          Browse open positions
+          Browse Open Positions
         </Button>
       </div>
     </div>

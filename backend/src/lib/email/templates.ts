@@ -83,7 +83,7 @@ The AWS Builders - UST Executive Board`;
 </table>
 <p style="margin:0 0 16px;">This code expires in ${input.expiresInMinutes} minutes and can only be used once. For your security, do not share it with anyone.</p>
 <p style="margin:0 0 16px;">Application ID: <strong>${escapeHtml(input.applicationCode)}</strong></p>
-${ctaButton(statusUrl, "Open your application")}
+${ctaButton(statusUrl, "Open Your Application")}
 <p style="margin:0 0 16px;">If you did not request this code, you can safely ignore this email.</p>
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
 <p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
@@ -158,7 +158,7 @@ The AWS Builders - UST Executive Board`;
 ${examCopy.html}
 <p style="margin:0 0 16px;">While the application season is open, you can still change your interview slot from your application page. Keep this Application ID so you can return whenever you need to.</p>
 <p style="margin:0 0 16px;">We cannot wait to see you and to build with you.</p>
-${ctaButton(statusUrl, "View your application")}
+${ctaButton(statusUrl, "View Your Application")}
 <p style="margin:0 0 16px;">Once again, thank you for taking this first step with us. We look forward to meeting you.</p>
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
 <p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
@@ -217,7 +217,7 @@ The AWS Builders - UST Executive Board`;
 <p style="margin:0 0 12px;"><strong>Interview</strong><br>${escapeHtml(interviewTime)}</p>
 <p style="margin:0 0 16px;"><strong>Application ID</strong><br>${escapeHtml(input.applicationCode)}</p>
 <p style="margin:0 0 16px;">An updated calendar file is attached. Open it to add the interview to your calendar.</p>
-${ctaButton(statusUrl, "View your application")}
+${ctaButton(statusUrl, "View Your Application")}
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
 <p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
   });
@@ -273,7 +273,7 @@ The AWS Builders - UST Executive Board`;
 <p style="margin:0 0 12px;"><strong>Interview</strong><br>${escapeHtml(interviewTime)}</p>
 <p style="margin:0 0 16px;"><strong>Application ID</strong><br>${escapeHtml(input.applicationCode)}</p>
 <p style="margin:0 0 16px;">The calendar file is attached again for convenience.</p>
-${ctaButton(statusUrl, "View your application")}
+${ctaButton(statusUrl, "View Your Application")}
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
 <p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
   });
@@ -391,7 +391,7 @@ export function memberRegistrationTemplate(input: {
 <p style="margin:0 0 16px;">Thank you for registering to join AWS Builders - UST as a member. Your membership registration has been accepted and does not require an interview.</p>
 <p style="margin:0 0 16px;"><strong>Application ID:</strong> ${escapeHtml(input.applicationCode)}</p>
 <p style="margin:0 0 16px;">Membership payment will open after <strong>R101</strong>. Please wait for the official payment instructions and <strong>do not send a payment yet</strong>.</p>
-${ctaButton(statusUrl, "View your application")}
+${ctaButton(statusUrl, "View Your Application")}
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
 <p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
   });
@@ -416,7 +416,7 @@ export function resultAcceptedTemplate(input: {
     ? `Proceed to payment: ${paymentLink}`
     : "Payment instructions will be shared separately.";
   const paymentHtml = paymentLink
-    ? ctaButton(paymentLink, "Proceed to payment")
+    ? ctaButton(paymentLink, "Proceed To Payment")
     : '<p style="margin:0 0 16px;">Payment instructions will be shared separately.</p>';
 
   const text = `Greetings from the Clouds!
@@ -467,7 +467,7 @@ The AWS Builders - UST Executive Board`;
 <p style="margin:0 0 16px;">Your Membership ID is how we will recognize you in the org. Keep it somewhere you can find it.</p>
 <p style="margin:0 0 16px;">To complete your membership, please pay the <strong>₱250 membership fee</strong>.</p>
 ${paymentHtml}
-${ctaButton(gcLink, "Join the Messenger group chat")}
+${ctaButton(gcLink, "Join The Messenger Group Chat")}
 <p style="margin:0 0 16px;">Welcome to the team, ${escapeHtml(honorific)}. It is always Day One — and yours starts now.</p>
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
 <p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
@@ -491,7 +491,7 @@ export function resultRejectedTemplate(input: {
     ? `Proceed to payment: ${paymentLink}`
     : "Payment instructions will be shared separately.";
   const paymentHtml = paymentLink
-    ? ctaButton(paymentLink, "Proceed to payment")
+    ? ctaButton(paymentLink, "Proceed To Payment")
     : '<p style="margin:0 0 16px;">Payment instructions will be shared separately.</p>';
 
   const text = `Greetings from the Clouds!

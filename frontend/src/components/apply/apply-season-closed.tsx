@@ -42,14 +42,14 @@ export function ApplySeasonClosed({ window }: ApplySeasonClosedProps) {
             nativeButton={false}
             render={<Link href="/apply/positions" />}
           >
-            Browse positions
+            Browse Positions
           </Button>
           <Button
             color="cyan"
             nativeButton={false}
             render={<Link href="/apply/status" />}
           >
-            Already applied?
+            Already Applied?
           </Button>
         </div>
       </div>

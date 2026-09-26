@@ -127,7 +127,7 @@ export function ApplicantAccessForm() {
           disabled={pending}
           onClick={() => void requestCode()}
         >
-          {pending ? "Sending…" : "Send verification code"}
+          {pending ? "Sending…" : "Send Verification Code"}
         </Button>
         <p className={messageClasses}>
           The code expires after 10 minutes. For your security, we won’t say

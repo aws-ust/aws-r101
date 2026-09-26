@@ -31,7 +31,7 @@ test("applicant email templates use compact, plain formatting", async (t) => {
     assert.equal(email.inline?.length, 1);
     assert.match(email.html, /076027/);
     assert.match(email.html, /Application ID: <strong>AP-2026-288404<\/strong>/);
-    assert.match(email.html, />Open your application</);
+    assert.match(email.html, />Open Your Application</);
     assert.match(email.html, /Yours in Thomasian Leadership,/);
     assert.doesNotMatch(email.html, /Hi /);
     assert.doesNotMatch(email.html, /Recruitment Team/);
@@ -74,7 +74,7 @@ test("applicant email templates use compact, plain formatting", async (t) => {
       /<p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board<\/p>/,
     );
     assert.match(email.html, /http:\/\/localhost:3000\/apply\/status/);
-    assert.match(email.html, />View your application</);
+    assert.match(email.html, />View Your Application</);
     assert.doesNotMatch(email.html, /once that feature is available/);
     assert.doesNotMatch(email.html, /Recruitment Team/);
   });
@@ -137,8 +137,8 @@ test("applicant email templates use compact, plain formatting", async (t) => {
     assert.match(accepted.html, /cid:application-received-header@aws-ust/);
     assert.match(accepted.text, /₱250 membership fee/);
     assert.match(accepted.html, /https:\/\/payments\.example\/membership/);
-    assert.match(accepted.html, />Proceed to payment</);
-    assert.match(accepted.html, />Join the Messenger group chat</);
+    assert.match(accepted.html, />Proceed To Payment</);
+    assert.match(accepted.html, />Join The Messenger Group Chat</);
     assert.doesNotMatch(accepted.html, /Best regards/);
     assert.match(rejected.text, /Mx\. Dela Cruz/);
     assert.match(rejected.subject, /R101/);
@@ -146,7 +146,7 @@ test("applicant email templates use compact, plain formatting", async (t) => {
     assert.match(rejected.text, /still join AWS Builders - UST as a member/);
     assert.match(rejected.text, /₱250 membership fee/);
     assert.match(rejected.html, /https:\/\/payments\.example\/membership/);
-    assert.match(rejected.html, />Proceed to payment</);
+    assert.match(rejected.html, />Proceed To Payment</);
     assert.doesNotMatch(rejected.text, /Membership ID/);
     assert.match(rejected.html, /Yours in Thomasian Leadership,/);
   });

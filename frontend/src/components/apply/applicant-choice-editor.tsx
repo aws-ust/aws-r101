@@ -132,7 +132,7 @@ export function ApplicantChoiceEditor({
         <p className={successClasses} role="status">{success}</p>
       ) : null}
       <Button type="submit" color="cyan" disabled={pending || !editor.canSubmit}>
-        {pending ? "Saving…" : "Save committee choices"}
+        {pending ? "Saving…" : "Save Committee Choices"}
       </Button>
     </form>
   )

@@ -30,7 +30,7 @@ export function CommitteeStepApplicationType({
           onClick={() => onSelect("position")}
         >
           <span>
-            <span className={typeTitleClasses}>Committee position</span>
+            <span className={typeTitleClasses}>Committee Position</span>
             <span className={typeDescriptionClasses}>
               Choose two positions and an interview schedule.
             </span>
@@ -46,7 +46,7 @@ export function CommitteeStepApplicationType({
           onClick={() => onSelect("member")}
         >
           <span>
-            <span className={typeTitleClasses}>Member-only</span>
+            <span className={typeTitleClasses}>Member-Only</span>
             <span className={typeDescriptionClasses}>
               Join without applying for a committee position or interview.
             </span>

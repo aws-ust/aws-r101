@@ -103,7 +103,7 @@ export function Navbar() {
                 className="h-9 rounded-pill px-4 font-mono text-xs"
                 onClick={() => void onApplicantSignOut()}
               >
-                Sign out
+                Sign Out
               </Button>
             ) : (
               <Button
@@ -111,7 +111,7 @@ export function Navbar() {
                 nativeButton={false}
                 render={<Link href="/apply/positions" />}
               >
-                Apply now!
+                Apply Now!
               </Button>
             )}
           </div>

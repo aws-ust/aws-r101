@@ -58,14 +58,14 @@ export function HrResultsSummary({
             disabled={pendingAction !== null || summary.alreadyReleased === 0}
             onClick={onRetry}
           >
-            {pendingAction === "retry" ? "Retrying…" : "Retry failed emails"}
+            {pendingAction === "retry" ? "Retrying…" : "Retry Failed Emails"}
           </Button>
           <Button
             type="button"
             disabled={pendingAction !== null || !summary.canRelease}
             onClick={onRelease}
           >
-            Release results
+            Release Results
           </Button>
         </div>
       </div>

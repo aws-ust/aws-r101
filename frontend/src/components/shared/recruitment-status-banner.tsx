@@ -57,7 +57,7 @@ export function RecruitmentStatusBanner() {
           nativeButton={false}
           render={<Link href="/apply/positions" />}
         >
-          View positions
+          View Positions
         </Button>
       </aside>
     )
@@ -90,7 +90,7 @@ export function RecruitmentStatusBanner() {
         nativeButton={false}
         render={<Link href="/apply/positions" />}
       >
-        {duringWindow ? "Apply now" : "View positions"}
+        {duringWindow ? "Apply Now" : "View Positions"}
       </Button>
     </aside>
   )

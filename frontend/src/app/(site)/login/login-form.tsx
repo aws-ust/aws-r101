@@ -132,11 +132,11 @@ export function LoginForm() {
           className={submitClasses}
           disabled={pending}
         >
-          {pending ? "Signing in…" : "Sign in"}
+          {pending ? "Signing in…" : "Sign In"}
         </Button>
 
         <Link href="/" className={backHomeClasses}>
-          Back home
+          Back Home
         </Link>
       </form>
     </main>

@@ -163,7 +163,7 @@ export function ApplicantDocumentEditor({
         disabled={pending}
         onClick={() => void save()}
       >
-        {pending ? "Saving…" : "Save documents"}
+        {pending ? "Saving…" : "Save Documents"}
       </Button>
     </div>
   )

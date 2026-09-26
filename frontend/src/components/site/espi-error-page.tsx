@@ -63,11 +63,11 @@ export function EspiErrorPage({ code, retry }: EspiErrorPageProps) {
               nativeButton={false}
               render={<Link href="/" />}
             >
-              Back home
+              Back Home
             </Button>
             {retry ? (
               <Button color="purple" className={buttonClasses} onClick={retry}>
-                Try again
+                Try Again
               </Button>
             ) : null}
           </div>

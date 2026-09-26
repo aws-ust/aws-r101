@@ -117,7 +117,7 @@ export function CommitteeForm({
               Cancel
             </Button>
             <Button type="submit" color="cyan">
-              {isEdit ? "Save changes" : "Create committee"}
+              {isEdit ? "Save Changes" : "Create Committee"}
             </Button>
           </DialogFooter>
         </form>

@@ -150,8 +150,8 @@ export function HrCommitteeApplicationControls() {
                           {pendingId === committee.id
                             ? "Saving…"
                             : committee.acceptingApplications
-                              ? "Stop applications"
-                              : "Reopen applications"}
+                              ? "Stop Applications"
+                              : "Reopen Applications"}
                         </Button>
                       </div>
                     )
