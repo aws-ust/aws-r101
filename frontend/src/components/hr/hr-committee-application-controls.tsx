@@ -17,12 +17,8 @@ import { glassPanelClasses } from "@/lib/site/surface"
 import { cn } from "@/lib/utils"
 
 const panelClasses = `${glassPanelClasses} px-5 py-5`
-const officeStackClasses = "mt-4 flex flex-col gap-5"
-const officeSectionClasses =
-  "rounded-[16px] border border-blue-chalk/15 bg-meteorite/20 p-4 sm:p-5"
-const officeHeadingClasses =
-  "border-b border-blue-chalk/15 pb-3 font-sans text-sm font-semibold text-blue-chalk"
 const listClasses = "mt-4 flex flex-col gap-3"
+const emptyClasses = "mt-4 font-sans text-sm text-prelude"
 const tierClasses =
   "font-mono text-[0.65rem] uppercase tracking-wide text-prelude"
 const rowClasses =
@@ -34,7 +30,13 @@ const openStatusClasses = "border-aquamarine/40 bg-aquamarine/10 text-aquamarine
 const closedStatusClasses = "border-rose-blush/45 bg-rose-deep/20 text-rose-glow"
 const loadingClasses = "mt-4 font-sans text-sm text-prelude"
 
-export function HrCommitteeApplicationControls() {
+type HrCommitteeApplicationControlsProps = {
+  officeFilter: string
+}
+
+export function HrCommitteeApplicationControls({
+  officeFilter,
+}: HrCommitteeApplicationControlsProps) {
   const [committees, setCommittees] = useState<CommitteeApplicationStatus[]>([])
   const [loading, setLoading] = useState(true)
   const [pendingId, setPendingId] = useState<string | null>(null)
@@ -97,6 +99,10 @@ export function HrCommitteeApplicationControls() {
     }
   }
 
+  const officeGroup = groupedOfficesForCommitteeNames(
+    committees.map((row) => row.name),
+  ).find((group) => group.office === officeFilter)
+
   return (
     <section className={panelClasses}>
       <h2 className="font-sans text-lg font-semibold text-blue-chalk">
@@ -107,59 +113,49 @@ export function HrCommitteeApplicationControls() {
         and interview bookings are not changed.
       </p>
       {loading ? <p className={loadingClasses}>Loading committees…</p> : null}
-      {!loading ? (
-        <div className={officeStackClasses}>
-          {groupedOfficesForCommitteeNames(committees.map((row) => row.name)).map(
-            (group) => (
-              <section key={group.office} className={officeSectionClasses}>
-                <h3 className={officeHeadingClasses}>{group.office}</h3>
-                <div className={listClasses}>
-                  {group.committees.map((committeeName) => {
-                    const committee = committees.find(
-                      (row) => row.name === committeeName,
-                    )
-                    if (!committee) return null
-                    const officeRow = isExecutiveOfficeCommittee(committee.name)
-                    return (
-                      <div key={committee.id} className={rowClasses}>
-                        <div className="min-w-0 flex-1">
-                          <p className={tierClasses}>
-                            {officeRow ? "Office" : "Committee"}
-                          </p>
-                          <p className={nameClasses}>{committee.name}</p>
-                        </div>
-                        <span
-                          className={cn(
-                            statusClasses,
-                            committee.acceptingApplications
-                              ? openStatusClasses
-                              : closedStatusClasses,
-                          )}
-                        >
-                          {committee.acceptingApplications ? "Open" : "Closed"}
-                        </span>
-                        <Button
-                          type="button"
-                          size="sm"
-                          color={
-                            committee.acceptingApplications ? "danger" : "cyan"
-                          }
-                          disabled={pendingId !== null}
-                          onClick={() => void toggleCommittee(committee)}
-                        >
-                          {pendingId === committee.id
-                            ? "Saving…"
-                            : committee.acceptingApplications
-                              ? "Stop Applications"
-                              : "Reopen Applications"}
-                        </Button>
-                      </div>
-                    )
-                  })}
+      {!loading && !officeGroup ? (
+        <p className={emptyClasses}>No committees under this office.</p>
+      ) : null}
+      {!loading && officeGroup ? (
+        <div className={listClasses}>
+          {officeGroup.committees.map((committeeName) => {
+            const committee = committees.find((row) => row.name === committeeName)
+            if (!committee) return null
+            const officeRow = isExecutiveOfficeCommittee(committee.name)
+            return (
+              <div key={committee.id} className={rowClasses}>
+                <div className="min-w-0 flex-1">
+                  <p className={tierClasses}>
+                    {officeRow ? "Office" : "Committee"}
+                  </p>
+                  <p className={nameClasses}>{committee.name}</p>
                 </div>
-              </section>
-            ),
-          )}
+                <span
+                  className={cn(
+                    statusClasses,
+                    committee.acceptingApplications
+                      ? openStatusClasses
+                      : closedStatusClasses,
+                  )}
+                >
+                  {committee.acceptingApplications ? "Open" : "Closed"}
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  color={committee.acceptingApplications ? "danger" : "cyan"}
+                  disabled={pendingId !== null}
+                  onClick={() => void toggleCommittee(committee)}
+                >
+                  {pendingId === committee.id
+                    ? "Saving…"
+                    : committee.acceptingApplications
+                      ? "Stop Applications"
+                      : "Reopen Applications"}
+                </Button>
+              </div>
+            )
+          })}
         </div>
       ) : null}
       {error ? <ActionFeedback type="error" message={error} /> : null}

@@ -16,13 +16,9 @@ import {
 import { glassPanelClasses } from "@/lib/site/surface"
 
 const panelClasses = `${glassPanelClasses} px-5 py-5`
-const officeStackClasses = "mt-4 flex flex-col gap-5"
-const officeSectionClasses =
-  "rounded-[16px] border border-blue-chalk/15 bg-meteorite/20 p-4 sm:p-5"
-const officeHeadingClasses =
-  "border-b border-blue-chalk/15 pb-3 font-sans text-sm font-semibold text-blue-chalk"
 const listClasses = "mt-4 flex flex-col gap-3"
 const loadingClasses = "mt-4 font-sans text-sm text-prelude"
+const emptyClasses = "mt-4 font-sans text-sm text-prelude"
 
 function groupPositionsByOffice(positions: PositionApprovalTarget[]) {
   const byOffice = new Map<string, PositionApprovalTarget[]>()
@@ -44,7 +40,13 @@ function groupPositionsByOffice(positions: PositionApprovalTarget[]) {
     }))
 }
 
-export function HrPositionApprovalTargets() {
+type HrPositionApprovalTargetsProps = {
+  officeFilter: string
+}
+
+export function HrPositionApprovalTargets({
+  officeFilter,
+}: HrPositionApprovalTargetsProps) {
   const [positions, setPositions] = useState<PositionApprovalTarget[]>([])
   const [drafts, setDrafts] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
@@ -107,6 +109,10 @@ export function HrPositionApprovalTargets() {
     }
   }
 
+  const officeGroup = groupPositionsByOffice(positions).find(
+    (group) => group.office === officeFilter,
+  )
+
   return (
     <section className={panelClasses}>
       <h2 className="font-sans text-lg font-semibold text-blue-chalk">
@@ -117,30 +123,26 @@ export function HrPositionApprovalTargets() {
         targets do not decrease automatically or limit approval decisions.
       </p>
       {loading ? <p className={loadingClasses}>Loading positions…</p> : null}
-      {!loading ? (
-        <div className={officeStackClasses}>
-          {groupPositionsByOffice(positions).map((group) => (
-            <section key={group.office} className={officeSectionClasses}>
-              <h3 className={officeHeadingClasses}>{group.office}</h3>
-              <div className={listClasses}>
-                {group.positions.map((position) => (
-                  <HrPositionApprovalTargetRow
-                    key={position.id}
-                    position={position}
-                    value={drafts[position.id] ?? ""}
-                    disabled={pendingId !== null}
-                    pending={pendingId === position.id}
-                    onChange={(value) =>
-                      setDrafts((current) => ({
-                        ...current,
-                        [position.id]: value,
-                      }))
-                    }
-                    onSave={() => void saveTarget(position)}
-                  />
-                ))}
-              </div>
-            </section>
+      {!loading && !officeGroup ? (
+        <p className={emptyClasses}>No positions under this office.</p>
+      ) : null}
+      {!loading && officeGroup ? (
+        <div className={listClasses}>
+          {officeGroup.positions.map((position) => (
+            <HrPositionApprovalTargetRow
+              key={position.id}
+              position={position}
+              value={drafts[position.id] ?? ""}
+              disabled={pendingId !== null}
+              pending={pendingId === position.id}
+              onChange={(value) =>
+                setDrafts((current) => ({
+                  ...current,
+                  [position.id]: value,
+                }))
+              }
+              onSave={() => void saveTarget(position)}
+            />
           ))}
         </div>
       ) : null}
