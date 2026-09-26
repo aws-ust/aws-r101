@@ -8,11 +8,23 @@ import {
   patchCommitteeApplicationStatus,
   type CommitteeApplicationStatus,
 } from "@/lib/api"
+import {
+  compareCommitteeNames,
+  groupedOfficesForCommitteeNames,
+  isExecutiveOfficeCommittee,
+} from "@/lib/apply/committee-groups"
 import { glassPanelClasses } from "@/lib/site/surface"
 import { cn } from "@/lib/utils"
 
 const panelClasses = `${glassPanelClasses} px-5 py-5`
-const listClasses = "mt-4 grid gap-3 md:grid-cols-2"
+const officeStackClasses = "mt-4 flex flex-col gap-5"
+const officeSectionClasses =
+  "rounded-[16px] border border-blue-chalk/15 bg-meteorite/20 p-4 sm:p-5"
+const officeHeadingClasses =
+  "border-b border-blue-chalk/15 pb-3 font-sans text-sm font-semibold text-blue-chalk"
+const listClasses = "mt-4 flex flex-col gap-3"
+const tierClasses =
+  "font-mono text-[0.65rem] uppercase tracking-wide text-prelude"
 const rowClasses =
   "flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-blue-chalk/15 bg-haiti/45 p-4"
 const nameClasses = "min-w-0 flex-1 font-sans text-sm font-semibold text-blue-chalk"
@@ -33,7 +45,11 @@ export function HrCommitteeApplicationControls() {
     let cancelled = false
     listCommitteeApplicationStatuses()
       .then((rows) => {
-        if (!cancelled) setCommittees(rows)
+        if (!cancelled) {
+          setCommittees(
+            [...rows].sort((a, b) => compareCommitteeNames(a.name, b.name)),
+          )
+        }
       })
       .catch((err: unknown) => {
         if (!cancelled) {
@@ -92,35 +108,58 @@ export function HrCommitteeApplicationControls() {
       </p>
       {loading ? <p className={loadingClasses}>Loading committees…</p> : null}
       {!loading ? (
-        <div className={listClasses}>
-          {committees.map((committee) => (
-            <div key={committee.id} className={rowClasses}>
-              <p className={nameClasses}>{committee.name}</p>
-              <span
-                className={cn(
-                  statusClasses,
-                  committee.acceptingApplications
-                    ? openStatusClasses
-                    : closedStatusClasses,
-                )}
-              >
-                {committee.acceptingApplications ? "Open" : "Closed"}
-              </span>
-              <Button
-                type="button"
-                size="sm"
-                color={committee.acceptingApplications ? "danger" : "cyan"}
-                disabled={pendingId !== null}
-                onClick={() => void toggleCommittee(committee)}
-              >
-                {pendingId === committee.id
-                  ? "Saving…"
-                  : committee.acceptingApplications
-                    ? "Stop applications"
-                    : "Reopen applications"}
-              </Button>
-            </div>
-          ))}
+        <div className={officeStackClasses}>
+          {groupedOfficesForCommitteeNames(committees.map((row) => row.name)).map(
+            (group) => (
+              <section key={group.office} className={officeSectionClasses}>
+                <h3 className={officeHeadingClasses}>{group.office}</h3>
+                <div className={listClasses}>
+                  {group.committees.map((committeeName) => {
+                    const committee = committees.find(
+                      (row) => row.name === committeeName,
+                    )
+                    if (!committee) return null
+                    const officeRow = isExecutiveOfficeCommittee(committee.name)
+                    return (
+                      <div key={committee.id} className={rowClasses}>
+                        <div className="min-w-0 flex-1">
+                          <p className={tierClasses}>
+                            {officeRow ? "Office" : "Committee"}
+                          </p>
+                          <p className={nameClasses}>{committee.name}</p>
+                        </div>
+                        <span
+                          className={cn(
+                            statusClasses,
+                            committee.acceptingApplications
+                              ? openStatusClasses
+                              : closedStatusClasses,
+                          )}
+                        >
+                          {committee.acceptingApplications ? "Open" : "Closed"}
+                        </span>
+                        <Button
+                          type="button"
+                          size="sm"
+                          color={
+                            committee.acceptingApplications ? "danger" : "cyan"
+                          }
+                          disabled={pendingId !== null}
+                          onClick={() => void toggleCommittee(committee)}
+                        >
+                          {pendingId === committee.id
+                            ? "Saving…"
+                            : committee.acceptingApplications
+                              ? "Stop applications"
+                              : "Reopen applications"}
+                        </Button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+            ),
+          )}
         </div>
       ) : null}
       {error ? <ActionFeedback type="error" message={error} /> : null}

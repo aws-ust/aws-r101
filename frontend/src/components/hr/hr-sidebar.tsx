@@ -7,6 +7,7 @@ import {
   CalendarRange,
   ClipboardList,
   LayoutDashboard,
+  Users,
   LogOut,
   Send,
 } from "lucide-react"
@@ -64,7 +65,12 @@ function isApplicationDetailPath(pathname: string) {
   const match = /^\/admin\/hr\/([^/]+)$/.exec(pathname)
   if (!match) return false
   const segment = match[1]
-  return segment !== "season" && segment !== "results" && segment !== "archive"
+  return (
+    segment !== "season" &&
+    segment !== "committees" &&
+    segment !== "results" &&
+    segment !== "archive"
+  )
 }
 
 function isApplicationsActive(pathname: string, source: string | null) {
@@ -92,6 +98,12 @@ const navItems = [
     href: "/admin/hr/results",
     icon: Send,
     isActive: (pathname: string) => pathname.startsWith("/admin/hr/results"),
+  },
+  {
+    label: "Committees",
+    href: "/admin/hr/committees",
+    icon: Users,
+    isActive: (pathname: string) => pathname.startsWith("/admin/hr/committees"),
   },
   {
     label: "R101",

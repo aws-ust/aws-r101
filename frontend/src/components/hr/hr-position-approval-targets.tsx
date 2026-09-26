@@ -8,11 +8,41 @@ import {
   patchPositionApprovalTarget,
   type PositionApprovalTarget,
 } from "@/lib/api"
+import {
+  COMMITTEE_OFFICE_GROUPS,
+  comparePositionHierarchy,
+  officeForCommittee,
+} from "@/lib/apply/committee-groups"
 import { glassPanelClasses } from "@/lib/site/surface"
 
 const panelClasses = `${glassPanelClasses} px-5 py-5`
-const listClasses = "mt-4 grid gap-3 md:grid-cols-2"
+const officeStackClasses = "mt-4 flex flex-col gap-5"
+const officeSectionClasses =
+  "rounded-[16px] border border-blue-chalk/15 bg-meteorite/20 p-4 sm:p-5"
+const officeHeadingClasses =
+  "border-b border-blue-chalk/15 pb-3 font-sans text-sm font-semibold text-blue-chalk"
+const listClasses = "mt-4 flex flex-col gap-3"
 const loadingClasses = "mt-4 font-sans text-sm text-prelude"
+
+function groupPositionsByOffice(positions: PositionApprovalTarget[]) {
+  const byOffice = new Map<string, PositionApprovalTarget[]>()
+  for (const position of positions) {
+    const office = officeForCommittee(position.committee) || "Other"
+    const bucket = byOffice.get(office)
+    if (bucket) bucket.push(position)
+    else byOffice.set(office, [position])
+  }
+  const orderedOffices = [
+    ...COMMITTEE_OFFICE_GROUPS.map((group) => group.office),
+    "Other",
+  ]
+  return orderedOffices
+    .filter((office) => byOffice.has(office))
+    .map((office) => ({
+      office,
+      positions: byOffice.get(office) ?? [],
+    }))
+}
 
 export function HrPositionApprovalTargets() {
   const [positions, setPositions] = useState<PositionApprovalTarget[]>([])
@@ -27,7 +57,7 @@ export function HrPositionApprovalTargets() {
     listPositionApprovalTargets()
       .then((rows) => {
         if (cancelled) return
-        setPositions(rows)
+        setPositions([...rows].sort(comparePositionHierarchy))
         setDrafts(
           Object.fromEntries(rows.map((row) => [row.id, String(row.openSlots)])),
         )
@@ -88,19 +118,29 @@ export function HrPositionApprovalTargets() {
       </p>
       {loading ? <p className={loadingClasses}>Loading positions…</p> : null}
       {!loading ? (
-        <div className={listClasses}>
-          {positions.map((position) => (
-            <HrPositionApprovalTargetRow
-              key={position.id}
-              position={position}
-              value={drafts[position.id] ?? ""}
-              disabled={pendingId !== null}
-              pending={pendingId === position.id}
-              onChange={(value) =>
-                setDrafts((current) => ({ ...current, [position.id]: value }))
-              }
-              onSave={() => void saveTarget(position)}
-            />
+        <div className={officeStackClasses}>
+          {groupPositionsByOffice(positions).map((group) => (
+            <section key={group.office} className={officeSectionClasses}>
+              <h3 className={officeHeadingClasses}>{group.office}</h3>
+              <div className={listClasses}>
+                {group.positions.map((position) => (
+                  <HrPositionApprovalTargetRow
+                    key={position.id}
+                    position={position}
+                    value={drafts[position.id] ?? ""}
+                    disabled={pendingId !== null}
+                    pending={pendingId === position.id}
+                    onChange={(value) =>
+                      setDrafts((current) => ({
+                        ...current,
+                        [position.id]: value,
+                      }))
+                    }
+                    onSave={() => void saveTarget(position)}
+                  />
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       ) : null}

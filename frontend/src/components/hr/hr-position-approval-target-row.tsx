@@ -19,7 +19,8 @@ const rowClasses =
   "rounded-[14px] border border-blue-chalk/15 bg-haiti/45 p-4"
 const formClasses = "mt-3 flex items-end gap-3"
 const labelClasses = "flex min-w-0 flex-1 flex-col gap-2"
-const inputClasses = "max-w-32"
+const inputClasses =
+  "max-w-32 [appearance:textfield] [-moz-appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
 
 export function HrPositionApprovalTargetRow({
   position,
