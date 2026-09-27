@@ -20,6 +20,8 @@ type ApplicationListResultsProps = {
   onDetailNavigate: () => void
   onArchive: (application: HrApplication) => void
   onDelete?: (application: HrApplication) => void
+  onEditEmail?: (application: HrApplication) => void
+  onResendEmail?: (application: HrApplication) => void
 }
 
 export function ApplicationListResults({
@@ -33,6 +35,8 @@ export function ApplicationListResults({
   onDetailNavigate,
   onArchive,
   onDelete,
+  onEditEmail,
+  onResendEmail,
 }: ApplicationListResultsProps) {
   if (loading) {
     return <ApplicationListSkeleton />
@@ -79,6 +83,8 @@ export function ApplicationListResults({
               returnTo={returnTo}
               onArchive={onArchive}
               onDelete={onDelete}
+              onEditEmail={onEditEmail}
+              onResendEmail={onResendEmail}
               onNavigate={onDetailNavigate}
             />
           </li>

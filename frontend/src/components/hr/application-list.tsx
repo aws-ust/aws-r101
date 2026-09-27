@@ -14,6 +14,8 @@ import { hrApplicationListNoticeFeedback } from "@/components/hr/application-lis
 import { ApplicationExportButton } from "@/components/hr/application-export-button"
 import { HrArchiveApplicantDialog } from "@/components/hr/hr-archive-applicant-dialog"
 import { HrDeleteApplicantDialog } from "@/components/hr/hr-delete-applicant-dialog"
+import { HrEditApplicantEmailDialog } from "@/components/hr/hr-edit-applicant-email-dialog"
+import { HrResendSuccessEmailDialog } from "@/components/hr/hr-resend-success-email-dialog"
 import { useApplications } from "@/lib/api"
 import {
   buildHrListQueryString,
@@ -70,6 +72,8 @@ export function HrApplicationList({
     })
   const [archiveTarget, setArchiveTarget] = useState<HrApplication | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<HrApplication | null>(null)
+  const [emailTarget, setEmailTarget] = useState<HrApplication | null>(null)
+  const [resendTarget, setResendTarget] = useState<HrApplication | null>(null)
   const [feedback, setFeedback] = useState<{
     type: "success" | "error"
     message: string
@@ -168,6 +172,8 @@ export function HrApplicationList({
         onDetailNavigate={onDetailNavigate}
         onArchive={setArchiveTarget}
         onDelete={isArchivedView ? setDeleteTarget : undefined}
+        onEditEmail={isArchivedView ? undefined : setEmailTarget}
+        onResendEmail={isArchivedView ? undefined : setResendTarget}
       />
       <HrArchiveApplicantDialog
         application={archiveTarget}
@@ -199,6 +205,28 @@ export function HrApplicationList({
             type: "success",
             message: "Applicant deleted. Their interview slot is now open.",
           })
+        }}
+      />
+      <HrEditApplicantEmailDialog
+        application={emailTarget}
+        onOpenChange={(open) => {
+          if (!open) setEmailTarget(null)
+        }}
+        onChanged={() => {
+          refreshApplications()
+          setFeedback({
+            type: "success",
+            message: "Applicant email updated.",
+          })
+        }}
+      />
+      <HrResendSuccessEmailDialog
+        application={resendTarget}
+        onOpenChange={(open) => {
+          if (!open) setResendTarget(null)
+        }}
+        onSent={(message) => {
+          setFeedback({ type: "success", message })
         }}
       />
     </main>
