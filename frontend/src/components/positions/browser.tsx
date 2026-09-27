@@ -5,7 +5,10 @@ import { SectionHeader } from "@/components/shared/section-header"
 import { PositionsList } from "@/components/positions/list"
 import { PositionDetail } from "@/components/positions/position-detail"
 import type { Position } from "@/lib/positions"
-import { groupPositionsByOfficeHierarchy } from "@/lib/positions"
+import {
+  groupPositionsByOfficeHierarchy,
+  positionAcceptsApplicants,
+} from "@/lib/positions"
 import { cn } from "@/lib/utils"
 
 const shellClasses = "flex min-w-0 flex-col gap-8 overflow-x-clip"
@@ -40,15 +43,13 @@ export function PositionsBrowser({
   loadError = false,
   applicationsOpen = true,
 }: PositionsBrowserProps) {
-  const officeGroups = groupPositionsByOfficeHierarchy(positions)
+  const listedPositions = positions.filter(positionAcceptsApplicants)
+  const officeGroups = groupPositionsByOfficeHierarchy(listedPositions)
   const officeCount = officeGroups.length
-  const acceptingCount = positions.filter(
-    (position) =>
-      position.isOpen && position.acceptingApplications !== false,
-  ).length
+  const acceptingCount = listedPositions.length
   const [selectedId, setSelectedId] = useState("")
   const [mobileShowsDetail, setMobileShowsDetail] = useState(false)
-  const selected = positions.find((position) => position.id === selectedId)
+  const selected = listedPositions.find((position) => position.id === selectedId)
 
   function selectPosition(id: string) {
     setSelectedId(id)

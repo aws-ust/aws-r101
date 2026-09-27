@@ -276,7 +276,7 @@ test("HR committee decisions", async (t) => {
     );
   });
 
-  await t.test("rejects unknown and released applications", async () => {
+  await t.test("rejects unknown and archived applications", async () => {
     assert.equal(
       (
         await decisionRequest(
@@ -288,7 +288,7 @@ test("HR committee decisions", async (t) => {
     );
     await db
       .update(applications)
-      .set({ resultsReleasedAt: new Date() })
+      .set({ archivedAt: new Date() })
       .where(eq(applications.id, applicationId));
     assert.equal(
       (
@@ -298,6 +298,19 @@ test("HR committee decisions", async (t) => {
         })
       ).status,
       409,
+    );
+    await db
+      .update(applications)
+      .set({ archivedAt: null, resultsReleasedAt: new Date() })
+      .where(eq(applications.id, applicationId));
+    assert.equal(
+      (
+        await decisionRequest({
+          positionId: positionIds[0],
+          decisionStatus: "approved",
+        })
+      ).status,
+      200,
     );
   });
 });

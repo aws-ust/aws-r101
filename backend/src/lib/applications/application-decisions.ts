@@ -43,7 +43,6 @@ export async function updateApplicationDecision(
       .select({
         finalPositionId: applications.finalPositionId,
         applicationType: applications.applicationType,
-        resultsReleasedAt: applications.resultsReleasedAt,
         archivedAt: applications.archivedAt,
       })
       .from(applications)
@@ -63,10 +62,10 @@ export async function updateApplicationDecision(
         "Member-only applications do not need committee decisions.",
       );
     }
-    if (application.resultsReleasedAt || application.archivedAt) {
+    if (application.archivedAt) {
       throw new ApplicationDecisionError(
         "review_locked",
-        "Decisions can no longer be changed for this application.",
+        "Restore this application before changing committee decisions.",
       );
     }
 

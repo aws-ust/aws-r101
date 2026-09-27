@@ -119,8 +119,10 @@ export function HrPositionApprovalTargets({
         Approval Targets
       </h2>
       <p className="mt-1 font-sans text-sm text-prelude">
-        Set how many applicants HR plans to approve for each position. These
-        targets do not decrease automatically or limit approval decisions.
+        Set how many applicants HR plans to approve for each position. A
+        target of 0 hides the role from applicants and means you are not
+        recruiting for it this cycle. Targets do not decrease automatically
+        or block approvals above the number.
       </p>
       {loading ? <p className={loadingClasses}>Loading positions…</p> : null}
       {!loading && !officeGroup ? (

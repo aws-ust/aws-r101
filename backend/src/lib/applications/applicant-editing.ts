@@ -435,6 +435,7 @@ export async function updateApplicantApplication(
           committeeId: positions.committeeId,
           committee: committees.name,
           isOpen: positions.isOpen,
+          openSlots: positions.openSlots,
           committeeAcceptingApplications: committees.acceptingApplications,
         })
         .from(positions)
@@ -450,6 +451,7 @@ export async function updateApplicantApplication(
         selectedPositions.some(
           (position) =>
             !position.isOpen ||
+            position.openSlots < 1 ||
             (!position.committeeAcceptingApplications &&
               !currentPositionIds.has(position.id)),
         )
