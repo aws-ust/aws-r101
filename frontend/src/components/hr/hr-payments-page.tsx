@@ -13,6 +13,7 @@ import { HrPaymentList } from "@/components/hr/hr-payment-list"
 import { HrPaymentReviewDialog } from "@/components/hr/hr-payment-review-dialog"
 import { HrPaymentSection } from "@/components/hr/hr-payment-section"
 import { HrPaymentSummary } from "@/components/hr/hr-payment-summary"
+import { HrSectionNav } from "@/components/hr/hr-section-nav"
 import {
   getSession,
   listCommitteeApplicationStatuses,
@@ -30,10 +31,17 @@ import {
 } from "@/lib/api/payments"
 import { glassPanelClasses, pageShellClasses } from "@/lib/site/surface"
 
-const stackClasses = "mt-8 flex flex-col gap-8"
+const stackClasses = "mt-6 flex flex-col gap-8"
 const reviewPanelClasses = `${glassPanelClasses} rounded-[20px] px-5 py-5`
 const loadingClasses = "mt-8 font-sans text-sm text-prelude"
 type Feedback = { type: "success" | "error"; message: string }
+
+const sectionNavItems = [
+  { id: "payment-setup", label: "Payment setup" },
+  { id: "payment-overview", label: "Overview" },
+  { id: "receipt-review", label: "Receipt review" },
+  { id: "membership-completion", label: "Completion" },
+]
 
 export function HrPaymentsPage() {
   const [campaign, setCampaign] = useState<PaymentCampaign | null>(null)
@@ -110,62 +118,69 @@ export function HrPaymentsPage() {
       <SectionHeader
         eyebrow="// PAYMENTS"
         title="Membership Payments"
-        subtitle="Configure payment collection, review receipts, and activate verified memberships."
+        subtitle="Set up collection, track applicant progress, review receipts, and release verified memberships."
       />
       {feedback ? <ActionFeedback type={feedback.type} message={feedback.message} /> : null}
       {loading ? <p className={loadingClasses}>Loading payments…</p> : (
-        <div className={stackClasses}>
-          <HrPaymentSection
-            number="01"
-            title={role === "finance" ? "Payment details" : "Payment setup"}
-            description={paymentCampaignDescription(role)}
-          >
-            <HrPaymentCampaignPanel
-              campaign={campaign}
-              committees={committees}
-              role={role}
-              pending={pending}
-              onCampaign={setCampaign}
-              onPending={setPending}
-              onFeedback={setFeedback}
-            />
-          </HrPaymentSection>
-          {dashboard ? (
+        <>
+          <HrSectionNav items={sectionNavItems} />
+          <div className={stackClasses}>
             <HrPaymentSection
-              number="02"
-              title="Payment overview"
-              description="Track applicants at every stage of the payment process."
+              id="payment-setup"
+              number="01"
+              title={role === "finance" ? "Payment details" : "Payment setup"}
+              description={paymentCampaignDescription(role)}
             >
-              <HrPaymentSummary summary={dashboard.summary} />
+              <HrPaymentCampaignPanel
+                campaign={campaign}
+                committees={committees}
+                role={role}
+                pending={pending}
+                onCampaign={setCampaign}
+                onPending={setPending}
+                onFeedback={setFeedback}
+              />
             </HrPaymentSection>
-          ) : null}
-          {dashboard ? (
+            {dashboard ? (
+              <HrPaymentSection
+                id="payment-overview"
+                number="02"
+                title="Payment overview"
+                description="Track applicants at every stage of the payment process."
+              >
+                <HrPaymentSummary summary={dashboard.summary} />
+              </HrPaymentSection>
+            ) : null}
+            {dashboard ? (
+              <HrPaymentSection
+                id="receipt-review"
+                number="03"
+                title="Receipt review"
+                description={paymentReviewDescription(role)}
+              >
+                <div className={reviewPanelClasses}>
+                  <HrPaymentList
+                    payments={dashboard.payments}
+                    onSelect={setSelected}
+                  />
+                </div>
+              </HrPaymentSection>
+            ) : null}
             <HrPaymentSection
-              number="03"
-              title="Receipt review"
-              description={paymentReviewDescription(role)}
+              id="membership-completion"
+              number="04"
+              title="Membership completion"
+              description="Export verified members and release final membership details when review is complete."
             >
-              <div className={reviewPanelClasses}>
-                <HrPaymentList
-                  payments={dashboard.payments}
-                  onSelect={setSelected}
-                />
-              </div>
+              <HrPaymentBatchActions
+                role={role}
+                pending={pending}
+                verified={dashboard?.summary.verified ?? 0}
+                onRun={runBatch}
+              />
             </HrPaymentSection>
-          ) : null}
-          <HrPaymentSection
-            number="04"
-            title="Membership completion"
-            description="Export verified members and release final membership details when review is complete."
-          >
-            <HrPaymentBatchActions
-              role={role}
-              pending={pending}
-              verified={dashboard?.summary.verified ?? 0}
-              onRun={runBatch}
-            />
-          </HrPaymentSection>
-        </div>
+          </div>
+        </>
       )}
       {selected ? <HrPaymentReviewDialog key={selected.paymentId} selected={selected} role={role} onClose={() => setSelected(null)} onChanged={refresh} /> : null}
     </main>

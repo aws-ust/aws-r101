@@ -130,13 +130,13 @@ export function HrApplicationList({
       <SectionHeader
         eyebrow={isArchivedView ? "// ARCHIVE" : "// APPLICATIONS"}
         title={
-          isArchivedView ? "Archived applications" : "Applications Results"
+          isArchivedView ? "Archived applications" : "Applications"
         }
         titleClassName="max-w-none text-balance"
         subtitle={
           isArchivedView
             ? "Restore applicants to active review or delete permanently to free their interview slot."
-            : "Every R101 application so far."
+            : "Review active applicants, update decisions, and open each profile for complete details."
         }
       />
       {visibleFeedback ? (
