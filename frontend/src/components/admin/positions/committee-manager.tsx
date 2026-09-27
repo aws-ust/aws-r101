@@ -81,7 +81,7 @@ export function CommitteeManager({
 
           <div className="flex flex-col gap-4">
             <Button color="cyan" onClick={() => setFormMode({ type: "create" })}>
-              New committee
+              New Committee
             </Button>
 
             {deleteError ? <p className={errorClasses}>{deleteError}</p> : null}

@@ -103,7 +103,7 @@ export function Hero() {
                 nativeButton={false}
                 render={<Link href="#careers" />}
               >
-                Explore careers
+                Explore Careers
               </Button>
               <Button
                 color="purple"
@@ -120,7 +120,7 @@ export function Hero() {
                 nativeButton={false}
                 className={`${buttonClasses} ${purpleButtonEffectClasses}`}
               >
-                Find your committee
+                Find Your Committee
               </Button>
               <Button
                 color="purple"
@@ -137,7 +137,7 @@ export function Hero() {
                   />
                 }
               >
-                Know more about us!
+                Know More About Us!
               </Button>
             </div>
           </div>

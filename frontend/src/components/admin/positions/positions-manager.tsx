@@ -104,10 +104,10 @@ export function PositionsManager() {
         </div>
         <div className={headerActionsClasses}>
           <Button color="purple" onClick={() => setCommitteeManagerOpen(true)}>
-            Manage committees
+            Manage Committees
           </Button>
           <Button color="cyan" onClick={() => setFormMode({ type: "create" })}>
-            New position
+            New Position
           </Button>
         </div>
       </div>

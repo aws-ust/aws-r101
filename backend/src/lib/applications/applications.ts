@@ -4,6 +4,7 @@ import {
   desc,
   eq,
   exists,
+  gt,
   ilike,
   inArray,
   isNotNull,
@@ -500,6 +501,7 @@ export async function positionsAcceptApplications(
       and(
         inArray(positions.id, uniqueIds),
         eq(positions.isOpen, true),
+        gt(positions.openSlots, 0),
         eq(committees.acceptingApplications, true),
       ),
     );
@@ -560,6 +562,7 @@ export async function createApplication(
           .select({
             id: positions.id,
             isOpen: positions.isOpen,
+            openSlots: positions.openSlots,
             committeeAcceptingApplications: committees.acceptingApplications,
           })
           .from(positions)
@@ -571,7 +574,9 @@ export async function createApplication(
           selectedPositions.length !== positionIds.length ||
           selectedPositions.some(
             (position) =>
-              !position.isOpen || !position.committeeAcceptingApplications,
+              !position.isOpen ||
+              position.openSlots < 1 ||
+              !position.committeeAcceptingApplications,
           )
         ) {
           throw new ApplicationPositionUnavailableError();

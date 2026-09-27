@@ -116,6 +116,12 @@ in the screenshots, not the raw `100%` value.
   shape and border treatment, differing only in hue: **cyan** =
   `aquamarine`-tinted fill/border, `haiti` text; **purple** = `daisy-bush`-
   tinted fill, `biloba-flower`-tinted border, `blue-chalk` text.
+- **Button label copy:** capitalize the first letter of every word (title
+  style), including loading states — e.g. `Stop Applications`, `Save Email`,
+  `Sign In`. Use the shared `Button` component (`formatButtonLabel` applies
+  this automatically); keep source strings in the same style for readability.
+  Transactional email CTAs use the same rule via `ctaButton` in
+  `backend/src/lib/email/template-kit.ts` (`formatEmailButtonLabel`).
 - Cards/panels use `meteorite` (or `blue-chalk`-low-opacity) fills with a
   hairline border and rounded corners (14–28px), sometimes with backdrop
   blur.

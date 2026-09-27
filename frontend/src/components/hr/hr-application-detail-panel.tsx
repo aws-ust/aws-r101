@@ -59,7 +59,7 @@ export function HrApplicationDetailPanel({
           className={archiveActionClasses}
           onClick={onArchiveClick}
         >
-          {application.archivedAt ? "Restore applicant" : "Archive applicant"}
+          {application.archivedAt ? "Restore Applicant" : "Archive Applicant"}
         </Button>
         {application.archivedAt && onDeleteClick ? (
           <Button

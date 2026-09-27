@@ -20,7 +20,7 @@ test("renders applicant interview schedule updates", () => {
   assert.match(email.text, /has been rescheduled/);
   assert.match(email.text, /Development Committee/);
   assert.match(email.text, /calendar file is attached/);
-  assert.match(email.html, />View your application</);
+  assert.match(email.html, />View Your Application</);
 });
 
 test("renders both interview reminder windows", () => {

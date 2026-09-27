@@ -80,7 +80,7 @@ export function CareersSection() {
           nativeButton={false}
           render={<Link href="/apply/positions" />}
         >
-          Start application
+          Start Application
         </Button>
       </div>
     </section>

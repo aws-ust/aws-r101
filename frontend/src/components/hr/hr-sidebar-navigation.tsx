@@ -7,6 +7,7 @@ import {
   CalendarRange,
   ClipboardList,
   Send,
+  Users,
   WalletCards,
 } from "lucide-react"
 import {
@@ -32,7 +33,7 @@ const tooltipClasses = "glass rounded-pill border border-biloba-flower/40 bg-hai
 function isApplicationDetailPath(pathname: string) {
   const match = new RegExp("^/admin/hr/([^/]+)$").exec(pathname)
   return Boolean(
-    match && !["season", "results", "archive", "payments"].includes(match[1]),
+    match && !["season", "results", "archive", "payments", "committees"].includes(match[1]),
   )
 }
 
@@ -44,6 +45,7 @@ const navigationSections = [
       { label: "Applications", href: "/admin/hr", icon: ClipboardList, active: (path: string, source: string | null) => path === "/admin/hr" || (isApplicationDetailPath(path) && source !== "archive") },
       { label: "Archive", href: "/admin/hr/archive", icon: Archive, active: (path: string, source: string | null) => path.startsWith("/admin/hr/archive") || (source === "archive" && isApplicationDetailPath(path)) },
       { label: "Results", href: "/admin/hr/results", icon: Send, active: (path: string) => path.startsWith("/admin/hr/results") },
+      { label: "Committees", href: "/admin/hr/committees", icon: Users, active: (path: string) => path.startsWith("/admin/hr/committees") },
       { label: "R101", href: "/admin/hr/season", icon: CalendarRange, active: (path: string) => path.startsWith("/admin/hr/season") },
     ],
   },

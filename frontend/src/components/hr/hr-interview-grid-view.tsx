@@ -219,7 +219,7 @@ export function HrInterviewGridView({
           disabled={!committeeId || pending}
           onClick={() => setResetOpen(true)}
         >
-          Reset schedule
+          Reset Schedule
         </Button>
       </div>
 
@@ -267,7 +267,7 @@ export function HrInterviewGridView({
               disabled={pending || !committeeId}
               onClick={() => void resetSchedule()}
             >
-              {pending ? "Resetting…" : "Reset schedule"}
+              {pending ? "Resetting…" : "Reset Schedule"}
             </Button>
           </DialogFooter>
         </DialogContent>

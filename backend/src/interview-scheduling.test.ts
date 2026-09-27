@@ -233,6 +233,44 @@ test("interview scheduling backend", async (t) => {
       startsAt: new Date(at(0).getTime() + 15 * 60 * 1000).toISOString(),
     });
     assert.equal(misaligned.status, 400);
+
+    const pastStart = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    pastStart.setUTCMinutes(
+      Math.floor(pastStart.getUTCMinutes() / 30) * 30,
+      0,
+      0,
+    );
+    const pastWithinWindow = await hrRequest("/interview-slots", "POST", {
+      committeeId: committeeAId,
+      startsAt: pastStart.toISOString(),
+    });
+    assert.equal(pastWithinWindow.status, 201);
+    const pastSlot = (await pastWithinWindow.json()) as {
+      id: string;
+      isOpen: boolean;
+    };
+
+    const closePast = await hrRequest(
+      `/interview-slots/${pastSlot.id}`,
+      "PATCH",
+      { isOpen: false },
+    );
+    assert.equal(closePast.status, 200);
+
+    const reopenPast = await hrRequest(
+      `/interview-slots/${pastSlot.id}`,
+      "PATCH",
+      { isOpen: true },
+    );
+    assert.equal(reopenPast.status, 200);
+    const reopened = (await reopenPast.json()) as {
+      isOpen: boolean;
+      isAvailable: boolean;
+    };
+    assert.equal(reopened.isOpen, true);
+    assert.equal(reopened.isAvailable, false);
+
+    await db.delete(interviewSlots).where(eq(interviewSlots.id, pastSlot.id));
   });
 
   await t.test("lets HR create, list, and close committee slots", async () => {

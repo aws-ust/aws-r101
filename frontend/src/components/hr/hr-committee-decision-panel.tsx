@@ -87,6 +87,8 @@ export function HrCommitteeDecisionPanel({
         Saving the first decision locks applicant editing. You may approve only
         one choice—approving sets final placement and marks the applicant
         approved. Approving another choice moves placement. You may reject both.
+        Closing the recruitment week does not lock these controls; only archiving
+        the application does.
       </p>
       <div className={listClasses}>
         {application.choices.map((choice) => (

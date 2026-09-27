@@ -33,7 +33,7 @@ test("applicant email templates use compact, plain formatting", async (t) => {
     assert.equal(email.inline?.length, 1);
     assert.match(email.html, /076027/);
     assert.match(email.html, /Application ID: <strong>AP-2026-288404<\/strong>/);
-    assert.match(email.html, />Open your application</);
+    assert.match(email.html, />Open Your Application</);
     assert.match(email.html, /Yours in Thomasian Leadership,/);
     assert.doesNotMatch(email.html, /Hi /);
     assert.doesNotMatch(email.html, /Recruitment Team/);
@@ -76,7 +76,7 @@ test("applicant email templates use compact, plain formatting", async (t) => {
       /<p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board<\/p>/,
     );
     assert.match(email.html, /http:\/\/localhost:3000\/apply\/status/);
-    assert.match(email.html, />View your application</);
+    assert.match(email.html, />View Your Application</);
     assert.doesNotMatch(email.html, /once that feature is available/);
     assert.doesNotMatch(email.html, /Recruitment Team/);
   });

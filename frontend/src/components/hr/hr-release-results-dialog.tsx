@@ -56,7 +56,7 @@ export function HrReleaseResultsDialog({
             disabled={pending}
             onClick={onConfirm}
           >
-            {pending ? "Releasing…" : "Release results"}
+            {pending ? "Releasing…" : "Release Results"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -128,7 +128,7 @@ export function ApplicantCodeForm({
           disabled={pending || code.length !== 6}
           onClick={() => void verifyCode()}
         >
-          {pending ? "Verifying…" : "Verify code"}
+          {pending ? "Verifying…" : "Verify Code"}
         </Button>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Button
@@ -137,7 +137,7 @@ export function ApplicantCodeForm({
             className={ghostPillButtonClasses}
             onClick={onBack}
           >
-            Change details
+            Change Details
           </Button>
           {canResend ? (
             <Button
@@ -148,7 +148,7 @@ export function ApplicantCodeForm({
               onClick={() => void requestAnotherCode()}
               disabled={pending}
             >
-              Request another code
+              Request Another Code
             </Button>
           ) : (
             <p className={resendCooldownClasses} aria-live="polite">
