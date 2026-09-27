@@ -6,17 +6,11 @@ import { HrPaymentCampaignPanel } from "@/components/hr/hr-payment-campaign-pane
 import { paymentCampaignDescription } from "@/components/hr/hr-payment-copy"
 import { HrPaymentSection } from "@/components/hr/hr-payment-section"
 import { HrPaymentSummary } from "@/components/hr/hr-payment-summary"
-import { HrSectionNav } from "@/components/hr/hr-section-nav"
 import { useHrPaymentWorkspace } from "@/components/hr/use-hr-payment-workspace"
 import { pageShellClasses } from "@/lib/site/surface"
 
 const stackClasses = "mt-6 flex flex-col gap-8"
 const loadingClasses = "mt-8 font-sans text-sm text-prelude"
-
-const sectionNavItems = [
-  { id: "payment-overview", label: "Overview" },
-  { id: "payment-setup", label: "Payment setup" },
-]
 
 export function HrPaymentsPage() {
   const {
@@ -43,13 +37,10 @@ export function HrPaymentsPage() {
       {loading ? (
         <p className={loadingClasses}>Loading payments…</p>
       ) : (
-        <>
-          <HrSectionNav items={sectionNavItems} />
-          <div className={stackClasses}>
+        <div className={stackClasses}>
             {dashboard ? (
               <HrPaymentSection
                 id="payment-overview"
-                number="01"
                 title="Payment overview"
                 description="Track applicants at every stage of the payment process."
               >
@@ -58,7 +49,6 @@ export function HrPaymentsPage() {
             ) : null}
             <HrPaymentSection
               id="payment-setup"
-              number="02"
               title={role === "finance" ? "Payment details" : "Payment setup"}
               description={paymentCampaignDescription(role)}
             >
@@ -72,8 +62,7 @@ export function HrPaymentsPage() {
                 onFeedback={setFeedback}
               />
             </HrPaymentSection>
-          </div>
-        </>
+        </div>
       )}
     </main>
   )
