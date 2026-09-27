@@ -12,11 +12,13 @@ const descriptionClasses =
   "mt-1 max-w-3xl font-sans text-sm leading-relaxed text-prelude"
 
 export function HrPaymentSection({
+  id,
   number,
   title,
   description,
   children,
 }: {
+  id: string
   number: string
   title: string
   description: string
@@ -25,7 +27,11 @@ export function HrPaymentSection({
   const headingId = `payment-section-${number}`
 
   return (
-    <section className={sectionClasses} aria-labelledby={headingId}>
+    <section
+      id={id}
+      className={sectionClasses + " scroll-mt-24"}
+      aria-labelledby={headingId}
+    >
       <div className={headingClasses}>
         <span className={numberClasses} aria-hidden>
           {number}

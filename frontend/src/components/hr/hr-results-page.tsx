@@ -115,8 +115,8 @@ export function HrResultsPage() {
     <main className={pageShellClasses}>
       <SectionHeader
         eyebrow="// RESULTS"
-        title="Release Results"
-        subtitle="Preview the current recruitment batch before publishing final results to applicants."
+        title="Release results"
+        subtitle="Review the current recruitment batch, resolve incomplete decisions, and publish final outcomes."
       />
       {feedback ? (
         <ActionFeedback type={feedback.type} message={feedback.message} />
