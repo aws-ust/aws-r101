@@ -104,9 +104,6 @@ interviewSlotsRoutes.post("/", async (c) => {
       400,
     );
   }
-  if (startsAt.getTime() <= Date.now()) {
-    return c.json({ error: "startsAt must be in the future." }, 400);
-  }
 
   try {
     const slot = await createInterviewSlot(parsed.data.committeeId, startsAt);
