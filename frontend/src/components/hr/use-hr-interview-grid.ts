@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { SlotGridCell } from "@/components/interview/slot-grid"
 import {
+  ApiError,
   createInterviewSlot,
   listInterviewSlots,
   patchInterviewSlotOpen,
@@ -28,6 +29,9 @@ import {
 type SlotDrag = {
   action: "open" | "close"
   cells: Map<string, SlotGridCell>
+  /** Visit order while dragging; used to peel off the end when pointer moves back. */
+  path: string[]
+  pointerCellKey: string | null
 }
 
 export function useHrInterviewGrid(seasonBounds: InterviewSeasonBounds, seasonConfigured: boolean) {
@@ -141,6 +145,8 @@ export function useHrInterviewGrid(seasonBounds: InterviewSeasonBounds, seasonCo
       dragRef.current = {
         action: cell.state === "available" ? "close" : "open",
         cells: new Map([[cell.key, cell]]),
+        path: [cell.key],
+        pointerCellKey: cell.key,
       }
       setDraggedCellKeys(new Set([cell.key]))
     },
@@ -150,7 +156,24 @@ export function useHrInterviewGrid(seasonBounds: InterviewSeasonBounds, seasonCo
   const extendSlotDrag = useCallback((cell: SlotGridCell) => {
     const drag = dragRef.current
     if (!drag || cell.state === "booked") return
-    drag.cells.set(cell.key, cell)
+    if (cell.key === drag.pointerCellKey) return
+
+    drag.pointerCellKey = cell.key
+
+    if (!drag.cells.has(cell.key)) {
+      drag.path.push(cell.key)
+      drag.cells.set(cell.key, cell)
+      setDraggedCellKeys(new Set(drag.cells.keys()))
+      return
+    }
+
+    const pathIndex = drag.path.lastIndexOf(cell.key)
+    if (pathIndex === -1) return
+
+    while (drag.path.length > pathIndex + 1) {
+      const removedKey = drag.path.pop()
+      if (removedKey) drag.cells.delete(removedKey)
+    }
     setDraggedCellKeys(new Set(drag.cells.keys()))
   }, [])
 
@@ -196,8 +219,16 @@ export function useHrInterviewGrid(seasonBounds: InterviewSeasonBounds, seasonCo
           updatedSlots.reduce(upsertHrInterviewSlot, current),
         )
       }
-      if (results.some((result) => result.status === "rejected")) {
-        setError("Some interview slots could not be updated. Refresh and try again.")
+      const rejected = results.find((result) => result.status === "rejected")
+      if (rejected?.status === "rejected") {
+        const reason = rejected.reason
+        setError(
+          reason instanceof ApiError
+            ? reason.message
+            : reason instanceof Error
+              ? reason.message
+              : "Some interview slots could not be updated. Refresh and try again.",
+        )
         return
       }
       const action = drag.action === "open" ? "Opened" : "Closed"
