@@ -4,6 +4,10 @@ import Link from "next/link"
 import { LayoutDashboard, LogOut } from "lucide-react"
 
 import { logoutHrSession } from "@/app/(site)/login/actions"
+import {
+  hrWorkspaceTitle,
+  type HrRole,
+} from "@/components/hr/hr-navigation"
 import { HrSidebarNavigation } from "@/components/hr/hr-sidebar-navigation"
 import { Button } from "@/components/ui/button"
 import {
@@ -44,7 +48,7 @@ function onLogout() {
 export function HrSidebar({
   role,
 }: {
-  role: "hr" | "admin" | "finance"
+  role: HrRole
 }) {
   const { isMobile } = useSidebar()
 
@@ -59,8 +63,8 @@ export function HrSidebar({
             <LayoutDashboard className="size-4" />
           </span>
           <span className={brandCopyClasses}>
-            <span className={brandEyebrowClasses}>Admin</span>
-            <span className={brandTitleClasses}>HR Dashboard</span>
+            <span className={brandEyebrowClasses}>AWS Builders – UST</span>
+            <span className={brandTitleClasses}>{hrWorkspaceTitle(role)}</span>
           </span>
         </Link>
         {isMobile ? null : (

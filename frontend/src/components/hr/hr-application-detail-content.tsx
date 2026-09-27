@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { ArrowLeft } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { StatusPill } from "@/components/hr/status-pill"
 import { HrArchiveApplicantDialog } from "@/components/hr/hr-archive-applicant-dialog"
@@ -21,7 +22,7 @@ import Link from "next/link"
 const eyebrowClasses =
   "w-fit font-mono text-xs font-medium uppercase tracking-wide text-aquamarine"
 const backClasses =
-  "mb-3 mt-3 inline-flex font-mono text-xs text-prelude hover:text-blue-chalk"
+  "mb-4 inline-flex items-center gap-2 rounded-pill border border-blue-chalk/15 bg-haiti/30 px-3 py-2 font-mono text-xs text-prelude transition-colors hover:border-biloba-flower/35 hover:bg-meteorite/40 hover:text-blue-chalk"
 const headingRowClasses = "flex flex-wrap items-center gap-3"
 const titleClasses = `max-w-full font-sans text-4xl font-bold text-balance break-words text-blue-chalk md:text-5xl ${displayTitleLeadingClasses}`
 const panelClasses = `${glassPanelClasses} mt-8 min-w-0 overflow-x-clip px-4 py-8 sm:px-6 md:px-10`
@@ -67,7 +68,8 @@ export function HrApplicationDetailContent({
         {viewingArchive ? "// ARCHIVE" : "// APPLICATIONS"}
       </p>
       <Link href={listHref} className={backClasses}>
-        {backLabel}
+        <ArrowLeft className="size-3.5" aria-hidden />
+        {backLabel.replace("← ", "")}
       </Link>
       <div className={headingRowClasses}>
         <h2 className={titleClasses}>
