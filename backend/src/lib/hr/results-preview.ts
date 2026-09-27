@@ -13,7 +13,11 @@ import type {
   ApplicationType,
 } from "../applications/applications";
 
-export type ResultClassification = "accepted" | "rejected" | "incomplete";
+export type ResultClassification =
+  | "accepted"
+  | "rejected"
+  | "incomplete"
+  | "redirected";
 export type ChoiceDecisionStatus = "pending" | "approved" | "rejected";
 
 export type ResultPreviewChoice = {
@@ -124,6 +128,7 @@ async function queryResultsPreview(
       status: applications.status,
       applicationType: applications.applicationType,
       finalPositionId: applications.finalPositionId,
+      redirectPositionId: applications.redirectPositionId,
       memberId: applications.memberId,
       resultsReleasedAt: applications.resultsReleasedAt,
       archivedAt: applications.archivedAt,
@@ -168,6 +173,33 @@ async function queryResultsPreview(
         ? await choiceQuery.for("update")
         : await choiceQuery;
 
+  const redirectPositionIds = [
+    ...new Set(
+      pendingRows
+        .map((row) => row.redirectPositionId)
+        .filter((id): id is string => id !== null),
+    ),
+  ];
+  const redirectPositionQuery = database
+    .select({
+      id: positions.id,
+      title: positions.name,
+      committeeId: committees.id,
+      committee: committees.name,
+    })
+    .from(positions)
+    .innerJoin(committees, eq(positions.committeeId, committees.id))
+    .where(inArray(positions.id, redirectPositionIds));
+  const redirectPositionRows =
+    redirectPositionIds.length === 0
+      ? []
+      : lockRows
+        ? await redirectPositionQuery.for("update")
+        : await redirectPositionQuery;
+  const redirectPlacementByPositionId = new Map(
+    redirectPositionRows.map((row) => [row.id, row]),
+  );
+
   const choicesByApplication = new Map<string, ResultPreviewChoice[]>();
   for (const row of choiceRows) {
     const choices = choicesByApplication.get(row.applicationId) ?? [];
@@ -184,12 +216,16 @@ async function queryResultsPreview(
 
   let accepted = 0;
   let rejected = 0;
+  let redirected = 0;
   let incomplete = 0;
   const previewApplications: ResultPreviewApplication[] = pendingRows.map(
     (row) => {
       const choices = (choicesByApplication.get(row.id) ?? []).sort(
         (a, b) => a.preferenceRank - b.preferenceRank,
       );
+      const redirectPlacement = row.redirectPositionId
+        ? (redirectPlacementByPositionId.get(row.redirectPositionId) ?? null)
+        : null;
       const result: Classification =
         row.applicationType === "member"
           ? row.status === "approved"
@@ -200,14 +236,27 @@ async function queryResultsPreview(
                   classification: "incomplete",
                   blockingReason: "Member-only application must be approved before release.",
                 }
-          : classifyApplication(choices, row.finalPositionId);
+          : row.redirectPositionId
+            ? redirectPlacement
+              ? { classification: "redirected", blockingReason: null }
+              : {
+                  classification: "incomplete",
+                  blockingReason: "Redirect placement position is missing.",
+                }
+            : classifyApplication(choices, row.finalPositionId);
       if (result.classification === "accepted") accepted += 1;
       if (result.classification === "rejected") rejected += 1;
+      if (result.classification === "redirected") redirected += 1;
       if (result.classification === "incomplete") incomplete += 1;
 
-      const finalChoice = choices.find(
-        (choice) => choice.positionId === row.finalPositionId,
-      );
+      const finalChoice = redirectPlacement
+        ? {
+            positionId: redirectPlacement.id,
+            title: redirectPlacement.title,
+            committeeId: redirectPlacement.committeeId,
+            committee: redirectPlacement.committee,
+          }
+        : choices.find((choice) => choice.positionId === row.finalPositionId);
 
       return {
         id: row.id,
@@ -244,6 +293,7 @@ async function queryResultsPreview(
       pendingRelease: previewApplications.length,
       accepted,
       rejected,
+      redirected,
       incomplete,
       alreadyReleased,
       archived,

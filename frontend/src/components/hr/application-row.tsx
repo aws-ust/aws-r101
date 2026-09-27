@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { ChevronRight } from "lucide-react"
 import { ApplicationRowActionsMenu } from "@/components/hr/application-row-actions-menu"
+import { redirectPlacementLabel } from "@/components/hr/hr-redirect-placement-panel"
 import { StatusPill } from "@/components/hr/status-pill"
 import { cn } from "@/lib/utils"
 import { firstChoiceCommittee, fullName } from "@/lib/api"
@@ -22,6 +23,8 @@ const metaClasses =
 const metaTrailingClasses = "flex shrink-0 items-center gap-2 md:gap-3"
 const rowActionsClasses = "flex shrink-0 items-center"
 const archivedClasses =
+  "rounded-pill bg-daisy-bush/55 px-3 py-0.5 font-mono text-[11px] text-blue-chalk"
+const redirectClasses =
   "rounded-pill bg-daisy-bush/55 px-3 py-0.5 font-mono text-[11px] text-blue-chalk"
 
 type ApplicationRowProps = {
@@ -47,6 +50,7 @@ export function ApplicationRow({
 }: ApplicationRowProps) {
   const name = fullName(application)
   const archived = Boolean(application.archivedAt)
+  const redirectLabel = redirectPlacementLabel(application)
 
   return (
     <div className={cn(rowClasses, emphasized && firstRowClasses)}>
@@ -74,6 +78,9 @@ export function ApplicationRow({
           </span>
           <span className={metaClasses}>
             {archived ? <span className={archivedClasses}>Archived</span> : null}
+            {redirectLabel ? (
+              <span className={redirectClasses}>{redirectLabel}</span>
+            ) : null}
             <span className={metaTrailingClasses}>
               <StatusPill status={application.status} />
               <ChevronRight className="size-4 shrink-0 text-prelude" />

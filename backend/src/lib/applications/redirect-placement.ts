@@ -1,0 +1,170 @@
+import { and, eq, isNull } from "drizzle-orm";
+import { db } from "../../db";
+import { applications, committees, positions } from "../../db/schema";
+import { getApplicationById, type ApplicationJson } from "./applications";
+
+export class RedirectPlacementError extends Error {
+  constructor(
+    message: string,
+    readonly status: 400 | 404 | 409 = 400,
+  ) {
+    super(message);
+    this.name = "RedirectPlacementError";
+  }
+}
+
+async function loadRedirectPosition(positionId: string) {
+  const [row] = await db
+    .select({
+      id: positions.id,
+      title: positions.name,
+      office: positions.office,
+      committee: committees.name,
+    })
+    .from(positions)
+    .innerJoin(committees, eq(positions.committeeId, committees.id))
+    .where(eq(positions.id, positionId))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function updateRedirectPlacement(
+  applicationId: string,
+  redirectPositionId: string | null,
+): Promise<ApplicationJson> {
+  const [application] = await db
+    .select({
+      id: applications.id,
+      applicationType: applications.applicationType,
+      archivedAt: applications.archivedAt,
+      redirectResponse: applications.redirectResponse,
+    })
+    .from(applications)
+    .where(eq(applications.id, applicationId))
+    .limit(1);
+
+  if (!application) {
+    throw new RedirectPlacementError("Application not found.", 404);
+  }
+  if (application.archivedAt) {
+    throw new RedirectPlacementError(
+      "Restore the application before changing redirect placement.",
+      409,
+    );
+  }
+  if (application.applicationType !== "position") {
+    throw new RedirectPlacementError(
+      "Redirect placement applies only to committee applications.",
+    );
+  }
+  if (application.redirectResponse) {
+    throw new RedirectPlacementError(
+      "Redirect placement cannot change after the applicant responds.",
+      409,
+    );
+  }
+
+  if (redirectPositionId) {
+    const position = await loadRedirectPosition(redirectPositionId);
+    if (!position) {
+      throw new RedirectPlacementError("Position not found.", 404);
+    }
+  }
+
+  await db
+    .update(applications)
+    .set({ redirectPositionId, updatedAt: new Date() })
+    .where(
+      and(
+        eq(applications.id, applicationId),
+        isNull(applications.redirectResponse),
+      ),
+    );
+
+  const updated = await getApplicationById(applicationId);
+  if (!updated) {
+    throw new RedirectPlacementError("Application not found.", 404);
+  }
+  return updated;
+}
+
+export async function recordRedirectResponse(
+  applicationId: string,
+  response: "accepted" | "declined",
+): Promise<ApplicationJson> {
+  const [application] = await db
+    .select({
+      id: applications.id,
+      applicationType: applications.applicationType,
+      archivedAt: applications.archivedAt,
+      redirectPositionId: applications.redirectPositionId,
+      redirectResponse: applications.redirectResponse,
+      resultsReleasedAt: applications.resultsReleasedAt,
+    })
+    .from(applications)
+    .where(eq(applications.id, applicationId))
+    .limit(1);
+
+  if (!application) {
+    throw new RedirectPlacementError("Application not found.", 404);
+  }
+  if (application.archivedAt) {
+    throw new RedirectPlacementError(
+      "Restore the application before recording a redirect response.",
+      409,
+    );
+  }
+  if (application.applicationType !== "position") {
+    throw new RedirectPlacementError(
+      "Redirect responses apply only to committee applications.",
+    );
+  }
+  if (!application.redirectPositionId) {
+    throw new RedirectPlacementError(
+      "Set a redirect placement before recording a response.",
+    );
+  }
+  if (!application.resultsReleasedAt) {
+    throw new RedirectPlacementError(
+      "Results must be released before recording a redirect response.",
+      409,
+    );
+  }
+  if (application.redirectResponse) {
+    throw new RedirectPlacementError(
+      "Redirect response was already recorded.",
+      409,
+    );
+  }
+
+  const respondedAt = new Date();
+  if (response === "accepted") {
+    await db
+      .update(applications)
+      .set({
+        redirectResponse: "accepted",
+        redirectRespondedAt: respondedAt,
+        status: "approved",
+        finalPositionId: application.redirectPositionId,
+        updatedAt: new Date(),
+      })
+      .where(eq(applications.id, applicationId));
+  } else {
+    await db
+      .update(applications)
+      .set({
+        redirectResponse: "declined",
+        redirectRespondedAt: respondedAt,
+        status: "rejected",
+        finalPositionId: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(applications.id, applicationId));
+  }
+
+  const updated = await getApplicationById(applicationId);
+  if (!updated) {
+    throw new RedirectPlacementError("Application not found.", 404);
+  }
+  return updated;
+}

@@ -22,6 +22,7 @@ const pillClasses: Record<ResultClassification, string> = {
   accepted: "bg-aquamarine text-haiti",
   rejected: "bg-haiti text-prelude",
   incomplete: "bg-rose-deep/55 text-rose-glow",
+  redirected: "bg-daisy-bush/70 text-blue-chalk",
 }
 
 function resultDetail(application: ResultPreviewApplication) {
@@ -37,6 +38,11 @@ function resultDetail(application: ResultPreviewApplication) {
   }
   if (application.classification === "rejected") {
     return "Both committee choices were rejected."
+  }
+  if (application.classification === "redirected") {
+    return application.finalPlacement
+      ? `Redirect offer — ${application.finalPlacement.committee} — ${application.finalPlacement.title}`
+      : "Redirect placement missing"
   }
   return application.blockingReason ?? "This application is incomplete."
 }

@@ -281,6 +281,10 @@ export async function openCurrentPaymentCampaign(actor: AuthenticatedUser) {
               eq(applications.applicationType, "position"),
               isNotNull(applications.resultsReleasedAt),
               inArray(applications.status, ["approved", "rejected"]),
+              or(
+                isNull(applications.redirectPositionId),
+                isNotNull(applications.redirectResponse),
+              ),
             ),
           ),
         ),

@@ -1,13 +1,15 @@
-import { and, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { db } from "../../db";
 import {
   applicants,
   applications,
+  committees,
   emailNotifications,
   positions,
 } from "../../db/schema";
 import { recruitmentYearInt } from "../applications/application-code";
 import { deliverQueuedResultEmail } from "../email/service";
+import { redirectPlacementCcEmails } from "../email/redirect-recipients";
 import { markFailed } from "../email/notifications";
 
 export type ResultEmailDeliverySummary = {
@@ -29,6 +31,7 @@ export async function deliverResultNotifications(
       recipient: emailNotifications.recipient,
       lastName: applicants.lastName,
       position: positions.name,
+      redirectPositionId: applications.redirectPositionId,
     })
     .from(emailNotifications)
     .innerJoin(
@@ -39,11 +42,33 @@ export async function deliverResultNotifications(
     .leftJoin(positions, eq(applications.finalPositionId, positions.id))
     .where(inArray(emailNotifications.id, notificationIds));
 
+  const redirectPositionIds = [
+    ...new Set(
+      rows
+        .map((row) => row.redirectPositionId)
+        .filter((id): id is string => id !== null),
+    ),
+  ];
+  const redirectRows =
+    redirectPositionIds.length === 0
+      ? []
+      : await db
+          .select({
+            id: positions.id,
+            title: positions.name,
+            committee: committees.name,
+          })
+          .from(positions)
+          .innerJoin(committees, eq(positions.committeeId, committees.id))
+          .where(inArray(positions.id, redirectPositionIds));
+  const redirectById = new Map(redirectRows.map((row) => [row.id, row]));
+
   const results = await Promise.allSettled(
     rows.map(async (row) => {
       if (
         row.messageType !== "result_accepted" &&
-        row.messageType !== "result_rejected"
+        row.messageType !== "result_rejected" &&
+        row.messageType !== "result_redirected"
       ) {
         await markFailed(row.id, "Notification is not a result email.");
         return "failed" as const;
@@ -51,6 +76,28 @@ export async function deliverResultNotifications(
       if (row.messageType === "result_accepted" && !row.position) {
         await markFailed(row.id, "Accepted result has no final position.");
         return "failed" as const;
+      }
+      if (row.messageType === "result_redirected") {
+        const redirect = row.redirectPositionId
+          ? redirectById.get(row.redirectPositionId)
+          : null;
+        if (!redirect) {
+          await markFailed(row.id, "Redirected result has no redirect position.");
+          return "failed" as const;
+        }
+        const cc = redirectPlacementCcEmails({
+          committee: redirect.committee,
+          positionTitle: redirect.title,
+        });
+        return deliverQueuedResultEmail({
+          notificationId: row.id,
+          messageType: "result_redirected",
+          recipient: row.recipient,
+          lastName: row.lastName,
+          position: redirect.title,
+          committee: redirect.committee,
+          cc,
+        });
       }
       return deliverQueuedResultEmail({
         notificationId: row.id,
@@ -82,6 +129,7 @@ async function claimFailedResultNotifications(): Promise<string[]> {
           inArray(emailNotifications.messageType, [
             "result_accepted",
             "result_rejected",
+            "result_redirected",
           ]),
           eq(applications.recruitmentYear, recruitmentYearInt()),
           isNotNull(applications.resultsReleasedAt),

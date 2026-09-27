@@ -2,6 +2,7 @@ import type { RenderedEmail } from "./types";
 import { appBaseUrl } from "./config";
 import { devExamParagraphs, officerFirstChoiceLinkExtras } from "./choice-email-extras";
 import { isExecutiveOfficeCommittee } from "./officer-recipients";
+import { officeLabelForCommittee } from "../apply/committee-office-groups";
 import {
   applicantOtpSubject,
   applicantInterviewBookingSubject,
@@ -13,6 +14,7 @@ import {
   paymentInvitationSubject,
   resultAcceptedSubject,
   resultRejectedSubject,
+  resultRedirectedSubject,
 } from "./subjects";
 import {
   academicYearLabel,
@@ -504,6 +506,89 @@ The AWS Builders - UST Executive Board`;
     subject,
     text,
     html,
+    inline: [brandedEmailHeaderInline()],
+  };
+}
+
+export function resultRedirectedTemplate(input: {
+  lastName: string;
+  position: string;
+  committee: string;
+  cc?: string[];
+}): RenderedEmail {
+  const subject = resultRedirectedSubject;
+  const honorific = `Mx. ${input.lastName}`;
+  const office = officeLabelForCommittee(input.committee);
+  const statusUrl = `${appBaseUrl()}/apply/dashboard`;
+
+  const text = `Greetings from the Clouds!
+
+
+Good day, ${honorific},
+
+Thank you for applying to AWS Builders - UST and for the time and care you put into R101.
+
+After deliberation, we would like to offer you a place on a committee other than the choices on your application. This is a redirected placement. You may accept this role or decline it.
+
+Redirected position: ${input.position}
+Committee: ${input.committee}
+Office: ${office}
+
+How to respond
+
+Please reply directly to this email with your decision. In your reply, include exactly one of the following (copy the line as written):
+
+To accept the redirected position:
+I accept the position
+
+To decline the redirected position:
+I decline the position
+
+If you decline this role, you may still continue with AWS Builders - UST as a general member.
+
+After we receive your reply—whether you accept or decline the redirected position—we will send you separate instructions for paying the membership fee. When payment opens, you will complete payment through your applicant dashboard: ${statusUrl}. Please do not send a payment until you receive that message.
+
+Yours in Thomasian Leadership,
+The AWS Builders - UST Executive Board`;
+
+  const html = wrapBrandedHtml({
+    eyebrow: "AWS BUILDERS – UST",
+    bannerTitle: "R101 RESULTS",
+    bannerSub: "Redirected placement",
+    heading: "A New Placement Offer",
+    headerImageUrl: `cid:${APPLICATION_RECEIVED_HEADER_CID}`,
+    headerImageAlt: "AWS Builders - UST — It's Always Day One",
+    inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
+<p style="margin:0 0 0;line-height:8px;font-size:8px;">&nbsp;</p>
+<p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
+<p style="margin:0 0 16px;">Thank you for applying to AWS Builders - UST and for the time and care you put into R101.</p>
+<p style="margin:0 0 16px;">After deliberation, we would like to offer you a place on a committee other than the choices on your application. This is a redirected placement. You may accept this role or decline it.</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;background:#f8f5ff;border-radius:8px;">
+  <tr>
+    <td style="padding:16px 18px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#170f33;">
+      <p style="margin:0 0 8px;"><strong>Redirected position</strong><br>${escapeHtml(input.position)}</p>
+      <p style="margin:0 0 8px;"><strong>Committee</strong><br>${escapeHtml(input.committee)}</p>
+      <p style="margin:0;"><strong>Office</strong><br>${escapeHtml(office)}</p>
+    </td>
+  </tr>
+</table>
+<p style="margin:0 0 8px;font-weight:bold;">How to respond</p>
+<p style="margin:0 0 16px;">Please reply directly to this email with your decision. In your reply, include exactly one of the following (copy the line as written):</p>
+<p style="margin:0 0 8px;">To accept the redirected position:</p>
+<p style="margin:0 0 12px;font-weight:bold;">I accept the position</p>
+<p style="margin:0 0 8px;">To decline the redirected position:</p>
+<p style="margin:0 0 16px;font-weight:bold;">I decline the position</p>
+<p style="margin:0 0 16px;">If you decline this role, you may still continue with AWS Builders - UST as a general member.</p>
+<p style="margin:0 0 16px;">After we receive your reply—whether you accept or decline the redirected position—we will send you separate instructions for paying the membership fee. When payment opens, you will complete payment through your applicant dashboard: <a href="${escapeHtml(statusUrl)}" style="color:#46258a;">${escapeHtml(statusUrl)}</a>. Please do not send a payment until you receive that message.</p>
+<p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
+<p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
+  });
+
+  return {
+    subject,
+    text,
+    html,
+    cc: input.cc,
     inline: [brandedEmailHeaderInline()],
   };
 }

@@ -88,6 +88,14 @@ export type ApplicationJson = {
     committee: string;
     title: string;
   } | null;
+  redirectPlacement: {
+    positionId: string;
+    committee: string;
+    title: string;
+    office: string | null;
+  } | null;
+  redirectResponse: "accepted" | "declined" | null;
+  resultsReleasedAt: string | null;
   documents: ApplicationDocumentJson[];
 };
 
@@ -197,6 +205,9 @@ type ApplicationRow = {
   portfolioUrl: string | null;
   githubUrl: string | null;
   finalPositionId: string | null;
+  redirectPositionId: string | null;
+  redirectResponse: "accepted" | "declined" | null;
+  resultsReleasedAt: Date | null;
 };
 
 function iso(value: Date): string {
@@ -276,6 +287,28 @@ async function attachRelations(
     documentsByApp.set(doc.applicationId, list);
   }
 
+  const redirectPositionIds = [
+    ...new Set(
+      rows
+        .map((row) => row.redirectPositionId)
+        .filter((id): id is string => id !== null),
+    ),
+  ];
+  const redirectRows =
+    redirectPositionIds.length === 0
+      ? []
+      : await db
+          .select({
+            id: positions.id,
+            title: positions.name,
+            office: positions.office,
+            committee: committees.name,
+          })
+          .from(positions)
+          .innerJoin(committees, eq(positions.committeeId, committees.id))
+          .where(inArray(positions.id, redirectPositionIds));
+  const redirectById = new Map(redirectRows.map((row) => [row.id, row]));
+
   return rows.map((row) => {
     const choices = (choicesByApp.get(row.id) ?? []).sort(
       (a, b) => a.preferenceRank - b.preferenceRank,
@@ -283,6 +316,9 @@ async function attachRelations(
     const finalPlacement = choices.find(
       (choice) => choice.positionId === row.finalPositionId,
     );
+    const redirect = row.redirectPositionId
+      ? redirectById.get(row.redirectPositionId)
+      : null;
     return {
       id: row.id,
       applicationCode: row.applicationCode,
@@ -312,6 +348,16 @@ async function attachRelations(
             title: finalPlacement.title,
           }
         : null,
+      redirectPlacement: redirect
+        ? {
+            positionId: redirect.id,
+            committee: redirect.committee,
+            title: redirect.title,
+            office: redirect.office,
+          }
+        : null,
+      redirectResponse: row.redirectResponse,
+      resultsReleasedAt: row.resultsReleasedAt ? iso(row.resultsReleasedAt) : null,
       documents: documentsByApp.get(row.id) ?? [],
     };
   });
@@ -339,6 +385,9 @@ const applicationSelect = {
   portfolioUrl: applications.portfolioUrl,
   githubUrl: applications.githubUrl,
   finalPositionId: applications.finalPositionId,
+  redirectPositionId: applications.redirectPositionId,
+  redirectResponse: applications.redirectResponse,
+  resultsReleasedAt: applications.resultsReleasedAt,
 };
 
 export async function getApplicationById(

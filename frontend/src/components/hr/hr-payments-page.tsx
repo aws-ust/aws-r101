@@ -1,6 +1,5 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { ActionFeedback } from "@/components/shared/action-feedback"
 import { SectionHeader } from "@/components/shared/section-header"
 import { HrPaymentCampaignPanel } from "@/components/hr/hr-payment-campaign-panel"
@@ -8,22 +7,11 @@ import { paymentCampaignDescription } from "@/components/hr/hr-payment-copy"
 import { HrPaymentSection } from "@/components/hr/hr-payment-section"
 import { HrPaymentSummary } from "@/components/hr/hr-payment-summary"
 import { HrSectionNav } from "@/components/hr/hr-section-nav"
-import {
-  getSession,
-  listCommitteeApplicationStatuses,
-  type CommitteeApplicationStatus,
-} from "@/lib/api/client"
-import {
-  getPaymentCampaign,
-  getPaymentDashboard,
-  type PaymentCampaign,
-  type PaymentDashboard,
-} from "@/lib/api/payments"
+import { useHrPaymentWorkspace } from "@/components/hr/use-hr-payment-workspace"
 import { pageShellClasses } from "@/lib/site/surface"
 
 const stackClasses = "mt-6 flex flex-col gap-8"
 const loadingClasses = "mt-8 font-sans text-sm text-prelude"
-type Feedback = { type: "success" | "error"; message: string }
 
 const sectionNavItems = [
   { id: "payment-overview", label: "Overview" },
@@ -31,44 +19,18 @@ const sectionNavItems = [
 ]
 
 export function HrPaymentsPage() {
-  const [campaign, setCampaign] = useState<PaymentCampaign | null>(null)
-  const [dashboard, setDashboard] = useState<PaymentDashboard | null>(null)
-  const [committees, setCommittees] = useState<CommitteeApplicationStatus[]>([])
-  const [role, setRole] = useState<"hr" | "admin" | "finance">("hr")
-  const [feedback, setFeedback] = useState<Feedback | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [pending, setPending] = useState(false)
-
-  useEffect(() => {
-    getSession()
-      .then(async (session) => {
-        const committeeRequest =
-          session.role === "finance"
-            ? Promise.resolve([] as CommitteeApplicationStatus[])
-            : listCommitteeApplicationStatuses()
-        const [campaignResponse, dashboardResponse, committeeRows] =
-          await Promise.all([
-            getPaymentCampaign(),
-            getPaymentDashboard(),
-            committeeRequest,
-          ])
-        return { campaignResponse, dashboardResponse, session, committeeRows }
-      })
-      .then(({ campaignResponse, dashboardResponse, session, committeeRows }) => {
-        setCampaign(campaignResponse.campaign)
-        setDashboard(dashboardResponse)
-        setRole(session.role)
-        setCommittees(committeeRows)
-      })
-      .catch((caught) =>
-        setFeedback({
-          type: "error",
-          message:
-            caught instanceof Error ? caught.message : "Could not load payments.",
-        }),
-      )
-      .finally(() => setLoading(false))
-  }, [])
+  const {
+    campaign,
+    setCampaign,
+    dashboard,
+    committees,
+    role,
+    feedback,
+    setFeedback,
+    loading,
+    pending,
+    setPending,
+  } = useHrPaymentWorkspace()
 
   return (
     <main className={pageShellClasses}>

@@ -79,6 +79,9 @@ export const resultAcceptedSubject =
 export const resultRejectedSubject =
   "AWS Builders - UST R101 Recruitment Results";
 
+export const resultRedirectedSubject =
+  "A New Placement Offer | AWS Builders - UST R101";
+
 export function paymentInvitationSubject(applicationCode: string): string {
   return `AWS Builders - UST | Membership Payment (${applicationCode})`;
 }

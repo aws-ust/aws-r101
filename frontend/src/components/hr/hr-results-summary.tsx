@@ -27,6 +27,7 @@ export function HrResultsSummary({
     ["Pending release", summary.pendingRelease],
     ["Accepted", summary.accepted],
     ["Rejected", summary.rejected],
+    ["Redirected", summary.redirected],
     ["Incomplete", summary.incomplete],
     ["Already released", summary.alreadyReleased],
   ] as const

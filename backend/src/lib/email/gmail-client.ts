@@ -112,6 +112,9 @@ function buildRfc2822Message(input: SendEmailInput): string {
   const lines = [
     `From: ${fromHeader()}`,
     `To: ${input.to}`,
+    ...(input.cc?.length ?
+      [`Cc: ${input.cc.join(", ")}`]
+    : []),
     `Reply-To: ${replyToEmail()}`,
     `Subject: ${encodeHeaderValue(input.subject)}`,
     "MIME-Version: 1.0",

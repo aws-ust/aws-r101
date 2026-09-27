@@ -16,6 +16,7 @@ import {
   paymentInvitationTemplate,
   resultAcceptedTemplate,
   resultRejectedTemplate,
+  resultRedirectedTemplate,
 } from "./templates";
 
 test("applicant email templates use compact, plain formatting", async (t) => {
@@ -352,5 +353,20 @@ test("applicant email templates use compact, plain formatting", async (t) => {
     assert.match(email.text, /Executive Assistant to the CTO/);
     assert.match(email.text, /exam specifications are attached below/);
     assert.equal(AWS_DEV_ASSESSMENT_FILENAME, "AWS Dev Assessment.pdf");
+  });
+
+  await t.test("redirected result email includes reply phrases and dashboard link", () => {
+    const email = resultRedirectedTemplate({
+      lastName: "Olmedo",
+      position: "Development Committee Staff",
+      committee: "Development Committee",
+      cc: ["neilalfonz.casas.cics@ust.edu.ph"],
+    });
+    assert.match(email.text, /I accept the position/);
+    assert.match(email.text, /I decline the position/);
+    assert.match(email.text, /\/apply\/dashboard/);
+    assert.match(email.html, /font-weight:bold;">I accept the position/);
+    assert.deepEqual(email.cc, ["neilalfonz.casas.cics@ust.edu.ph"]);
+    assert.doesNotMatch(email.text, /Executive Board of/);
   });
 });

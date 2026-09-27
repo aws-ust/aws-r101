@@ -20,6 +20,8 @@ const choiceListClasses = "mt-5 flex flex-col gap-2"
 const choiceRowClasses =
   "flex items-center justify-between gap-3 rounded-[14px] bg-haiti/55 px-4 py-3"
 const choiceNameClasses = "font-sans text-sm text-blue-chalk"
+const tagClasses =
+  "mt-3 inline-flex w-fit rounded-pill bg-daisy-bush/70 px-3 py-0.5 font-mono text-[11px] text-blue-chalk"
 
 export function ApplicantResultPanel({
   result,
@@ -28,28 +30,48 @@ export function ApplicantResultPanel({
   result: ApplicantResult
   choices: ApplicantChoice[]
 }) {
-  const accepted = result.status === "approved"
+  const redirectPending =
+    result.redirectPlacement !== null && result.redirectResponse === null
+  const accepted =
+    result.redirectResponse === "accepted" ||
+    (result.status === "approved" && !redirectPending)
+  const placement =
+    result.redirectResponse === "accepted" && result.finalPlacement
+      ? result.finalPlacement
+      : result.redirectPlacement && redirectPending
+        ? result.redirectPlacement
+        : result.finalPlacement
 
   return (
     <section className={panelClasses} aria-labelledby="application-result-title">
       <p className={eyebrowClasses}>Final result</p>
       <h2 id="application-result-title" className={headingClasses}>
-        {accepted ? "Welcome to AWS Builders – UST" : "Application update"}
+        {redirectPending
+          ? "Redirected placement offer"
+          : accepted
+            ? "Welcome to AWS Builders – UST"
+            : "Application update"}
       </h2>
       <p className={bodyClasses}>
-        {accepted
-          ? "Your application was accepted. Your final placement is shown below. Payment instructions will appear separately when the payment period opens."
-          : "Thank you for applying. You were not selected for this recruitment cycle."}
+        {redirectPending
+          ? "You have been offered a redirected committee placement. Reply to the placement email with your decision. Membership payment instructions will be sent after HR records your reply."
+          : accepted
+            ? "Your application was accepted. Your final placement is shown below. Payment instructions will appear separately when the payment period opens."
+            : "Thank you for applying. You were not selected for a committee position this term. You may still continue as a general member when payment opens."}
       </p>
 
-      {accepted ? (
+      {redirectPending ? (
+        <span className={tagClasses}>Redirected — awaiting your reply</span>
+      ) : null}
+
+      {placement ? (
         <div className={detailGridClasses}>
           <div className={detailClasses}>
-            <p className={detailLabelClasses}>Final placement</p>
+            <p className={detailLabelClasses}>
+              {redirectPending ? "Offered placement" : "Final placement"}
+            </p>
             <p className={detailValueClasses}>
-              {result.finalPlacement
-                ? `${result.finalPlacement.committee} — ${result.finalPlacement.title}`
-                : "—"}
+              {`${placement.committee} — ${placement.title}`}
             </p>
           </div>
         </div>
@@ -63,7 +85,7 @@ export function ApplicantResultPanel({
           return (
             <div key={decision.preferenceRank} className={choiceRowClasses}>
               <p className={choiceNameClasses}>
-                {decision.preferenceRank === 1 ? "First" : "Second"} choice: {" "}
+                {decision.preferenceRank === 1 ? "First" : "Second"} choice:{" "}
                 {choice?.committee ?? "Committee"}
               </p>
               <StatusPill status={decision.decisionStatus} />

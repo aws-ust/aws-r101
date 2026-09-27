@@ -85,6 +85,8 @@ export async function getApplicantEditableApplication(applicationId: string) {
       applicationType: applications.applicationType,
       archivedAt: applications.archivedAt,
       resultsReleasedAt: applications.resultsReleasedAt,
+      redirectPositionId: applications.redirectPositionId,
+      redirectResponse: applications.redirectResponse,
       finalPositionId: applications.finalPositionId,
       memberId: applications.memberId,
       firstName: applicants.firstName,
@@ -150,6 +152,20 @@ export async function getApplicantEditableApplication(applicationId: string) {
     (choice) => choice.positionId === application.finalPositionId,
   );
 
+  const [redirectPosition] = application.redirectPositionId
+    ? await db
+        .select({
+          positionId: positions.id,
+          title: positions.name,
+          committeeId: committees.id,
+          committee: committees.name,
+        })
+        .from(positions)
+        .innerJoin(committees, eq(positions.committeeId, committees.id))
+        .where(eq(positions.id, application.redirectPositionId))
+        .limit(1)
+    : [undefined];
+
   return {
     applicationCode: application.applicationCode,
     status: application.status,
@@ -184,6 +200,15 @@ export async function getApplicantEditableApplication(applicationId: string) {
           status: application.status,
           releasedAt: application.resultsReleasedAt.toISOString(),
           memberId: application.memberId,
+          redirectPlacement: redirectPosition
+            ? {
+                positionId: redirectPosition.positionId,
+                title: redirectPosition.title,
+                committeeId: redirectPosition.committeeId,
+                committee: redirectPosition.committee,
+              }
+            : null,
+          redirectResponse: application.redirectResponse,
           finalPlacement: finalPlacement
             ? {
                 positionId: finalPlacement.positionId,

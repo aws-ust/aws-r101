@@ -181,6 +181,26 @@ export function resendApplicationSubmittedEmailRequest(id: string) {
   );
 }
 
+export function patchApplicationRedirectPlacementRequest(
+  id: string,
+  redirectPositionId: string | null,
+) {
+  return apiFetch<HrApplication>(`/applications/${id}/redirect-placement`, {
+    method: "PATCH",
+    body: JSON.stringify({ redirectPositionId }),
+  });
+}
+
+export function patchApplicationRedirectResponseRequest(
+  id: string,
+  response: "accepted" | "declined",
+) {
+  return apiFetch<HrApplication>(`/applications/${id}/redirect-response`, {
+    method: "PATCH",
+    body: JSON.stringify({ response }),
+  });
+}
+
 type PositionApiRow = {
   id: string;
   title: string;
@@ -452,7 +472,11 @@ export function patchInterviewWindow(startsAt: string, endsAt: string) {
   });
 }
 
-export type ResultClassification = "accepted" | "rejected" | "incomplete";
+export type ResultClassification =
+  | "accepted"
+  | "rejected"
+  | "incomplete"
+  | "redirected";
 
 export type ResultPreviewApplication = {
   id: string;
@@ -486,6 +510,7 @@ export type ResultsPreview = {
     pendingRelease: number;
     accepted: number;
     rejected: number;
+    redirected: number;
     incomplete: number;
     alreadyReleased: number;
     archived: number;

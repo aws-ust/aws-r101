@@ -29,6 +29,10 @@ export const applicationChoiceStatus = pgEnum("application_choice_status", [
   "approved",
   "rejected",
 ]);
+export const redirectResponseStatus = pgEnum("redirect_response_status", [
+  "accepted",
+  "declined",
+]);
 export const documentType = pgEnum("document_type", [
   "resume",
   "transcript",
@@ -53,6 +57,7 @@ export const emailMessageType = pgEnum("email_message_type", [
   "member_registration",
   "result_accepted",
   "result_rejected",
+  "result_redirected",
   "payment_invitation",
   "membership_confirmation",
 ]);
@@ -212,6 +217,14 @@ export const applications = pgTable(
     finalPositionId: uuid("final_position_id").references(() => positions.id, {
       onDelete: "restrict",
     }),
+    redirectPositionId: uuid("redirect_position_id").references(
+      () => positions.id,
+      { onDelete: "restrict" },
+    ),
+    redirectResponse: redirectResponseStatus("redirect_response"),
+    redirectRespondedAt: timestamp("redirect_responded_at", {
+      withTimezone: true,
+    }),
     reviewedBy: uuid("reviewed_by").references(() => users.id, {
       onDelete: "set null",
     }),
@@ -260,6 +273,14 @@ export const applications = pgTable(
     check(
       "applications_member_id_not_blank_check",
       sql`${t.memberId} IS NULL OR length(trim(${t.memberId})) > 0`,
+    ),
+    check(
+      "applications_redirect_response_audit_check",
+      sql`${t.redirectResponse} IS NULL OR ${t.redirectRespondedAt} IS NOT NULL`,
+    ),
+    check(
+      "applications_redirect_response_requires_offer_check",
+      sql`${t.redirectResponse} IS NULL OR ${t.redirectPositionId} IS NOT NULL`,
     ),
     unique().on(t.applicantId, t.recruitmentYear),
     index("idx_applications_applicant").on(t.applicantId),
