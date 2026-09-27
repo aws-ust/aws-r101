@@ -11,7 +11,9 @@ export default async function LoginPage({
   }
 
   const session = await getServerSession()
-  if (session) redirect("/admin/hr")
+  if (session) {
+    redirect(session.role === "finance" ? "/admin/hr/payments" : "/admin/hr")
+  }
 
   return <LoginForm />
 }

@@ -32,7 +32,7 @@ function redirectToLogin(): void {
   window.location.replace("/login");
 }
 
-async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
     ...init,
     credentials: "include",
@@ -522,11 +522,15 @@ export function retryFailedResultEmailsRequest() {
 
 type LoginResponse = {
   email: string;
+  role: "hr" | "admin" | "finance";
   expiresAt: string;
 };
 
-export async function getSession(): Promise<{ email: string }> {
-  return apiFetch<{ email: string }>("/auth/me");
+export async function getSession(): Promise<{
+  email: string;
+  role: "hr" | "admin" | "finance";
+}> {
+  return apiFetch("/auth/me");
 }
 
 export async function login(

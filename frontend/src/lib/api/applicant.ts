@@ -90,6 +90,50 @@ export type ApplicantInterviewSchedule = {
   booked: ApplicantInterviewSlotTime[]
 }
 
+export type ApplicantPayment = {
+  applicationCode: string
+  applicationType: "position" | "member"
+  applicationStatus: "pending" | "approved" | "rejected"
+  paymentStatus:
+    | "awaiting_payment"
+    | "pending_verification"
+    | "verified"
+    | "needs_resubmission"
+    | "expired"
+  membershipStatus: "inactive" | "active" | "revoked"
+  confirmationStatus: "not_released" | "released" | "email_failed"
+  amountCents: number
+  opensAt: string
+  deadlineAt: string
+  resubmissionDeadlineAt: string | null
+  paymentMethods: {
+    gcash: {
+      accountName: string | null
+      accountNumber: string
+      qrImageUrl: string | null
+    } | null
+    bpi: {
+      accountName: string | null
+      accountNumber: string
+      qrImageUrl: string | null
+    } | null
+  }
+  canSubmit: boolean
+  latestSubmission: {
+    id: string
+    attemptNumber: number
+    method: "gcash" | "bpi"
+    referenceNumber: string
+    status: "pending" | "verified" | "rejected" | "reversed"
+    submittedAt: string
+    reviewedAt: string | null
+    reviewReason: string | null
+  } | null
+  memberId: string | null
+  chatLink: string | null
+  confirmationReleasedAt: string | null
+}
+
 async function applicantFetch<T>(
   path: string,
   init?: RequestInit
@@ -177,6 +221,42 @@ export function putApplicantInterviewBooking(slotId: string) {
   }>("/applicant/interview-booking", {
     method: "PUT",
     body: JSON.stringify({ slotId }),
+  })
+}
+
+export function getApplicantPayment() {
+  return applicantFetch<{ payment: ApplicantPayment | null }>(
+    "/applicant/payment",
+  )
+}
+
+export function createApplicantPaymentReceiptUpload(body: {
+  mimeType: "image/jpeg" | "image/png" | "image/webp"
+  sizeBytes: number
+  checksumSha256: string
+}) {
+  return applicantFetch<{
+    url: string
+    fields: Record<string, string>
+    key: string
+  }>("/applicant/payment/receipt/presign", {
+    method: "POST",
+    body: JSON.stringify(body),
+  })
+}
+
+export function submitApplicantPayment(body: {
+  method: "gcash" | "bpi"
+  referenceNumber: string
+  receiptKey: string
+  receiptFileName: string
+  mimeType: "image/jpeg" | "image/png" | "image/webp"
+  sizeBytes: number
+  checksumSha256: string
+}) {
+  return applicantFetch("/applicant/payment/submit", {
+    method: "POST",
+    body: JSON.stringify(body),
   })
 }
 

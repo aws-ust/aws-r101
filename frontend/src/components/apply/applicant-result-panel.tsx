@@ -38,7 +38,7 @@ export function ApplicantResultPanel({
       </h2>
       <p className={bodyClasses}>
         {accepted
-          ? "Your application was accepted. Your final placement and Member ID are shown below."
+          ? "Your application was accepted. Your final placement is shown below. Payment instructions will appear separately when the payment period opens."
           : "Thank you for applying. You were not selected for this recruitment cycle."}
       </p>
 
@@ -51,10 +51,6 @@ export function ApplicantResultPanel({
                 ? `${result.finalPlacement.committee} — ${result.finalPlacement.title}`
                 : "—"}
             </p>
-          </div>
-          <div className={detailClasses}>
-            <p className={detailLabelClasses}>Member ID</p>
-            <p className={detailValueClasses}>{result.memberId ?? "—"}</p>
           </div>
         </div>
       ) : null}

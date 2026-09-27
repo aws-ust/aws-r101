@@ -16,6 +16,7 @@ import { ApplicantEditBanner } from "@/components/apply/applicant-edit-banner"
 import { ApplicantDashboardProfile } from "@/components/apply/applicant-dashboard-profile"
 import type { ApplicantApplication } from "@/lib/api/applicant"
 import { ApplicantDocumentEditor } from "@/components/apply/applicant-document-editor"
+import { ApplicantPaymentPanel } from "@/components/apply/applicant-payment-panel"
 
 const docsClasses = "mt-8 font-sans text-sm text-prelude"
 
@@ -134,6 +135,8 @@ export function ApplicantDashboardContent({
       ) : (
         <ApplicantMembershipStatus application={application} />
       )}
+
+      <ApplicantPaymentPanel />
 
       <ApplicantDashboardDocuments
         application={application}
