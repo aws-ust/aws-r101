@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+import { formatSubheaderLabel } from "@/lib/site/button-label"
 
 const sectionClasses =
   "flex flex-col gap-5 border-t border-blue-chalk/15 pt-7 first:border-t-0 first:pt-0"
@@ -31,7 +32,7 @@ export function HrPaymentSection({
         </span>
         <div>
           <h2 id={headingId} className={titleClasses}>
-            {title}
+            {formatSubheaderLabel(title)}
           </h2>
           <p className={descriptionClasses}>{description}</p>
         </div>

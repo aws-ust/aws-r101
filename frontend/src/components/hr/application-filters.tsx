@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select"
 import { HrCommitteeFilterPicker } from "@/components/hr/hr-committee-filter-picker"
 import { groupedCommitteesForPicker } from "@/lib/apply/committee-groups"
-import { fieldControlClasses } from "@/lib/site/surface"
+import { fieldControlClasses, hrFilterSelectClasses } from "@/lib/site/surface"
 import { useOpenPositions } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import type {
@@ -22,8 +22,8 @@ import type {
 const rowClasses =
   "flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center xl:flex-nowrap"
 const searchClasses = `${fieldControlClasses} md:flex-1`
-const statusSelectClasses = cn(fieldControlClasses, "justify-between md:w-52")
-const typeSelectClasses = cn(fieldControlClasses, "justify-between md:w-52")
+const statusSelectClasses = cn(hrFilterSelectClasses, "md:w-52")
+const typeSelectClasses = cn(hrFilterSelectClasses, "md:w-52")
 
 const STATUS_LABELS: Record<ApplicationStatus, string> = {
   pending: "Pending",

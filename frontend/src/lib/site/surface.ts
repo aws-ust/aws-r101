@@ -1,4 +1,6 @@
 /** Multi-line display headings — slightly open so stacked lines don't collide. */
+import { cn } from "@/lib/utils"
+
 export const displayTitleLeadingClasses = "leading-[1.15]"
 
 export const pageShellClasses =
@@ -26,6 +28,16 @@ export const requiredMarkClasses = "ml-1 text-aquamarine"
 
 export const fieldControlClasses =
   "h-12 w-full data-[size=default]:h-12 rounded-[20px] border-0 bg-haiti/70 px-4 text-sm text-blue-chalk placeholder:text-prelude/60 focus-visible:border-aquamarine/40 focus-visible:ring-2 focus-visible:ring-aquamarine/30"
+
+/** HR table filter selects — same shell as text fields; see DESIGN.md (Filter dropdowns). */
+export const hrFilterSelectClasses = cn(
+  fieldControlClasses,
+  "justify-between border border-blue-chalk/20 font-sans",
+)
+
+/** Mono stat / group subheaders — title-case copy, no forced uppercase; see DESIGN.md. */
+export const subheaderLabelClasses =
+  "font-mono text-[10px] tracking-[0.14em] text-prelude"
 
 export const ghostPillButtonClasses =
   "h-10 rounded-pill border border-blue-chalk/25 bg-transparent px-5 font-mono text-xs text-blue-chalk hover:bg-blue-chalk/10"

@@ -115,8 +115,17 @@ export function HrPaymentsPage() {
       {feedback ? <ActionFeedback type={feedback.type} message={feedback.message} /> : null}
       {loading ? <p className={loadingClasses}>Loading payments…</p> : (
         <div className={stackClasses}>
+          {dashboard ? (
+            <HrPaymentSection
+              number="01"
+              title="Payment overview"
+              description="Track applicants at every stage of the payment process."
+            >
+              <HrPaymentSummary summary={dashboard.summary} />
+            </HrPaymentSection>
+          ) : null}
           <HrPaymentSection
-            number="01"
+            number="02"
             title={role === "finance" ? "Payment details" : "Payment setup"}
             description={paymentCampaignDescription(role)}
           >
@@ -130,15 +139,6 @@ export function HrPaymentsPage() {
               onFeedback={setFeedback}
             />
           </HrPaymentSection>
-          {dashboard ? (
-            <HrPaymentSection
-              number="02"
-              title="Payment overview"
-              description="Track applicants at every stage of the payment process."
-            >
-              <HrPaymentSummary summary={dashboard.summary} />
-            </HrPaymentSection>
-          ) : null}
           {dashboard ? (
             <HrPaymentSection
               number="03"

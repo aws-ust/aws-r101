@@ -19,10 +19,16 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
+import { formatSubheaderLabel } from "@/lib/site/button-label"
 
 type HrRole = "hr" | "admin" | "finance"
 
-const groupLabelClasses = "px-3 font-mono text-[10px] uppercase tracking-[0.16em] text-biloba-flower group-data-[collapsible=icon]:sr-only"
+const groupLabelClasses =
+  "mb-2.5 px-3 font-mono text-[10px] tracking-[0.16em] text-biloba-flower group-data-[collapsible=icon]:mb-0 group-data-[collapsible=icon]:sr-only"
+const navigationWrapperClasses = "flex w-full flex-col"
+const recruitmentGroupClasses = "pb-4 group-data-[collapsible=icon]:pb-3"
+const membershipGroupClasses =
+  "border-t border-blue-chalk/15 pt-4 group-data-[collapsible=icon]:pt-3"
 const menuClasses = "w-full gap-1.5 group-data-[collapsible=icon]:items-center"
 const itemClasses = "w-full group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center"
 const buttonClasses = "h-10 w-full justify-start gap-3 rounded-pill border border-transparent px-3 text-left text-sm font-medium text-prelude transition-[background-color,border-color,color,transform,box-shadow] duration-300 ease-out hover:-translate-y-px hover:border-biloba-flower/35 hover:bg-meteorite/55 hover:text-blue-chalk hover:shadow-[0_0_18px_rgba(183,140,240,0.22)] hover:[&_svg]:text-aquamarine group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:rounded-full motion-reduce:transition-none motion-reduce:hover:translate-y-0"
@@ -58,12 +64,25 @@ const navigationSections = [
   },
 ] as const
 
+function sectionGroupClasses(label: string) {
+  if (label === "Recruitment") return recruitmentGroupClasses
+  if (label === "Membership") return membershipGroupClasses
+  return undefined
+}
+
 export function HrSidebarNavigation({ role }: { role: HrRole }) {
   const pathname = usePathname()
   const source = useSearchParams().get("source")
-  return navigationSections.filter((section) => section.visible(role)).map((section) => (
-    <SidebarGroup key={section.label}>
-      <SidebarGroupLabel className={groupLabelClasses}>{section.label}</SidebarGroupLabel>
+  return (
+    <div className={navigationWrapperClasses}>
+      {navigationSections.filter((section) => section.visible(role)).map((section) => (
+        <SidebarGroup
+          key={section.label}
+          className={sectionGroupClasses(section.label)}
+        >
+      <SidebarGroupLabel className={groupLabelClasses}>
+        {formatSubheaderLabel(section.label)}
+      </SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu className={menuClasses}>
           {section.items.map((item) => {
@@ -86,5 +105,7 @@ export function HrSidebarNavigation({ role }: { role: HrRole }) {
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
-  ))
+      ))}
+    </div>
+  )
 }
