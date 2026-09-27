@@ -11,7 +11,9 @@ export type EmailMessageType =
   | "applicant_dev_exam"
   | "member_registration"
   | "result_accepted"
-  | "result_rejected";
+  | "result_rejected"
+  | "payment_invitation"
+  | "membership_confirmation";
 
 export type EmailFileAttachment = {
   filename: string;

@@ -230,8 +230,7 @@ async function queryResultsPreview(
             }
           : null,
         choices,
-        willGenerateMemberId:
-          result.classification === "accepted" && row.memberId === null,
+        willGenerateMemberId: false,
         willSendEmail:
           row.applicationType === "position" &&
           result.classification !== "incomplete",

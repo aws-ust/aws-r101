@@ -45,6 +45,13 @@ async function main() {
         lastName: "Villanueva",
         role: "admin",
       },
+      {
+        email: "finance@aws-ust.org",
+        passwordHash: devPasswordHash,
+        firstName: "Finance",
+        lastName: "Reviewer",
+        role: "finance",
+      },
     ])
     .onConflictDoUpdate({
       target: users.email,

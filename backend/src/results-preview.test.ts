@@ -276,7 +276,7 @@ test("results release preview", async (t) => {
       byId.get(applicationIds[0])?.finalPlacement?.positionId,
       positionAId,
     );
-    assert.equal(byId.get(applicationIds[0])?.willGenerateMemberId, true);
+    assert.equal(byId.get(applicationIds[0])?.willGenerateMemberId, false);
     assert.equal(byId.get(applicationIds[0])?.willSendEmail, true);
     assert.equal(byId.get(applicationIds[1])?.classification, "rejected");
     assert.equal(byId.get(applicationIds[1])?.willGenerateMemberId, false);
@@ -451,7 +451,7 @@ test("results release preview", async (t) => {
     });
   });
 
-  await t.test("releases results and generates stable member IDs", async () => {
+  await t.test("releases results without generating Member IDs", async () => {
     const response = await releaseRequest();
     assert.equal(response.status, 200);
 
@@ -478,7 +478,7 @@ test("results release preview", async (t) => {
         released: 5,
         accepted: 4,
         rejected: 1,
-        memberIdsGenerated: 4,
+        memberIdsGenerated: 0,
       },
     );
     assert.ok(Number.isFinite(Date.parse(payload.releasedAt)));
@@ -506,16 +506,9 @@ test("results release preview", async (t) => {
       applicationIds[3],
       applicationIds[4],
     ];
-    const generatedMemberIds = acceptedIds.map(
-      (id) => releasedById.get(id)?.memberId,
-    );
     assert.ok(
-      generatedMemberIds.every(
-        (memberId) =>
-          typeof memberId === "string" && /^AWS-2095-\d{4}$/.test(memberId),
-      ),
+      acceptedIds.every((id) => releasedById.get(id)?.memberId === null),
     );
-    assert.equal(new Set(generatedMemberIds).size, acceptedIds.length);
     assert.ok(
       acceptedIds.every(
         (id) => releasedById.get(id)?.status === "approved",
@@ -722,7 +715,7 @@ test("results release preview", async (t) => {
         blockingReason: null,
         finalPlacement: null,
         choices: [],
-        willGenerateMemberId: true,
+        willGenerateMemberId: false,
         willSendEmail: false,
       },
     ]);
@@ -748,7 +741,7 @@ test("results release preview", async (t) => {
         released: 1,
         accepted: 1,
         rejected: 0,
-        memberIdsGenerated: 1,
+        memberIdsGenerated: 0,
         emailDelivery: { queued: 0, sent: 0, failed: 0 },
       },
     );
@@ -762,7 +755,7 @@ test("results release preview", async (t) => {
       .from(applications)
       .where(eq(applications.id, memberApplicationId));
     assert.equal(releasedMember.status, "approved");
-    assert.match(releasedMember.memberId ?? "", /^AWS-2095-\d{4}$/);
+    assert.equal(releasedMember.memberId, null);
     assert.ok(releasedMember.resultsReleasedAt instanceof Date);
 
     const memberNotifications = await db

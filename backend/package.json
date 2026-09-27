@@ -16,6 +16,7 @@
     "test:otp": "tsx --test --test-concurrency=1 src/applicant-auth.test.ts",
     "test:scheduling": "tsx --test --test-concurrency=1 src/interview-scheduling.test.ts",
     "test:results": "tsx --test --test-concurrency=1 src/results-preview.test.ts",
+    "test:payments": "tsx --test --test-concurrency=1 src/membership-payments.test.ts",
     "test:archive": "tsx --test --test-concurrency=1 src/application-archiving.test.ts",
     "test:listing": "tsx --test --test-concurrency=1 src/application-listing.test.ts",
     "test:uploads": "tsx --test --test-concurrency=1 src/upload-sessions.test.ts",

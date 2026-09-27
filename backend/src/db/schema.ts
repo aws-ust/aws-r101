@@ -14,7 +14,7 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 
-export const userRole = pgEnum("user_role", ["hr", "admin"]);
+export const userRole = pgEnum("user_role", ["hr", "admin", "finance"]);
 export const applicationStatus = pgEnum("application_status", [
   "pending",
   "approved",
@@ -53,6 +53,8 @@ export const emailMessageType = pgEnum("email_message_type", [
   "member_registration",
   "result_accepted",
   "result_rejected",
+  "payment_invitation",
+  "membership_confirmation",
 ]);
 export const emailDeliveryStatus = pgEnum("email_delivery_status", [
   "pending",
@@ -60,6 +62,29 @@ export const emailDeliveryStatus = pgEnum("email_delivery_status", [
   "failed",
 ]);
 export const applicantGender = pgEnum("applicant_gender", ["male", "female"]);
+export const membershipPaymentStatus = pgEnum("membership_payment_status", [
+  "awaiting_payment",
+  "pending_verification",
+  "verified",
+  "needs_resubmission",
+  "expired",
+]);
+export const membershipStatus = pgEnum("membership_status", [
+  "inactive",
+  "active",
+  "revoked",
+]);
+export const membershipConfirmationStatus = pgEnum(
+  "membership_confirmation_status",
+  ["not_released", "released", "email_failed"],
+);
+export const paymentMethod = pgEnum("payment_method", ["gcash", "bpi"]);
+export const paymentSubmissionStatus = pgEnum("payment_submission_status", [
+  "pending",
+  "verified",
+  "rejected",
+  "reversed",
+]);
 
 export const users = pgTable(
   "users",
@@ -466,6 +491,239 @@ export const recruitmentWindows = pgTable(
       "recruitment_windows_range_check",
       sql`${t.endsAt} > ${t.startsAt}`,
     ),
+  ],
+);
+
+export const membershipPaymentCampaigns = pgTable(
+  "membership_payment_campaigns",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    recruitmentYear: integer("recruitment_year").notNull().unique(),
+    amountCents: integer("amount_cents"),
+    opensAt: timestamp("opens_at", { withTimezone: true }).notNull(),
+    deadlineAt: timestamp("deadline_at", { withTimezone: true }).notNull(),
+    isOpen: boolean("is_open").notNull().default(false),
+    gcashAccountName: varchar("gcash_account_name", { length: 150 }),
+    gcashAccountNumber: varchar("gcash_account_number", { length: 50 }),
+    gcashQrImageUrl: text("gcash_qr_image_url"),
+    gcashQrImageKey: text("gcash_qr_image_key"),
+    bpiAccountName: varchar("bpi_account_name", { length: 150 }),
+    bpiAccountNumber: varchar("bpi_account_number", { length: 50 }),
+    bpiQrImageUrl: text("bpi_qr_image_url"),
+    bpiQrImageKey: text("bpi_qr_image_key"),
+    generalChatLink: text("general_chat_link"),
+    openedAt: timestamp("opened_at", { withTimezone: true }),
+    openedBy: uuid("opened_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    confirmationsReleasedAt: timestamp("confirmations_released_at", {
+      withTimezone: true,
+    }),
+    confirmationsReleasedBy: uuid("confirmations_released_by").references(
+      () => users.id,
+      { onDelete: "set null" },
+    ),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    check(
+      "membership_payment_campaigns_year_check",
+      sql`${t.recruitmentYear} BETWEEN 2000 AND 9999`,
+    ),
+    check(
+      "membership_payment_campaigns_amount_check",
+      sql`${t.amountCents} IS NULL OR ${t.amountCents} > 0`,
+    ),
+    check(
+      "membership_payment_campaigns_range_check",
+      sql`${t.deadlineAt} > ${t.opensAt}`,
+    ),
+    check(
+      "membership_payment_campaigns_open_audit_check",
+      sql`${t.openedBy} IS NULL OR ${t.openedAt} IS NOT NULL`,
+    ),
+    check(
+      "membership_payment_campaigns_release_audit_check",
+      sql`${t.confirmationsReleasedBy} IS NULL OR ${t.confirmationsReleasedAt} IS NOT NULL`,
+    ),
+    index("idx_membership_payment_campaigns_open").on(t.isOpen, t.deadlineAt),
+  ],
+);
+
+export const membershipPaymentChatLinks = pgTable(
+  "membership_payment_chat_links",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    campaignId: uuid("campaign_id")
+      .notNull()
+      .references(() => membershipPaymentCampaigns.id, { onDelete: "cascade" }),
+    committeeId: uuid("committee_id")
+      .notNull()
+      .references(() => committees.id, { onDelete: "cascade" }),
+    chatLink: text("chat_link").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    unique("membership_payment_chat_links_campaign_committee_unique").on(
+      t.campaignId,
+      t.committeeId,
+    ),
+    check(
+      "membership_payment_chat_links_not_blank_check",
+      sql`length(trim(${t.chatLink})) > 0`,
+    ),
+  ],
+);
+
+export const membershipPayments = pgTable(
+  "membership_payments",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    campaignId: uuid("campaign_id")
+      .notNull()
+      .references(() => membershipPaymentCampaigns.id, { onDelete: "cascade" }),
+    applicationId: uuid("application_id")
+      .notNull()
+      .references(() => applications.id, { onDelete: "cascade" })
+      .unique(),
+    status: membershipPaymentStatus().notNull().default("awaiting_payment"),
+    membershipStatus: membershipStatus("membership_status")
+      .notNull()
+      .default("inactive"),
+    confirmationStatus: membershipConfirmationStatus("confirmation_status")
+      .notNull()
+      .default("not_released"),
+    resubmissionDeadlineAt: timestamp("resubmission_deadline_at", {
+      withTimezone: true,
+    }),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }),
+    verifiedBy: uuid("verified_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    reversedAt: timestamp("reversed_at", { withTimezone: true }),
+    reversedBy: uuid("reversed_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    reversalReason: text("reversal_reason"),
+    confirmationReleasedAt: timestamp("confirmation_released_at", {
+      withTimezone: true,
+    }),
+    confirmationReleasedBy: uuid("confirmation_released_by").references(
+      () => users.id,
+      { onDelete: "set null" },
+    ),
+    assignedChatLink: text("assigned_chat_link"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    unique("membership_payments_campaign_application_unique").on(
+      t.campaignId,
+      t.applicationId,
+    ),
+    check(
+      "membership_payments_verification_audit_check",
+      sql`${t.verifiedBy} IS NULL OR ${t.verifiedAt} IS NOT NULL`,
+    ),
+    check(
+      "membership_payments_reversal_audit_check",
+      sql`(${t.reversedBy} IS NULL AND ${t.reversalReason} IS NULL) OR ${t.reversedAt} IS NOT NULL`,
+    ),
+    check(
+      "membership_payments_confirmation_audit_check",
+      sql`${t.confirmationReleasedBy} IS NULL OR ${t.confirmationReleasedAt} IS NOT NULL`,
+    ),
+    index("idx_membership_payments_campaign_status").on(t.campaignId, t.status),
+    index("idx_membership_payments_membership_status").on(t.membershipStatus),
+    index("idx_membership_payments_confirmation_status").on(t.confirmationStatus),
+  ],
+);
+
+export const membershipPaymentSubmissions = pgTable(
+  "membership_payment_submissions",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    paymentId: uuid("payment_id")
+      .notNull()
+      .references(() => membershipPayments.id, { onDelete: "cascade" }),
+    campaignId: uuid("campaign_id")
+      .notNull()
+      .references(() => membershipPaymentCampaigns.id, { onDelete: "cascade" }),
+    attemptNumber: integer("attempt_number").notNull(),
+    method: paymentMethod().notNull(),
+    referenceNumber: varchar("reference_number", { length: 100 }).notNull(),
+    referenceNumberNormalized: varchar("reference_number_normalized", {
+      length: 100,
+    }).notNull(),
+    amountCents: integer("amount_cents").notNull(),
+    receiptKey: text("receipt_key").notNull(),
+    receiptFileName: varchar("receipt_file_name", { length: 255 }).notNull(),
+    receiptMimeType: varchar("receipt_mime_type", { length: 50 }).notNull(),
+    receiptSizeBytes: integer("receipt_size_bytes").notNull(),
+    receiptChecksumSha256: varchar("receipt_checksum_sha256", {
+      length: 44,
+    }).notNull(),
+    status: paymentSubmissionStatus().notNull().default("pending"),
+    submittedAt: timestamp("submitted_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    reviewedBy: uuid("reviewed_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    reviewReason: text("review_reason"),
+  },
+  (t) => [
+    unique("membership_payment_submissions_payment_attempt_unique").on(
+      t.paymentId,
+      t.attemptNumber,
+    ),
+    unique("membership_payment_submissions_reference_unique").on(
+      t.campaignId,
+      t.referenceNumberNormalized,
+    ),
+    check(
+      "membership_payment_submissions_attempt_check",
+      sql`${t.attemptNumber} > 0`,
+    ),
+    check(
+      "membership_payment_submissions_amount_check",
+      sql`${t.amountCents} > 0`,
+    ),
+    check(
+      "membership_payment_submissions_size_check",
+      sql`${t.receiptSizeBytes} > 0 AND ${t.receiptSizeBytes} <= 10000000`,
+    ),
+    check(
+      "membership_payment_submissions_reference_not_blank_check",
+      sql`length(trim(${t.referenceNumberNormalized})) > 0`,
+    ),
+    check(
+      "membership_payment_submissions_review_audit_check",
+      sql`${t.reviewedBy} IS NULL OR ${t.reviewedAt} IS NOT NULL`,
+    ),
+    index("idx_membership_payment_submissions_payment").on(
+      t.paymentId,
+      t.submittedAt,
+    ),
+    index("idx_membership_payment_submissions_status").on(t.status),
   ],
 );
 

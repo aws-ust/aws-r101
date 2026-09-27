@@ -11,7 +11,9 @@ import {
   applicantOtpTemplate,
   applicationSubmittedTemplate,
   memberRegistrationTemplate,
+  membershipConfirmationTemplate,
   officerApplicationNoticeTemplate,
+  paymentInvitationTemplate,
   resultAcceptedTemplate,
   resultRejectedTemplate,
 } from "./templates";
@@ -111,19 +113,9 @@ test("applicant email templates use compact, plain formatting", async (t) => {
   });
 
   await t.test("personalizes accepted and rejected result emails", (t) => {
-    const originalPaymentLink = process.env.MEMBERSHIP_PAYMENT_LINK;
-    t.after(() => {
-      if (originalPaymentLink === undefined) {
-        delete process.env.MEMBERSHIP_PAYMENT_LINK;
-      } else {
-        process.env.MEMBERSHIP_PAYMENT_LINK = originalPaymentLink;
-      }
-    });
-    process.env.MEMBERSHIP_PAYMENT_LINK = "https://payments.example/membership";
     const accepted = resultAcceptedTemplate({
       lastName: "Dela Cruz",
       position: "Development Committee Staff",
-      memberId: "AWS-2026-0001",
     });
     const rejected = resultRejectedTemplate({ lastName: "Dela Cruz" });
 
@@ -132,21 +124,16 @@ test("applicant email templates use compact, plain formatting", async (t) => {
     assert.doesNotMatch(accepted.subject, /R1O1/);
     assert.match(accepted.text, /Development Committee Staff/);
     assert.match(accepted.html, /Development Committee Staff/);
-    assert.match(accepted.text, /Membership ID: AWS-2026-0001/);
-    assert.match(accepted.html, /AWS-2026-0001/);
+    assert.match(accepted.text, /Member ID.*after your payment is verified/s);
     assert.match(accepted.html, /cid:application-received-header@aws-ust/);
-    assert.match(accepted.text, /₱250 membership fee/);
-    assert.match(accepted.html, /https:\/\/payments\.example\/membership/);
-    assert.match(accepted.html, />Proceed to payment</);
-    assert.match(accepted.html, />Join the Messenger group chat</);
+    assert.match(accepted.text, /official payment instructions separately/);
+    assert.doesNotMatch(accepted.text, /₱250/);
     assert.doesNotMatch(accepted.html, /Best regards/);
     assert.match(rejected.text, /Mx\. Dela Cruz/);
     assert.match(rejected.subject, /R101/);
     assert.match(rejected.text, /not selected for a committee position/);
-    assert.match(rejected.text, /still join AWS Builders - UST as a member/);
-    assert.match(rejected.text, /₱250 membership fee/);
-    assert.match(rejected.html, /https:\/\/payments\.example\/membership/);
-    assert.match(rejected.html, />Proceed to payment</);
+    assert.match(rejected.text, /still eligible to join AWS Builders - UST/);
+    assert.doesNotMatch(rejected.text, /₱250/);
     assert.doesNotMatch(rejected.text, /Membership ID/);
     assert.match(rejected.html, /Yours in Thomasian Leadership,/);
   });
@@ -163,7 +150,39 @@ test("applicant email templates use compact, plain formatting", async (t) => {
     assert.match(registration.text, /after R101/);
     assert.match(registration.text, /do not send a payment yet/);
     assert.doesNotMatch(registration.text, /₱250/);
-  });  await t.test("application received includes dev exam copy when Development is a choice", () => {
+  });
+
+  await t.test("includes payment deadline and manual verification notice", () => {
+    const invitation = paymentInvitationTemplate({
+      lastName: "Olmedo",
+      applicationCode: "AP-2026-288404",
+      kind: "rejected",
+      amountCents: 25000,
+      deadlineAt: new Date("2026-10-31T15:59:00.000Z"),
+    });
+
+    assert.match(invitation.subject, /AP-2026-288404/);
+    assert.match(invitation.text, /general member/);
+    assert.match(invitation.text, /₱250\.00/);
+    assert.match(invitation.text, /manual verification/);
+    assert.match(invitation.html, />Open payment instructions</);
+  });
+
+  await t.test("includes the Member ID and assigned group-chat link", () => {
+    const confirmation = membershipConfirmationTemplate({
+      lastName: "Olmedo",
+      memberId: "AWS-2026-0123",
+      placement: "Development Committee Staff",
+      chatLink: "https://m.me/j/development-test",
+    });
+
+    assert.match(confirmation.subject, /AWS-2026-0123/);
+    assert.match(confirmation.text, /Development Committee Staff/);
+    assert.match(confirmation.text, /https:\/\/m\.me\/j\/development-test/);
+    assert.match(confirmation.html, />Join the Messenger group chat</);
+  });
+
+  await t.test("application received includes dev exam copy when Development is a choice", () => {
     const email = applicationSubmittedTemplate({
       lastName: "Olmedo",
       applicationCode: "AP-2026-288404",

@@ -23,13 +23,13 @@ type UploadDocument = {
   checksumSha256: string;
 };
 
-function configuredBucket(): string {
+export function configuredBucket(): string {
   const bucket = process.env.S3_BUCKET;
   if (!bucket) throw new Error("S3_BUCKET is not configured.");
   return bucket;
 }
 
-function s3Client(): S3Client {
+export function s3Client(): S3Client {
   const region = process.env.S3_REGION ?? process.env.AWS_REGION ?? "us-east-1";
   const endpoint = process.env.S3_ENDPOINT;
   // Deployed Lambda functions use the refreshable default credential provider

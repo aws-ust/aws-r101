@@ -9,6 +9,13 @@ import { usesSecureCookies } from "./lib/auth/secure-cookie";
 
 export const AUTH_COOKIE_NAME = "hr_token";
 
+export type UserRole = "hr" | "admin" | "finance";
+export type AuthenticatedUser = {
+  id: string;
+  email: string;
+  role: UserRole;
+};
+
 const DEFAULT_EXPIRES_SECONDS = 8 * 60 * 60;
 
 export function expiresInSeconds(): number {
@@ -42,7 +49,7 @@ function tokenFromRequest(c: Context): string | null {
 export async function verifyHrCredentials(
   email: string,
   password: string,
-): Promise<{ ok: true; email: string } | { ok: false }> {
+): Promise<{ ok: true; email: string; role: UserRole } | { ok: false }> {
   const normalizedEmail = email.trim().toLowerCase();
   if (!normalizedEmail || !password) {
     return { ok: false };
@@ -53,6 +60,7 @@ export async function verifyHrCredentials(
       email: users.email,
       passwordHash: users.passwordHash,
       isActive: users.isActive,
+      role: users.role,
     })
     .from(users)
     .where(eq(users.email, normalizedEmail))
@@ -67,7 +75,7 @@ export async function verifyHrCredentials(
     return { ok: false };
   }
 
-  return { ok: true, email: user.email };
+  return { ok: true, email: user.email, role: user.role };
 }
 
 export async function signToken(
@@ -102,9 +110,51 @@ export async function authenticateHrRequest(c: Context): Promise<boolean> {
   }
 }
 
-export const requireAuth: MiddlewareHandler = async (c, next) => {
+export const requireAnyUser: MiddlewareHandler = async (c, next) => {
   if (!(await authenticateHrRequest(c))) {
     return c.json({ error: "unauthorized" }, 401);
   }
   await next();
 };
+
+export async function getAuthenticatedUser(
+  c: Context,
+): Promise<AuthenticatedUser | null> {
+  let payload = c.get("jwtPayload") as { sub?: unknown } | undefined;
+  if (!payload && !(await authenticateHrRequest(c))) return null;
+  payload = c.get("jwtPayload") as { sub?: unknown } | undefined;
+  if (typeof payload?.sub !== "string") return null;
+
+  const [user] = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      role: users.role,
+      isActive: users.isActive,
+    })
+    .from(users)
+    .where(eq(users.email, payload.sub.trim().toLowerCase()))
+    .limit(1);
+  if (!user?.isActive) return null;
+  return { id: user.id, email: user.email, role: user.role };
+}
+
+export function requireRoles(...roles: UserRole[]): MiddlewareHandler {
+  return async (c, next) => {
+    const user = await getAuthenticatedUser(c);
+    if (!user) return c.json({ error: "unauthorized" }, 401);
+    if (!roles.includes(user.role)) {
+      return c.json({ error: "forbidden" }, 403);
+    }
+    c.set("authenticatedUser", user);
+    await next();
+  };
+}
+
+export const requireAuth = requireRoles("hr", "admin");
+
+export function getCurrentUser(c: Context): AuthenticatedUser {
+  const user = c.get("authenticatedUser") as AuthenticatedUser | undefined;
+  if (!user) throw new Error("Authenticated user is unavailable");
+  return user;
+}

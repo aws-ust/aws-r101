@@ -78,3 +78,11 @@ export const resultAcceptedSubject =
 /** Rejected result (Marc #10 Release Results). */
 export const resultRejectedSubject =
   "AWS Builders - UST R101 Recruitment Results";
+
+export function paymentInvitationSubject(applicationCode: string): string {
+  return `AWS Builders - UST | Membership Payment (${applicationCode})`;
+}
+
+export function membershipConfirmationSubject(memberId: string): string {
+  return `Welcome to AWS Builders - UST | ${memberId}`;
+}

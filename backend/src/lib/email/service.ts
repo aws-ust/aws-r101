@@ -28,6 +28,8 @@ import {
   interviewReminderTemplate,
   officerApplicationNoticeTemplate,
   memberRegistrationTemplate,
+  membershipConfirmationTemplate,
+  paymentInvitationTemplate,
   resultAcceptedTemplate,
   resultRejectedTemplate,
 } from "./templates";
@@ -47,7 +49,7 @@ function isLikelyAttachmentSizeError(message: string): boolean {
   );
 }
 
-async function deliverNotification(input: {
+export async function deliverNotification(input: {
   notificationId: string;
   messageType: EmailMessageType;
   recipient: string;
@@ -451,12 +453,10 @@ export async function sendResultAccepted(input: {
   lastName: string;
   email: string;
   position: string;
-  memberId: string;
 }): Promise<void> {
   const rendered = resultAcceptedTemplate({
     lastName: input.lastName,
     position: input.position,
-    memberId: input.memberId,
   });
   await deliverEmail({
     applicationId: input.applicationId,
@@ -486,14 +486,12 @@ export function deliverQueuedResultEmail(input: {
   recipient: string;
   lastName: string;
   position: string | null;
-  memberId: string | null;
 }): Promise<EmailDeliveryStatus> {
   const rendered =
     input.messageType === "result_accepted"
       ? resultAcceptedTemplate({
           lastName: input.lastName,
           position: input.position ?? "",
-          memberId: input.memberId ?? "",
         })
       : resultRejectedTemplate({ lastName: input.lastName });
   return deliverNotification({
@@ -502,6 +500,16 @@ export function deliverQueuedResultEmail(input: {
     recipient: input.recipient,
     rendered,
   });
+}
+
+export function renderPaymentInvitation(input: Parameters<typeof paymentInvitationTemplate>[0]) {
+  return paymentInvitationTemplate(input);
+}
+
+export function renderMembershipConfirmation(
+  input: Parameters<typeof membershipConfirmationTemplate>[0],
+) {
+  return membershipConfirmationTemplate(input);
 }
 
 export { listByApplicationId as listEmailNotificationsByApplicationId } from "./notifications";
