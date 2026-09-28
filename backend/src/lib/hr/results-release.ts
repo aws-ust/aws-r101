@@ -63,12 +63,14 @@ export async function releaseResults(
       a.submittedAt.localeCompare(b.submittedAt),
     );
     for (const application of applicationsToRelease) {
-      const accepted = application.classification === "accepted";
+      const redirected = application.classification === "redirected";
+      const accepted =
+        !redirected && application.classification === "accepted";
 
       await tx
         .update(applications)
         .set({
-          status: accepted ? "approved" : "rejected",
+          status: redirected || accepted ? "approved" : "rejected",
           resultsReleasedAt: releasedAt,
           resultsReleasedBy: reviewerId,
         })
@@ -81,11 +83,17 @@ export async function releaseResults(
 
       if (!application.willSendEmail) continue;
 
+      const messageType = redirected
+        ? "result_redirected"
+        : accepted
+          ? "result_accepted"
+          : "result_rejected";
+
       const [notification] = await tx
         .insert(emailNotifications)
         .values({
           applicationId: application.id,
-          messageType: accepted ? "result_accepted" : "result_rejected",
+          messageType,
           recipient: application.applicant.email,
         })
         .returning({ id: emailNotifications.id });

@@ -19,6 +19,8 @@ import {
   patchApplicationDecisionRequest,
   patchApplicantEmailRequest,
   resendApplicationSubmittedEmailRequest,
+  patchApplicationRedirectPlacementRequest,
+  patchApplicationRedirectResponseRequest,
   postApplication,
   postUploadPresign,
   type ApplicationListParams,
@@ -253,6 +255,20 @@ export function patchApplicantEmail(id: string, email: string) {
 
 export function resendApplicationSubmittedEmail(id: string) {
   return resendApplicationSubmittedEmailRequest(id)
+}
+
+export function patchApplicationRedirectPlacement(
+  id: string,
+  redirectPositionId: string | null,
+) {
+  return patchApplicationRedirectPlacementRequest(id, redirectPositionId)
+}
+
+export function patchApplicationRedirectResponse(
+  id: string,
+  response: "accepted" | "declined",
+) {
+  return patchApplicationRedirectResponseRequest(id, response)
 }
 
 export function fullName(app: Application) {

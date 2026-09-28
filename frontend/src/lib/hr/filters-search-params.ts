@@ -1,10 +1,12 @@
 import type { HrFilters } from "@/components/hr/application-filters"
-import type {
-  ApplicationStatus,
-  ApplicationType,
-} from "@/lib/types/application"
+import type { ApplicationType } from "@/lib/types/application"
 
-const STATUSES: ApplicationStatus[] = ["pending", "approved", "rejected"]
+const STATUSES: HrFilters["status"][] = [
+  "pending",
+  "approved",
+  "rejected",
+  "redirected",
+]
 const APPLICATION_TYPES: ApplicationType[] = ["position", "member"]
 
 export type HrListSearchParamsInput = {

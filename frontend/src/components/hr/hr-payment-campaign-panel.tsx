@@ -42,7 +42,7 @@ function PaymentCampaignHeader({ campaign, role, pending, onCampaign, onPending,
   return (
     <div className={headingRowClasses}>
       <div>
-        <h2 className={titleClasses}>Payment period</h2>
+        <h2 className={titleClasses}>Payment Period</h2>
         <p className={bodyClasses}>{campaignStatus(campaign)}</p>
       </div>
       {canManagePeriod && campaign ? (

@@ -32,6 +32,7 @@ import {
   paymentInvitationTemplate,
   resultAcceptedTemplate,
   resultRejectedTemplate,
+  resultRedirectedTemplate,
 } from "./templates";
 import type {
   EmailDeliveryStatus,
@@ -72,6 +73,7 @@ export async function deliverNotification(input: {
     await notifications.incrementAttempts(input.notificationId);
     return sendViaGmail({
       to: input.recipient,
+      cc: rendered.cc,
       subject: rendered.subject,
       text: rendered.text,
       html: rendered.html,
@@ -482,10 +484,12 @@ export async function sendResultRejected(input: {
 
 export function deliverQueuedResultEmail(input: {
   notificationId: string;
-  messageType: "result_accepted" | "result_rejected";
+  messageType: "result_accepted" | "result_rejected" | "result_redirected";
   recipient: string;
   lastName: string;
   position: string | null;
+  committee?: string | null;
+  cc?: string[];
 }): Promise<EmailDeliveryStatus> {
   const rendered =
     input.messageType === "result_accepted"
@@ -493,7 +497,14 @@ export function deliverQueuedResultEmail(input: {
           lastName: input.lastName,
           position: input.position ?? "",
         })
-      : resultRejectedTemplate({ lastName: input.lastName });
+      : input.messageType === "result_redirected"
+        ? resultRedirectedTemplate({
+            lastName: input.lastName,
+            position: input.position ?? "",
+            committee: input.committee ?? "",
+            cc: input.cc,
+          })
+        : resultRejectedTemplate({ lastName: input.lastName });
   return deliverNotification({
     notificationId: input.notificationId,
     messageType: input.messageType,

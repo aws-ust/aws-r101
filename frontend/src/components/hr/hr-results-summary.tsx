@@ -1,11 +1,10 @@
 import { Button } from "@/components/ui/button"
 import type { ResultsPreview } from "@/lib/api/client"
-import { glassPanelClasses } from "@/lib/site/surface"
+import { formatSubheaderLabel } from "@/lib/site/button-label"
+import { glassPanelClasses, subheaderLabelClasses } from "@/lib/site/surface"
 
 const summaryGridClasses = "grid gap-3 sm:grid-cols-2 xl:grid-cols-5"
 const summaryCardClasses = `${glassPanelClasses} rounded-[20px] px-5 py-4`
-const labelClasses =
-  "font-mono text-[10px] uppercase tracking-[0.14em] text-prelude"
 const valueClasses = "mt-2 font-sans text-3xl font-bold text-blue-chalk"
 const actionPanelClasses = `${glassPanelClasses} mt-4 flex flex-col gap-4 rounded-[20px] px-5 py-5 lg:flex-row lg:items-center lg:justify-between`
 const actionCopyClasses = "max-w-2xl font-sans text-sm leading-relaxed text-prelude"
@@ -28,6 +27,7 @@ export function HrResultsSummary({
     ["Pending release", summary.pendingRelease],
     ["Accepted", summary.accepted],
     ["Rejected", summary.rejected],
+    ["Redirected", summary.redirected],
     ["Incomplete", summary.incomplete],
     ["Already released", summary.alreadyReleased],
   ] as const
@@ -37,7 +37,9 @@ export function HrResultsSummary({
       <div className={summaryGridClasses}>
         {stats.map(([label, value]) => (
           <div key={label} className={summaryCardClasses}>
-            <p className={labelClasses}>{label}</p>
+            <p className={subheaderLabelClasses}>
+              {formatSubheaderLabel(label)}
+            </p>
             <p className={valueClasses}>{value}</p>
           </div>
         ))}

@@ -17,6 +17,14 @@ export type HrApplication = Omit<Application, "choices"> & {
     committee: string
     title: string
   } | null
+  redirectPlacement: {
+    positionId: string
+    committee: string
+    title: string
+    office: string | null
+  } | null
+  redirectResponse: "accepted" | "declined" | null
+  resultsReleasedAt: string | null
 }
 
 export type UpdateApplicationDecisionInput = {

@@ -15,6 +15,11 @@ import {
   partsToDatetimeLocal,
   type DatetimeParts,
 } from "@/lib/datetime/datetime-local"
+import {
+  formatDateDisplay,
+  partsFromDateYmd,
+  partsToDateYmd,
+} from "@/lib/datetime/date-local"
 import { fieldControlClasses } from "@/lib/site/surface"
 import { cn } from "@/lib/utils"
 
@@ -52,6 +57,8 @@ type DatetimePickerProps = {
   onChange: (value: string) => void
   required?: boolean
   className?: string
+  /** When true, value is `YYYY-MM-DD` and the time columns are hidden. */
+  dateOnly?: boolean
 }
 
 function TimeColumn<T extends number | string>({
@@ -90,15 +97,32 @@ export function DatetimePicker({
   onChange,
   required,
   className,
+  dateOnly = false,
 }: DatetimePickerProps) {
   const [open, setOpen] = useState(false)
   const [parts, setParts] = useState<DatetimeParts>(() =>
-    partsFromDatetimeLocal(value)
+    dateOnly
+      ? {
+          ...partsFromDateYmd(value),
+          hour12: 12,
+          minute: 0,
+          meridiem: "am",
+        }
+      : partsFromDatetimeLocal(value)
   )
 
   function handleOpenChange(next: boolean) {
     if (next) {
-      setParts(partsFromDatetimeLocal(value))
+      setParts(
+        dateOnly
+          ? {
+              ...partsFromDateYmd(value),
+              hour12: 12,
+              minute: 0,
+              meridiem: "am",
+            }
+          : partsFromDatetimeLocal(value)
+      )
     }
     setOpen(next)
   }
@@ -110,6 +134,16 @@ export function DatetimePicker({
 
   function updateParts(next: DatetimeParts) {
     setParts(next)
+    if (dateOnly) {
+      onChange(
+        partsToDateYmd({
+          year: next.year,
+          month: next.month,
+          day: next.day,
+        })
+      )
+      return
+    }
     onChange(partsToDatetimeLocal(next))
   }
 
@@ -136,13 +170,20 @@ export function DatetimePicker({
             !value && triggerPlaceholderClasses
           )}
         >
-          {formatDatetimeDisplay(value)}
+          {dateOnly
+            ? formatDateDisplay(value, "Select date")
+            : formatDatetimeDisplay(value)}
         </span>
         <CalendarIcon className={iconClasses} aria-hidden="true" />
       </PopoverTrigger>
       <PopoverContent className="p-4" align="start">
         <div className={panelClasses}>
-          <section className={calendarSectionClasses}>
+          <section
+            className={cn(
+              calendarSectionClasses,
+              dateOnly && "sm:border-r-0 sm:pr-0"
+            )}
+          >
             <div className={headerClasses}>
               <button
                 type="button"
@@ -203,9 +244,20 @@ export function DatetimePicker({
                 type="button"
                 className={footerActionClasses}
                 onClick={() => {
-                  const today = partsFromDatetimeLocal(
-                    formatDatetimeLocal(new Date())
-                  )
+                  const today = dateOnly
+                    ? {
+                        ...partsFromDateYmd(
+                          partsToDateYmd({
+                            year: new Date().getFullYear(),
+                            month: new Date().getMonth(),
+                            day: new Date().getDate(),
+                          })
+                        ),
+                        hour12: 12,
+                        minute: 0,
+                        meridiem: "am" as const,
+                      }
+                    : partsFromDatetimeLocal(formatDatetimeLocal(new Date()))
                   updateParts(today)
                 }}
               >
@@ -213,26 +265,28 @@ export function DatetimePicker({
               </button>
             </div>
           </section>
-          <section className={timeSectionClasses} aria-label="Time">
-            <TimeColumn
-              options={HOUR_OPTIONS}
-              value={parts.hour12}
-              onChange={(hour12) => updateParts({ ...parts, hour12 })}
-              formatOption={(hour) => String(hour).padStart(2, "0")}
-            />
-            <TimeColumn
-              options={MINUTE_OPTIONS}
-              value={parts.minute}
-              onChange={(minute) => updateParts({ ...parts, minute })}
-              formatOption={(minute) => String(minute).padStart(2, "0")}
-            />
-            <TimeColumn
-              options={["am", "pm"]}
-              value={parts.meridiem}
-              onChange={(meridiem) => updateParts({ ...parts, meridiem })}
-              formatOption={(meridiem) => meridiem}
-            />
-          </section>
+          {dateOnly ? null : (
+            <section className={timeSectionClasses} aria-label="Time">
+              <TimeColumn
+                options={HOUR_OPTIONS}
+                value={parts.hour12}
+                onChange={(hour12) => updateParts({ ...parts, hour12 })}
+                formatOption={(hour) => String(hour).padStart(2, "0")}
+              />
+              <TimeColumn
+                options={MINUTE_OPTIONS}
+                value={parts.minute}
+                onChange={(minute) => updateParts({ ...parts, minute })}
+                formatOption={(minute) => String(minute).padStart(2, "0")}
+              />
+              <TimeColumn
+                options={["am", "pm"]}
+                value={parts.meridiem}
+                onChange={(meridiem) => updateParts({ ...parts, meridiem })}
+                formatOption={(meridiem) => meridiem}
+              />
+            </section>
+          )}
         </div>
       </PopoverContent>
     </Popover>

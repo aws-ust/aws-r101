@@ -1,6 +1,7 @@
 import {
   Archive,
   CalendarRange,
+  ClipboardCheck,
   ClipboardList,
   Send,
   Users,
@@ -26,9 +27,14 @@ function isApplicationDetailPath(pathname: string) {
   const match = new RegExp("^/admin/hr/([^/]+)$").exec(pathname)
   return Boolean(
     match &&
-      !["season", "results", "archive", "payments", "committees"].includes(
-        match[1],
-      ),
+      ![
+        "season",
+        "results",
+        "archive",
+        "payments",
+        "membership",
+        "committees",
+      ].includes(match[1]),
   )
 }
 
@@ -81,7 +87,13 @@ export const hrNavigationSections: HrNavigationSection[] = [
         label: "Payments",
         href: "/admin/hr/payments",
         icon: WalletCards,
-        active: (path) => path.startsWith("/admin/hr/payments"),
+        active: (path) => path === "/admin/hr/payments",
+      },
+      {
+        label: "Verification",
+        href: "/admin/hr/membership",
+        icon: ClipboardCheck,
+        active: (path) => path.startsWith("/admin/hr/membership"),
       },
     ],
   },

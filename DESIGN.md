@@ -122,6 +122,24 @@ in the screenshots, not the raw `100%` value.
   this automatically); keep source strings in the same style for readability.
   Transactional email CTAs use the same rule via `ctaButton` in
   `backend/src/lib/email/template-kit.ts` (`formatEmailButtonLabel`).
+- **Filter dropdowns (HR admin):** table and list filters use the shared
+  `Select` trigger styling — `hrFilterSelectClasses` in
+  `frontend/src/lib/site/surface.ts` (`fieldControlClasses` plus
+  `justify-between` and a `blue-chalk/20` hairline border). Match the search
+  field height (`h-12`, `rounded-[20px]`, `bg-haiti/70`, aquamarine focus
+  ring). The open menu uses the default select panel (`rounded-[14px]`,
+  `bg-haiti`, `border-blue-chalk/25`). **Never show raw enum values** in the
+  trigger (e.g. `awaiting_payment`); always map to title-case labels such as
+  `Awaiting Payment`, `All Statuses`, `Committee Applicants`. Follow the same
+  pattern as `application-filters.tsx` — pass explicit children to
+  `SelectValue`, not an empty value slot.
+- **Subheaders (HR admin):** numbered section titles (`HrPaymentSection`),
+  sidebar group labels, and summary stat card labels use the same **title-case**
+  copy rule as buttons (`formatSubheaderLabel` / `formatButtonLabel` in
+  `frontend/src/lib/site/button-label.ts`). Style with `subheaderLabelClasses`
+  in `surface.ts` (JetBrains Mono, `text-[10px]`, tracking — **no** Tailwind
+  `uppercase` transform). Page subtitles and section **descriptions** stay
+  sentence case; only short labels and secondary headings get title case.
 - Cards/panels use `meteorite` (or `blue-chalk`-low-opacity) fills with a
   hairline border and rounded corners (14–28px), sometimes with backdrop
   blur.

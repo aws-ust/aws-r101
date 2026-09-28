@@ -24,11 +24,12 @@ import {
 } from "@/lib/api/payments"
 import { formatDisplayDateTime } from "@/lib/datetime/display"
 import { formatDatetimeLocal } from "@/lib/datetime/datetime-local"
+import { formatSubheaderLabel } from "@/lib/site/button-label"
+import { subheaderLabelClasses } from "@/lib/site/surface"
 
 const contentClasses = "max-h-[85svh] overflow-y-auto sm:max-w-2xl"
 const detailGridClasses = "grid gap-3 sm:grid-cols-2"
 const detailClasses = "rounded-[14px] bg-haiti/45 px-4 py-3"
-const labelClasses = "font-mono text-[10px] uppercase tracking-wide text-prelude"
 const valueClasses = "mt-1 font-sans text-sm text-blue-chalk"
 const historyClasses = "mt-3 flex flex-col gap-2"
 const actionFormClasses = "mt-4 flex flex-col gap-3 rounded-[14px] border border-blue-chalk/20 p-4"
@@ -103,13 +104,17 @@ function PaymentReviewBody({ details, action, reason, deadline, onReason, onDead
       <div className={detailGridClasses}>
         <Detail label="Application ID" value={details.applicationCode} />
         <Detail label="Applicant type" value={details.applicationType === "member" ? "General Member" : details.committee ?? "Committee"} />
-        <Detail label="Payment status" value={details.status.replaceAll("_", " ")} />
+        <Detail label="Payment status" value={formatSubheaderLabel(details.status.replaceAll("_", " "))} />
         <Detail label="Member ID" value={details.memberId ?? "Not generated"} />
       </div>
       <div className={historyClasses}>
         {details.submissions.map((submission) => (
           <div key={submission.id} className={detailClasses}>
-            <p className={labelClasses}>Attempt {submission.attemptNumber} · {submission.status}</p>
+            <p className={subheaderLabelClasses}>
+              {formatSubheaderLabel(
+                `Attempt ${submission.attemptNumber} · ${submission.status.replaceAll("_", " ")}`,
+              )}
+            </p>
             <p className={valueClasses}>{submission.method.toUpperCase()} · Reference {submission.referenceNumber}</p>
             <p className={valueClasses}>Submitted {formatDisplayDateTime(new Date(submission.submittedAt), { dateStyle: "medium", timeStyle: "short" })}</p>
             {submission.reviewReason ? <p className={valueClasses}>Reviewer note: {submission.reviewReason}</p> : null}
@@ -147,5 +152,10 @@ function PaymentDialogActions({ details, role, action, reason, deadline, pending
 }
 
 function Detail({ label, value }: { label: string; value: string }) {
-  return <div className={detailClasses}><p className={labelClasses}>{label}</p><p className={valueClasses}>{value}</p></div>
+  return (
+    <div className={detailClasses}>
+      <p className={subheaderLabelClasses}>{formatSubheaderLabel(label)}</p>
+      <p className={valueClasses}>{value}</p>
+    </div>
+  )
 }

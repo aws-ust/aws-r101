@@ -482,11 +482,9 @@ test("results release preview", async (t) => {
       },
     );
     assert.ok(Number.isFinite(Date.parse(payload.releasedAt)));
-    assert.deepEqual(payload.emailDelivery, {
-      queued: 5,
-      sent: 0,
-      failed: 5,
-    });
+    assert.equal(payload.emailDelivery.queued, 5);
+    assert.equal(payload.emailDelivery.sent, 0);
+    assert.equal(payload.emailDelivery.failed, 5);
 
     const released = await db
       .select({

@@ -180,6 +180,9 @@ export async function updateApplicationDecision(
           ? "rejected"
           : "pending";
 
+    const clearsRedirect =
+      Boolean(input.positionId) && input.decisionStatus === "approved";
+
     await tx
       .update(applications)
       .set({
@@ -188,6 +191,13 @@ export async function updateApplicationDecision(
           approvedChoices.length === 0 ? null : finalPositionId,
         reviewedBy: reviewerId,
         reviewedAt: now,
+        ...(clearsRedirect
+          ? {
+              redirectPositionId: null,
+              redirectResponse: null,
+              redirectRespondedAt: null,
+            }
+          : {}),
       })
       .where(eq(applications.id, applicationId));
   });

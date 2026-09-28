@@ -9,6 +9,7 @@ import {
   inArray,
   isNotNull,
   isNull,
+  or,
   sql,
 } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
@@ -44,6 +45,7 @@ import type { ApplicantGender } from "../applicant/gender";
 export type { DocumentType } from "./documents";
 
 export type ApplicationStatus = "pending" | "approved" | "rejected";
+export type ApplicationListStatus = ApplicationStatus | "redirected";
 export type ApplicationType = "position" | "member";
 export type ApplicationChoiceJson = {
   preferenceRank: 1 | 2;
@@ -88,6 +90,14 @@ export type ApplicationJson = {
     committee: string;
     title: string;
   } | null;
+  redirectPlacement: {
+    positionId: string;
+    committee: string;
+    title: string;
+    office: string | null;
+  } | null;
+  redirectResponse: "accepted" | "declined" | null;
+  resultsReleasedAt: string | null;
   documents: ApplicationDocumentJson[];
 };
 
@@ -118,7 +128,7 @@ export type ListFilters = {
   position?: string;
   section?: string;
   query?: string;
-  status?: ApplicationStatus;
+  status?: ApplicationListStatus;
   applicationType?: ApplicationType;
   archive?: "active" | "archived" | "all";
   page?: number;
@@ -197,6 +207,9 @@ type ApplicationRow = {
   portfolioUrl: string | null;
   githubUrl: string | null;
   finalPositionId: string | null;
+  redirectPositionId: string | null;
+  redirectResponse: "accepted" | "declined" | null;
+  resultsReleasedAt: Date | null;
 };
 
 function iso(value: Date): string {
@@ -276,6 +289,28 @@ async function attachRelations(
     documentsByApp.set(doc.applicationId, list);
   }
 
+  const redirectPositionIds = [
+    ...new Set(
+      rows
+        .map((row) => row.redirectPositionId)
+        .filter((id): id is string => id !== null),
+    ),
+  ];
+  const redirectRows =
+    redirectPositionIds.length === 0
+      ? []
+      : await db
+          .select({
+            id: positions.id,
+            title: positions.name,
+            office: positions.office,
+            committee: committees.name,
+          })
+          .from(positions)
+          .innerJoin(committees, eq(positions.committeeId, committees.id))
+          .where(inArray(positions.id, redirectPositionIds));
+  const redirectById = new Map(redirectRows.map((row) => [row.id, row]));
+
   return rows.map((row) => {
     const choices = (choicesByApp.get(row.id) ?? []).sort(
       (a, b) => a.preferenceRank - b.preferenceRank,
@@ -283,6 +318,9 @@ async function attachRelations(
     const finalPlacement = choices.find(
       (choice) => choice.positionId === row.finalPositionId,
     );
+    const redirect = row.redirectPositionId
+      ? redirectById.get(row.redirectPositionId)
+      : null;
     return {
       id: row.id,
       applicationCode: row.applicationCode,
@@ -312,6 +350,16 @@ async function attachRelations(
             title: finalPlacement.title,
           }
         : null,
+      redirectPlacement: redirect
+        ? {
+            positionId: redirect.id,
+            committee: redirect.committee,
+            title: redirect.title,
+            office: redirect.office,
+          }
+        : null,
+      redirectResponse: row.redirectResponse,
+      resultsReleasedAt: row.resultsReleasedAt ? iso(row.resultsReleasedAt) : null,
       documents: documentsByApp.get(row.id) ?? [],
     };
   });
@@ -339,6 +387,9 @@ const applicationSelect = {
   portfolioUrl: applications.portfolioUrl,
   githubUrl: applications.githubUrl,
   finalPositionId: applications.finalPositionId,
+  redirectPositionId: applications.redirectPositionId,
+  redirectResponse: applications.redirectResponse,
+  resultsReleasedAt: applications.resultsReleasedAt,
 };
 
 export async function getApplicationById(
@@ -408,8 +459,23 @@ export async function listApplications(filters: ListFilters): Promise<{
     );
   }
 
-  if (filters.status) {
-    conditions.push(eq(applications.status, filters.status));
+  if (filters.status === "redirected") {
+    conditions.push(
+      and(
+        isNotNull(applications.redirectPositionId),
+        isNull(applications.redirectResponse),
+      ),
+    );
+  } else if (filters.status) {
+    conditions.push(
+      and(
+        eq(applications.status, filters.status),
+        or(
+          isNull(applications.redirectPositionId),
+          isNotNull(applications.redirectResponse),
+        ),
+      ),
+    );
   }
 
   if (filters.applicationType) {

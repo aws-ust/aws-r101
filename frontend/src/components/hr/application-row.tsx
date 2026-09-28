@@ -3,7 +3,11 @@ import { ChevronRight } from "lucide-react"
 import { ApplicationRowActionsMenu } from "@/components/hr/application-row-actions-menu"
 import { StatusPill } from "@/components/hr/status-pill"
 import { cn } from "@/lib/utils"
-import { firstChoiceCommittee, fullName } from "@/lib/api"
+import { fullName } from "@/lib/api"
+import {
+  applicantListStatusTag,
+  applicationListPlacementLabel,
+} from "@/lib/hr/application-display"
 import type { HrApplication } from "@/lib/types/hr-application"
 
 const rowClasses =
@@ -47,6 +51,7 @@ export function ApplicationRow({
 }: ApplicationRowProps) {
   const name = fullName(application)
   const archived = Boolean(application.archivedAt)
+  const listStatusTag = applicantListStatusTag(application)
 
   return (
     <div className={cn(rowClasses, emphasized && firstRowClasses)}>
@@ -70,12 +75,12 @@ export function ApplicationRow({
         </div>
         <div className="flex min-w-0 flex-col gap-2 md:flex-row md:items-center md:justify-end md:gap-3">
           <span className={committeeClasses}>
-            {firstChoiceCommittee(application)}
+            {applicationListPlacementLabel(application)}
           </span>
           <span className={metaClasses}>
             {archived ? <span className={archivedClasses}>Archived</span> : null}
             <span className={metaTrailingClasses}>
-              <StatusPill status={application.status} />
+              <StatusPill status={listStatusTag} />
               <ChevronRight className="size-4 shrink-0 text-prelude" />
             </span>
           </span>

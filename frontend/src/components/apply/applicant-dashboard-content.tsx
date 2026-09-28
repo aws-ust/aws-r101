@@ -90,35 +90,38 @@ export function ApplicantDashboardContent({
       {positionApplication ? (
         <>
           {application.result ? (
-            <ApplicantResultPanel
-              result={application.result}
-              choices={application.choices}
-            />
+            <ApplicantResultPanel result={application.result} />
           ) : null}
 
-          <div className="mt-6">
-            <ApplicantEditBanner
-              canEdit={application.canEdit}
-              editDeadline={application.editDeadline}
-              lockReason={application.lockReason}
-            />
-          </div>
+          {application.result ? null : (
+            <div className="mt-6">
+              <ApplicantEditBanner
+                canEdit={application.canEdit}
+                editDeadline={application.editDeadline}
+                lockReason={application.lockReason}
+              />
+            </div>
+          )}
 
-          <div className="mt-8">
-            <ApplicantChoiceCards first={first} second={second} />
-          </div>
+          {application.result ? null : (
+            <div className="mt-8">
+              <ApplicantChoiceCards first={first} second={second} />
+            </div>
+          )}
 
-          <LazyWhenVisible minHeight="18rem" className="mt-8">
-            <ApplicantInterviewScheduler
-              key={`${previewPositionId ?? "current-booking"}:${first?.committee ?? ""}`}
-              positionId={previewPositionId}
-              previewMode={Boolean(previewPositionId)}
-              selectedSlotId={previewPositionId ? previewSlotId : undefined}
-              onSelectedSlotIdChange={
-                previewPositionId ? onPreviewSlotIdChange : undefined
-              }
-            />
-          </LazyWhenVisible>
+          {application.result ? null : (
+            <LazyWhenVisible minHeight="18rem" className="mt-8">
+              <ApplicantInterviewScheduler
+                key={`${previewPositionId ?? "current-booking"}:${first?.committee ?? ""}`}
+                positionId={previewPositionId}
+                previewMode={Boolean(previewPositionId)}
+                selectedSlotId={previewPositionId ? previewSlotId : undefined}
+                onSelectedSlotIdChange={
+                  previewPositionId ? onPreviewSlotIdChange : undefined
+                }
+              />
+            </LazyWhenVisible>
+          )}
 
           {application.canEdit ? (
             <ApplicantChoiceEditor
@@ -138,10 +141,12 @@ export function ApplicantDashboardContent({
 
       <ApplicantPaymentPanel />
 
-      <ApplicantDashboardDocuments
-        application={application}
-        onApplicationUpdated={onApplicationUpdated}
-      />
+      {application.result ? null : (
+        <ApplicantDashboardDocuments
+          application={application}
+          onApplicationUpdated={onApplicationUpdated}
+        />
+      )}
     </>
   )
 }

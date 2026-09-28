@@ -26,6 +26,13 @@ export type ApplicantResult = {
   status: "approved" | "rejected"
   releasedAt: string
   memberId: string | null
+  redirectPlacement: {
+    positionId: string
+    title: string
+    committeeId: string
+    committee: string
+  } | null
+  redirectResponse: "accepted" | "declined" | null
   finalPlacement: {
     positionId: string
     title: string
