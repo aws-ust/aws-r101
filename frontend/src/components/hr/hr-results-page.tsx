@@ -77,6 +77,10 @@ export function HrResultsPage() {
 
     setReleaseOpen(false)
     let message = `Released ${result.released} results. ${result.emailDelivery.sent} emails sent${result.emailDelivery.failed > 0 ? `; ${result.emailDelivery.failed} failed and can be retried.` : "."}`
+    const firstFailure = result.emailDelivery.failures?.[0]
+    if (firstFailure) {
+      message += ` ${firstFailure.recipient}: ${firstFailure.error}`
+    }
     try {
       await refreshPreview()
     } catch {
