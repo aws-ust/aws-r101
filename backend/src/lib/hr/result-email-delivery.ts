@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, lt, or } from "drizzle-orm";
 import { db } from "../../db";
 import {
   applicants,
@@ -15,13 +15,14 @@ import { markFailed } from "../email/notifications";
 export type ResultEmailDeliverySummary = {
   sent: number;
   failed: number;
+  failures: { recipient: string; error: string }[];
 };
 
 export async function deliverResultNotifications(
   notificationIds: string[],
 ): Promise<ResultEmailDeliverySummary> {
   if (notificationIds.length === 0) {
-    return { sent: 0, failed: 0 };
+    return { sent: 0, failed: 0, failures: [] };
   }
 
   const rows = await db
@@ -65,56 +66,110 @@ export async function deliverResultNotifications(
 
   const results = await Promise.allSettled(
     rows.map(async (row) => {
+      const failed = async (error: string) => {
+        console.error(
+          `[email] result delivery failed for ${row.recipient}: ${error}`,
+        );
+        await markFailed(row.id, error);
+        return { status: "failed" as const, recipient: row.recipient, error };
+      };
       if (
         row.messageType !== "result_accepted" &&
         row.messageType !== "result_rejected" &&
         row.messageType !== "result_redirected"
       ) {
-        await markFailed(row.id, "Notification is not a result email.");
-        return "failed" as const;
+        return failed("Notification is not a result email.");
       }
       if (row.messageType === "result_accepted" && !row.position) {
-        await markFailed(row.id, "Accepted result has no final position.");
-        return "failed" as const;
+        return failed("Accepted result has no final position.");
       }
       if (row.messageType === "result_redirected") {
         const redirect = row.redirectPositionId
           ? redirectById.get(row.redirectPositionId)
           : null;
         if (!redirect) {
-          await markFailed(row.id, "Redirected result has no redirect position.");
-          return "failed" as const;
+          return failed("Redirected result has no redirect position.");
         }
         const cc = redirectPlacementCcEmails({
           committee: redirect.committee,
           positionTitle: redirect.title,
-        });
-        return deliverQueuedResultEmail({
+        }).filter(
+          (address) => address.toLowerCase() !== row.recipient.toLowerCase(),
+        );
+        try {
+          const status = await deliverQueuedResultEmail({
+            notificationId: row.id,
+            messageType: "result_redirected",
+            recipient: row.recipient,
+            lastName: row.lastName,
+            position: redirect.title,
+            committee: redirect.committee,
+            cc,
+          });
+          if (status !== "sent") {
+            return {
+              status: "failed" as const,
+              recipient: row.recipient,
+              error: "Result email was not sent.",
+            };
+          }
+          return { status: "sent" as const, recipient: row.recipient, error: "" };
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          console.error(
+            `[email] result delivery failed for ${row.recipient}: ${message}`,
+          );
+          return { status: "failed" as const, recipient: row.recipient, error: message };
+        }
+      }
+      try {
+        const status = await deliverQueuedResultEmail({
           notificationId: row.id,
-          messageType: "result_redirected",
+          messageType: row.messageType,
           recipient: row.recipient,
           lastName: row.lastName,
-          position: redirect.title,
-          committee: redirect.committee,
-          cc,
+          position: row.position,
         });
+        if (status !== "sent") {
+          return {
+            status: "failed" as const,
+            recipient: row.recipient,
+            error: "Result email was not sent.",
+          };
+        }
+        return { status: "sent" as const, recipient: row.recipient, error: "" };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(
+          `[email] result delivery failed for ${row.recipient}: ${message}`,
+        );
+        return { status: "failed" as const, recipient: row.recipient, error: message };
       }
-      return deliverQueuedResultEmail({
-        notificationId: row.id,
-        messageType: row.messageType,
-        recipient: row.recipient,
-        lastName: row.lastName,
-        position: row.position,
-      });
     }),
   );
-  const sent = results.filter(
-    (result) => result.status === "fulfilled" && result.value === "sent",
-  ).length;
-  return { sent, failed: notificationIds.length - sent };
+  const outcomes = results.flatMap((result) =>
+    result.status === "fulfilled" ? [result.value] : [],
+  );
+  const sent = outcomes.filter((result) => result.status === "sent").length;
+  const failures = outcomes
+    .filter((result) => result.status === "failed")
+    .map((result) => ({ recipient: result.recipient, error: result.error }));
+  const missing = notificationIds.length - outcomes.length;
+  if (missing > 0) {
+    console.error(
+      `[email] ${missing} result notification(s) were queued but not delivered`,
+    );
+  }
+  return {
+    sent,
+    failed: notificationIds.length - sent,
+    failures,
+  };
 }
 
-async function claimFailedResultNotifications(): Promise<string[]> {
+async function claimRetryableResultNotifications(
+  pendingBefore: Date,
+): Promise<string[]> {
   return db.transaction(async (tx) => {
     const rows = await tx
       .select({ id: emailNotifications.id })
@@ -125,7 +180,13 @@ async function claimFailedResultNotifications(): Promise<string[]> {
       )
       .where(
         and(
-          eq(emailNotifications.status, "failed"),
+          or(
+            eq(emailNotifications.status, "failed"),
+            and(
+              eq(emailNotifications.status, "pending"),
+              lt(emailNotifications.createdAt, pendingBefore),
+            ),
+          ),
           inArray(emailNotifications.messageType, [
             "result_accepted",
             "result_rejected",
@@ -147,11 +208,17 @@ async function claimFailedResultNotifications(): Promise<string[]> {
   });
 }
 
-export async function retryFailedResultEmails() {
-  const notificationIds = await claimFailedResultNotifications();
+export async function retryFailedResultEmails(options?: {
+  includeFreshPending?: boolean;
+}) {
+  const pendingBefore = options?.includeFreshPending
+    ? new Date()
+    : new Date(Date.now() - 15_000);
+  const notificationIds = await claimRetryableResultNotifications(pendingBefore);
   const delivery = await deliverResultNotifications(notificationIds);
   return {
     retried: notificationIds.length,
-    ...delivery,
+    sent: delivery.sent,
+    failed: delivery.failed,
   };
 }

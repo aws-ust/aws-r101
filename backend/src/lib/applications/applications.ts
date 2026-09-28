@@ -9,6 +9,7 @@ import {
   inArray,
   isNotNull,
   isNull,
+  or,
   sql,
 } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
@@ -44,6 +45,7 @@ import type { ApplicantGender } from "../applicant/gender";
 export type { DocumentType } from "./documents";
 
 export type ApplicationStatus = "pending" | "approved" | "rejected";
+export type ApplicationListStatus = ApplicationStatus | "redirected";
 export type ApplicationType = "position" | "member";
 export type ApplicationChoiceJson = {
   preferenceRank: 1 | 2;
@@ -126,7 +128,7 @@ export type ListFilters = {
   position?: string;
   section?: string;
   query?: string;
-  status?: ApplicationStatus;
+  status?: ApplicationListStatus;
   applicationType?: ApplicationType;
   archive?: "active" | "archived" | "all";
   page?: number;
@@ -457,8 +459,23 @@ export async function listApplications(filters: ListFilters): Promise<{
     );
   }
 
-  if (filters.status) {
-    conditions.push(eq(applications.status, filters.status));
+  if (filters.status === "redirected") {
+    conditions.push(
+      and(
+        isNotNull(applications.redirectPositionId),
+        isNull(applications.redirectResponse),
+      ),
+    );
+  } else if (filters.status) {
+    conditions.push(
+      and(
+        eq(applications.status, filters.status),
+        or(
+          isNull(applications.redirectPositionId),
+          isNotNull(applications.redirectResponse),
+        ),
+      ),
+    );
   }
 
   if (filters.applicationType) {

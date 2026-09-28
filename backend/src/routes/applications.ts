@@ -111,10 +111,10 @@ applicationsRoutes.get("/", requireAuth, async (c) => {
   }
   if (
     status &&
-    !["pending", "approved", "rejected"].includes(status)
+    !["pending", "approved", "rejected", "redirected"].includes(status)
   ) {
     return c.json(
-      { error: "status must be pending, approved, or rejected." },
+      { error: "status must be pending, approved, rejected, or redirected." },
       400,
     );
   }
@@ -147,7 +147,7 @@ applicationsRoutes.get("/", requireAuth, async (c) => {
     section: section || undefined,
     query: query || undefined,
     status: status
-      ? (status as "pending" | "approved" | "rejected")
+      ? (status as "pending" | "approved" | "rejected" | "redirected")
       : undefined,
     applicationType: applicationType
       ? (applicationType as "position" | "member")
