@@ -9,7 +9,7 @@ import { usesSecureCookies } from "./lib/auth/secure-cookie";
 
 export const AUTH_COOKIE_NAME = "hr_token";
 
-export type UserRole = "hr" | "admin" | "finance";
+export type UserRole = "hr" | "admin";
 export type AuthenticatedUser = {
   id: string;
   email: string;
@@ -66,7 +66,7 @@ export async function verifyHrCredentials(
     .where(eq(users.email, normalizedEmail))
     .limit(1);
 
-  if (!user || !user.isActive) {
+  if (!user || !user.isActive || user.role === "finance") {
     return { ok: false };
   }
 
@@ -135,7 +135,7 @@ export async function getAuthenticatedUser(
     .from(users)
     .where(eq(users.email, payload.sub.trim().toLowerCase()))
     .limit(1);
-  if (!user?.isActive) return null;
+  if (!user?.isActive || user.role === "finance") return null;
   return { id: user.id, email: user.email, role: user.role };
 }
 

@@ -89,7 +89,7 @@ function csvCell(value: unknown) {
 
 export const membershipPaymentRoutes = new Hono();
 
-membershipPaymentRoutes.use("*", requireRoles("hr", "admin", "finance"));
+membershipPaymentRoutes.use("*", requireRoles("hr", "admin"));
 
 membershipPaymentRoutes.get("/campaign", async (c) => {
   return c.json({ campaign: await getCurrentPaymentCampaign() });
@@ -125,7 +125,7 @@ membershipPaymentRoutes.put(
 
 membershipPaymentRoutes.put(
   "/campaign/payment-details",
-  requireRoles("finance", "admin"),
+  requireRoles("hr", "admin"),
   async (c) => {
     const parsed = paymentDetailsSchema.safeParse(
       await c.req.json().catch(() => null),
@@ -144,7 +144,7 @@ membershipPaymentRoutes.put(
 
 membershipPaymentRoutes.post(
   "/campaign/payment-qr/presign",
-  requireRoles("finance", "admin"),
+  requireRoles("hr", "admin"),
   async (c) => {
     const parsed = paymentQrSchema.safeParse(
       await c.req.json().catch(() => null),
@@ -163,7 +163,7 @@ membershipPaymentRoutes.post(
 
 membershipPaymentRoutes.post(
   "/campaign/payment-qr/complete",
-  requireRoles("finance", "admin"),
+  requireRoles("hr", "admin"),
   async (c) => {
     const parsed = completePaymentQrSchema.safeParse(
       await c.req.json().catch(() => null),
@@ -324,7 +324,7 @@ membershipPaymentRoutes.get("/:paymentId/receipts/:submissionId", async (c) => {
 
 membershipPaymentRoutes.post(
   "/:paymentId/verify",
-  requireRoles("admin", "finance"),
+  requireRoles("hr", "admin"),
   async (c) => {
     const paymentId = c.req.param("paymentId");
     if (!UUID_RE.test(paymentId)) return c.json({ error: "Invalid payment id." }, 400);
@@ -341,7 +341,7 @@ membershipPaymentRoutes.post(
 
 membershipPaymentRoutes.post(
   "/:paymentId/reject",
-  requireRoles("admin", "finance"),
+  requireRoles("hr", "admin"),
   async (c) => {
     const paymentId = c.req.param("paymentId");
     if (!UUID_RE.test(paymentId)) return c.json({ error: "Invalid payment id." }, 400);
@@ -367,7 +367,7 @@ membershipPaymentRoutes.post(
 
 membershipPaymentRoutes.post(
   "/:paymentId/reverse",
-  requireRoles("admin"),
+  requireRoles("hr", "admin"),
   async (c) => {
     const paymentId = c.req.param("paymentId");
     if (!UUID_RE.test(paymentId)) return c.json({ error: "Invalid payment id." }, 400);

@@ -247,7 +247,7 @@ export async function openCurrentPaymentCampaign(actor: AuthenticatedUser) {
     }
     if (!hasPaymentDetails(campaign)) {
       throw new MembershipPaymentError(
-        "Finance must set the amount and at least one official payment account before opening payments.",
+        "Set the amount and at least one official payment account before opening payments.",
         409,
       );
     }

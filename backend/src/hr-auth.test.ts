@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import test, { after } from "node:test";
+import bcrypt from "bcryptjs";
+import { eq } from "drizzle-orm";
 import { sign } from "hono/jwt";
 import { app } from "./app";
 import { db } from "./db";
+import { users } from "./db/schema";
 import { verifyHrCredentials } from "./auth";
 
 const databaseUrl = process.env.DATABASE_URL ?? "";
@@ -34,6 +38,37 @@ test("verifyHrCredentials accepts seeded bcrypt user", async () => {
 test("verifyHrCredentials rejects wrong password", async () => {
     const result = await verifyHrCredentials("hr@aws-ust.org", "wrong-password");
     assert.equal(result.ok, false);
+});
+
+test("legacy Finance users cannot authenticate or reuse a session", async () => {
+  const id = randomUUID();
+  const email = `legacy-finance-${id}@test.dev`;
+  await db.insert(users).values({
+    id,
+    email,
+    passwordHash: await bcrypt.hash("password123", 10),
+    firstName: "Legacy",
+    lastName: "Finance",
+    role: "finance",
+  });
+
+  try {
+    assert.deepEqual(
+      await verifyHrCredentials(email, "password123"),
+      { ok: false },
+    );
+    const token = await sign(
+      { sub: email, exp: Math.floor(Date.now() / 1000) + 60 },
+      process.env.JWT_SECRET!,
+      "HS256",
+    );
+    const response = await app.request("/auth/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    assert.equal(response.status, 401);
+  } finally {
+    await db.delete(users).where(eq(users.id, id));
+  }
 });
 
 test("expired HR JWT returns 401 on protected route", async () => {

@@ -122,13 +122,17 @@ test("membership payment workflow", async (t) => {
     })
   ).token;
 
-  await t.test("HR schedules and opens while Finance configures payment details", async () => {
+  await t.test("HR manages the complete campaign while Finance is denied", async () => {
     assert.equal(
       (await staffRequest("/applications", financeToken)).status,
-      403,
+      401,
     );
     assert.equal(
       (await staffRequest("/membership-payments", financeToken)).status,
+      401,
+    );
+    assert.equal(
+      (await staffRequest("/membership-payments", adminToken)).status,
       200,
     );
     const schedule = JSON.stringify({
@@ -151,21 +155,20 @@ test("membership payment workflow", async (t) => {
       gcashAccountName: null,
       gcashAccountNumber: null,
     });
-    assert.equal((await staffRequest("/membership-payments/campaign/schedule", financeToken, { method: "PUT", body: schedule })).status, 403);
+    assert.equal((await staffRequest("/membership-payments/campaign/schedule", financeToken, { method: "PUT", body: schedule })).status, 401);
     assert.equal((await staffRequest("/membership-payments/campaign/schedule", hrToken, { method: "PUT", body: schedule })).status, 200);
-    assert.equal((await staffRequest("/membership-payments/campaign/payment-details", hrToken, { method: "PUT", body: details })).status, 403);
-    assert.equal((await staffRequest("/membership-payments/campaign/payment-details", financeToken, { method: "PUT", body: withoutAccount })).status, 400);
-    assert.equal((await staffRequest("/membership-payments/campaign/payment-details", financeToken, { method: "PUT", body: details })).status, 200);
+    assert.equal((await staffRequest("/membership-payments/campaign/payment-details", hrToken, { method: "PUT", body: withoutAccount })).status, 400);
+    assert.equal((await staffRequest("/membership-payments/campaign/payment-details", hrToken, { method: "PUT", body: details })).status, 200);
     const qrRequest = JSON.stringify({
       provider: "gcash",
       mimeType: "image/png",
       sizeBytes: 100,
       checksumSha256: "A".repeat(43) + "=",
     });
-    assert.equal((await staffRequest("/membership-payments/campaign/payment-qr/presign", hrToken, { method: "POST", body: qrRequest })).status, 403);
+    assert.equal((await staffRequest("/membership-payments/campaign/payment-qr/presign", financeToken, { method: "POST", body: qrRequest })).status, 401);
     const qrUpload = await staffRequest(
       "/membership-payments/campaign/payment-qr/presign",
-      financeToken,
+      hrToken,
       { method: "POST", body: qrRequest },
     );
     assert.equal(qrUpload.status, 201);
@@ -174,12 +177,12 @@ test("membership payment workflow", async (t) => {
       qrPayload.key,
       new RegExp(`^incoming/payment-qrs/[0-9a-f-]+/gcash/`),
     );
-    assert.equal((await staffRequest("/membership-payments/campaign/open", financeToken, { method: "POST" })).status, 403);
+    assert.equal((await staffRequest("/membership-payments/campaign/open", financeToken, { method: "POST" })).status, 401);
     const opened = await staffRequest("/membership-payments/campaign/open", hrToken, { method: "POST" });
     assert.equal(opened.status, 200);
     const payload = (await opened.json()) as { eligible: number; created: number };
     assert.deepEqual(payload, { eligible: 3, created: 3, emailDelivery: { queued: 3, sent: 0, failed: 3 } });
-    assert.equal((await staffRequest("/membership-payments/emails/retry-invitations", financeToken, { method: "POST" })).status, 403);
+    assert.equal((await staffRequest("/membership-payments/emails/retry-invitations", financeToken, { method: "POST" })).status, 401);
     const invitationRetry = await staffRequest(
       "/membership-payments/emails/retry-invitations",
       hrToken,
@@ -196,7 +199,7 @@ test("membership payment workflow", async (t) => {
       ...JSON.parse(details),
       amountCents: 30000,
     });
-    assert.equal((await staffRequest("/membership-payments/campaign/payment-details", financeToken, { method: "PUT", body: changedAmount })).status, 409);
+    assert.equal((await staffRequest("/membership-payments/campaign/payment-details", hrToken, { method: "PUT", body: changedAmount })).status, 409);
   });
 
   await t.test("applicant can see only their payment invitation", async () => {
@@ -208,7 +211,7 @@ test("membership payment workflow", async (t) => {
     assert.deepEqual(payload.payment, { ...payload.payment, applicationCode: "AP-2096-810001", memberId: null, amountCents: 25000 });
   });
 
-  await t.test("finance verifies payment and Member ID is generated then", async () => {
+  await t.test("HR verifies payment and Member ID is generated then", async () => {
     const [payment] = await db.select().from(membershipPayments).where(eq(membershipPayments.applicationId, ids.acceptedApplication));
     await db.insert(membershipPaymentSubmissions).values({
       paymentId: payment.id,
@@ -225,24 +228,78 @@ test("membership payment workflow", async (t) => {
       receiptChecksumSha256: "A".repeat(43) + "=",
     });
     await db.update(membershipPayments).set({ status: "pending_verification" }).where(eq(membershipPayments.id, payment.id));
-    assert.equal((await staffRequest(`/membership-payments/${payment.id}/verify`, hrToken, { method: "POST" })).status, 403);
+    assert.equal((await staffRequest(`/membership-payments/${payment.id}/verify`, financeToken, { method: "POST" })).status, 401);
     await db.update(applications).set({ archivedAt: new Date() }).where(eq(applications.id, ids.acceptedApplication));
-    assert.equal((await staffRequest(`/membership-payments/${payment.id}/verify`, financeToken, { method: "POST" })).status, 409);
+    assert.equal((await staffRequest(`/membership-payments/${payment.id}/verify`, hrToken, { method: "POST" })).status, 409);
     await db.update(applications).set({ archivedAt: null }).where(eq(applications.id, ids.acceptedApplication));
-    const verified = await staffRequest(`/membership-payments/${payment.id}/verify`, financeToken, { method: "POST" });
+    const verified = await staffRequest(`/membership-payments/${payment.id}/verify`, hrToken, { method: "POST" });
     assert.equal(verified.status, 200);
     const [application] = await db.select({ memberId: applications.memberId }).from(applications).where(eq(applications.id, ids.acceptedApplication));
     assert.match(application.memberId ?? "", /^AWS-2096-\d{4}$/);
   });
 
+  await t.test("HR can reject a receipt for resubmission", async () => {
+    const [payment] = await db
+      .select()
+      .from(membershipPayments)
+      .where(eq(membershipPayments.applicationId, ids.rejectedApplication));
+    await db.insert(membershipPaymentSubmissions).values({
+      paymentId: payment.id,
+      campaignId: payment.campaignId,
+      attemptNumber: 1,
+      method: "gcash",
+      referenceNumber: "REF-810002",
+      referenceNumberNormalized: "REF810002",
+      amountCents: 25000,
+      receiptKey: `payment-receipts/${ids.rejectedApplication}/test.png`,
+      receiptFileName: "receipt.png",
+      receiptMimeType: "image/png",
+      receiptSizeBytes: 100,
+      receiptChecksumSha256: "B".repeat(43) + "=",
+    });
+    await db
+      .update(membershipPayments)
+      .set({ status: "pending_verification" })
+      .where(eq(membershipPayments.id, payment.id));
+    const body = JSON.stringify({
+      reason: "Receipt details do not match",
+      resubmissionDeadlineAt: "2096-12-02T00:00:00.000Z",
+    });
+    assert.equal(
+      (
+        await staffRequest(
+          `/membership-payments/${payment.id}/reject`,
+          financeToken,
+          { method: "POST", body },
+        )
+      ).status,
+      401,
+    );
+    assert.equal(
+      (
+        await staffRequest(
+          `/membership-payments/${payment.id}/reject`,
+          hrToken,
+          { method: "POST", body },
+        )
+      ).status,
+      200,
+    );
+    const [rejected] = await db
+      .select()
+      .from(membershipPayments)
+      .where(eq(membershipPayments.id, payment.id));
+    assert.equal(rejected.status, "needs_resubmission");
+  });
+
   await t.test("confirmation release records the assigned link and failed email", async () => {
-    assert.equal((await staffRequest("/membership-payments/confirmations/release", financeToken, { method: "POST" })).status, 403);
+    assert.equal((await staffRequest("/membership-payments/confirmations/release", financeToken, { method: "POST" })).status, 401);
     const response = await staffRequest("/membership-payments/confirmations/release", hrToken, { method: "POST" });
     assert.equal(response.status, 200);
     const [payment] = await db.select().from(membershipPayments).where(eq(membershipPayments.applicationId, ids.acceptedApplication));
     assert.equal(payment.assignedChatLink, "https://m.me/j/committee-test");
     assert.equal(payment.confirmationStatus, "email_failed");
-    assert.equal((await staffRequest("/membership-payments/emails/retry-confirmations", financeToken, { method: "POST" })).status, 403);
+    assert.equal((await staffRequest("/membership-payments/emails/retry-confirmations", financeToken, { method: "POST" })).status, 401);
     const confirmationRetry = await staffRequest(
       "/membership-payments/emails/retry-confirmations",
       hrToken,
@@ -256,11 +313,11 @@ test("membership payment workflow", async (t) => {
     });
   });
 
-  await t.test("only admin can reverse verification and Member ID is retained", async () => {
+  await t.test("HR can reverse verification and Member ID is retained", async () => {
     const [payment] = await db.select().from(membershipPayments).where(eq(membershipPayments.applicationId, ids.acceptedApplication));
     const body = JSON.stringify({ reason: "Wrong receipt was verified", resubmissionDeadlineAt: "2096-12-02T00:00:00.000Z" });
-    assert.equal((await staffRequest(`/membership-payments/${payment.id}/reverse`, financeToken, { method: "POST", body })).status, 403);
-    assert.equal((await staffRequest(`/membership-payments/${payment.id}/reverse`, adminToken, { method: "POST", body })).status, 200);
+    assert.equal((await staffRequest(`/membership-payments/${payment.id}/reverse`, financeToken, { method: "POST", body })).status, 401);
+    assert.equal((await staffRequest(`/membership-payments/${payment.id}/reverse`, hrToken, { method: "POST", body })).status, 200);
     const [reversed] = await db.select().from(membershipPayments).where(eq(membershipPayments.id, payment.id));
     const [application] = await db.select({ memberId: applications.memberId }).from(applications).where(eq(applications.id, ids.acceptedApplication));
     assert.equal(reversed.membershipStatus, "revoked");
