@@ -9,16 +9,43 @@ import {
   updateApplicantChoices,
   type ApplicantApplication,
 } from "@/lib/api/applicant"
-import { ApplicantDashboardSkeleton } from "@/components/apply/applicant-dashboard-skeleton"
+import {
+  ApplicantDashboardHeaderSkeleton,
+  ApplicantDashboardSkeleton,
+} from "@/components/apply/applicant-dashboard-skeleton"
+import { SectionHeader } from "@/components/shared/section-header"
 import { glassPanelClasses } from "@/lib/site/surface"
 
 const panelClasses = `${glassPanelClasses} min-w-0 w-full max-w-full overflow-x-clip px-4 py-8 md:px-10`
 const missingClasses = "mt-8 font-sans text-sm text-prelude"
 
-export function ApplicantDashboard() {
+function ApplicantDashboardSectionHeader({ resultsReleased }: { resultsReleased: boolean }) {
+  return (
+    <SectionHeader
+      eyebrow="// APPLICANT DASHBOARD"
+      title={resultsReleased ? "Your Results" : "Your application"}
+      titleClassName="max-w-none text-balance"
+      subtitle={
+        resultsReleased
+          ? undefined
+          : "Review what you submitted and update committee choices, documents, or your interview while recruitment week is open."
+      }
+    />
+  )
+}
+
+type ApplicantDashboardProps = {
+  initialApplication?: ApplicantApplication | null
+}
+
+export function ApplicantDashboard({
+  initialApplication = null,
+}: ApplicantDashboardProps) {
   const router = useRouter()
-  const [application, setApplication] = useState<ApplicantApplication | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [application, setApplication] = useState<ApplicantApplication | null>(
+    initialApplication,
+  )
+  const [loading, setLoading] = useState(initialApplication === null)
   const [error, setError] = useState("")
   const [saveError, setSaveError] = useState("")
   const [saveSuccess, setSaveSuccess] = useState("")
@@ -90,14 +117,28 @@ export function ApplicantDashboard() {
   )
 
   if (loading) {
-    return <ApplicantDashboardSkeleton />
+    return (
+      <>
+        <ApplicantDashboardHeaderSkeleton />
+        <ApplicantDashboardSkeleton />
+      </>
+    )
   }
 
   if (error || !application) {
-    return <p className={missingClasses}>{error || "Application not found."}</p>
+    return (
+      <>
+        <ApplicantDashboardSectionHeader resultsReleased={false} />
+        <p className={missingClasses}>{error || "Application not found."}</p>
+      </>
+    )
   }
 
+  const resultsReleased = Boolean(application.result)
+
   return (
+    <>
+      <ApplicantDashboardSectionHeader resultsReleased={resultsReleased} />
     <section className={panelClasses}>
       <ApplicantDashboardContent
         application={application}
@@ -112,5 +153,6 @@ export function ApplicantDashboard() {
         onApplicationUpdated={setApplication}
       />
     </section>
+    </>
   )
 }

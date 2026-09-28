@@ -4,6 +4,16 @@ import { glassPanelClasses } from "@/lib/site/surface"
 const panelClasses = `${glassPanelClasses} min-w-0 w-full max-w-full overflow-x-clip px-4 py-8 md:px-10`
 const metaRowClasses = "mt-6 flex flex-wrap gap-x-8 gap-y-3"
 
+export function ApplicantDashboardHeaderSkeleton() {
+  return (
+    <div className="flex flex-col gap-3" aria-hidden>
+      <Skeleton className="h-4 w-52 max-w-full" />
+      <Skeleton className="h-10 w-72 max-w-full md:h-12" />
+      <Skeleton className="h-5 w-full max-w-[680px]" />
+    </div>
+  )
+}
+
 export function ApplicantDashboardSkeleton() {
   return (
     <section
