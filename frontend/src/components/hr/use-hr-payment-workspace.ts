@@ -23,7 +23,7 @@ export function useHrPaymentWorkspace() {
   const [campaign, setCampaign] = useState<PaymentCampaign | null>(null)
   const [dashboard, setDashboard] = useState<PaymentDashboard | null>(null)
   const [committees, setCommittees] = useState<CommitteeApplicationStatus[]>([])
-  const [role, setRole] = useState<"hr" | "admin" | "finance">("hr")
+  const [role, setRole] = useState<"hr" | "admin">("hr")
   const [selected, setSelected] = useState<PaymentListItem | null>(null)
   const [feedback, setFeedback] = useState<HrPaymentFeedback | null>(null)
   const [loading, setLoading] = useState(true)
@@ -41,10 +41,7 @@ export function useHrPaymentWorkspace() {
   useEffect(() => {
     getSession()
       .then(async (session) => {
-        const committeeRequest =
-          session.role === "finance"
-            ? Promise.resolve([] as CommitteeApplicationStatus[])
-            : listCommitteeApplicationStatuses()
+        const committeeRequest = listCommitteeApplicationStatuses()
         const [campaignResponse, dashboardResponse, committeeRows] =
           await Promise.all([
             getPaymentCampaign(),

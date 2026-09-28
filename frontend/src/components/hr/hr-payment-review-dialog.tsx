@@ -36,7 +36,7 @@ const actionFormClasses = "mt-4 flex flex-col gap-3 rounded-[14px] border border
 const errorClasses = "font-sans text-sm text-rose-glow"
 type ReviewAction = "reject" | "reverse" | null
 
-export function HrPaymentReviewDialog({ selected, role, onClose, onChanged }: { selected: PaymentListItem; role: "hr" | "admin" | "finance"; onClose: () => void; onChanged: () => Promise<void> }) {
+export function HrPaymentReviewDialog({ selected, role, onClose, onChanged }: { selected: PaymentListItem; role: "hr" | "admin"; onClose: () => void; onChanged: () => Promise<void> }) {
   const [details, setDetails] = useState<PaymentDetails | null>(null)
   const [action, setAction] = useState<ReviewAction>(null)
   const [reason, setReason] = useState("")
@@ -138,13 +138,13 @@ function PaymentReviewActionForm({ action, reason, deadline, onReason, onDeadlin
   )
 }
 
-function PaymentDialogActions({ details, role, action, reason, deadline, pending, onAction, onFinish }: { details: PaymentDetails | null; role: "hr" | "admin" | "finance"; action: ReviewAction; reason: string; deadline: string; pending: boolean; onAction: (action: ReviewAction) => void; onFinish: (operation: () => Promise<unknown>) => Promise<void> }) {
-  const canReview = role === "admin" || role === "finance"
+function PaymentDialogActions({ details, role, action, reason, deadline, pending, onAction, onFinish }: { details: PaymentDetails | null; role: "hr" | "admin"; action: ReviewAction; reason: string; deadline: string; pending: boolean; onAction: (action: ReviewAction) => void; onFinish: (operation: () => Promise<unknown>) => Promise<void> }) {
+  const canReview = role === "hr" || role === "admin"
   if (canReview && details?.status === "pending_verification") {
     if (action === "reject") return <Button type="button" color="danger" disabled={pending || !reason.trim()} onClick={() => void onFinish(() => rejectPayment(details.paymentId, { reason, resubmissionDeadlineAt: new Date(deadline).toISOString() }))}>Confirm rejection</Button>
     return <><Button type="button" color="purple" disabled={pending} onClick={() => onAction("reject")}>Reject receipt</Button><Button type="button" color="cyan" disabled={pending} onClick={() => void onFinish(() => verifyPayment(details.paymentId))}>Verify payment</Button></>
   }
-  if (role === "admin" && details?.status === "verified") {
+  if (canReview && details?.status === "verified") {
     if (action === "reverse") return <Button type="button" color="danger" disabled={pending || !reason.trim()} onClick={() => void onFinish(() => reversePayment(details.paymentId, { reason, resubmissionDeadlineAt: new Date(deadline).toISOString() }))}>Confirm reversal</Button>
     return <Button type="button" color="danger" disabled={pending} onClick={() => onAction("reverse")}>Reverse verification</Button>
   }

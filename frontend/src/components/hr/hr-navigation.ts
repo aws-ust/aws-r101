@@ -8,7 +8,7 @@ import {
   WalletCards,
 } from "lucide-react"
 
-export type HrRole = "hr" | "admin" | "finance"
+export type HrRole = "hr" | "admin"
 
 export type HrNavigationItem = {
   label: string
@@ -41,7 +41,7 @@ function isApplicationDetailPath(pathname: string) {
 export const hrNavigationSections: HrNavigationSection[] = [
   {
     label: "Recruitment",
-    visible: (role) => role !== "finance",
+    visible: () => true,
     items: [
       {
         label: "Applications",
@@ -100,7 +100,6 @@ export const hrNavigationSections: HrNavigationSection[] = [
 ]
 
 export function hrWorkspaceTitle(role: HrRole) {
-  if (role === "finance") return "Finance Dashboard"
   if (role === "admin") return "Admin Dashboard"
   return "HR Dashboard"
 }

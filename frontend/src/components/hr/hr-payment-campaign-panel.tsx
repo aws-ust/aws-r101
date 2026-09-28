@@ -21,7 +21,7 @@ type Feedback = { type: "success" | "error"; message: string }
 type CampaignPanelProps = {
   campaign: PaymentCampaign | null
   committees: CommitteeApplicationStatus[]
-  role: "hr" | "admin" | "finance"
+  role: "hr" | "admin"
   pending: boolean
   onCampaign: (campaign: PaymentCampaign) => void
   onPending: (pending: boolean) => void
@@ -58,7 +58,7 @@ function PaymentCampaignHeader({ campaign, role, pending, onCampaign, onPending,
 
 function PaymentCampaignForms({ campaign, committees, role, onCampaign, onFeedback }: CampaignPanelProps) {
   const canManagePeriod = role === "hr" || role === "admin"
-  const canManageDetails = role === "finance" || role === "admin"
+  const canManageDetails = role === "hr" || role === "admin"
   return (
     <>
       {canManagePeriod ? (
@@ -68,7 +68,7 @@ function PaymentCampaignForms({ campaign, committees, role, onCampaign, onFeedba
       ) : null}
       {canManageDetails ? (
         <div className="mt-6">
-          {campaign ? <HrPaymentDetailsForm campaign={campaign} onSaved={(saved) => { onCampaign(saved); onFeedback({ type: "success", message: "Payment amount and accounts saved." }) }} /> : <p className={bodyClasses}>HR must configure the payment period before Finance can add payment details.</p>}
+          {campaign ? <HrPaymentDetailsForm campaign={campaign} onSaved={(saved) => { onCampaign(saved); onFeedback({ type: "success", message: "Payment amount and accounts saved." }) }} /> : <p className={bodyClasses}>Save the payment period before adding the amount and official payment accounts.</p>}
         </div>
       ) : null}
     </>
@@ -76,9 +76,9 @@ function PaymentCampaignForms({ campaign, committees, role, onCampaign, onFeedba
 }
 
 function campaignStatus(campaign: PaymentCampaign | null) {
-  if (!campaign) return "HR configures the period first, then Finance adds the official payment details."
-  const financeStatus = campaign.amountCents === null ? " · Waiting for Finance details" : ""
-  return `${campaign.isOpen ? "Open" : "Closed"} · Recruitment year ${campaign.recruitmentYear}${financeStatus}`
+  if (!campaign) return "Set the payment period to begin."
+  const detailsStatus = campaign.amountCents === null ? " · Payment details needed" : ""
+  return `${campaign.isOpen ? "Open" : "Closed"} · Recruitment year ${campaign.recruitmentYear}${detailsStatus}`
 }
 
 async function updatePaymentPeriod(open: boolean, campaign: PaymentCampaign, onCampaign: CampaignPanelProps["onCampaign"], onPending: CampaignPanelProps["onPending"], onFeedback: CampaignPanelProps["onFeedback"]) {

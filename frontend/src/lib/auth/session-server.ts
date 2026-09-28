@@ -4,7 +4,7 @@ const API_BASE = process.env.API_URL ?? "http://localhost:8787"
 
 export type StaffSession = {
   email: string
-  role: "hr" | "admin" | "finance"
+  role: "hr" | "admin"
 }
 
 export async function getServerSession(): Promise<StaffSession | null> {

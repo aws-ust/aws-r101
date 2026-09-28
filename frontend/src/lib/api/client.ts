@@ -552,13 +552,13 @@ export function retryFailedResultEmailsRequest() {
 
 type LoginResponse = {
   email: string;
-  role: "hr" | "admin" | "finance";
+  role: "hr" | "admin";
   expiresAt: string;
 };
 
 export async function getSession(): Promise<{
   email: string;
-  role: "hr" | "admin" | "finance";
+  role: "hr" | "admin";
 }> {
   return apiFetch("/auth/me");
 }

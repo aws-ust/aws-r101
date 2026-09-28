@@ -49,8 +49,8 @@ export function HrPaymentsPage() {
             ) : null}
             <HrPaymentSection
               id="payment-setup"
-              title={role === "finance" ? "Payment details" : "Payment setup"}
-              description={paymentCampaignDescription(role)}
+              title="Payment setup"
+              description={paymentCampaignDescription()}
             >
               <HrPaymentCampaignPanel
                 campaign={campaign}

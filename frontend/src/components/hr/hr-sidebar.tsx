@@ -56,7 +56,7 @@ export function HrSidebar({
     <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader className={sidebarHeaderClasses}>
         <Link
-          href={role === "finance" ? "/admin/hr/payments" : "/admin/hr"}
+          href="/admin/hr"
           className={brandRowClasses}
         >
           <span className={brandMarkClasses} aria-hidden>

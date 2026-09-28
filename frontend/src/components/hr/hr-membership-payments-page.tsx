@@ -43,7 +43,7 @@ export function HrMembershipPaymentsPage() {
               <HrPaymentSection
                 id="receipt-review"
                 title="Receipt review"
-                description={paymentReviewDescription(role)}
+                description={paymentReviewDescription()}
               >
                 <div className={reviewPanelClasses}>
                   <HrPaymentList

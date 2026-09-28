@@ -20,7 +20,7 @@ export function HrShell({
   role,
 }: {
   children: ReactNode
-  role: "hr" | "admin" | "finance"
+  role: "hr" | "admin"
 }) {
   return (
     <TooltipProvider>

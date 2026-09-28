@@ -92,7 +92,7 @@ export async function loginAction(
   const tokenFromCookie = extractHrTokenFromResponse(response)
   const body = (await response.json()) as {
     token?: string
-    role?: "hr" | "admin" | "finance"
+    role?: "hr" | "admin"
   }
   const token = tokenFromCookie ?? body.token
   if (!token) {
@@ -109,7 +109,7 @@ export async function loginAction(
     maxAge,
   })
 
-  redirect(body.role === "finance" ? "/admin/hr/payments" : "/admin/hr")
+  redirect("/admin/hr")
 }
 
 export async function logoutHrSession(): Promise<void> {

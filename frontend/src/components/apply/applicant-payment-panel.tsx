@@ -132,7 +132,7 @@ function PaymentSubmissionSection({ payment, onSubmitted }: { payment: Applicant
 
 function PaymentStatusMessage({ payment }: { payment: ApplicantPayment }) {
   let message = ""
-  if (payment.paymentStatus === "pending_verification") message = "Your receipt is waiting for manual review. It does not count as paid until Finance verifies it."
+  if (payment.paymentStatus === "pending_verification") message = "Your receipt is waiting for manual review. It does not count as paid until HR verifies it."
   if (payment.paymentStatus === "expired") message = "The payment deadline has passed. Contact the organization if you need help."
   if (payment.paymentStatus === "verified" && payment.confirmationStatus !== "released") message = "Your payment is verified. Final membership details will appear after confirmations are released."
   if (!message) return null

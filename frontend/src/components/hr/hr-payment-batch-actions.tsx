@@ -13,7 +13,7 @@ export function HrPaymentBatchActions({
   verified,
   onRun,
 }: {
-  role: "hr" | "admin" | "finance"
+  role: "hr" | "admin"
   pending: boolean
   verified: number
   onRun: (
