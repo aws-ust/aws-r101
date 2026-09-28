@@ -1,5 +1,5 @@
 import type { HrFilters } from "@/components/hr/application-filters"
-import type { ApplicationType } from "@/lib/types/application"
+import type { ApplicationStatus, ApplicationType } from "@/lib/types/application"
 
 const STATUSES: HrFilters["status"][] = [
   "pending",
