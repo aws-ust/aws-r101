@@ -1,7 +1,9 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { CommitteeOfficePicker } from "@/components/apply/committee-office-picker"
 import { ActionFeedback } from "@/components/shared/action-feedback"
+import { Field } from "@/components/shared/field"
 import { Button } from "@/components/ui/button"
 import {
   listPositionApprovalTargets,
@@ -10,16 +12,17 @@ import {
   type PositionApprovalTarget,
 } from "@/lib/api"
 import type { HrApplication } from "@/lib/types/hr-application"
-import { comparePositionHierarchy } from "@/lib/apply/committee-groups"
+import {
+  comparePositionHierarchy,
+  groupedCommitteesForPicker,
+} from "@/lib/apply/committee-groups"
 
 const panelClasses =
   "mt-8 min-w-0 overflow-x-clip rounded-[22px] border border-biloba-flower/30 bg-haiti/55 px-4 py-5 sm:px-5"
 const headerClasses = "font-sans text-lg font-semibold text-blue-chalk"
 const helpClasses = "mt-1 font-sans text-sm leading-relaxed text-pretty text-prelude"
-const fieldClasses = "mt-4 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-end"
-const selectClasses =
-  "h-10 min-w-0 flex-1 rounded-[14px] border border-blue-chalk/20 bg-meteorite/50 px-3 font-sans text-sm text-blue-chalk"
-const actionsClasses = "mt-4 flex flex-wrap gap-2"
+const editorClasses = "mt-4 flex min-w-0 flex-col gap-4"
+const actionsClasses = "flex flex-wrap gap-2"
 const tagClasses =
   "inline-flex w-fit items-center rounded-pill bg-daisy-bush/70 px-3 py-0.5 font-mono text-[11px] text-blue-chalk"
 
@@ -30,7 +33,6 @@ type Props = {
 
 export function redirectPlacementLabel(application: HrApplication): string | null {
   if (!application.redirectPlacement) return null
-  if (!application.resultsReleasedAt) return "Redirect configured"
   if (!application.redirectResponse) return "Redirected"
   if (application.redirectResponse === "accepted") return "Accepted redirect"
   return "Declined — member"
@@ -79,6 +81,27 @@ export function HrRedirectPlacementPanel({ application, onUpdated }: Props) {
         ),
       ),
     [positions],
+  )
+
+  const pickerPositions = useMemo(
+    () =>
+      sortedPositions.map((position) => ({
+        id: position.id,
+        committee: position.committee,
+        title: position.title,
+        acceptingApplications: true,
+      })),
+    [sortedPositions],
+  )
+
+  const groups = useMemo(() => {
+    const committees = [...new Set(sortedPositions.map((position) => position.committee))]
+    return groupedCommitteesForPicker(committees)
+  }, [sortedPositions])
+
+  const selectedCommittee = useMemo(
+    () => sortedPositions.find((position) => position.id === selectedId)?.committee ?? "",
+    [selectedId, sortedPositions],
   )
 
   const tag = redirectPlacementLabel(application)
@@ -155,41 +178,42 @@ export function HrRedirectPlacementPanel({ application, onUpdated }: Props) {
         </div>
       ) : null}
       {canEditPlacement ? (
-        <div className={fieldClasses}>
-          <label className="min-w-0 flex-1 font-sans text-sm text-prelude">
-            Destination position
-            <select
-              className={`${selectClasses} mt-1.5 w-full`}
-              value={selectedId}
-              onChange={(event) => setSelectedId(event.target.value)}
+        <div className={editorClasses}>
+          <Field label="Destination position" htmlFor="redirect-destination">
+            <CommitteeOfficePicker
+              id="redirect-destination"
+              committee={selectedCommittee}
+              positionId={selectedId}
+              groups={groups}
+              positions={pickerPositions}
               disabled={Boolean(pending)}
-            >
-              <option value="">Not redirected</option>
-              {sortedPositions.map((position) => (
-                <option key={position.id} value={position.id}>
-                  {position.committee} — {position.title}
-                </option>
-              ))}
-            </select>
-          </label>
-          <Button
-            color="cyan"
-            className="h-10 shrink-0 rounded-pill px-4 font-mono text-xs"
-            disabled={Boolean(pending) || !selectedId}
-            onClick={() => void savePlacement(false)}
-          >
-            Save redirect
-          </Button>
-          {application.redirectPlacement ? (
+              placeholder="Select redirect destination"
+              onSelect={(next) => setSelectedId(next.positionId)}
+            />
+          </Field>
+          <div className={actionsClasses}>
             <Button
-              color="purple"
+              color="cyan"
               className="h-10 shrink-0 rounded-pill px-4 font-mono text-xs"
-              disabled={Boolean(pending)}
-              onClick={() => void savePlacement(true)}
+              disabled={Boolean(pending) || !selectedId}
+              onClick={() => void savePlacement(false)}
             >
-              Clear
+              Save redirect
             </Button>
-          ) : null}
+            {application.redirectPlacement ? (
+              <Button
+                color="purple"
+                className="h-10 shrink-0 rounded-pill px-4 font-mono text-xs"
+                disabled={Boolean(pending)}
+                onClick={() => {
+                  setSelectedId("")
+                  void savePlacement(true)
+                }}
+              >
+                Clear
+              </Button>
+            ) : null}
+          </div>
         </div>
       ) : application.redirectPlacement ? (
         <p className="mt-4 font-sans text-sm text-blue-chalk">

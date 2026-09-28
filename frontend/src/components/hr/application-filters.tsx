@@ -14,10 +14,8 @@ import { groupedCommitteesForPicker } from "@/lib/apply/committee-groups"
 import { fieldControlClasses, hrFilterSelectClasses } from "@/lib/site/surface"
 import { useOpenPositions } from "@/lib/api"
 import { cn } from "@/lib/utils"
-import type {
-  ApplicationStatus,
-  ApplicationType,
-} from "@/lib/types/application"
+import type { ApplicationType } from "@/lib/types/application"
+import type { ApplicantListStatusTag } from "@/lib/hr/application-display"
 
 const rowClasses =
   "flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center xl:flex-nowrap"
@@ -25,10 +23,17 @@ const searchClasses = `${fieldControlClasses} md:flex-1`
 const statusSelectClasses = cn(hrFilterSelectClasses, "md:w-52")
 const typeSelectClasses = cn(hrFilterSelectClasses, "md:w-52")
 
-const STATUS_LABELS: Record<ApplicationStatus, string> = {
+const STATUS_LABELS: Record<ApplicantListStatusTag, string> = {
   pending: "Pending",
-  approved: "Approved",
+  accepted: "Accepted",
   rejected: "Rejected",
+  redirected: "Redirected",
+}
+
+function statusFilterLabel(status: HrFilters["status"]) {
+  if (!status) return "All Statuses"
+  if (status === "approved") return STATUS_LABELS.accepted
+  return STATUS_LABELS[status]
 }
 
 const APPLICATION_TYPE_LABELS: Record<ApplicationType, string> = {
@@ -39,7 +44,7 @@ const APPLICATION_TYPE_LABELS: Record<ApplicationType, string> = {
 export type HrFilters = {
   query: string
   committee: string
-  status: "" | ApplicationStatus
+  status: "" | "pending" | "approved" | "rejected" | "redirected"
   applicationType: "" | ApplicationType
 }
 
@@ -107,14 +112,15 @@ export function ApplicationFilters({ value, onChange }: ApplicationFiltersProps)
       >
         <SelectTrigger className={statusSelectClasses} aria-label="Filter by status">
           <SelectValue placeholder="All Statuses">
-            {value.status ? STATUS_LABELS[value.status] : "All Statuses"}
+            {statusFilterLabel(value.status)}
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Statuses</SelectItem>
           <SelectItem value="pending">Pending</SelectItem>
-          <SelectItem value="approved">Approved</SelectItem>
+          <SelectItem value="approved">Accepted</SelectItem>
           <SelectItem value="rejected">Rejected</SelectItem>
+          <SelectItem value="redirected">Redirected</SelectItem>
         </SelectContent>
       </Select>
     </div>

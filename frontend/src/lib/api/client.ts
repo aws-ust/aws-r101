@@ -64,7 +64,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 export type ApplicationListParams = {
   query?: string;
   committeeName?: string;
-  status?: "pending" | "approved" | "rejected";
+  status?: "pending" | "approved" | "rejected" | "redirected";
   applicationType?: ApplicationType;
   archive?: "active" | "archived" | "all";
   page?: number;
@@ -525,7 +525,12 @@ export type ReleaseResultsResponse = {
   rejected: number;
   memberIdsGenerated: number;
   releasedAt: string | null;
-  emailDelivery: { queued: number; sent: number; failed: number };
+  emailDelivery: {
+    queued: number;
+    sent: number;
+    failed: number;
+    failures?: { recipient: string; error: string }[];
+  };
 };
 
 export function getResultsPreview() {
