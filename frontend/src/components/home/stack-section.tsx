@@ -129,10 +129,10 @@ export function StackSection() {
           ) : null}
           <div className={actionsClasses}>
             <Button type="button" color="cyan" onClick={deployStack} disabled={!isComplete}>
-              deploy stack
+              Deploy Stack
             </Button>
             <button type="button" className={resetClasses} onClick={resetStack}>
-              reset stack
+              Reset Stack
             </button>
           </div>
         </div>

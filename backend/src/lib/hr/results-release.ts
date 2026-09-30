@@ -1,7 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "../../db";
 import { applications, emailNotifications, users } from "../../db/schema";
-import { allocateMemberIds } from "../core/member-id";
 import { getResultsPreviewForUpdate } from "./results-preview";
 
 export type ResultsReleaseSummary = {
@@ -48,15 +47,6 @@ export async function releaseResults(
       throw new ResultsReleaseBlockedError(preview.summary.incomplete);
     }
 
-    const memberRows = await tx
-      .select({ id: applications.id, memberId: applications.memberId })
-      .from(applications)
-      .where(eq(applications.recruitmentYear, preview.recruitmentYear));
-    const memberIdByApplication = new Map(
-      memberRows.map((row) => [row.id, row.memberId]),
-    );
-    let nextMemberId = 0;
-    let memberIdsGenerated = 0;
     const releasedAt = new Date();
     const notificationIds: string[] = [];
     let reviewerId: string | null = null;
@@ -72,29 +62,15 @@ export async function releaseResults(
     const applicationsToRelease = [...preview.applications].sort((a, b) =>
       a.submittedAt.localeCompare(b.submittedAt),
     );
-    const memberIds = await allocateMemberIds(
-      tx,
-      preview.recruitmentYear,
-      applicationsToRelease.filter(
-        (application) =>
-          application.classification === "accepted" &&
-          !memberIdByApplication.get(application.id),
-      ).length,
-    );
     for (const application of applicationsToRelease) {
-      const accepted = application.classification === "accepted";
-      let memberId = memberIdByApplication.get(application.id) ?? null;
-      if (accepted && !memberId) {
-        memberId = memberIds[nextMemberId];
-        nextMemberId += 1;
-        memberIdsGenerated += 1;
-      }
+      const redirected = application.classification === "redirected";
+      const accepted =
+        !redirected && application.classification === "accepted";
 
       await tx
         .update(applications)
         .set({
-          status: accepted ? "approved" : "rejected",
-          memberId: accepted ? memberId : null,
+          status: redirected || accepted ? "approved" : "rejected",
           resultsReleasedAt: releasedAt,
           resultsReleasedBy: reviewerId,
         })
@@ -107,11 +83,17 @@ export async function releaseResults(
 
       if (!application.willSendEmail) continue;
 
+      const messageType = redirected
+        ? "result_redirected"
+        : accepted
+          ? "result_accepted"
+          : "result_rejected";
+
       const [notification] = await tx
         .insert(emailNotifications)
         .values({
           applicationId: application.id,
-          messageType: accepted ? "result_accepted" : "result_rejected",
+          messageType,
           recipient: application.applicant.email,
         })
         .returning({ id: emailNotifications.id });
@@ -123,7 +105,7 @@ export async function releaseResults(
         released: applicationsToRelease.length,
         accepted: preview.summary.accepted,
         rejected: preview.summary.rejected,
-        memberIdsGenerated,
+        memberIdsGenerated: 0,
         releasedAt: releasedAt.toISOString(),
       },
       notificationIds,

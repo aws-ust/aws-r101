@@ -11,7 +11,10 @@ export type EmailMessageType =
   | "applicant_dev_exam"
   | "member_registration"
   | "result_accepted"
-  | "result_rejected";
+  | "result_rejected"
+  | "result_redirected"
+  | "payment_invitation"
+  | "membership_confirmation";
 
 export type EmailFileAttachment = {
   filename: string;
@@ -32,12 +35,14 @@ export type RenderedEmail = {
   subject: string;
   text: string;
   html: string;
+  cc?: string[];
   inline?: EmailInlineAttachment[];
   attachments?: EmailFileAttachment[];
 };
 
 export type SendEmailInput = {
   to: string;
+  cc?: string[];
   subject: string;
   text: string;
   html: string;

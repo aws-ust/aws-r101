@@ -59,7 +59,7 @@ export function ResponsibilityListField({
         ))}
       </div>
       <Button type="button" color="purple" size="sm" onClick={addItem}>
-        Add bullet
+        Add Bullet
       </Button>
     </div>
   )

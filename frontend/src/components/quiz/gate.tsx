@@ -32,7 +32,7 @@ export function QuizGate() {
       <div className={ctaClasses}>
         <p className={ctaTextClasses}>Not sure which one fits you?</p>
         <Button color="cyan" className={ctaButtonClasses} onClick={() => setQuizOpen(true)}>
-          Take the committee quiz
+          Take The Committee Quiz
         </Button>
       </div>
       {quizOpen ? <CommitteeQuiz className="-mt-2" /> : null}

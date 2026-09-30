@@ -1,5 +1,6 @@
 import { ChoiceCards } from "@/components/hr/choice-cards"
 import { HrCommitteeDecisionPanel } from "@/components/hr/hr-committee-decision-panel"
+import { HrRedirectPlacementPanel } from "@/components/hr/hr-redirect-placement-panel"
 import type { HrApplication } from "@/lib/types/hr-application"
 
 const archivedNoticeClasses =
@@ -30,10 +31,16 @@ export function HrApplicationCommitteeSection({
             decisions.
           </p>
         ) : (
-          <HrCommitteeDecisionPanel
-            application={application}
-            onUpdated={onUpdated}
-          />
+          <>
+            <HrCommitteeDecisionPanel
+              application={application}
+              onUpdated={onUpdated}
+            />
+            <HrRedirectPlacementPanel
+              application={application}
+              onUpdated={onUpdated}
+            />
+          </>
         )
       ) : null}
     </>

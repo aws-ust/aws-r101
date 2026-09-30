@@ -28,8 +28,11 @@ import {
   interviewReminderTemplate,
   officerApplicationNoticeTemplate,
   memberRegistrationTemplate,
+  membershipConfirmationTemplate,
+  paymentInvitationTemplate,
   resultAcceptedTemplate,
   resultRejectedTemplate,
+  resultRedirectedTemplate,
 } from "./templates";
 import type {
   EmailDeliveryStatus,
@@ -47,7 +50,7 @@ function isLikelyAttachmentSizeError(message: string): boolean {
   );
 }
 
-async function deliverNotification(input: {
+export async function deliverNotification(input: {
   notificationId: string;
   messageType: EmailMessageType;
   recipient: string;
@@ -70,6 +73,7 @@ async function deliverNotification(input: {
     await notifications.incrementAttempts(input.notificationId);
     return sendViaGmail({
       to: input.recipient,
+      cc: rendered.cc,
       subject: rendered.subject,
       text: rendered.text,
       html: rendered.html,
@@ -451,12 +455,10 @@ export async function sendResultAccepted(input: {
   lastName: string;
   email: string;
   position: string;
-  memberId: string;
 }): Promise<void> {
   const rendered = resultAcceptedTemplate({
     lastName: input.lastName,
     position: input.position,
-    memberId: input.memberId,
   });
   await deliverEmail({
     applicationId: input.applicationId,
@@ -482,26 +484,43 @@ export async function sendResultRejected(input: {
 
 export function deliverQueuedResultEmail(input: {
   notificationId: string;
-  messageType: "result_accepted" | "result_rejected";
+  messageType: "result_accepted" | "result_rejected" | "result_redirected";
   recipient: string;
   lastName: string;
   position: string | null;
-  memberId: string | null;
+  committee?: string | null;
+  cc?: string[];
 }): Promise<EmailDeliveryStatus> {
   const rendered =
     input.messageType === "result_accepted"
       ? resultAcceptedTemplate({
           lastName: input.lastName,
           position: input.position ?? "",
-          memberId: input.memberId ?? "",
         })
-      : resultRejectedTemplate({ lastName: input.lastName });
+      : input.messageType === "result_redirected"
+        ? resultRedirectedTemplate({
+            lastName: input.lastName,
+            position: input.position ?? "",
+            committee: input.committee ?? "",
+            cc: input.cc,
+          })
+        : resultRejectedTemplate({ lastName: input.lastName });
   return deliverNotification({
     notificationId: input.notificationId,
     messageType: input.messageType,
     recipient: input.recipient,
     rendered,
   });
+}
+
+export function renderPaymentInvitation(input: Parameters<typeof paymentInvitationTemplate>[0]) {
+  return paymentInvitationTemplate(input);
+}
+
+export function renderMembershipConfirmation(
+  input: Parameters<typeof membershipConfirmationTemplate>[0],
+) {
+  return membershipConfirmationTemplate(input);
 }
 
 export { listByApplicationId as listEmailNotificationsByApplicationId } from "./notifications";

@@ -207,7 +207,7 @@ export function PositionForm({
                 Cancel
               </Button>
               <Button type="submit" color="cyan">
-                {isEdit ? "Save changes" : "Create position"}
+                {isEdit ? "Save Changes" : "Create Position"}
               </Button>
             </DialogFooter>
           </form>

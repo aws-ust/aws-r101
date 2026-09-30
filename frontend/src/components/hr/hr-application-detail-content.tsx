@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { ArrowLeft } from "lucide-react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { StatusPill } from "@/components/hr/status-pill"
 import { HrArchiveApplicantDialog } from "@/components/hr/hr-archive-applicant-dialog"
@@ -15,15 +17,20 @@ import {
   glassPanelClasses,
   pageShellClasses,
 } from "@/lib/site/surface"
+import {
+  applicantListStatusTag,
+  applicationListPlacementLabel,
+} from "@/lib/hr/application-display"
 import { cn } from "@/lib/utils"
-import Link from "next/link"
 
 const eyebrowClasses =
   "w-fit font-mono text-xs font-medium uppercase tracking-wide text-aquamarine"
 const backClasses =
-  "mb-3 mt-3 inline-flex font-mono text-xs text-prelude hover:text-blue-chalk"
+  "mb-4 inline-flex items-center gap-2 rounded-pill border border-blue-chalk/15 bg-haiti/30 px-3 py-2 font-mono text-xs text-prelude transition-colors hover:border-biloba-flower/35 hover:bg-meteorite/40 hover:text-blue-chalk"
 const headingRowClasses = "flex flex-wrap items-center gap-3"
 const titleClasses = `max-w-full font-sans text-4xl font-bold text-balance break-words text-blue-chalk md:text-5xl ${displayTitleLeadingClasses}`
+const placementSummaryClasses =
+  "mt-2 font-sans text-sm leading-snug text-prelude"
 const panelClasses = `${glassPanelClasses} mt-8 min-w-0 overflow-x-clip px-4 py-8 sm:px-6 md:px-10`
 const archivedPillClasses =
   "rounded-pill bg-daisy-bush/55 px-3 py-1 font-mono text-xs text-blue-chalk"
@@ -56,10 +63,10 @@ export function HrApplicationDetailContent({
     type: "success" | "error"
     message: string
   } | null>(null)
-  const backLabel = viewingArchive
-    ? "← Back to Archive"
-    : "← Back to Applications"
   const canManageEmail = !application.archivedAt
+  const listStatusTag = applicantListStatusTag(application)
+  const appliedChoiceSummary = applicationListPlacementLabel(application)
+  const backLabel = viewingArchive ? "Back to Archive" : "Back to Applications"
 
   return (
     <main className={cn(pageShellClasses, "min-w-0 max-w-full overflow-x-clip")}>
@@ -67,17 +74,21 @@ export function HrApplicationDetailContent({
         {viewingArchive ? "// ARCHIVE" : "// APPLICATIONS"}
       </p>
       <Link href={listHref} className={backClasses}>
+        <ArrowLeft className="size-3.5" aria-hidden />
         {backLabel}
       </Link>
       <div className={headingRowClasses}>
         <h2 className={titleClasses}>
           {application.firstName} {application.lastName}
         </h2>
-        <StatusPill status={application.status} />
+        <StatusPill status={listStatusTag} />
         {viewingArchive ? (
           <span className={archivedPillClasses}>Archived</span>
         ) : null}
       </div>
+      {appliedChoiceSummary !== "—" ? (
+        <p className={placementSummaryClasses}>{appliedChoiceSummary}</p>
+      ) : null}
       {feedback ? (
         <ActionFeedback type={feedback.type} message={feedback.message} />
       ) : null}

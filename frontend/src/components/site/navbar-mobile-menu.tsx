@@ -82,7 +82,7 @@ export function NavbarMobileMenu({
           nativeButton={false}
           render={<Link href="/apply/positions" onClick={onClose} />}
         >
-          Apply now!
+          Apply Now!
         </Button>
       </div>
     </div>

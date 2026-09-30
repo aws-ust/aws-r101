@@ -37,8 +37,8 @@ export function HrReleaseResultsDialog({
           <DialogDescription>
             This publishes {summary.pendingRelease} results, including {" "}
             {summary.accepted} accepted and {summary.rejected} rejected
-            applicants. It will generate Member IDs and send personalized
-            emails. This cannot be undone.
+            applicants. It will send personalized result emails. Member IDs
+            are generated only after payment verification. This cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -56,7 +56,7 @@ export function HrReleaseResultsDialog({
             disabled={pending}
             onClick={onConfirm}
           >
-            {pending ? "Releasing…" : "Release results"}
+            {pending ? "Releasing…" : "Release Results"}
           </Button>
         </DialogFooter>
       </DialogContent>

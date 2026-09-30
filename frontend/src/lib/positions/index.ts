@@ -73,3 +73,12 @@ export function isAssistantRole(position: Position) {
 export function openSpots(position: Position) {
   return position.openSlots
 }
+
+/** Applicant-facing listings and apply flow (matches GET /positions). */
+export function positionAcceptsApplicants(position: Position) {
+  return (
+    position.isOpen &&
+    position.openSlots > 0 &&
+    position.acceptingApplications !== false
+  )
+}

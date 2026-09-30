@@ -20,6 +20,11 @@ import {
   updateApplicationDecision,
   type ChoiceDecisionStatus,
 } from "../lib/applications/application-decisions";
+import {
+  RedirectPlacementError,
+  recordRedirectResponse,
+  updateRedirectPlacement,
+} from "../lib/applications/redirect-placement";
 import { validateChoiceUrls } from "../lib/apply/field-validation";
 import { createApplicationSchema } from "../lib/apply/schemas";
 import { requireAuth } from "../auth";
@@ -37,6 +42,8 @@ import {
   applicationArchivePatchSchema,
   applicationDecisionPatchSchema,
   applicationEmailPatchSchema,
+  applicationRedirectPlacementPatchSchema,
+  applicationRedirectResponsePatchSchema,
   zodErrorMessage,
 } from "../lib/hr/schemas";
 import { logHrAudit } from "../lib/hr/audit";
@@ -104,10 +111,10 @@ applicationsRoutes.get("/", requireAuth, async (c) => {
   }
   if (
     status &&
-    !["pending", "approved", "rejected"].includes(status)
+    !["pending", "approved", "rejected", "redirected"].includes(status)
   ) {
     return c.json(
-      { error: "status must be pending, approved, or rejected." },
+      { error: "status must be pending, approved, rejected, or redirected." },
       400,
     );
   }
@@ -140,7 +147,7 @@ applicationsRoutes.get("/", requireAuth, async (c) => {
     section: section || undefined,
     query: query || undefined,
     status: status
-      ? (status as "pending" | "approved" | "rejected")
+      ? (status as "pending" | "approved" | "rejected" | "redirected")
       : undefined,
     applicationType: applicationType
       ? (applicationType as "position" | "member")
@@ -290,6 +297,75 @@ applicationsRoutes.patch("/:id/decisions", requireAuth, async (c) => {
           ? 404
           : 409;
       return c.json({ error: error.message }, status);
+    }
+    throw error;
+  }
+});
+
+applicationsRoutes.patch("/:id/redirect-placement", requireAuth, async (c) => {
+  const id = c.req.param("id");
+  if (!isUuid(id)) {
+    return c.json({ error: "Invalid application id." }, 400);
+  }
+
+  const body = await c.req.json().catch(() => null);
+  const parsed = applicationRedirectPlacementPatchSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: zodErrorMessage(parsed.error) }, 400);
+  }
+
+  const payload = c.get("jwtPayload") as { sub?: unknown };
+  const reviewerEmail =
+    typeof payload.sub === "string" ? payload.sub : undefined;
+
+  try {
+    const updated = await updateRedirectPlacement(
+      id,
+      parsed.data.redirectPositionId,
+    );
+    logHrAudit({
+      actorEmail: reviewerEmail,
+      action: "application.redirect_placement",
+      resourceType: "application",
+      resourceId: id,
+    });
+    return c.json(updated);
+  } catch (error) {
+    if (error instanceof RedirectPlacementError) {
+      return c.json({ error: error.message }, error.status);
+    }
+    throw error;
+  }
+});
+
+applicationsRoutes.patch("/:id/redirect-response", requireAuth, async (c) => {
+  const id = c.req.param("id");
+  if (!isUuid(id)) {
+    return c.json({ error: "Invalid application id." }, 400);
+  }
+
+  const body = await c.req.json().catch(() => null);
+  const parsed = applicationRedirectResponsePatchSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: zodErrorMessage(parsed.error) }, 400);
+  }
+
+  const payload = c.get("jwtPayload") as { sub?: unknown };
+  const reviewerEmail =
+    typeof payload.sub === "string" ? payload.sub : undefined;
+
+  try {
+    const updated = await recordRedirectResponse(id, parsed.data.response);
+    logHrAudit({
+      actorEmail: reviewerEmail,
+      action: "application.redirect_response",
+      resourceType: "application",
+      resourceId: id,
+    });
+    return c.json(updated);
+  } catch (error) {
+    if (error instanceof RedirectPlacementError) {
+      return c.json({ error: error.message }, error.status);
     }
     throw error;
   }

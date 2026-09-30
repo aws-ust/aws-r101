@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, gt } from "drizzle-orm";
 import { db } from "../db";
 import { committees, positions } from "../db/schema";
 import { authenticateHrRequest, requireAuth } from "../auth";
@@ -129,7 +129,7 @@ async function selectOpenPositions() {
     })
     .from(positions)
     .innerJoin(committees, eq(positions.committeeId, committees.id))
-    .where(eq(positions.isOpen, true))
+    .where(and(eq(positions.isOpen, true), gt(positions.openSlots, 0)))
     .orderBy(asc(positions.office), asc(positions.name));
 }
 
@@ -326,6 +326,8 @@ positionsRoutes.patch("/:id", requireAuth, async (c) => {
   const responsibilities =
     parsed.data.responsibilities ?? existing.responsibilities ?? "";
   const openSlots = parsed.data.open_slots ?? existing.openSlots;
+  const listingOpen =
+    parsed.data.open_slots !== undefined ? openSlots > 0 : existing.isOpen;
 
   if (
     committeeId !== existing.committeeId &&
@@ -349,6 +351,7 @@ positionsRoutes.patch("/:id", requireAuth, async (c) => {
       description,
       responsibilities,
       openSlots,
+      isOpen: listingOpen,
     })
     .where(eq(positions.id, id));
 

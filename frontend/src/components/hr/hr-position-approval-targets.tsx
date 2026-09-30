@@ -8,13 +8,45 @@ import {
   patchPositionApprovalTarget,
   type PositionApprovalTarget,
 } from "@/lib/api"
+import {
+  COMMITTEE_OFFICE_GROUPS,
+  comparePositionHierarchy,
+  officeForCommittee,
+} from "@/lib/apply/committee-groups"
 import { glassPanelClasses } from "@/lib/site/surface"
 
 const panelClasses = `${glassPanelClasses} px-5 py-5`
-const listClasses = "mt-4 grid gap-3 md:grid-cols-2"
+const listClasses = "mt-4 flex flex-col gap-3"
 const loadingClasses = "mt-4 font-sans text-sm text-prelude"
+const emptyClasses = "mt-4 font-sans text-sm text-prelude"
 
-export function HrPositionApprovalTargets() {
+function groupPositionsByOffice(positions: PositionApprovalTarget[]) {
+  const byOffice = new Map<string, PositionApprovalTarget[]>()
+  for (const position of positions) {
+    const office = officeForCommittee(position.committee) || "Other"
+    const bucket = byOffice.get(office)
+    if (bucket) bucket.push(position)
+    else byOffice.set(office, [position])
+  }
+  const orderedOffices = [
+    ...COMMITTEE_OFFICE_GROUPS.map((group) => group.office),
+    "Other",
+  ]
+  return orderedOffices
+    .filter((office) => byOffice.has(office))
+    .map((office) => ({
+      office,
+      positions: byOffice.get(office) ?? [],
+    }))
+}
+
+type HrPositionApprovalTargetsProps = {
+  officeFilter: string
+}
+
+export function HrPositionApprovalTargets({
+  officeFilter,
+}: HrPositionApprovalTargetsProps) {
   const [positions, setPositions] = useState<PositionApprovalTarget[]>([])
   const [drafts, setDrafts] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
@@ -27,7 +59,7 @@ export function HrPositionApprovalTargets() {
     listPositionApprovalTargets()
       .then((rows) => {
         if (cancelled) return
-        setPositions(rows)
+        setPositions([...rows].sort(comparePositionHierarchy))
         setDrafts(
           Object.fromEntries(rows.map((row) => [row.id, String(row.openSlots)])),
         )
@@ -77,19 +109,28 @@ export function HrPositionApprovalTargets() {
     }
   }
 
+  const officeGroup = groupPositionsByOffice(positions).find(
+    (group) => group.office === officeFilter,
+  )
+
   return (
     <section className={panelClasses}>
       <h2 className="font-sans text-lg font-semibold text-blue-chalk">
         Approval Targets
       </h2>
       <p className="mt-1 font-sans text-sm text-prelude">
-        Set how many applicants HR plans to approve for each position. These
-        targets do not decrease automatically or limit approval decisions.
+        Set how many applicants HR plans to approve for each position. A
+        target of 0 hides the role from applicants and means you are not
+        recruiting for it this cycle. Targets do not decrease automatically
+        or block approvals above the number.
       </p>
       {loading ? <p className={loadingClasses}>Loading positions…</p> : null}
-      {!loading ? (
+      {!loading && !officeGroup ? (
+        <p className={emptyClasses}>No positions under this office.</p>
+      ) : null}
+      {!loading && officeGroup ? (
         <div className={listClasses}>
-          {positions.map((position) => (
+          {officeGroup.positions.map((position) => (
             <HrPositionApprovalTargetRow
               key={position.id}
               position={position}
@@ -97,7 +138,10 @@ export function HrPositionApprovalTargets() {
               disabled={pendingId !== null}
               pending={pendingId === position.id}
               onChange={(value) =>
-                setDrafts((current) => ({ ...current, [position.id]: value }))
+                setDrafts((current) => ({
+                  ...current,
+                  [position.id]: value,
+                }))
               }
               onSave={() => void saveTarget(position)}
             />

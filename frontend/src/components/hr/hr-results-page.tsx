@@ -77,6 +77,10 @@ export function HrResultsPage() {
 
     setReleaseOpen(false)
     let message = `Released ${result.released} results. ${result.emailDelivery.sent} emails sent${result.emailDelivery.failed > 0 ? `; ${result.emailDelivery.failed} failed and can be retried.` : "."}`
+    const firstFailure = result.emailDelivery.failures?.[0]
+    if (firstFailure) {
+      message += ` ${firstFailure.recipient}: ${firstFailure.error}`
+    }
     try {
       await refreshPreview()
     } catch {
@@ -115,8 +119,8 @@ export function HrResultsPage() {
     <main className={pageShellClasses}>
       <SectionHeader
         eyebrow="// RESULTS"
-        title="Release Results"
-        subtitle="Preview the current recruitment batch before publishing final results to applicants."
+        title="Release results"
+        subtitle="Review the current recruitment batch, resolve incomplete decisions, and publish final outcomes."
       />
       {feedback ? (
         <ActionFeedback type={feedback.type} message={feedback.message} />

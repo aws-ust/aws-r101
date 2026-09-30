@@ -38,7 +38,11 @@ resultsRoutes.post("/release", async (c) => {
       ...release.summary,
       emailDelivery: {
         queued: release.notificationIds.length,
-        ...delivery,
+        sent: delivery.sent,
+        failed: delivery.failed,
+        ...(delivery.failures.length > 0
+          ? { failures: delivery.failures }
+          : {}),
       },
     });
   } catch (error) {

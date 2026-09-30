@@ -2,7 +2,12 @@ import { cookies } from "next/headers"
 
 const API_BASE = process.env.API_URL ?? "http://localhost:8787"
 
-export async function getServerSession(): Promise<{ email: string } | null> {
+export type StaffSession = {
+  email: string
+  role: "hr" | "admin"
+}
+
+export async function getServerSession(): Promise<StaffSession | null> {
   const cookieStore = await cookies()
   const token = cookieStore.get("hr_token")
   if (!token?.value) return null
@@ -16,7 +21,7 @@ export async function getServerSession(): Promise<{ email: string } | null> {
       cookieStore.delete("hr_token")
       return null
     }
-    return (await response.json()) as { email: string }
+    return (await response.json()) as StaffSession
   } catch {
     return null
   }

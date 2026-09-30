@@ -37,7 +37,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${poppins.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col overflow-x-clip bg-background text-foreground">
+      <body className="flex min-h-full flex-col bg-background text-foreground">
         <Script id="home-splash-bootstrap" strategy="beforeInteractive">
           {homeSplashSkipBootstrapScript()}
         </Script>

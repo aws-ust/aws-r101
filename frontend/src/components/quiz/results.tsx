@@ -79,10 +79,10 @@ export function QuizResults({ result, onRetake }: QuizResultsProps) {
           nativeButton={false}
           render={<Link href="/apply/positions" />}
         >
-          Apply now
+          Apply Now
         </Button>
         <Button color="purple" className={buttonClasses} onClick={onRetake}>
-          Retake quiz
+          Retake Quiz
         </Button>
       </div>
     </div>

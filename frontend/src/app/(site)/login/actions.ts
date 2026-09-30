@@ -90,7 +90,10 @@ export async function loginAction(
   }
 
   const tokenFromCookie = extractHrTokenFromResponse(response)
-  const body = (await response.json()) as { token?: string }
+  const body = (await response.json()) as {
+    token?: string
+    role?: "hr" | "admin"
+  }
   const token = tokenFromCookie ?? body.token
   if (!token) {
     return { error: "Could not sign in." }

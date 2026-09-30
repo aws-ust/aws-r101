@@ -45,6 +45,9 @@ const application: HrApplication = {
     committee: "Operations, and Finance",
     title: 'Lead "Builder"',
   },
+  redirectPlacement: null,
+  redirectResponse: null,
+  resultsReleasedAt: null,
   documents: [
     {
       documentType: "resume",

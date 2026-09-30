@@ -4,12 +4,18 @@ import { SectionHeader } from "@/components/shared/section-header"
 import { HrInterviewGrid } from "@/components/hr/hr-interview-grid"
 import { HrInterviewWindow } from "@/components/hr/hr-interview-window"
 import { HrRecruitmentWindow } from "@/components/hr/hr-recruitment-window"
-import { HrCommitteeApplicationControls } from "@/components/hr/hr-committee-application-controls"
-import { HrPositionApprovalTargets } from "@/components/hr/hr-position-approval-targets"
+import { HrSectionNav } from "@/components/hr/hr-section-nav"
 import { useInterviewWindow } from "@/hooks/use-interview-window"
 import { pageShellClasses } from "@/lib/site/surface"
 
-const stackClasses = "mt-8 flex flex-col gap-4"
+const stackClasses = "mt-4 flex flex-col gap-4"
+const anchorClasses = "scroll-mt-24"
+
+const sectionNavItems = [
+  { id: "application-window", label: "Application window" },
+  { id: "interview-season", label: "Interview season" },
+  { id: "availability-grid", label: "Availability grid" },
+]
 
 export function HrSeasonPage() {
   const {
@@ -24,25 +30,30 @@ export function HrSeasonPage() {
     <main className={pageShellClasses}>
       <SectionHeader
         eyebrow="// SEASON"
-        title="Recruitment Week & Interviews"
-        subtitle="Set the application window, committee availability, and interview slots."
+        title="Recruitment setup"
+        subtitle="Manage application availability, interview dates, and interviewer schedules."
       />
+      <HrSectionNav items={sectionNavItems} />
       <div className={stackClasses}>
-        <HrRecruitmentWindow />
-        <HrCommitteeApplicationControls />
-        <HrPositionApprovalTargets />
-        <HrInterviewWindow
-          key={`${seasonBounds?.startsAt.toISOString() ?? ""}:${seasonBounds?.endsAt.toISOString() ?? ""}`}
-          seasonBounds={seasonBounds}
-          seasonLoading={seasonLoading}
-          loadError={seasonLoadError}
-          onSaved={applyPayload}
-        />
-        <HrInterviewGrid
-          seasonBounds={seasonBounds}
-          seasonLoading={seasonLoading}
-          seasonConfigured={seasonConfigured}
-        />
+        <div id="application-window" className={anchorClasses}>
+          <HrRecruitmentWindow />
+        </div>
+        <div id="interview-season" className={anchorClasses}>
+          <HrInterviewWindow
+            key={`${seasonBounds?.startsAt.toISOString() ?? ""}:${seasonBounds?.endsAt.toISOString() ?? ""}`}
+            seasonBounds={seasonBounds}
+            seasonLoading={seasonLoading}
+            loadError={seasonLoadError}
+            onSaved={applyPayload}
+          />
+        </div>
+        <div id="availability-grid" className={anchorClasses}>
+          <HrInterviewGrid
+            seasonBounds={seasonBounds}
+            seasonLoading={seasonLoading}
+            seasonConfigured={seasonConfigured}
+          />
+        </div>
       </div>
     </main>
   )

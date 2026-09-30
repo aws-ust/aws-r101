@@ -13,10 +13,14 @@ import { uploadsRoutes } from "./routes/uploads";
 import { recruitmentWindowRoutes } from "./routes/recruitment-window";
 import { resultsRoutes } from "./routes/results";
 import { interviewWindowRoutes } from "./routes/interview-window";
+import { applicantPaymentRoutes } from "./routes/applicant-payments";
+import { membershipPaymentRoutes } from "./routes/membership-payments";
 import {
   AUTH_COOKIE_NAME,
   authCookieOptions,
   expiresInSeconds,
+  getAuthenticatedUser,
+  requireAnyUser,
   requireAuth,
   signToken,
   verifyHrCredentials,
@@ -76,8 +80,9 @@ app.post("/auth/login", async (c) => {
       result.token,
       authCookieOptions(expiresInSeconds()),
     );
-    const payload: { email: string; expiresAt: string; token?: string } = {
+    const payload: { email: string; role: string; expiresAt: string; token?: string } = {
       email: verified.email,
+      role: verified.role,
       expiresAt: result.expiresAt,
     };
     if (loginTokenInJsonAllowed()) {
@@ -89,10 +94,10 @@ app.post("/auth/login", async (c) => {
   }
 });
 
-app.get("/auth/me", requireAuth, (c) => {
-  const payload = c.get("jwtPayload") as { sub?: unknown };
-  const email = typeof payload.sub === "string" ? payload.sub : "";
-  return c.json({ email });
+app.get("/auth/me", requireAnyUser, async (c) => {
+  const user = await getAuthenticatedUser(c);
+  if (!user) return c.json({ error: "unauthorized" }, 401);
+  return c.json({ email: user.email, role: user.role });
 });
 
 app.post("/auth/logout", (c) => {
@@ -108,6 +113,7 @@ app.route("/positions", positionsRoutes);
 app.route("/applicant-auth", applicantAuthRoutes);
 app.route("/applicant", applicantApplicationRoutes);
 app.route("/applicant", applicantInterviewRoutes);
+app.route("/applicant", applicantPaymentRoutes);
 
 app.route("/applications", applicationsRoutes);
 app.route("/uploads", uploadsRoutes);
@@ -115,5 +121,6 @@ app.route("/interview-slots", interviewSlotsRoutes);
 app.route("/recruitment-window", recruitmentWindowRoutes);
 app.route("/results", resultsRoutes);
 app.route("/interview-window", interviewWindowRoutes);
+app.route("/membership-payments", membershipPaymentRoutes);
 
 export type AppType = typeof app;

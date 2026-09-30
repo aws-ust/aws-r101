@@ -8,5 +8,5 @@ export default async function AdminHrLayout({
   const session = await getServerSession()
   if (!session) redirect("/login")
 
-  return <HrShell>{children}</HrShell>
+  return <HrShell role={session.role}>{children}</HrShell>
 }

@@ -44,6 +44,35 @@ export function formatDateDisplay(value: string, placeholder = "Select date") {
   })
 }
 
+export function dateYmdFromDate(date: Date) {
+  return partsToDateYmd({
+    year: date.getFullYear(),
+    month: date.getMonth(),
+    day: date.getDate(),
+  })
+}
+
+/** Payment period opens at 7:00 local time on the chosen date. */
+export function paymentOpensAtIsoFromYmd(value: string) {
+  const date = parseDateYmd(value)
+  if (!date) return null
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 7, 0, 0, 0).toISOString()
+}
+
+export function endOfDayIsoFromYmd(value: string) {
+  const date = parseDateYmd(value)
+  if (!date) return null
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    23,
+    59,
+    59,
+    999
+  ).toISOString()
+}
+
 export function isValidBirthdayYmd(value: string) {
   const date = parseDateYmd(value)
   if (!date) return false

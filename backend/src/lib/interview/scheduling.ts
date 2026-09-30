@@ -295,13 +295,6 @@ export async function setInterviewSlotOpen(id: string, isOpen: boolean) {
       throw new InterviewScheduleError("slot_not_found", "Slot not found.");
     }
 
-    if (isOpen && slot.startsAt.getTime() <= Date.now()) {
-      throw new InterviewScheduleError(
-        "slot_unavailable",
-        "Past interview slots cannot be reopened.",
-      );
-    }
-
     if (!isOpen) {
       const [booking] = await tx
         .select({ id: interviewBookings.id })

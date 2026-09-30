@@ -23,7 +23,7 @@ function toBase64(bytes: ArrayBuffer): string {
   return btoa(binary)
 }
 
-async function fileChecksum(file: File): Promise<string> {
+export async function fileChecksum(file: File): Promise<string> {
   return toBase64(await crypto.subtle.digest("SHA-256", await file.arrayBuffer()))
 }
 
