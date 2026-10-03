@@ -12,7 +12,7 @@ import {
   retryFailedResultEmailsRequest,
   type ResultsPreview,
 } from "@/lib/api/client"
-import { pageShellClasses } from "@/lib/site/surface"
+import { hrPageShellClasses } from "@/lib/site/surface"
 
 const contentClasses = "mt-8 flex flex-col gap-8"
 const listHeadingClasses = "font-sans text-xl font-bold text-blue-chalk"
@@ -116,7 +116,7 @@ export function HrResultsPage() {
   }
 
   return (
-    <main className={pageShellClasses}>
+    <main className={hrPageShellClasses}>
       <SectionHeader
         eyebrow="// RESULTS"
         title="Release results"

@@ -8,7 +8,7 @@ import {
   HrCommitteeOfficeSelect,
 } from "@/components/hr/hr-committee-office-select"
 import { HrPositionApprovalTargets } from "@/components/hr/hr-position-approval-targets"
-import { pageShellClasses } from "@/lib/site/surface"
+import { hrPageShellClasses } from "@/lib/site/surface"
 
 const stackClasses = "mt-8 flex flex-col gap-4"
 const filterClasses = "mt-6"
@@ -17,7 +17,7 @@ export function HrCommitteesPage() {
   const [office, setOffice] = useState(defaultCommitteeOffice)
 
   return (
-    <main className={pageShellClasses}>
+    <main className={hrPageShellClasses}>
       <SectionHeader
         eyebrow="// COMMITTEES"
         title="Committees"

@@ -6,6 +6,10 @@ export const displayTitleLeadingClasses = "leading-[1.15]"
 export const pageShellClasses =
   "mx-auto flex w-full max-w-[1180px] flex-1 flex-col px-4 py-10 md:px-10"
 
+/** HR dashboard pages — fill the space beside the sidebar instead of the 1180px site column. */
+export const hrPageShellClasses =
+  "mx-auto flex w-full min-w-0 max-w-[1680px] flex-1 flex-col px-4 py-10 md:px-8 xl:px-12"
+
 /** Extra start padding so 1180px chrome reads centered when the scrollbar eats end space. */
 export const chromeInsetClasses = "pl-7 pr-3 md:pl-14 md:pr-8"
 
@@ -32,7 +36,7 @@ export const fieldControlClasses =
 /** HR table filter selects — same shell as text fields; see DESIGN.md (Filter dropdowns). */
 export const hrFilterSelectClasses = cn(
   fieldControlClasses,
-  "justify-between border border-blue-chalk/20 font-sans",
+  "cursor-pointer justify-between border border-blue-chalk/20 font-sans transition-colors hover:border-biloba-flower/50 hover:bg-haiti/90",
 )
 
 /** Mono stat / group subheaders — title-case copy, no forced uppercase; see DESIGN.md. */

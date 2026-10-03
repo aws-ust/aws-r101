@@ -38,6 +38,7 @@ import { ApplyFormSteps } from "@/components/apply/apply-form-steps"
 import { UST_EMAIL_DOMAIN } from "@/lib/constants"
 import {
   applyFlowShellClasses,
+  hrPageShellClasses,
   glassPanelClasses,
   ghostPillButtonClasses,
 } from "@/lib/site/surface"
@@ -279,10 +280,11 @@ export function ApplyForm({ initialPositionId, mode = "public" }: ApplyFormProps
     committee: fieldErrors<CommitteeValues>(errors.committee as never),
     upload: fieldErrors<UploadValues>(errors.upload as never),
   }
-  const panelWidth = step === 2 || step === 5 ? "max-w-6xl" : "max-w-2xl"
+  const wideStep = step === 2 || step === 5
+  const panelWidth = wideStep ? (hrMode ? "max-w-none" : "max-w-6xl") : "max-w-2xl"
 
   return (
-    <main className={applyFlowShellClasses}>
+    <main className={hrMode ? hrPageShellClasses : applyFlowShellClasses}>
       <LazyMotion features={domAnimation}>
         <div className="flex min-w-0 flex-col gap-10">
         <SectionHeader

@@ -26,7 +26,7 @@ import {
   mergeHrFilters,
   type HrListSearchParamsInput,
 } from "@/lib/hr/filters-search-params"
-import { pageShellClasses } from "@/lib/site/surface"
+import { hrPageShellClasses } from "@/lib/site/surface"
 import { cn } from "@/lib/utils"
 import type { HrApplication } from "@/lib/types/hr-application"
 
@@ -128,7 +128,7 @@ export function HrApplicationList({
   })}`
 
   return (
-    <main className={cn(pageShellClasses, "min-w-0 max-w-full overflow-x-clip")}>
+    <main className={cn(hrPageShellClasses, "min-w-0 max-w-full overflow-x-clip")}>
       <SectionHeader
         eyebrow={isArchivedView ? "// ARCHIVE" : "// APPLICATIONS"}
         title={

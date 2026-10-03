@@ -7,7 +7,7 @@ import { paymentCampaignDescription } from "@/components/hr/hr-payment-copy"
 import { HrPaymentSection } from "@/components/hr/hr-payment-section"
 import { HrPaymentSummary } from "@/components/hr/hr-payment-summary"
 import { useHrPaymentWorkspace } from "@/components/hr/use-hr-payment-workspace"
-import { pageShellClasses } from "@/lib/site/surface"
+import { hrPageShellClasses } from "@/lib/site/surface"
 
 const stackClasses = "mt-6 flex flex-col gap-8"
 const loadingClasses = "mt-8 font-sans text-sm text-prelude"
@@ -27,7 +27,7 @@ export function HrPaymentsPage() {
   } = useHrPaymentWorkspace()
 
   return (
-    <main className={pageShellClasses}>
+    <main className={hrPageShellClasses}>
       <SectionHeader
         eyebrow="// PAYMENTS"
         title="Membership Payments"

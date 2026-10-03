@@ -6,7 +6,7 @@ import { HrInterviewWindow } from "@/components/hr/hr-interview-window"
 import { HrRecruitmentWindow } from "@/components/hr/hr-recruitment-window"
 import { HrSectionNav } from "@/components/hr/hr-section-nav"
 import { useInterviewWindow } from "@/hooks/use-interview-window"
-import { pageShellClasses } from "@/lib/site/surface"
+import { hrPageShellClasses } from "@/lib/site/surface"
 
 const stackClasses = "mt-4 flex flex-col gap-4"
 const anchorClasses = "scroll-mt-24"
@@ -27,7 +27,7 @@ export function HrSeasonPage() {
   } = useInterviewWindow()
 
   return (
-    <main className={pageShellClasses}>
+    <main className={hrPageShellClasses}>
       <SectionHeader
         eyebrow="// SEASON"
         title="Recruitment setup"

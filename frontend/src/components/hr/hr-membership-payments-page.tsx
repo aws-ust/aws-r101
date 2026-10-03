@@ -8,7 +8,7 @@ import { HrPaymentList } from "@/components/hr/hr-payment-list"
 import { HrPaymentReviewDialog } from "@/components/hr/hr-payment-review-dialog"
 import { HrPaymentSection } from "@/components/hr/hr-payment-section"
 import { useHrPaymentWorkspace } from "@/components/hr/use-hr-payment-workspace"
-import { glassPanelClasses, pageShellClasses } from "@/lib/site/surface"
+import { glassPanelClasses, hrPageShellClasses } from "@/lib/site/surface"
 
 const stackClasses = "mt-6 flex flex-col gap-8"
 const reviewPanelClasses = `${glassPanelClasses} rounded-[20px] px-5 py-5`
@@ -28,7 +28,7 @@ export function HrMembershipPaymentsPage() {
   } = useHrPaymentWorkspace()
 
   return (
-    <main className={pageShellClasses}>
+    <main className={hrPageShellClasses}>
       <SectionHeader
         eyebrow="// MEMBERSHIP"
         title="Verification & Collection"
