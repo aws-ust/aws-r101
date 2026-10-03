@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   createApplicationSchema,
+  createHrApplicationSchema,
   uploadPresignSchema,
 } from "./schemas";
 
@@ -138,5 +139,33 @@ test("create schema rejects committee data on a Member-only application", () => 
       result.error.issues[0]?.message,
       "Member-only applications cannot include committee choices or an interview slot.",
     );
+  }
+});
+
+test("HR create schema waives only the interview slot requirement", () => {
+  const input = { ...validApplication(), slotId: undefined };
+  const publicResult = createApplicationSchema.safeParse(input);
+  assert.equal(publicResult.success, false);
+  if (!publicResult.success) {
+    assert.ok(publicResult.error.issues.some((issue) => issue.path[0] === "slotId"));
+  }
+
+  const hrResult = createHrApplicationSchema.safeParse(input);
+  assert.equal(hrResult.success, true);
+  if (hrResult.success) {
+    assert.equal("slotId" in hrResult.data, false);
+    assert.equal(hrResult.data.choices.length, 2);
+  }
+
+  const duplicateChoices = createHrApplicationSchema.safeParse({
+    ...input,
+    choices: [
+      { positionId: uuid, preferenceRank: 1 },
+      { positionId: uuid, preferenceRank: 2 },
+    ],
+  });
+  assert.equal(duplicateChoices.success, false);
+  if (!duplicateChoices.success) {
+    assert.ok(duplicateChoices.error.issues.some((issue) => /two different positions/.test(issue.message)));
   }
 });

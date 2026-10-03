@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import test from "node:test"
-import { applySchema, applyFormDefaults } from "./apply-schema"
+import { applySchema, applyFormDefaults, hrApplySchema } from "./apply-schema"
 
 function file(name: string, size = 10_000_000) {
   return new File([new Uint8Array(size)], name, { type: "application/pdf" })
@@ -70,4 +70,18 @@ test("apply schema accepts Member-only applications without choices or interview
   }
   const result = applySchema.safeParse(values)
   assert.equal(result.success, true, result.success ? "" : JSON.stringify(result.error.issues))
+})
+
+test("HR apply schema waives only interview selection", () => {
+  const values = validForm()
+  values.committee.slotId = ""
+  const result = hrApplySchema.safeParse(values)
+  assert.equal(result.success, true, result.success ? "" : JSON.stringify(result.error.issues))
+
+  values.committee.secondPositionId = values.committee.firstPositionId
+  const duplicateChoices = hrApplySchema.safeParse(values)
+  assert.equal(duplicateChoices.success, false)
+  if (!duplicateChoices.success) {
+    assert.ok(duplicateChoices.error.issues.some((issue) => issue.path.join(".") === "committee.secondPositionId"))
+  }
 })
