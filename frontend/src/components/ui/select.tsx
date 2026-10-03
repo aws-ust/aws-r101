@@ -29,7 +29,7 @@ function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
 }
 
 const triggerClasses =
-  "flex h-9 w-full items-center justify-between gap-1.5 rounded-[14px] border border-blue-chalk/25 bg-haiti/40 px-3 py-2 font-sans text-sm text-blue-chalk whitespace-nowrap transition-colors outline-none select-none focus-visible:border-biloba-flower focus-visible:ring-3 focus-visible:ring-biloba-flower/30 disabled:cursor-not-allowed disabled:opacity-50 data-placeholder:text-prelude/60 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+  "flex h-9 w-full items-center justify-between gap-1.5 rounded-[14px] border border-blue-chalk/25 bg-haiti/40 px-3 py-2 font-sans text-sm text-blue-chalk whitespace-nowrap transition-colors outline-none select-none cursor-pointer hover:border-biloba-flower/50 hover:bg-haiti/60 focus-visible:border-biloba-flower focus-visible:ring-3 focus-visible:ring-biloba-flower/30 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-blue-chalk/25 data-placeholder:text-prelude/60 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
 
 function SelectTrigger({
   className,
@@ -105,7 +105,7 @@ function SelectLabel({
 }
 
 const itemClasses =
-  "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1.5 pr-8 pl-2 text-sm outline-hidden select-none focus:bg-meteorite focus:text-blue-chalk data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0"
+  "relative flex w-full cursor-pointer items-center gap-1.5 rounded-md py-1.5 pr-8 pl-2 text-sm outline-hidden select-none hover:bg-meteorite hover:text-blue-chalk data-highlighted:bg-meteorite data-highlighted:text-blue-chalk focus:bg-meteorite focus:text-blue-chalk data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0"
 
 function SelectItem({
   className,
