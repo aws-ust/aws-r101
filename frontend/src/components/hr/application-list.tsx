@@ -1,39 +1,22 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import { usePathname } from "next/navigation"
-import Link from "next/link"
+import { useState } from "react"
 import { ActionFeedback } from "@/components/shared/action-feedback"
 import { SectionHeader } from "@/components/shared/section-header"
-import {
-  ApplicationFilters,
-  type HrFilters,
-} from "@/components/hr/application-filters"
 import { APPLICATION_PAGE_SIZE } from "@/components/hr/application-pagination-utils"
 import { ApplicationListResults } from "@/components/hr/application-list-results"
 import { hrApplicationListNoticeFeedback } from "@/components/hr/application-list-feedback"
-import { ApplicationExportButton } from "@/components/hr/application-export-button"
-import { Button } from "@/components/ui/button"
-import { HrArchiveApplicantDialog } from "@/components/hr/hr-archive-applicant-dialog"
-import { HrDeleteApplicantDialog } from "@/components/hr/hr-delete-applicant-dialog"
-import { HrEditApplicantEmailDialog } from "@/components/hr/hr-edit-applicant-email-dialog"
-import { HrResendSuccessEmailDialog } from "@/components/hr/hr-resend-success-email-dialog"
-import { useApplications } from "@/lib/api"
 import {
-  buildHrListQueryString,
-  hrFiltersFromListSearch,
-  hrPageFromListSearch,
-  mergeHrFilters,
-  type HrListSearchParamsInput,
-} from "@/lib/hr/filters-search-params"
+  HrApplicationListDialogs,
+  useHrListDialogTargets,
+  type ListFeedback,
+} from "@/components/hr/hr-application-list-dialogs"
+import { HrApplicationListToolbar } from "@/components/hr/hr-application-list-toolbar"
+import { useHrListUrlState } from "@/components/hr/use-hr-list-url-state"
+import { useApplications } from "@/lib/api"
+import type { HrListSearchParamsInput } from "@/lib/hr/filters-search-params"
 import { hrPageShellClasses } from "@/lib/site/surface"
 import { cn } from "@/lib/utils"
-import type { HrApplication } from "@/lib/types/hr-application"
-
-const toolbarClasses =
-  "mt-8 flex flex-col gap-3 xl:flex-row xl:items-center"
-const filtersClasses = "min-w-0 flex-1"
-const QUERY_URL_DEBOUNCE_MS = 400
 
 type HrApplicationListProps = {
   variant?: "active" | "archived"
@@ -47,21 +30,8 @@ export function HrApplicationList({
   listSearch,
 }: HrApplicationListProps) {
   const isArchivedView = variant === "archived"
-  const pathname = usePathname()
-  const [filters, setFilters] = useState(() =>
-    hrFiltersFromListSearch(listSearch),
-  )
-  const [page, setPage] = useState(() => hrPageFromListSearch(listSearch))
-  const urlSyncTimeoutRef = useRef<number | null>(null)
-
-  useEffect(() => {
-    return () => {
-      if (urlSyncTimeoutRef.current !== null) {
-        window.clearTimeout(urlSyncTimeoutRef.current)
-      }
-    }
-  }, [])
-
+  const urlState = useHrListUrlState(listSearch, notice)
+  const { filters, page } = urlState
   const { applications, total, loading, error, refreshApplications } =
     useApplications({
       query: filters.query.trim(),
@@ -72,68 +42,20 @@ export function HrApplicationList({
       page,
       pageSize: APPLICATION_PAGE_SIZE,
     })
-  const [archiveTarget, setArchiveTarget] = useState<HrApplication | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<HrApplication | null>(null)
-  const [emailTarget, setEmailTarget] = useState<HrApplication | null>(null)
-  const [resendTarget, setResendTarget] = useState<HrApplication | null>(null)
-  const [feedback, setFeedback] = useState<{
-    type: "success" | "error"
-    message: string
-  } | null>(null)
+  const targets = useHrListDialogTargets()
+  const [feedback, setFeedback] = useState<ListFeedback | null>(null)
   const visibleFeedback = feedback ?? hrApplicationListNoticeFeedback(notice)
 
-  function replaceListUrl(nextFilters: HrFilters, nextPage: number) {
-    const query = buildHrListQueryString(nextFilters, nextPage, { notice })
-    window.history.replaceState(null, "", `${pathname}${query}`)
+  function onListChanged(resetPage: boolean) {
+    if (resetPage) urlState.resetToFirstPage()
+    refreshApplications()
   }
-
-  function scheduleListUrlSync(
-    nextFilters: HrFilters,
-    nextPage: number,
-    debounceMs: number,
-  ) {
-    if (urlSyncTimeoutRef.current !== null) {
-      window.clearTimeout(urlSyncTimeoutRef.current)
-    }
-    urlSyncTimeoutRef.current = window.setTimeout(() => {
-      replaceListUrl(nextFilters, nextPage)
-      urlSyncTimeoutRef.current = null
-    }, debounceMs)
-  }
-
-  function onFiltersChange(patch: Partial<HrFilters>) {
-    const next = mergeHrFilters(filters, patch)
-    const nextPage = 1
-    setFilters(next)
-    setPage(nextPage)
-    const debounceMs = "query" in patch ? QUERY_URL_DEBOUNCE_MS : 0
-    scheduleListUrlSync(next, nextPage, debounceMs)
-  }
-
-  function onPageChange(nextPage: number) {
-    setPage(nextPage)
-    replaceListUrl(filters, nextPage)
-  }
-
-  function onDetailNavigate() {
-    if (urlSyncTimeoutRef.current !== null) {
-      window.clearTimeout(urlSyncTimeoutRef.current)
-      urlSyncTimeoutRef.current = null
-    }
-    replaceListUrl(filters, page)
-  }
-
-  const listHref = `${pathname}${buildHrListQueryString(filters, page, {
-    notice,
-  })}`
 
   return (
     <main className={cn(hrPageShellClasses, "min-w-0 max-w-full overflow-x-clip")}>
       <SectionHeader
         eyebrow={isArchivedView ? "// ARCHIVE" : "// APPLICATIONS"}
-        title={
-          isArchivedView ? "Archived applications" : "Applications"
-        }
+        title={isArchivedView ? "Archived applications" : "Applications"}
         titleClassName="max-w-none text-balance"
         subtitle={
           isArchivedView
@@ -147,101 +69,31 @@ export function HrApplicationList({
           message={visibleFeedback.message}
         />
       ) : null}
-      <div className={toolbarClasses}>
-        <div className={filtersClasses}>
-          <ApplicationFilters value={filters} onChange={onFiltersChange} />
-        </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-          {!isArchivedView ? (
-            <Button
-              color="cyan"
-              className="h-10 gap-2 px-5 font-mono text-xs"
-              nativeButton={false}
-              render={<Link href="/admin/hr/add" />}
-            >
-              Add Applicant
-            </Button>
-          ) : null}
-          <ApplicationExportButton
-            filters={{
-              query: filters.query.trim(),
-              committeeName: filters.committee || undefined,
-              status: filters.status || undefined,
-              applicationType: filters.applicationType || undefined,
-              archive: variant,
-            }}
-            total={total}
-            onError={(message) => setFeedback({ type: "error", message })}
-          />
-        </div>
-      </div>
+      <HrApplicationListToolbar
+        variant={variant}
+        filters={filters}
+        total={total}
+        onFiltersChange={urlState.onFiltersChange}
+        onExportError={(message) => setFeedback({ type: "error", message })}
+      />
       <ApplicationListResults
         loading={loading}
         error={error}
         applications={applications}
         total={total}
         page={page}
-        returnTo={listHref}
-        onPageChange={onPageChange}
-        onDetailNavigate={onDetailNavigate}
-        onArchive={setArchiveTarget}
-        onDelete={isArchivedView ? setDeleteTarget : undefined}
-        onEditEmail={isArchivedView ? undefined : setEmailTarget}
-        onResendEmail={isArchivedView ? undefined : setResendTarget}
+        returnTo={urlState.listHref}
+        onPageChange={urlState.onPageChange}
+        onDetailNavigate={urlState.onDetailNavigate}
+        onArchive={targets.setArchiveTarget}
+        onDelete={isArchivedView ? targets.setDeleteTarget : undefined}
+        onEditEmail={isArchivedView ? undefined : targets.setEmailTarget}
+        onResendEmail={isArchivedView ? undefined : targets.setResendTarget}
       />
-      <HrArchiveApplicantDialog
-        application={archiveTarget}
-        onOpenChange={(open) => {
-          if (!open) setArchiveTarget(null)
-        }}
-        onChanged={(updated) => {
-          setPage(1)
-          replaceListUrl(filters, 1)
-          refreshApplications()
-          setFeedback({
-            type: "success",
-            message: updated.archivedAt
-              ? "Applicant archived."
-              : "Applicant restored.",
-          })
-        }}
-      />
-      <HrDeleteApplicantDialog
-        application={deleteTarget}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null)
-        }}
-        onDeleted={() => {
-          setPage(1)
-          replaceListUrl(filters, 1)
-          refreshApplications()
-          setFeedback({
-            type: "success",
-            message: "Applicant deleted. Their interview slot is now open.",
-          })
-        }}
-      />
-      <HrEditApplicantEmailDialog
-        application={emailTarget}
-        onOpenChange={(open) => {
-          if (!open) setEmailTarget(null)
-        }}
-        onChanged={() => {
-          refreshApplications()
-          setFeedback({
-            type: "success",
-            message: "Applicant email updated.",
-          })
-        }}
-      />
-      <HrResendSuccessEmailDialog
-        application={resendTarget}
-        onOpenChange={(open) => {
-          if (!open) setResendTarget(null)
-        }}
-        onSent={(message) => {
-          setFeedback({ type: "success", message })
-        }}
+      <HrApplicationListDialogs
+        targets={targets}
+        onListChanged={onListChanged}
+        onFeedback={setFeedback}
       />
     </main>
   )

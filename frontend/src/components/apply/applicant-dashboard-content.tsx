@@ -67,7 +67,7 @@ function ApplicantDashboardDocuments({
   )
 }
 
-export function ApplicantDashboardContent({
+function ApplicantPendingSections({
   application,
   pending,
   saveError,
@@ -77,66 +77,64 @@ export function ApplicantDashboardContent({
   onPreviewSlotIdChange,
   onPreviewPositionIdChange,
   onSave,
-  onApplicationUpdated,
-}: ApplicantDashboardContentProps) {
-  const positionApplication = application.applicationType === "position"
+}: Omit<ApplicantDashboardContentProps, "onApplicationUpdated">) {
   const first = application.choices.find((choice) => choice.preferenceRank === 1)
   const second = application.choices.find((choice) => choice.preferenceRank === 2)
 
   return (
     <>
+      <div className="mt-6">
+        <ApplicantEditBanner
+          canEdit={application.canEdit}
+          editDeadline={application.editDeadline}
+          lockReason={application.lockReason}
+        />
+      </div>
+      <div className="mt-8">
+        <ApplicantChoiceCards first={first} second={second} />
+      </div>
+      <LazyWhenVisible minHeight="18rem" className="mt-8">
+        <ApplicantInterviewScheduler
+          key={`${previewPositionId ?? "current-booking"}:${first?.committee ?? ""}`}
+          positionId={previewPositionId}
+          previewMode={Boolean(previewPositionId)}
+          selectedSlotId={previewPositionId ? previewSlotId : undefined}
+          onSelectedSlotIdChange={
+            previewPositionId ? onPreviewSlotIdChange : undefined
+          }
+        />
+      </LazyWhenVisible>
+      {application.canEdit ? (
+        <ApplicantChoiceEditor
+          application={application}
+          pending={pending}
+          error={saveError}
+          success={saveSuccess}
+          slotId={previewSlotId}
+          onPreviewPositionIdChange={onPreviewPositionIdChange}
+          onSave={onSave}
+        />
+      ) : null}
+    </>
+  )
+}
+
+export function ApplicantDashboardContent({
+  onApplicationUpdated,
+  ...props
+}: ApplicantDashboardContentProps) {
+  const { application } = props
+
+  return (
+    <>
       <ApplicantDashboardProfile application={application} />
 
-      {positionApplication ? (
-        <>
-          {application.result ? (
-            <ApplicantResultPanel result={application.result} />
-          ) : null}
-
-          {application.result ? null : (
-            <div className="mt-6">
-              <ApplicantEditBanner
-                canEdit={application.canEdit}
-                editDeadline={application.editDeadline}
-                lockReason={application.lockReason}
-              />
-            </div>
-          )}
-
-          {application.result ? null : (
-            <div className="mt-8">
-              <ApplicantChoiceCards first={first} second={second} />
-            </div>
-          )}
-
-          {application.result ? null : (
-            <LazyWhenVisible minHeight="18rem" className="mt-8">
-              <ApplicantInterviewScheduler
-                key={`${previewPositionId ?? "current-booking"}:${first?.committee ?? ""}`}
-                positionId={previewPositionId}
-                previewMode={Boolean(previewPositionId)}
-                selectedSlotId={previewPositionId ? previewSlotId : undefined}
-                onSelectedSlotIdChange={
-                  previewPositionId ? onPreviewSlotIdChange : undefined
-                }
-              />
-            </LazyWhenVisible>
-          )}
-
-          {application.canEdit ? (
-            <ApplicantChoiceEditor
-              application={application}
-              pending={pending}
-              error={saveError}
-              success={saveSuccess}
-              slotId={previewSlotId}
-              onPreviewPositionIdChange={onPreviewPositionIdChange}
-              onSave={onSave}
-            />
-          ) : null}
-        </>
-      ) : (
+      {application.applicationType !== "position" ? (
         <ApplicantMembershipStatus application={application} />
+      ) : application.result ? (
+        <ApplicantResultPanel result={application.result} />
+      ) : (
+        <ApplicantPendingSections {...props} />
       )}
 
       <ApplicantPaymentPanel />
