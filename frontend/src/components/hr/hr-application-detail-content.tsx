@@ -100,7 +100,7 @@ export function HrApplicationDetailContent({
           onDeleteClick={() => onDeleteOpenChange(true)}
           onEditEmail={canManageEmail ? () => setEmailOpen(true) : undefined}
           onResendSuccessEmail={
-            canManageEmail ? () => setResendOpen(true) : undefined
+            application.canResendSubmittedEmail ? () => setResendOpen(true) : undefined
           }
         />
       </div>

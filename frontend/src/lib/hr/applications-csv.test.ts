@@ -11,6 +11,7 @@ const application: HrApplication = {
   memberId: null,
   submittedAt: "2026-09-11T08:00:00.000Z",
   archivedAt: null,
+  canResendSubmittedEmail: false,
   firstName: "=Formula",
   lastName: "Tester",
   email: "formula.tester@ust.edu.ph",

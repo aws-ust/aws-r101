@@ -64,7 +64,8 @@ export function ApplicationRowActionsMenu({
 }: ApplicationRowActionsMenuProps) {
   const name = fullName(application)
   const archived = Boolean(application.archivedAt)
-  const canManageEmail = Boolean(onEditEmail || onResendEmail)
+  const canResendEmail = Boolean(onResendEmail && application.canResendSubmittedEmail)
+  const canManageEmail = Boolean(onEditEmail || canResendEmail)
 
   return (
     <DropdownMenu>
@@ -87,7 +88,7 @@ export function ApplicationRowActionsMenu({
                 Edit Email
               </DropdownMenuItem>
             ) : null}
-            {onResendEmail ? (
+            {canResendEmail && onResendEmail ? (
               <DropdownMenuItem
                 className={itemClasses}
                 onClick={() => onResendEmail(application)}
