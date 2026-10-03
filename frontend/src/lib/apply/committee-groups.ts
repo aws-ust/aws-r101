@@ -63,6 +63,8 @@ export const COMMITTEE_OFFICE_GROUPS: CommitteeOfficeGroup[] = [
   },
 ]
 
+export const defaultCommitteeOffice = COMMITTEE_OFFICE_GROUPS[0].office
+
 export function groupedCommitteesForPicker(available: string[]) {
   const open = new Set(available)
   const grouped: { office: string; committees: string[] }[] = []

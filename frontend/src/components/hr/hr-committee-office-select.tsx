@@ -18,8 +18,6 @@ const selectClasses = cn(
 const itemClasses = "cursor-pointer"
 const labelClasses = "font-sans text-sm font-medium text-blue-chalk"
 
-export const defaultCommitteeOffice = COMMITTEE_OFFICE_GROUPS[0].office
-
 type HrCommitteeOfficeSelectProps = {
   value: string
   onChange: (office: string) => void

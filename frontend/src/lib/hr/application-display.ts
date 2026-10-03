@@ -45,3 +45,10 @@ export function applicationListPlacementLabel(application: HrApplication) {
     "—"
   )
 }
+
+export function redirectPlacementLabel(application: HrApplication): string | null {
+  if (!application.redirectPlacement) return null
+  if (!application.redirectResponse) return "Redirected"
+  if (application.redirectResponse === "accepted") return "Accepted redirect"
+  return "Declined — member"
+}

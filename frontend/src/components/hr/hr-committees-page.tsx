@@ -3,11 +3,9 @@
 import { useState } from "react"
 import { SectionHeader } from "@/components/shared/section-header"
 import { HrCommitteeApplicationControls } from "@/components/hr/hr-committee-application-controls"
-import {
-  defaultCommitteeOffice,
-  HrCommitteeOfficeSelect,
-} from "@/components/hr/hr-committee-office-select"
+import { HrCommitteeOfficeSelect } from "@/components/hr/hr-committee-office-select"
 import { HrPositionApprovalTargets } from "@/components/hr/hr-position-approval-targets"
+import { defaultCommitteeOffice } from "@/lib/apply/committee-groups"
 import { hrPageShellClasses } from "@/lib/site/surface"
 
 const stackClasses = "mt-8 flex flex-col gap-4"

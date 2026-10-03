@@ -11,6 +11,7 @@ import {
   patchApplicationRedirectResponse,
   type PositionApprovalTarget,
 } from "@/lib/api"
+import { redirectPlacementLabel } from "@/lib/hr/application-display"
 import type { HrApplication } from "@/lib/types/hr-application"
 import {
   comparePositionHierarchy,
@@ -29,13 +30,6 @@ const tagClasses =
 type Props = {
   application: HrApplication
   onUpdated: (application: HrApplication) => void
-}
-
-export function redirectPlacementLabel(application: HrApplication): string | null {
-  if (!application.redirectPlacement) return null
-  if (!application.redirectResponse) return "Redirected"
-  if (application.redirectResponse === "accepted") return "Accepted redirect"
-  return "Declined — member"
 }
 
 export function HrRedirectPlacementPanel({ application, onUpdated }: Props) {
