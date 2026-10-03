@@ -9,9 +9,12 @@ export type DocumentType = "resume" | "registration"
 export type Position = {
   id: string
   committee: string
+  office?: string
   /** Present on API rows; omitted in legacy mock fixtures. */
   committee_id?: string
   acceptingApplications?: boolean
+  isOpen?: boolean
+  openSlots?: number
   title: string
   description: string
 }

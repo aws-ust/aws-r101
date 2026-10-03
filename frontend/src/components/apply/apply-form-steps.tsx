@@ -15,6 +15,7 @@ import type {
 type FormStep = 1 | 2 | 3 | 4 | 5 | 6
 
 type ApplyFormStepsProps = {
+  hrMode?: boolean
   step: FormStep
   direction: number
   variants: Variants
@@ -46,6 +47,7 @@ type ApplyFormStepsProps = {
 }
 
 export function ApplyFormSteps({
+  hrMode = false,
   step,
   direction,
   variants,
@@ -85,6 +87,7 @@ export function ApplyFormSteps({
         ) : null}
         {step === 2 ? (
           <CommitteeStep
+            hrMode={hrMode}
             values={committee}
             onChange={updateCommittee}
             errors={currentStepErrors.committee}
@@ -106,6 +109,7 @@ export function ApplyFormSteps({
         ) : null}
         {step === 5 ? (
           <ReviewStep
+            hrMode={hrMode}
             general={general}
             committee={committee}
             upload={upload}

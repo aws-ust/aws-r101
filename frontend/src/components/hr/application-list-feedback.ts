@@ -1,4 +1,7 @@
 export function hrApplicationListNoticeFeedback(notice?: string) {
+  if (notice === "added") {
+    return { type: "success" as const, message: "Applicant added." }
+  }
   if (notice === "archived") {
     return { type: "success" as const, message: "Applicant archived." }
   }

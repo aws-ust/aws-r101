@@ -9,11 +9,13 @@ const typeDescriptionClasses =
   "mt-1 block font-sans text-xs leading-relaxed opacity-85"
 
 type CommitteeStepApplicationTypeProps = {
+  hrMode?: boolean
   positionApplication: boolean
   onSelect: (applicationType: CommitteeValues["applicationType"]) => void
 }
 
 export function CommitteeStepApplicationType({
+  hrMode = false,
   positionApplication,
   onSelect,
 }: CommitteeStepApplicationTypeProps) {
@@ -32,7 +34,9 @@ export function CommitteeStepApplicationType({
           <span>
             <span className={typeTitleClasses}>Committee Position</span>
             <span className={typeDescriptionClasses}>
-              Choose two positions and an interview schedule.
+              {hrMode
+                ? "Choose two positions for committee consideration."
+                : "Choose two positions and an interview schedule."}
             </span>
           </span>
         </Button>

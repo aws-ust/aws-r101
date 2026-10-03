@@ -12,6 +12,7 @@ import {
   ApiError,
   getApplicationById,
   listApplications,
+  listAllPositions,
   listOpenPositions,
   peekOpenPositions,
   patchApplicationArchivedRequest,
@@ -22,6 +23,8 @@ import {
   patchApplicationRedirectPlacementRequest,
   patchApplicationRedirectResponseRequest,
   postApplication,
+  postHrApplication,
+  postHrUploadPresign,
   postUploadPresign,
   type ApplicationListParams,
   type UploadPresignRequest,
@@ -185,16 +188,35 @@ export function useApplication(id: string | undefined) {
   return { application, setApplication, loading, error, notFound }
 }
 
-export function useOpenPositions() {
-  const [positions, setPositions] = useState<Position[]>([])
-  const [loading, setLoading] = useState(true)
+export function useOpenPositions(includeClosed = false) {
+  const [positions, setPositions] = useState<Position[]>(
+    () => (includeClosed ? null : peekOpenPositions()) ?? [],
+  )
+  const [loading, setLoading] = useState(
+    () => includeClosed || !peekOpenPositions(),
+  )
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const cached = peekOpenPositions()
-    if (cached) {
-      setPositions(cached)
-      setLoading(false)
+    if (includeClosed) {
+      let cancelled = false
+      listAllPositions()
+        .then((rows) => {
+          if (cancelled) return
+          setPositions(rows)
+          setError(null)
+        })
+        .catch((err: unknown) => {
+          if (cancelled) return
+          setPositions([])
+          setError(err instanceof Error ? err.message : "Failed to load positions.")
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false)
+        })
+      return () => {
+        cancelled = true
+      }
     }
 
     let cancelled = false
@@ -215,7 +237,7 @@ export function useOpenPositions() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [includeClosed])
 
   const committees = useMemo(
     () => [...new Set(positions.map((position) => position.committee))],
@@ -230,8 +252,18 @@ export async function createApplication(
   return postApplication(input)
 }
 
+export async function createHrApplication(
+  input: CreateApplicationInput
+): Promise<Application> {
+  return postHrApplication(input)
+}
+
 export async function createUploadSession(input: UploadPresignRequest) {
   return postUploadPresign(input)
+}
+
+export async function createHrUploadSession(input: UploadPresignRequest) {
+  return postHrUploadPresign(input)
 }
 
 export function patchApplicationDecision(

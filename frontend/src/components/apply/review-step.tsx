@@ -10,6 +10,7 @@ const sectionTitleClasses =
   "font-sans text-sm font-semibold uppercase tracking-wide text-biloba-flower"
 
 type ReviewStepProps = {
+  hrMode?: boolean
   general: GeneralInfoValues
   committee: CommitteeValues
   upload: UploadValues
@@ -22,6 +23,7 @@ type ReviewStepProps = {
 }
 
 export function ReviewStep({
+  hrMode = false,
   general,
   committee,
   upload,
@@ -43,7 +45,7 @@ export function ReviewStep({
       <section>
         <h3 className={sectionTitleClasses}>Application type</h3>
         <div className="mt-4">
-          <CommitteeStep values={committee} onChange={onCommitteeChange} errors={committeeErrors} />
+          <CommitteeStep hrMode={hrMode} values={committee} onChange={onCommitteeChange} errors={committeeErrors} />
         </div>
       </section>
       <section>

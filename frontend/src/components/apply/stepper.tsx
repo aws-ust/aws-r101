@@ -37,16 +37,18 @@ const bubbleSnap = { duration: 0 }
 
 type StepperProps = {
   current: 1 | 2 | 3 | 4 | 5 | 6
+  hrMode?: boolean
 }
 
-export function ApplyStepper({ current }: StepperProps) {
+export function ApplyStepper({ current, hrMode = false }: StepperProps) {
   const reducedMotion = useReducedMotion() ?? false
   const transition = reducedMotion ? bubbleSnap : bubbleSpring
+  const steps = hrMode ? STEPS.slice(0, 5) : STEPS
 
   return (
     <nav className={shellClasses} aria-label="Application progress">
       <ol className={listClasses}>
-        {STEPS.map((step, index) => {
+        {steps.map((step, index) => {
           const state =
             step.n < current
               ? "complete"
@@ -111,7 +113,7 @@ export function ApplyStepper({ current }: StepperProps) {
                   {step.label}
                 </m.span>
               </div>
-              {index < STEPS.length - 1 ? (
+              {index < steps.length - 1 ? (
                 <m.div
                   className={connectorClasses}
                   aria-hidden="true"

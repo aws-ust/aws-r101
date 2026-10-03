@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { usePathname } from "next/navigation"
+import Link from "next/link"
 import { ActionFeedback } from "@/components/shared/action-feedback"
 import { SectionHeader } from "@/components/shared/section-header"
 import {
@@ -12,6 +13,7 @@ import { APPLICATION_PAGE_SIZE } from "@/components/hr/application-pagination-ut
 import { ApplicationListResults } from "@/components/hr/application-list-results"
 import { hrApplicationListNoticeFeedback } from "@/components/hr/application-list-feedback"
 import { ApplicationExportButton } from "@/components/hr/application-export-button"
+import { Button } from "@/components/ui/button"
 import { HrArchiveApplicantDialog } from "@/components/hr/hr-archive-applicant-dialog"
 import { HrDeleteApplicantDialog } from "@/components/hr/hr-delete-applicant-dialog"
 import { HrEditApplicantEmailDialog } from "@/components/hr/hr-edit-applicant-email-dialog"
@@ -149,17 +151,29 @@ export function HrApplicationList({
         <div className={filtersClasses}>
           <ApplicationFilters value={filters} onChange={onFiltersChange} />
         </div>
-        <ApplicationExportButton
-          filters={{
-            query: filters.query.trim(),
-            committeeName: filters.committee || undefined,
-            status: filters.status || undefined,
-            applicationType: filters.applicationType || undefined,
-            archive: variant,
-          }}
-          total={total}
-          onError={(message) => setFeedback({ type: "error", message })}
-        />
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+          {!isArchivedView ? (
+            <Button
+              color="cyan"
+              className="h-10 gap-2 px-5 font-mono text-xs"
+              nativeButton={false}
+              render={<Link href="/admin/hr/add" />}
+            >
+              Add Applicant
+            </Button>
+          ) : null}
+          <ApplicationExportButton
+            filters={{
+              query: filters.query.trim(),
+              committeeName: filters.committee || undefined,
+              status: filters.status || undefined,
+              applicationType: filters.applicationType || undefined,
+              archive: variant,
+            }}
+            total={total}
+            onError={(message) => setFeedback({ type: "error", message })}
+          />
+        </div>
       </div>
       <ApplicationListResults
         loading={loading}

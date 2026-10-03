@@ -64,7 +64,7 @@ export const uploadSchema = z.object({
   registrationDisplayName: z.string().optional(),
 });
 
-export const applySchema = z
+const buildApplySchema = (requireInterview: boolean) => z
   .object({
     privacy: privacySchema,
     general: generalInfoSchema,
@@ -135,7 +135,7 @@ export const applySchema = z
           "Pick two different positions so we can rank your committee preferences.",
         );
       }
-      if (!committee.slotId)
+      if (requireInterview && !committee.slotId)
         issue(
           ["committee", "slotId"],
           "Pick an interview time slot for your first-choice committee.",
@@ -184,6 +184,9 @@ export const applySchema = z
       }
     }
   });
+
+export const applySchema = buildApplySchema(true);
+export const hrApplySchema = buildApplySchema(false);
 
 export const applyFormDefaults: ApplyFormValues = {
   privacy: { dataPrivacyAgreed: false },

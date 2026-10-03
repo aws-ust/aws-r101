@@ -46,14 +46,21 @@ type PositionOption = {
   committee: string
   title: string
   acceptingApplications?: boolean
+  isOpen?: boolean
+  openSlots?: number
+}
+
+function positionIsClosed(position: PositionOption) {
+  return (
+    position.acceptingApplications === false ||
+    position.isOpen === false ||
+    position.openSlots === 0
+  )
 }
 
 function committeeIsClosed(committee: string, positions: PositionOption[]) {
   const roles = positions.filter((position) => position.committee === committee)
-  return (
-    roles.length > 0 &&
-    roles.every((position) => position.acceptingApplications === false)
-  )
+  return roles.length > 0 && roles.every(positionIsClosed)
 }
 
 type CommitteeOfficePickerProps = {
@@ -65,6 +72,7 @@ type CommitteeOfficePickerProps = {
   disabled?: boolean
   disabledPositionId?: string
   placeholder?: string
+  allowClosedPositions?: boolean
   onSelect: (next: { committee: string; positionId: string }) => void
 }
 
@@ -77,6 +85,7 @@ export function CommitteeOfficePicker({
   disabled = false,
   disabledPositionId = "",
   placeholder = "Select an office and committee",
+  allowClosedPositions = false,
   onSelect,
 }: CommitteeOfficePickerProps) {
   const office = officeForCommittee(committee)
@@ -140,6 +149,7 @@ export function CommitteeOfficePicker({
                     roles={positions.filter(
                       (position) => position.committee === name,
                     )}
+                    allowClosedPositions={allowClosedPositions}
                     onSelect={onSelect}
                   />
                 ))}
@@ -157,6 +167,7 @@ function CommitteeMenuRow({
   selectedPositionId,
   disabledPositionId,
   roles,
+  allowClosedPositions,
   onSelect,
 }: {
   committee: string
@@ -164,12 +175,11 @@ function CommitteeMenuRow({
   selectedPositionId: string
   disabledPositionId: string
   roles: PositionOption[]
+  allowClosedPositions: boolean
   onSelect: (next: { committee: string; positionId: string }) => void
 }) {
   const onlyRole = roles.length === 1 ? roles[0] : null
-  const applicationsClosed = roles.every(
-    (role) => role.acceptingApplications === false,
-  )
+  const applicationsClosed = roles.every(positionIsClosed)
 
   if (roles.length === 0) {
     return (
@@ -179,7 +189,7 @@ function CommitteeMenuRow({
     )
   }
 
-  if (applicationsClosed) {
+  if (applicationsClosed && !allowClosedPositions) {
     return (
       <DropdownMenuItem
         disabled
@@ -196,9 +206,10 @@ function CommitteeMenuRow({
 
   if (onlyRole) {
     const taken = onlyRole.id === disabledPositionId
+    const closed = positionIsClosed(onlyRole)
     return (
       <DropdownMenuItem
-        disabled={taken}
+        disabled={taken || (closed && !allowClosedPositions)}
         className={itemHoverClasses}
         onClick={() =>
           onSelect({ committee, positionId: onlyRole.id })
@@ -207,6 +218,9 @@ function CommitteeMenuRow({
         <span className={committeeCopyClasses}>
           <span>{committee}</span>
           <span className={metaClasses}>{onlyRole.title}</span>
+          {closed && allowClosedPositions ? (
+            <span className={closedMetaClasses}>Applications closed</span>
+          ) : null}
         </span>
         {selected ? <CheckIcon className={selectedIconClasses} /> : null}
       </DropdownMenuItem>
@@ -220,18 +234,28 @@ function CommitteeMenuRow({
       >
         <span className={committeeCopyClasses}>
           <span>{committee}</span>
-          <span className={metaClasses}>{roles.length} open roles</span>
+          <span className={metaClasses}>
+            {allowClosedPositions ? `${roles.length} positions` : `${roles.length} open roles`}
+          </span>
         </span>
       </DropdownMenuSubTrigger>
       <DropdownMenuSubContent className={subMenuClasses}>
         {roles.map((role) => (
           <DropdownMenuItem
             key={role.id}
-            disabled={role.id === disabledPositionId}
+            disabled={
+              role.id === disabledPositionId ||
+              (positionIsClosed(role) && !allowClosedPositions)
+            }
             className={itemHoverClasses}
             onClick={() => onSelect({ committee, positionId: role.id })}
           >
-            {role.title}
+            <span className="flex flex-1 flex-col">
+              <span>{role.title}</span>
+              {positionIsClosed(role) && allowClosedPositions ? (
+                <span className={closedMetaClasses}>Applications closed</span>
+              ) : null}
+            </span>
             {selectedPositionId === role.id ? (
               <CheckIcon className={selectedIconClasses} />
             ) : null}

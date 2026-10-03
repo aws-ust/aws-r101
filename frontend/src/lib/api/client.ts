@@ -117,6 +117,13 @@ export function postApplication(body: CreateApplicationInput) {
   });
 }
 
+export function postHrApplication(body: CreateApplicationInput) {
+  return apiFetch<Application>("/applications/hr", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
 export type UploadPresignRequest = {
   documents: {
     documentType: DocumentType
@@ -142,6 +149,13 @@ export function postUploadPresign(body: UploadPresignRequest) {
     method: "POST",
     body: JSON.stringify(body),
   })
+}
+
+export function postHrUploadPresign(body: UploadPresignRequest) {
+  return apiFetch<UploadPresignResponse>("/uploads/hr/presign", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 }
 
 export function patchApplicationDecisionRequest(
@@ -242,6 +256,7 @@ function mapOpenPosition(row: PositionApiRow): Position {
   return {
     id: row.id,
     committee: row.committee,
+    office: row.office,
     committee_id: row.committee_id,
     acceptingApplications: row.committeeAcceptingApplications !== false,
     title: row.title,
@@ -298,6 +313,16 @@ export function listOpenPositions() {
     );
   }
   return ensurePositionsLoaded().then(() => openPositionsCache ?? []);
+}
+
+export function listAllPositions() {
+  return apiFetch<PositionApiRow[]>("/positions?scope=all").then((rows) =>
+    rows.map((row) => ({
+      ...mapOpenPosition(row),
+      isOpen: row.isOpen,
+      openSlots: row.openSlots,
+    })),
+  );
 }
 
 export function listBrowserPositions() {

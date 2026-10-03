@@ -17,6 +17,7 @@ import {
   memberChoicePatch,
 } from "@/components/apply/committee-step-choice-patch"
 import { CommitteeStepPositionFields } from "@/components/apply/committee-step-position-fields"
+import type { CommitteeOfficeGroup } from "@/lib/apply/committee-groups"
 
 const stackClasses = "flex min-w-0 w-full flex-col gap-5"
 const memberNoticeClasses =
@@ -24,19 +25,39 @@ const memberNoticeClasses =
 const textareaClasses = `${fieldControlClasses} h-auto min-h-28 py-3`
 
 type CommitteeStepProps = {
+  hrMode?: boolean
   values: CommitteeValues
   onChange: (patch: Partial<CommitteeValues>) => void
   errors?: Partial<Record<keyof CommitteeValues, string>>
 }
 
-export function CommitteeStep({ values, onChange, errors }: CommitteeStepProps) {
-  const { positions: openPositions, loading, error } = useOpenPositions()
+export function CommitteeStep({ values, onChange, errors, hrMode = false }: CommitteeStepProps) {
+  const { positions: openPositions, loading, error } = useOpenPositions(hrMode)
   const positions = openPositions
   const committees = useMemo(
     () => [...new Set(positions.map((position) => position.committee))],
     [positions],
   )
-  const committeeGroups = groupedCommitteesForPicker(committees)
+  const committeeGroups = useMemo(() => {
+    const groups = groupedCommitteesForPicker(committees)
+    if (!hrMode) return groups
+    const included = new Set(groups.flatMap((group) => group.committees))
+    const additional = new Map<string, string[]>()
+    for (const position of positions) {
+      if (included.has(position.committee)) continue
+      const office = position.office || "Other Committees"
+      const names = additional.get(office) ?? []
+      if (!names.includes(position.committee)) names.push(position.committee)
+      additional.set(office, names)
+    }
+    return [
+      ...groups,
+      ...[...additional].map(([office, names]): CommitteeOfficeGroup => ({
+        office,
+        committees: names,
+      })),
+    ]
+  }, [committees, hrMode, positions])
   const positionApplication = values.applicationType === "position"
   const positionTitle = (positionId: string) =>
     positions.find((position) => position.id === positionId)?.title ?? ""
@@ -70,12 +91,14 @@ export function CommitteeStep({ values, onChange, errors }: CommitteeStepProps) 
   return (
     <div className={stackClasses}>
       <CommitteeStepApplicationType
+        hrMode={hrMode}
         positionApplication={positionApplication}
         onSelect={setApplicationType}
       />
 
       {positionApplication ? (
         <CommitteeStepPositionFields
+          hrMode={hrMode}
           values={values}
           errors={errors}
           loading={loading}
@@ -89,7 +112,9 @@ export function CommitteeStep({ values, onChange, errors }: CommitteeStepProps) 
         />
       ) : (
         <p className={memberNoticeClasses}>
-          Member-only applicants are accepted automatically, do not need an interview, and will receive payment instructions after R101. No committee choices or interview are required.
+          {hrMode
+            ? "Member-only applicants are accepted automatically and do not need committee choices or an interview."
+            : "Member-only applicants are accepted automatically, do not need an interview, and will receive payment instructions after R101. No committee choices or interview are required."}
         </p>
       )}
 

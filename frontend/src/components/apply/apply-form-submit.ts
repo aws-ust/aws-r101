@@ -2,7 +2,12 @@ import type { MutableRefObject } from "react"
 import type { ApplyFormValues } from "@/components/apply/apply-schema"
 import { clearApplyFormDraft } from "@/components/apply/apply-form-draft"
 import { toCreateApplicationInput } from "@/components/apply/form-model"
-import { createApplication, createUploadSession } from "@/lib/api"
+import {
+  createApplication,
+  createHrApplication,
+  createHrUploadSession,
+  createUploadSession,
+} from "@/lib/api"
 import {
   documentUploadMetadata,
   uploadDocumentFiles,
@@ -25,6 +30,7 @@ export async function submitApplyForm(
   values: ApplyFormValues,
   ustEmailDomain: string,
   completedUploadRef: MutableRefObject<CompletedUploadSession | null>,
+  hrMode = false,
 ): Promise<ApplyFormSubmitSuccess> {
   const files = [
     { documentType: "resume" as const, file: values.upload.resume! },
@@ -39,7 +45,8 @@ export async function submitApplyForm(
     cachedUpload.fingerprint !== fingerprint ||
     new Date(cachedUpload.expiresAt) <= new Date()
   ) {
-    const session = await createUploadSession({ documents })
+    const createSession = hrMode ? createHrUploadSession : createUploadSession
+    const session = await createSession({ documents })
     await uploadDocumentFiles(files, session)
     uploadSessionId = session.uploadSessionId
     completedUploadRef.current = {
@@ -48,7 +55,8 @@ export async function submitApplyForm(
       expiresAt: session.sessionExpiresAt,
     }
   }
-  const created = await createApplication(
+  const create = hrMode ? createHrApplication : createApplication
+  const created = await create(
     toCreateApplicationInput(
       values.privacy,
       values.general,
@@ -56,9 +64,10 @@ export async function submitApplyForm(
       values.upload,
       ustEmailDomain,
       uploadSessionId!,
+      hrMode,
     ),
   )
-  clearApplyFormDraft()
+  if (!hrMode) clearApplyFormDraft()
   const createdFirst = created.choices.find((choice) => choice.preferenceRank === 1)
   const createdSecond = created.choices.find((choice) => choice.preferenceRank === 2)
   return {

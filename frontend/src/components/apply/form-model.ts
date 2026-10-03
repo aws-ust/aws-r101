@@ -22,6 +22,7 @@ export function toCreateApplicationInput(
   _upload: UploadValues,
   emailDomain: string,
   uploadSessionId: string,
+  hrMode = false,
 ): CreateApplicationInput {
   const positionApplication = committee.applicationType === "position"
   const needsPortfolio = positionApplication && needsCreativesPortfolio(
@@ -54,7 +55,7 @@ export function toCreateApplicationInput(
     dataPrivacyAgreed: privacy.dataPrivacyAgreed,
     motivation: committee.motivation.trim(),
     applicationType: committee.applicationType,
-    ...(positionApplication ? { slotId: committee.slotId } : {}),
+    ...(positionApplication && !hrMode ? { slotId: committee.slotId } : {}),
     ...(needsPortfolio ? { portfolioUrl: committee.portfolioUrl.trim() } : {}),
     ...(needsGithub && committee.githubUrl.trim()
       ? { githubUrl: committee.githubUrl.trim() }

@@ -15,6 +15,7 @@ import type { CommitteeOfficeGroup } from "@/lib/apply/committee-groups"
 const urlHintClasses = "font-sans text-xs text-prelude"
 
 type CommitteeStepPositionFieldsProps = {
+  hrMode?: boolean
   values: CommitteeValues
   errors?: Partial<Record<keyof CommitteeValues, string>>
   loading: boolean
@@ -31,6 +32,7 @@ type CommitteeStepPositionFieldsProps = {
 }
 
 export function CommitteeStepPositionFields({
+  hrMode = false,
   values,
   errors,
   loading,
@@ -63,10 +65,11 @@ export function CommitteeStepPositionFields({
           positions={positions}
           disabled={loading}
           disabledPositionId={values.secondPositionId}
+          allowClosedPositions={hrMode}
           onSelect={(next) => onChoiceSelect(1, next)}
         />
       </Field>
-      {values.firstPositionId ? (
+      {values.firstPositionId && !hrMode ? (
         <>
           <ApplyInterviewSlotPicker
             key={values.firstPositionId}
@@ -95,6 +98,7 @@ export function CommitteeStepPositionFields({
           positions={positions}
           disabled={loading}
           disabledPositionId={values.firstPositionId}
+          allowClosedPositions={hrMode}
           onSelect={(next) => onChoiceSelect(2, next)}
         />
       </Field>
