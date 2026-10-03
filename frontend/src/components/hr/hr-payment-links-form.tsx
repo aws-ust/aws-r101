@@ -76,6 +76,7 @@ export function HrPaymentLinksForm({ campaign, committees, onSaved }: LinksFormP
 
   return (
     <div>
+      <p className={sectionTitleClasses}>Members Facebook Page</p>
       <div className={gridClasses}>
         <div className={fullFieldClasses}>
           <FieldLabel htmlFor="members-fb-group">Members Facebook group</FieldLabel>
