@@ -51,133 +51,163 @@ const optionalUrl = z
   .preprocess((value) => (typeof value === "string" ? value.trim() : ""), z.string())
   .transform((value) => (value ? value : undefined));
 
-export const createApplicationSchema = z
-  .object({
-    applicationType: z.enum(["position", "member"]).default("position"),
-    dataPrivacyAgreed: z.literal(true, {
-      error: "dataPrivacyAgreed must be true before submitting.",
-    }),
-    firstName: requiredString.refine(isValidApplicantName, {
+const createApplicationFields = {
+  applicationType: z.enum(["position", "member"]).default("position"),
+  dataPrivacyAgreed: z.literal(true, {
+    error: "dataPrivacyAgreed must be true before submitting.",
+  }),
+  firstName: requiredString.refine(isValidApplicantName, {
+    error: "firstName and lastName must use letters only (max 100 characters).",
+  }),
+  lastName: requiredString
+    .refine(isValidApplicantName, {
       error: "firstName and lastName must use letters only (max 100 characters).",
+    })
+    .refine((value) => !isValidApplicantName(value) || hasValidLastNameFileToken(value), {
+      error: "lastName must include at least one letter for document file names.",
     }),
-    lastName: requiredString
-      .refine(isValidApplicantName, {
-        error: "firstName and lastName must use letters only (max 100 characters).",
-      })
-      .refine((value) => !isValidApplicantName(value) || hasValidLastNameFileToken(value), {
-        error: "lastName must include at least one letter for document file names.",
-      }),
-    email: requiredString
-      .transform((value) => value.toLowerCase())
-      .refine(isValidUstApplicantEmail, {
-        error: "email must be a valid @ust.edu.ph address.",
-      }),
-    age: z
-      .number({ error: "age must be a positive integer." })
-      .int({ error: "age must be a positive integer." })
-      .positive({ error: "age must be a positive integer." }),
-    birthday: z
-      .string({ error: "birthday must be a valid date (YYYY-MM-DD) that is not in the future." })
-      .trim()
-      .refine(isValidBirthday, {
-        error: "birthday must be a valid date (YYYY-MM-DD) that is not in the future.",
-      }),
-    gender: z
-      .string({ error: "gender must be one of: male, female." })
-      .trim()
-      .refine((value) => Boolean(parseApplicantGender(value)), {
-        error: "gender must be one of: male, female.",
-      })
-      .transform((value) => parseApplicantGender(value)!),
-    section: requiredString
-      .transform(normalizeSection)
-      .refine(isValidSection, {
-        error: "section must be four characters: year digit plus three letters (e.g. 4CSC).",
-      }),
-    studentNumber: requiredString.refine(isValidStudentNumber, {
-      error: "studentNumber must be exactly 10 digits.",
+  email: requiredString
+    .transform((value) => value.toLowerCase())
+    .refine(isValidUstApplicantEmail, {
+      error: "email must be a valid @ust.edu.ph address.",
     }),
-    contactNumber: requiredString.refine(isValidContactNumber, {
-      error: "contactNumber must be +63 followed by 10 digits.",
+  age: z
+    .number({ error: "age must be a positive integer." })
+    .int({ error: "age must be a positive integer." })
+    .positive({ error: "age must be a positive integer." }),
+  birthday: z
+    .string({ error: "birthday must be a valid date (YYYY-MM-DD) that is not in the future." })
+    .trim()
+    .refine(isValidBirthday, {
+      error: "birthday must be a valid date (YYYY-MM-DD) that is not in the future.",
     }),
-    facebookUrl: requiredString
-      .transform(canonicalizeHttpsUrl)
-      .refine((value) => Boolean(value && isValidFacebookUrl(value)), {
-        error: "facebookUrl must be a valid https Facebook profile link.",
-      })
-      .transform((value) => value!),
-    motivation: requiredString.refine(isValidMotivation, {
-      error: "motivation is required and must be at most 4000 characters.",
+  gender: z
+    .string({ error: "gender must be one of: male, female." })
+    .trim()
+    .refine((value) => Boolean(parseApplicantGender(value)), {
+      error: "gender must be one of: male, female.",
+    })
+    .transform((value) => parseApplicantGender(value)!),
+  section: requiredString
+    .transform(normalizeSection)
+    .refine(isValidSection, {
+      error: "section must be four characters: year digit plus three letters (e.g. 4CSC).",
     }),
-    portfolioUrl: optionalUrl,
-    githubUrl: optionalUrl,
-    choices: z
-      .array(
-        z.object(
-          {
-            positionId: z
-              .string({ error: "Each choice needs a valid positionId UUID." })
-              .trim()
-              .refine((value) => UUID_RE.test(value), {
-                error: "Each choice needs a valid positionId UUID.",
-              }),
-            preferenceRank: z.union([z.literal(1), z.literal(2)], {
-              error: "preferenceRank must be 1 or 2.",
+  studentNumber: requiredString.refine(isValidStudentNumber, {
+    error: "studentNumber must be exactly 10 digits.",
+  }),
+  contactNumber: requiredString.refine(isValidContactNumber, {
+    error: "contactNumber must be +63 followed by 10 digits.",
+  }),
+  facebookUrl: requiredString
+    .transform(canonicalizeHttpsUrl)
+    .refine((value) => Boolean(value && isValidFacebookUrl(value)), {
+      error: "facebookUrl must be a valid https Facebook profile link.",
+    })
+    .transform((value) => value!),
+  motivation: requiredString.refine(isValidMotivation, {
+    error: "motivation is required and must be at most 4000 characters.",
+  }),
+  portfolioUrl: optionalUrl,
+  githubUrl: optionalUrl,
+  choices: z
+    .array(
+      z.object(
+        {
+          positionId: z
+            .string({ error: "Each choice needs a valid positionId UUID." })
+            .trim()
+            .refine((value) => UUID_RE.test(value), {
+              error: "Each choice needs a valid positionId UUID.",
             }),
-          },
-          { error: "Each choice must be an object." },
-        ),
-        { error: "choices must contain exactly two items." },
-      )
-      .max(2, { error: "choices must contain at most two items." }),
-    uploadSessionId: z
-      .string({ error: "uploadSessionId must be a valid UUID." })
-      .trim()
-      .refine((value) => UUID_RE.test(value), {
-        error: "uploadSessionId must be a valid UUID.",
-      }),
-    slotId: z.string({ error: "slotId must be a UUID." }).trim().optional(),
-  }, { error: "Request body must be a JSON object." })
-  .superRefine((value, ctx) => {
-    if (value.applicationType === "member") {
-      if (value.choices.length > 0 || value.slotId !== undefined) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Member-only applications cannot include committee choices or an interview slot.",
-        });
-      }
-      if (value.portfolioUrl || value.githubUrl) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Member-only applications cannot include committee links.",
-        });
-      }
-      return;
-    }
+          preferenceRank: z.union([z.literal(1), z.literal(2)], {
+            error: "preferenceRank must be 1 or 2.",
+          }),
+        },
+        { error: "Each choice must be an object." },
+      ),
+      { error: "choices must contain exactly two items." },
+    )
+    .max(2, { error: "choices must contain at most two items." }),
+  uploadSessionId: z
+    .string({ error: "uploadSessionId must be a valid UUID." })
+    .trim()
+    .refine((value) => UUID_RE.test(value), {
+      error: "uploadSessionId must be a valid UUID.",
+    }),
+};
 
-    if (value.choices.length !== 2) {
+function applicationFieldsSchema() {
+  return z.object(createApplicationFields, { error: "Request body must be a JSON object." });
+}
+
+type CreateApplicationFields = z.infer<ReturnType<typeof applicationFieldsSchema>>;
+
+function refineSharedApplicationFields(
+  value: CreateApplicationFields & { slotId?: string },
+  ctx: z.RefinementCtx,
+) {
+  if (value.applicationType === "member") {
+    if (value.choices.length > 0 || value.slotId !== undefined) {
       ctx.addIssue({
         code: "custom",
-        message: "choices must contain exactly two items.",
-        path: ["choices"],
+        message: "Member-only applications cannot include committee choices or an interview slot.",
       });
-      return;
     }
-    const ranks = new Set(value.choices.map((choice) => choice.preferenceRank));
-    if (ranks.size !== 2) {
-      ctx.addIssue({ code: "custom", message: "choices must include ranks 1 and 2.", path: ["choices"] });
+    if (value.portfolioUrl || value.githubUrl) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Member-only applications cannot include committee links.",
+      });
     }
-    if (value.choices[0]?.positionId === value.choices[1]?.positionId) {
-      ctx.addIssue({ code: "custom", message: "choices must use two different positions.", path: ["choices"] });
-    }
-    if (!value.slotId || !UUID_RE.test(value.slotId)) {
-      ctx.addIssue({ code: "custom", message: "slotId must be a UUID.", path: ["slotId"] });
-    }
-  })  .transform(({ portfolioUrl, githubUrl, ...value }): CreateApplicationInput => ({
+    return;
+  }
+
+  if (value.choices.length !== 2) {
+    ctx.addIssue({
+      code: "custom",
+      message: "choices must contain exactly two items.",
+      path: ["choices"],
+    });
+    return;
+  }
+  const ranks = new Set(value.choices.map((choice) => choice.preferenceRank));
+  if (ranks.size !== 2) {
+    ctx.addIssue({ code: "custom", message: "choices must include ranks 1 and 2.", path: ["choices"] });
+  }
+  if (value.choices[0]?.positionId === value.choices[1]?.positionId) {
+    ctx.addIssue({ code: "custom", message: "choices must use two different positions.", path: ["choices"] });
+  }
+}
+
+function transformCreateApplicationInput(
+  { portfolioUrl, githubUrl, ...value }: CreateApplicationFields & { slotId?: string },
+): CreateApplicationInput {
+  return {
     ...value,
     ...(portfolioUrl ? { portfolioUrl } : {}),
     ...(githubUrl ? { githubUrl } : {}),
-  }));
+  };
+}
+
+export const createApplicationSchema = applicationFieldsSchema()
+  .extend({
+    slotId: z.string({ error: "slotId must be a UUID." }).trim().optional(),
+  })
+  .superRefine((value, ctx) => {
+    refineSharedApplicationFields(value, ctx);
+    if (
+      value.applicationType === "position" &&
+      (!value.slotId || !UUID_RE.test(value.slotId))
+    ) {
+      ctx.addIssue({ code: "custom", message: "slotId must be a UUID.", path: ["slotId"] });
+    }
+  })
+  .transform(transformCreateApplicationInput);
+
+export const createHrApplicationSchema = applicationFieldsSchema()
+  .superRefine(refineSharedApplicationFields)
+  .transform(transformCreateApplicationInput);
 
 const uploadDocumentSchema = z.object({
   documentType: z.enum(UPLOAD_DOCUMENT_TYPES, {

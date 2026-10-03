@@ -10,6 +10,7 @@ import { uploadPresignSchema } from "../lib/apply/schemas";
 import { uploadsAreClosed } from "../lib/core/free-plan";
 import { resolveRecruitmentSeasonStatus } from "../lib/recruitment/window";
 import { internalApiError } from "../lib/core/api-errors";
+import { requireAuth } from "../auth";
 
 const UPLOAD_EXPIRY_SECONDS = 10 * 60;
 const SESSION_EXPIRY_MS = 24 * 60 * 60 * 1000;
@@ -95,10 +96,13 @@ async function createUploadSession(
 export async function createUploadSessionFromRequest(
   body: unknown,
   applicationId?: string,
+  options: { hrIntake?: boolean } = {},
 ) {
-  const season = await resolveRecruitmentSeasonStatus();
-  if (!season.open) {
-    throw new UploadError(403, season.message ?? "Applications are closed.");
+  if (!options.hrIntake) {
+    const season = await resolveRecruitmentSeasonStatus();
+    if (!season.open) {
+      throw new UploadError(403, season.message ?? "Applications are closed.");
+    }
   }
   if (uploadsAreClosed()) {
     throw new UploadError(
@@ -116,6 +120,27 @@ uploadsRoutes.post("/presign", async (c) => {
     return c.json(
       await createUploadSessionFromRequest(
         await c.req.json().catch(() => null),
+      ),
+      201,
+    );
+  } catch (error) {
+    if (error instanceof UploadError) return c.json({ error: error.message }, error.status);
+    return internalApiError(
+      c,
+      error,
+      "Could not create upload session",
+      "Could not create an upload session.",
+    );
+  }
+});
+
+uploadsRoutes.post("/hr/presign", requireAuth, async (c) => {
+  try {
+    return c.json(
+      await createUploadSessionFromRequest(
+        await c.req.json().catch(() => null),
+        undefined,
+        { hrIntake: true },
       ),
       201,
     );

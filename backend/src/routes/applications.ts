@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import {
   ApplicationAlreadySubmittedError,
   ApplicationPositionUnavailableError,
@@ -26,8 +26,11 @@ import {
   updateRedirectPlacement,
 } from "../lib/applications/redirect-placement";
 import { validateChoiceUrls } from "../lib/apply/field-validation";
-import { createApplicationSchema } from "../lib/apply/schemas";
-import { requireAuth } from "../auth";
+import {
+  createApplicationSchema,
+  createHrApplicationSchema,
+} from "../lib/apply/schemas";
+import { getCurrentUser, requireAuth } from "../auth";
 import { createDocumentDownload } from "../lib/applications/documents";
 import { freePlanEndDate } from "../lib/core/free-plan";
 import {
@@ -78,11 +81,106 @@ function parsePositiveInteger(
 
 function parseCreateBody(
   body: unknown,
+  hrIntake: boolean,
 ): { ok: true; value: CreateApplicationInput } | { ok: false; error: string } {
-  const result = createApplicationSchema.safeParse(body);
+  const result = (hrIntake ? createHrApplicationSchema : createApplicationSchema)
+    .safeParse(body);
   return result.success
     ? { ok: true, value: result.data }
     : { ok: false, error: result.error.issues[0].message };
+}
+
+async function handleCreateApplication(c: Context, hrIntake: boolean) {
+  if (!hrIntake) {
+    const season = await resolveRecruitmentSeasonStatus();
+    if (!season.open) {
+      return c.json({ error: season.message ?? "Applications are closed." }, 403);
+    }
+  }
+
+  const body = await c.req.json().catch(() => null);
+  const parsed = parseCreateBody(body, hrIntake);
+  if (!parsed.ok) return c.json({ error: parsed.error }, 400);
+
+  if (parsed.value.applicationType === "position") {
+    const positionIds = parsed.value.choices.map((choice) => choice.positionId);
+    if (!hrIntake && !(await positionsAcceptApplications(positionIds))) {
+      return c.json(
+        {
+          error:
+            "One or more selected committees or positions are no longer accepting applications. Please choose another option.",
+        },
+        409,
+      );
+    }
+
+    const choiceRefs = await choiceRefsForPositions(positionIds);
+    const urlError = validateChoiceUrls(
+      choiceRefs,
+      parsed.value.portfolioUrl,
+      parsed.value.githubUrl,
+    );
+    if (urlError) return c.json({ error: urlError }, 400);
+  }
+
+  try {
+    const result = await createApplication(parsed.value, { hrIntake });
+    if (result.created && hrIntake) {
+      logHrAudit({
+        actorEmail: getCurrentUser(c).email,
+        action: "application.create",
+        resourceType: "application",
+        resourceId: result.application.id,
+      });
+    }
+    if (result.created && !hrIntake) {
+      if (result.application.applicationType === "member") {
+        await sendMemberRegistration(result.application).catch((err) => {
+          logApiError(c, err, "membership registration email failed");
+        });
+      } else {
+        await Promise.all([
+          sendApplicationSubmitted(result.application).catch((err) => {
+            logApiError(c, err, "submission email failed");
+          }),
+          sendOfficerApplicationNotice(result.application).catch((err) => {
+            logApiError(c, err, "officer application notice failed");
+          }),
+        ]);
+      }
+    }
+    return c.json(result.application, result.created ? 201 : 200);
+  } catch (error) {
+    if (error instanceof ApplicationAlreadySubmittedError) {
+      return c.json({ error: error.message }, 409);
+    }
+    if (error instanceof ApplicationPositionUnavailableError) {
+      return c.json({ error: error.message }, 409);
+    }
+    if (error instanceof InterviewScheduleError) {
+      const status =
+        error.code === "slot_not_found" || error.code === "position_not_found"
+          ? 404
+          : 409;
+      return c.json({ error: error.message }, status);
+    }
+    const message = error instanceof Error ? error.message : "Could not create application.";
+    if (message.includes("was not found")) return c.json({ error: message }, 404);
+    if (message.includes("has expired")) return c.json({ error: message }, 410);
+    if (
+      message.includes("metadata") ||
+      message.includes("not a PDF") ||
+      message.includes("must contain both resume and registration")
+    ) {
+      return c.json({ error: message }, 400);
+    }
+    return internalApiError(
+      c,
+      error,
+      "Could not create application",
+      "Could not create application.",
+    );
+  }
 }
 
 applicationsRoutes.get("/", requireAuth, async (c) => {
@@ -159,89 +257,11 @@ applicationsRoutes.get("/", requireAuth, async (c) => {
   return c.json(result);
 });
 
-applicationsRoutes.post("/", async (c) => {
-  const season = await resolveRecruitmentSeasonStatus();
-  if (!season.open) {
-    return c.json({ error: season.message ?? "Applications are closed." }, 403);
-  }
+applicationsRoutes.post("/", async (c) => handleCreateApplication(c, false));
 
-  const body = await c.req.json().catch(() => null);
-  const parsed = parseCreateBody(body);
-  if (!parsed.ok) {
-    return c.json({ error: parsed.error }, 400);
-  }
-
-  if (parsed.value.applicationType === "position") {
-    const positionIds = parsed.value.choices.map((choice) => choice.positionId);
-    const available = await positionsAcceptApplications(positionIds);
-    if (!available) {
-      return c.json(
-        {
-          error:
-            "One or more selected committees or positions are no longer accepting applications. Please choose another option.",
-        },
-        409,
-      );
-    }
-
-    const choiceRefs = await choiceRefsForPositions(positionIds);
-    const urlError = validateChoiceUrls(
-      choiceRefs,
-      parsed.value.portfolioUrl,
-      parsed.value.githubUrl,
-    );
-    if (urlError) {
-      return c.json({ error: urlError }, 400);
-    }
-  }
-
-  try {
-    const result = await createApplication(parsed.value);
-    if (result.created) {
-      if (result.application.applicationType === "member") {
-        await sendMemberRegistration(result.application).catch((err) => {
-          logApiError(c, err, "membership registration email failed");
-        });
-      } else {
-        await Promise.all([
-          sendApplicationSubmitted(result.application).catch((err) => {
-            logApiError(c, err, "submission email failed");
-          }),
-          sendOfficerApplicationNotice(result.application).catch((err) => {
-            logApiError(c, err, "officer application notice failed");
-          }),
-        ]);
-      }
-    }
-    return c.json(result.application, result.created ? 201 : 200);
-  } catch (error) {
-    if (error instanceof ApplicationAlreadySubmittedError) {
-      return c.json({ error: error.message }, 409);
-    }
-    if (error instanceof ApplicationPositionUnavailableError) {
-      return c.json({ error: error.message }, 409);
-    }
-    if (error instanceof InterviewScheduleError) {
-      const status =
-        error.code === "slot_not_found" || error.code === "position_not_found"
-          ? 404
-          : 409;
-      return c.json({ error: error.message }, status);
-    }
-    const message = error instanceof Error ? error.message : "Could not create application.";
-    if (message.includes("was not found")) return c.json({ error: message }, 404);
-    if (message.includes("has expired")) return c.json({ error: message }, 410);
-    if (message.includes("metadata") || message.includes("not a PDF")) {
-      return c.json({ error: message }, 400);
-    }
-    return internalApiError(
-      c,
-      error,
-      "Could not create application",
-      "Could not create application.",
-    );
-  }
-});
+applicationsRoutes.post("/hr", requireAuth, async (c) =>
+  handleCreateApplication(c, true),
+);
 
 applicationsRoutes.patch("/:id/decisions", requireAuth, async (c) => {
   const id = c.req.param("id");

@@ -20,6 +20,7 @@ import {
   applicationDocuments,
   applications,
   committees,
+  interviewBookings,
   positions,
   uploadSessions,
   users,
@@ -71,6 +72,7 @@ export type ApplicationJson = {
   memberId: string | null;
   submittedAt: string;
   archivedAt: string | null;
+  canResendSubmittedEmail: boolean;
   firstName: string;
   lastName: string;
   email: string;
@@ -120,6 +122,10 @@ export type CreateApplicationInput = {
   slotId?: string;
   choices: { positionId: string; preferenceRank: 1 | 2 }[];
   uploadSessionId: string;
+};
+
+export type CreateApplicationOptions = {
+  hrIntake?: boolean;
 };
 
 export type ListFilters = {
@@ -232,6 +238,12 @@ async function attachRelations(
 
   const ids = rows.map((row) => row.id);
 
+  const bookingRows = await db
+    .select({ applicationId: interviewBookings.applicationId })
+    .from(interviewBookings)
+    .where(inArray(interviewBookings.applicationId, ids));
+  const bookedApplicationIds = new Set(bookingRows.map((row) => row.applicationId));
+
   const choiceRows = await db
     .select({
       applicationId: applicationChoices.applicationId,
@@ -329,6 +341,10 @@ async function attachRelations(
       memberId: row.memberId,
       submittedAt: iso(row.submittedAt),
       archivedAt: row.archivedAt ? iso(row.archivedAt) : null,
+      canResendSubmittedEmail:
+        !row.archivedAt &&
+        (row.applicationType === "member" ||
+          (choices.length === 2 && bookedApplicationIds.has(row.id))),
       firstName: row.firstName,
       lastName: row.lastName,
       email: row.email,
@@ -595,6 +611,7 @@ export async function choiceRefsForPositions(
 
 export async function createApplication(
   input: CreateApplicationInput,
+  options: CreateApplicationOptions = {},
 ): Promise<{ application: ApplicationJson; created: boolean }> {
   let copiedApplicationId: string | null = null;
   let transactionComplete = false;
@@ -638,12 +655,13 @@ export async function createApplication(
 
         if (
           selectedPositions.length !== positionIds.length ||
-          selectedPositions.some(
-            (position) =>
-              !position.isOpen ||
-              position.openSlots < 1 ||
-              !position.committeeAcceptingApplications,
-          )
+          (!options.hrIntake &&
+            selectedPositions.some(
+              (position) =>
+                !position.isOpen ||
+                position.openSlots < 1 ||
+                !position.committeeAcceptingApplications,
+            ))
         ) {
           throw new ApplicationPositionUnavailableError();
         }
@@ -785,15 +803,17 @@ export async function createApplication(
         const firstChoice = input.choices.find(
           (choice) => choice.preferenceRank === 1,
         );
-        if (!firstChoice || !input.slotId) {
+        if (!firstChoice || (!options.hrIntake && !input.slotId)) {
           throw new Error("Application is missing a first-choice position or interview slot.");
         }
-        await bookInterviewSlotForApplication(
-          tx,
-          application.id,
-          firstChoice.positionId,
-          input.slotId,
-        );
+        if (input.slotId) {
+          await bookInterviewSlotForApplication(
+            tx,
+            application.id,
+            firstChoice.positionId,
+            input.slotId,
+          );
+        }
       }
 
       await tx
