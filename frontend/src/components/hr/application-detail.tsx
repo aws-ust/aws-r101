@@ -7,10 +7,10 @@ import { HrApplicationDetailContent } from "@/components/hr/hr-application-detai
 import { HrApplicationDetailSkeleton } from "@/components/hr/application-detail-skeleton"
 import { useApplication } from "@/lib/api"
 import { sanitizeReturnToFromSearchParams } from "@/lib/hr/return-to"
-import { pageShellClasses } from "@/lib/site/surface"
+import { hrPageShellClasses } from "@/lib/site/surface"
 
 const backClasses =
-  "mb-3 mt-3 inline-flex font-mono text-xs text-prelude hover:text-blue-chalk"
+  "mb-3 mt-3 inline-flex w-fit font-mono text-xs text-prelude hover:text-blue-chalk"
 const missingClasses = "font-sans text-sm text-prelude"
 
 function HrApplicationDetailFallback({
@@ -21,7 +21,7 @@ function HrApplicationDetailFallback({
   message: string
 }) {
   return (
-    <main className={pageShellClasses}>
+    <main className={hrPageShellClasses}>
       <Link href={listHref} className={backClasses}>
         ← Back to Applications
       </Link>
