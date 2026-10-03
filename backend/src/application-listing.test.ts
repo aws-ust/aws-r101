@@ -10,6 +10,8 @@ import {
   applicationChoices,
   applications,
   committees,
+  interviewBookings,
+  interviewSlots,
   positions,
   users,
 } from "./db/schema";
@@ -63,7 +65,7 @@ async function list(params: Record<string, string>) {
 
 async function payload(response: Response) {
   return (await response.json()) as {
-    applications: { id: string }[];
+    applications: { id: string; canResendSubmittedEmail: boolean }[];
     total: number;
   };
 }
@@ -244,5 +246,58 @@ test("HR application listing filters and paginates on the server", async (t) => 
     const archived = await payload(await list({ archive: "archived", section }));
     assert.equal(archived.total, 1);
     assert.equal(archived.applications[0]?.id, applicationIds[2]);
+  });
+
+  await t.test("resend eligibility follows bookings, choices, membership, and archive state", async () => {
+    await db.insert(applicationChoices).values([
+      { applicationId: applicationIds[0], positionId: positionIds[1], preferenceRank: 2 },
+      { applicationId: applicationIds[1], positionId: positionIds[1], preferenceRank: 2 },
+      { applicationId: applicationIds[2], positionId: positionIds[0], preferenceRank: 2 },
+    ]);
+    const beforeBooking = await payload(await list({ archive: "all", section }));
+    assert.equal(
+      beforeBooking.applications.find((application) => application.id === applicationIds[1])?.canResendSubmittedEmail,
+      false,
+    );
+
+    const slotIds = [randomUUID(), randomUUID()];
+    await db.insert(interviewSlots).values([
+      { id: slotIds[0], committeeId: committeeIds[0], startsAt: new Date("2094-01-05T00:00:00.000Z") },
+      { id: slotIds[1], committeeId: committeeIds[1], startsAt: new Date("2094-01-05T00:00:00.000Z") },
+    ]);
+    await db.insert(interviewBookings).values([
+      { applicationId: applicationIds[1], slotId: slotIds[0] },
+      { applicationId: applicationIds[2], slotId: slotIds[1] },
+    ]);
+
+    const result = await payload(await list({ archive: "all", section }));
+    const expected = new Map<string, boolean>([
+      [applicationIds[0], false],
+      [applicationIds[1], true],
+      [applicationIds[2], false],
+      [applicationIds[3], true],
+    ]);
+    for (const application of result.applications) {
+      assert.equal(application.canResendSubmittedEmail, expected.get(application.id));
+      const detail = await app.request(`/applications/${application.id}`, {
+        headers: originHeaders({ Authorization: `Bearer ${token}` }),
+      });
+      assert.equal(detail.status, 200);
+      const detailPayload = await detail.json() as { canResendSubmittedEmail: boolean };
+      assert.equal(detailPayload.canResendSubmittedEmail, expected.get(application.id));
+    }
+
+    const resend = await app.request(`/applications/${applicationIds[0]}/emails/resend-submitted`, {
+      method: "POST",
+      headers: originHeaders({ Authorization: `Bearer ${token}` }),
+    });
+    assert.equal(resend.status, 409);
+    const resendPayload = await resend.json() as { error: string };
+    assert.match(resendPayload.error, /without choices and an interview slot/);
+
+    await db.delete(applicationChoices).where(eq(applicationChoices.positionId, positionIds[1]));
+    await db.update(applications).set({ archivedAt: new Date() }).where(eq(applications.id, applicationIds[3]));
+    const afterChanges = await payload(await list({ archive: "all", section }));
+    assert.ok(afterChanges.applications.every((application) => !application.canResendSubmittedEmail));
   });
 });
