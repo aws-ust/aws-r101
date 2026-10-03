@@ -116,12 +116,12 @@ export type ApplicantPayment = {
   paymentMethods: {
     gcash: {
       accountName: string | null
-      accountNumber: string
+      accountNumber: string | null
       qrImageUrl: string | null
     } | null
     bpi: {
       accountName: string | null
-      accountNumber: string
+      accountNumber: string | null
       qrImageUrl: string | null
     } | null
   }

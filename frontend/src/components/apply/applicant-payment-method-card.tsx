@@ -30,7 +30,11 @@ export function ApplicantPaymentMethodCard({
         <p className={bodyClasses}>
           {details.accountName ?? "AWS Builders - UST"}
         </p>
-        <p className={bodyClasses}>{details.accountNumber}</p>
+        {details.accountNumber ? (
+          <p className={bodyClasses}>{details.accountNumber}</p>
+        ) : (
+          <p className={bodyClasses}>Scan the QR code to pay.</p>
+        )}
       </div>
       <div className={qrFrameClasses}>
         {qrImageUrl && qrImageUrl !== failedUrl ? (
@@ -46,7 +50,7 @@ export function ApplicantPaymentMethodCard({
           />
         ) : (
           <p className={fallbackClasses}>
-            QR unavailable. Use the account number shown here.
+            QR unavailable. Contact HR for payment details.
           </p>
         )}
       </div>

@@ -58,11 +58,6 @@ function validatePaymentDetails(input: PaymentDetailsInput) {
   if (!Number.isInteger(input.amountCents) || input.amountCents <= 0) {
     throw new MembershipPaymentError("Payment amount must be greater than zero.");
   }
-  if (!input.gcashAccountNumber?.trim() && !input.bpiAccountNumber?.trim()) {
-    throw new MembershipPaymentError(
-      "Add at least one official payment account.",
-    );
-  }
 }
 
 export async function getCurrentPaymentCampaign() {
@@ -141,6 +136,10 @@ export async function saveCurrentPaymentDetails(input: PaymentDetailsInput) {
       .select({
         id: membershipPaymentCampaigns.id,
         amountCents: membershipPaymentCampaigns.amountCents,
+        gcashQrImageKey: membershipPaymentCampaigns.gcashQrImageKey,
+        gcashQrImageUrl: membershipPaymentCampaigns.gcashQrImageUrl,
+        bpiQrImageKey: membershipPaymentCampaigns.bpiQrImageKey,
+        bpiQrImageUrl: membershipPaymentCampaigns.bpiQrImageUrl,
       })
       .from(membershipPaymentCampaigns)
       .where(eq(membershipPaymentCampaigns.recruitmentYear, recruitmentYear))
@@ -150,6 +149,17 @@ export async function saveCurrentPaymentDetails(input: PaymentDetailsInput) {
       throw new MembershipPaymentError(
         "HR must configure the payment period first.",
         409,
+      );
+    }
+    if (
+      !hasPaymentAccount({
+        ...existing,
+        gcashAccountNumber: clean(input.gcashAccountNumber),
+        bpiAccountNumber: clean(input.bpiAccountNumber),
+      })
+    ) {
+      throw new MembershipPaymentError(
+        "Upload at least one official payment QR image.",
       );
     }
     if (existing.amountCents !== input.amountCents) {
@@ -222,15 +232,31 @@ export async function completeCurrentPaymentQrUpload(
   return { ...updated, committeeChatLinks: campaign.committeeChatLinks };
 }
 
-function hasPaymentDetails(campaign: {
-  amountCents: number | null;
+type PaymentAccountFields = {
   gcashAccountNumber: string | null;
+  gcashQrImageKey: string | null;
+  gcashQrImageUrl: string | null;
   bpiAccountNumber: string | null;
-}) {
+  bpiQrImageKey: string | null;
+  bpiQrImageUrl: string | null;
+};
+
+/** A payment method is usable once it has an account number or an uploaded QR. */
+export function hasPaymentAccount(campaign: PaymentAccountFields) {
   return Boolean(
-    campaign.amountCents &&
-      (campaign.gcashAccountNumber || campaign.bpiAccountNumber),
+    campaign.gcashAccountNumber ||
+      campaign.gcashQrImageKey ||
+      campaign.gcashQrImageUrl ||
+      campaign.bpiAccountNumber ||
+      campaign.bpiQrImageKey ||
+      campaign.bpiQrImageUrl,
   );
+}
+
+function hasPaymentDetails(
+  campaign: PaymentAccountFields & { amountCents: number | null },
+) {
+  return Boolean(campaign.amountCents && hasPaymentAccount(campaign));
 }
 
 export async function openCurrentPaymentCampaign(actor: AuthenticatedUser) {
@@ -247,7 +273,7 @@ export async function openCurrentPaymentCampaign(actor: AuthenticatedUser) {
     }
     if (!hasPaymentDetails(campaign)) {
       throw new MembershipPaymentError(
-        "Set the amount and at least one official payment account before opening payments.",
+        "Set the amount and upload at least one official payment QR before opening payments.",
         409,
       );
     }

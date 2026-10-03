@@ -172,14 +172,14 @@ export async function getApplicantPayment(applicationId: string) {
     deadlineAt: row.deadlineAt.toISOString(),
     resubmissionDeadlineAt: row.resubmissionDeadlineAt?.toISOString() ?? null,
     paymentMethods: {
-      gcash: row.gcashAccountNumber
+      gcash: row.gcashAccountNumber || gcashQrImageUrl
         ? {
             accountName: row.gcashAccountName,
             accountNumber: row.gcashAccountNumber,
             qrImageUrl: gcashQrImageUrl,
           }
         : null,
-      bpi: row.bpiAccountNumber
+      bpi: row.bpiAccountNumber || bpiQrImageUrl
         ? {
             accountName: row.bpiAccountName,
             accountNumber: row.bpiAccountNumber,
@@ -271,10 +271,20 @@ export async function submitApplicantPayment(
   if (!payment) {
     throw new MembershipPaymentError("Payment invitation not found.", 404);
   }
-  if (input.method === "gcash" && !payment.gcashAccountNumber) {
+  if (
+    input.method === "gcash" &&
+    !payment.gcashAccountNumber &&
+    !payment.gcashQrImageKey &&
+    !payment.gcashQrImageUrl
+  ) {
     throw new MembershipPaymentError("GCash is not available for this payment period.");
   }
-  if (input.method === "bpi" && !payment.bpiAccountNumber) {
+  if (
+    input.method === "bpi" &&
+    !payment.bpiAccountNumber &&
+    !payment.bpiQrImageKey &&
+    !payment.bpiQrImageUrl
+  ) {
     throw new MembershipPaymentError("BPI is not available for this payment period.");
   }
   if (
