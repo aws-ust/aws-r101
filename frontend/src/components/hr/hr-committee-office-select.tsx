@@ -38,7 +38,7 @@ export function HrCommitteeOfficeSelect({
   return (
     <div className="flex flex-col gap-2">
       <span className={labelClasses} id="hr-committee-office-label">
-        Executive office
+        Office
       </span>
       <Select
         value={value}

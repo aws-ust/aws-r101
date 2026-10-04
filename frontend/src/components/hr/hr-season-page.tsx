@@ -29,8 +29,8 @@ export function HrSeasonPage() {
   return (
     <main className={hrPageShellClasses}>
       <SectionHeader
-        eyebrow="// SEASON"
-        title="Recruitment setup"
+        eyebrow="// R101 SEASON"
+        title="Recruitment Setup"
         subtitle="Manage application availability, interview dates, and interviewer schedules."
       />
       <HrSectionNav items={sectionNavItems} />
