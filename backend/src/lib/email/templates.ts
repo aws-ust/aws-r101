@@ -377,7 +377,7 @@ export function memberRegistrationTemplate(input: {
 }): RenderedEmail {
   const statusUrl = `${appBaseUrl()}/apply/status`;
   const honorific = `Mx. ${input.lastName}`;
-  const text = `Greetings from the Clouds!\n\nGood day, ${honorific},\n\nThank you for registering to join AWS Builders - UST as a member. Your membership registration has been accepted and does not require an interview.\n\nApplication ID: ${input.applicationCode}\n\nMembership payment will open after R101. Please wait for the official payment instructions and do not send a payment yet.\n\nView your application: ${statusUrl}\n\nYours in Thomasian Leadership,\nThe AWS Builders - UST Executive Board`;
+  const text = `Greetings from the Clouds!\n\nGood day, ${honorific},\n\nThank you for registering to join AWS Builders - UST as a member. Your membership registration has been accepted and does not require an interview.\n\nApplication ID: ${input.applicationCode}\n\nFurther instructions for the membership payment will be sent to you soon. Please do not send a payment yet.\n\nView your application: ${statusUrl}\n\nYours in Thomasian Leadership,\nThe AWS Builders - UST Executive Board`;
 
   const html = wrapBrandedHtml({
     eyebrow: "AWS BUILDERS – UST",
@@ -390,7 +390,7 @@ export function memberRegistrationTemplate(input: {
 <p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
 <p style="margin:0 0 16px;">Thank you for registering to join AWS Builders - UST as a member. Your membership registration has been accepted and does not require an interview.</p>
 <p style="margin:0 0 16px;"><strong>Application ID:</strong> ${escapeHtml(input.applicationCode)}</p>
-<p style="margin:0 0 16px;">Membership payment will open after <strong>R101</strong>. Please wait for the official payment instructions and <strong>do not send a payment yet</strong>.</p>
+<p style="margin:0 0 16px;">Further instructions for the membership payment will be sent to you soon. Please <strong>do not send a payment yet</strong>.</p>
 ${ctaButton(statusUrl, "View Your Application")}
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
 <p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
@@ -419,7 +419,7 @@ Congratulations! We are thrilled to welcome you to AWS Builders - UST as our new
 
 Position: ${input.position}
 
-Membership payment will open after R101. We will send the official payment instructions separately. Please do not send a payment until you receive that invitation.
+Further instructions for the membership payment will be sent to you soon. Please do not send a payment until you receive them.
 
 Your Member ID and official group-chat link will be sent after your payment is verified.
 
@@ -445,7 +445,7 @@ The AWS Builders - UST Executive Board`;
     </td>
   </tr>
 </table>
-<p style="margin:0 0 16px;">Membership payment will open after R101. We will send the official payment instructions separately. Please do not send a payment until you receive that invitation.</p>
+<p style="margin:0 0 16px;">Further instructions for the membership payment will be sent to you soon. Please do not send a payment until you receive them.</p>
 <p style="margin:0 0 16px;">Your Member ID and official group-chat link will be sent after your payment is verified.</p>
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
 <p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
@@ -474,7 +474,7 @@ Thank you for applying to AWS Builders - UST and for the time and care you put i
 
 After careful deliberation, we regret to inform you that you were not selected for a committee position this term. This was not an easy decision. We had a highly competitive pool of applicants, and choosing among so many strong builders was genuinely difficult.
 
-You are still eligible to join AWS Builders - UST as a general member. Membership payment will open after R101, and we will send the official instructions separately. Please do not send a payment yet.
+You are still eligible to join AWS Builders - UST as a general member. Further instructions for the membership payment will be sent to you soon. Please do not send a payment yet.
 
 Please know that this outcome does not take away from what you showed us. We would be glad to see you at our events and workshops, and we hope you will consider applying again in a future cycle.
 
@@ -495,7 +495,7 @@ The AWS Builders - UST Executive Board`;
 <p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
 <p style="margin:0 0 16px;">Thank you for applying to AWS Builders - UST and for the time and care you put into R101. We saw the effort you brought to this process, and it meant a lot to us.</p>
 <p style="margin:0 0 16px;">After careful deliberation, we regret to inform you that you were not selected for a committee position this term. This was not an easy decision. We had a highly competitive pool of applicants, and choosing among so many strong builders was genuinely difficult.</p>
-<p style="margin:0 0 16px;">You are still eligible to join AWS Builders - UST as a general member. Membership payment will open after R101, and we will send the official instructions separately. Please do not send a payment yet.</p>
+<p style="margin:0 0 16px;">You are still eligible to join AWS Builders - UST as a general member. Further instructions for the membership payment will be sent to you soon. Please do not send a payment yet.</p>
 <p style="margin:0 0 16px;">Please know that this outcome does not take away from what you showed us. We would be glad to see you at our events and workshops, and we hope you will consider applying again in a future cycle.</p>
 <p style="margin:0 0 16px;">Thank you again, ${escapeHtml(honorific)}. We wish you the very best, and we hope our paths still cross in the cloud.</p>
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
@@ -519,7 +519,6 @@ export function resultRedirectedTemplate(input: {
   const subject = resultRedirectedSubject;
   const honorific = `Mx. ${input.lastName}`;
   const office = officeLabelForCommittee(input.committee);
-  const statusUrl = `${appBaseUrl()}/apply/dashboard`;
 
   const text = `Greetings from the Clouds!
 
@@ -546,7 +545,7 @@ I decline the position
 
 If you decline this role, you may still continue with AWS Builders - UST as a general member.
 
-After we receive your reply—whether you accept or decline the redirected position—we will send you separate instructions for paying the membership fee. When payment opens, you will complete payment through your applicant dashboard: ${statusUrl}. Please do not send a payment until you receive that message.
+After we receive your reply—whether you accept or decline the redirected position—we will send you separate instructions for paying the membership fee. Please do not send a payment until you receive that message.
 
 Yours in Thomasian Leadership,
 The AWS Builders - UST Executive Board`;
@@ -579,7 +578,7 @@ The AWS Builders - UST Executive Board`;
 <p style="margin:0 0 8px;">To decline the redirected position:</p>
 <p style="margin:0 0 16px;font-weight:bold;">I decline the position</p>
 <p style="margin:0 0 16px;">If you decline this role, you may still continue with AWS Builders - UST as a general member.</p>
-<p style="margin:0 0 16px;">After we receive your reply—whether you accept or decline the redirected position—we will send you separate instructions for paying the membership fee. When payment opens, you will complete payment through your applicant dashboard: <a href="${escapeHtml(statusUrl)}" style="color:#46258a;">${escapeHtml(statusUrl)}</a>. Please do not send a payment until you receive that message.</p>
+<p style="margin:0 0 16px;">After we receive your reply—whether you accept or decline the redirected position—we will send you separate instructions for paying the membership fee. Please do not send a payment until you receive that message.</p>
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
 <p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
   });

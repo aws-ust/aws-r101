@@ -127,7 +127,7 @@ test("applicant email templates use compact, plain formatting", async (t) => {
     assert.match(accepted.html, /Development Committee Staff/);
     assert.match(accepted.text, /Member ID.*after your payment is verified/s);
     assert.match(accepted.html, /cid:application-received-header@aws-ust/);
-    assert.match(accepted.text, /official payment instructions separately/);
+    assert.match(accepted.text, /instructions for the membership payment will be sent/);
     assert.doesNotMatch(accepted.text, /₱250/);
     assert.doesNotMatch(accepted.html, /Best regards/);
     assert.match(rejected.text, /Mx\. Dela Cruz/);
@@ -148,7 +148,7 @@ test("applicant email templates use compact, plain formatting", async (t) => {
     assert.match(registration.subject, /Membership Registration/);
     assert.match(registration.text, /has been accepted/);
     assert.match(registration.text, /does not require an interview/);
-    assert.match(registration.text, /after R101/);
+    assert.match(registration.text, /instructions for the membership payment will be sent/);
     assert.match(registration.text, /do not send a payment yet/);
     assert.doesNotMatch(registration.text, /₱250/);
   });
@@ -355,7 +355,7 @@ test("applicant email templates use compact, plain formatting", async (t) => {
     assert.equal(AWS_DEV_ASSESSMENT_FILENAME, "AWS Dev Assessment.pdf");
   });
 
-  await t.test("redirected result email includes reply phrases and dashboard link", () => {
+  await t.test("redirected result email includes reply phrases without a dashboard link", () => {
     const email = resultRedirectedTemplate({
       lastName: "Olmedo",
       position: "Development Committee Staff",
@@ -364,7 +364,7 @@ test("applicant email templates use compact, plain formatting", async (t) => {
     });
     assert.match(email.text, /I accept the position/);
     assert.match(email.text, /I decline the position/);
-    assert.match(email.text, /\/apply\/dashboard/);
+    assert.doesNotMatch(email.text, /\/apply\/dashboard/);
     assert.match(email.html, /font-weight:bold;">I accept the position/);
     assert.deepEqual(email.cc, ["neilalfonz.casas.cics@ust.edu.ph"]);
     assert.doesNotMatch(email.text, /Executive Board of/);
