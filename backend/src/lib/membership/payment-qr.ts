@@ -45,7 +45,7 @@ function storedQrKey(campaignId: string, provider: PaymentQrProvider) {
   return "payment-qrs/" + campaignId + "/" + provider;
 }
 
-function hasExpectedSignature(
+export function hasExpectedSignature(
   bytes: Uint8Array,
   mimeType: PaymentQrMimeType,
 ) {
