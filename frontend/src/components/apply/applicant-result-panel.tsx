@@ -1,3 +1,4 @@
+import { ApplicantGroupLinks } from "@/components/apply/applicant-group-links"
 import type { ApplicantResult } from "@/lib/api/applicant"
 import { glassPanelClasses } from "@/lib/site/surface"
 const panelClasses = `${glassPanelClasses} mt-6 rounded-[22px] px-5 py-5`
@@ -91,11 +92,14 @@ export function ApplicantResultPanel({ result }: { result: ApplicantResult }) {
       {redirectPending ? (
         <RedirectOfferBody placement={placement} />
       ) : accepted && placement ? (
-        <PlacementDetail
-          label="Accepted committee"
-          placement={placement}
-          titleId="application-result-title"
-        />
+        <>
+          <PlacementDetail
+            label="Accepted committee"
+            placement={placement}
+            titleId="application-result-title"
+          />
+          {result.groupLinks ? <ApplicantGroupLinks {...result.groupLinks} /> : null}
+        </>
       ) : (
         <NotSelectedBody />
       )}

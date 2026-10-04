@@ -33,6 +33,12 @@ export type ApplicantResult = {
     committee: string
   } | null
   redirectResponse: "accepted" | "declined" | null
+  /** Group links for accepted applicants, available as soon as results release. */
+  groupLinks: {
+    membersGroupLink: string | null
+    committeeChatLink: string | null
+    committeeName: string | null
+  } | null
   finalPlacement: {
     positionId: string
     title: string
