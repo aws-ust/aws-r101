@@ -137,7 +137,7 @@ export function ApplicantDashboardContent({
         <ApplicantPendingSections {...props} />
       )}
 
-      <ApplicantPaymentPanel />
+      <ApplicantPaymentPanel application={application} />
 
       {application.result ? null : (
         <ApplicantDashboardDocuments

@@ -4,10 +4,12 @@ import { useEffect, useState } from "react"
 import { ApplicantPaymentForm } from "@/components/apply/applicant-payment-form"
 import { ApplicantPaymentMethodCard } from "@/components/apply/applicant-payment-method-card"
 import { ApplicantPaymentSection } from "@/components/apply/applicant-payment-section"
-import { Button } from "@/components/ui/button"
+import { ApplicantMemberSection } from "@/components/apply/applicant-member-section"
 import {
   getApplicantPayment,
+  type ApplicantApplication,
   type ApplicantPayment,
+  type MemberCard,
 } from "@/lib/api/applicant"
 import { formatDisplayDateTime } from "@/lib/datetime/display"
 import { glassPanelClasses } from "@/lib/site/surface"
@@ -22,9 +24,7 @@ const summaryLabelClasses = "font-mono text-[10px] uppercase tracking-[0.14em] t
 const summaryValueClasses = "mt-1 font-sans text-sm font-semibold text-blue-chalk"
 const sectionStackClasses = "mt-6 flex flex-col gap-4"
 const methodGridClasses = "flex flex-wrap justify-center gap-6"
-const methodTitleClasses = "font-sans text-sm font-semibold text-blue-chalk"
 const errorClasses = "mt-3 font-sans text-sm text-rose-glow"
-const successClasses = "rounded-[14px] border border-aquamarine/35 bg-aquamarine/10 p-4"
 const pesoFormatter = new Intl.NumberFormat("en-PH", {
   style: "currency",
   currency: "PHP",
@@ -38,7 +38,9 @@ const STATUS_LABELS: Record<ApplicantPayment["paymentStatus"], string> = {
   expired: "Expired",
 }
 
-export function ApplicantPaymentPanel() {
+type MemberIdentity = Pick<ApplicantApplication, "firstName" | "lastName" | "studentNumber" | "section">
+
+export function ApplicantPaymentPanel({ application }: { application: MemberIdentity }) {
   const [payment, setPayment] = useState<ApplicantPayment | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -69,6 +71,16 @@ export function ApplicantPaymentPanel() {
   if (error) return <p className={errorClasses}>{error}</p>
   if (!payment) return null
 
+  if (payment.memberCard) {
+    return (
+      <ApplicantMemberSection
+        payment={payment}
+        card={payment.memberCard}
+        application={application}
+        onCardChange={(memberCard: MemberCard) => setPayment({ ...payment, memberCard })}
+      />
+    )
+  }
   return <ApplicantPaymentDetails payment={payment} onSubmitted={refresh} />
 }
 
@@ -89,7 +101,6 @@ function ApplicantPaymentDetails({ payment, onSubmitted }: { payment: ApplicantP
       <div className={sectionStackClasses}>
         <PaymentSubmissionSection payment={payment} onSubmitted={onSubmitted} />
         <PaymentStatusMessage payment={payment} />
-        <MembershipConfirmation payment={payment} />
       </div>
     </section>
   )
@@ -134,19 +145,6 @@ function PaymentStatusMessage({ payment }: { payment: ApplicantPayment }) {
   let message = ""
   if (payment.paymentStatus === "pending_verification") message = "Your receipt is waiting for manual review. It does not count as paid until HR verifies it."
   if (payment.paymentStatus === "expired") message = "The payment deadline has passed. Contact the organization if you need help."
-  if (payment.paymentStatus === "verified" && payment.confirmationStatus !== "released") message = "Your payment is verified. Final membership details will appear after confirmations are released."
   if (!message) return null
   return <ApplicantPaymentSection number="01" title="Payment status" description={message} />
-}
-
-function MembershipConfirmation({ payment }: { payment: ApplicantPayment }) {
-  if (payment.confirmationStatus !== "released") return null
-  return (
-    <ApplicantPaymentSection number="01" title="Membership confirmed" description="Your membership is active and your final details are ready.">
-      <div className={successClasses}>
-        <p className={methodTitleClasses}>Member ID: {payment.memberId}</p>
-        {payment.chatLink ? <Button nativeButton={false} className="mt-3" render={<a href={payment.chatLink} target="_blank" rel="noreferrer">Join the group chat</a>} /> : null}
-      </div>
-    </ApplicantPaymentSection>
-  )
 }
