@@ -4,6 +4,7 @@ import { useState } from "react"
 import { RotateCw } from "lucide-react"
 import { MemberIdCardBack } from "@/components/apply/member-id-card-back"
 import { MemberIdCardFront } from "@/components/apply/member-id-card-front"
+import { MemberPhotoCropDialog } from "@/components/apply/member-photo-crop-dialog"
 import { useMemberPhotoUpload } from "@/components/apply/use-member-photo-upload"
 import { Button } from "@/components/ui/button"
 import type { MemberCard } from "@/lib/api/applicant"
@@ -39,7 +40,13 @@ export function MemberIdCard({
   onCardChange,
 }: MemberIdCardProps) {
   const [flipped, setFlipped] = useState(false)
+  const [chosenPhoto, setChosenPhoto] = useState<{ src: string; name: string } | null>(null)
   const photo = useMemberPhotoUpload(onCardChange)
+
+  function closeCrop() {
+    if (chosenPhoto) URL.revokeObjectURL(chosenPhoto.src)
+    setChosenPhoto(null)
+  }
 
   return (
     <div className={wrapperClasses}>
@@ -55,7 +62,7 @@ export function MemberIdCard({
             photoUrl={card.photoUrl}
             photoPending={photo.pending}
             photoError={photo.error}
-            onChoosePhoto={(file) => void photo.upload(file)}
+            onChoosePhoto={(file) => setChosenPhoto({ src: URL.createObjectURL(file), name: file.name })}
           />
           <MemberIdCardBack memberId={card.memberId} />
         </div>
@@ -70,6 +77,17 @@ export function MemberIdCard({
         <RotateCw className="size-4" aria-hidden />
         {flipped ? "Show front" : "Show back"}
       </Button>
+      {chosenPhoto ? (
+        <MemberPhotoCropDialog
+          imageSrc={chosenPhoto.src}
+          fileName={chosenPhoto.name}
+          onCancel={closeCrop}
+          onCropped={(file) => {
+            closeCrop()
+            void photo.upload(file)
+          }}
+        />
+      ) : null}
     </div>
   )
 }
