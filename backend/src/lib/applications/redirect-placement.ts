@@ -1,6 +1,11 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "../../db";
-import { applications, committees, positions } from "../../db/schema";
+import {
+  applicationChoices,
+  applications,
+  committees,
+  positions,
+} from "../../db/schema";
 import { getApplicationById, type ApplicationJson } from "./applications";
 
 export class RedirectPlacementError extends Error {
@@ -71,15 +76,42 @@ export async function updateRedirectPlacement(
     }
   }
 
-  await db
-    .update(applications)
-    .set({ redirectPositionId, updatedAt: new Date() })
-    .where(
-      and(
-        eq(applications.id, applicationId),
-        isNull(applications.redirectResponse),
-      ),
-    );
+  await db.transaction(async (tx) => {
+    await tx
+      .update(applications)
+      .set({ redirectPositionId, updatedAt: new Date() })
+      .where(
+        and(
+          eq(applications.id, applicationId),
+          isNull(applications.redirectResponse),
+        ),
+      );
+    // A redirect replaces an accepted choice: unselect it so only one applies.
+    if (!redirectPositionId) return;
+    await tx
+      .update(applicationChoices)
+      .set({ decisionStatus: "pending", decidedBy: null, decidedAt: null })
+      .where(
+        and(
+          eq(applicationChoices.applicationId, applicationId),
+          eq(applicationChoices.decisionStatus, "approved"),
+        ),
+      );
+    const choices = await tx
+      .select({ decisionStatus: applicationChoices.decisionStatus })
+      .from(applicationChoices)
+      .where(eq(applicationChoices.applicationId, applicationId));
+    const allRejected =
+      choices.length > 0 &&
+      choices.every((choice) => choice.decisionStatus === "rejected");
+    await tx
+      .update(applications)
+      .set({
+        status: allRejected ? "rejected" : "pending",
+        finalPositionId: null,
+      })
+      .where(eq(applications.id, applicationId));
+  });
 
   const updated = await getApplicationById(applicationId);
   if (!updated) {

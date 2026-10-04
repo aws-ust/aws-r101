@@ -164,7 +164,7 @@ export function HrRedirectPlacementPanel({ application, onUpdated }: Props) {
       <p className={helpClasses}>
         Offer a committee position outside the applicant&apos;s choices. Results release
         sends the redirected-placement email. Record their email reply here when it
-        arrives.
+        arrives. Saving a redirect un-accepts any approved choice.
       </p>
       {feedback ? (
         <div className="mt-4">
