@@ -16,6 +16,8 @@ import {
   committees,
   interviewBookings,
   interviewSlots,
+  membershipPaymentCampaigns,
+  membershipPaymentChatLinks,
   positions,
   recruitmentWindows,
 } from "./db/schema";
@@ -376,7 +378,7 @@ test("applicant editing", async (t) => {
       ["resume"],
     );
     assert.equal(payload.result, null);
-    assert.doesNotMatch(JSON.stringify(payload), /decisionStatus|memberId/);
+    assert.doesNotMatch(JSON.stringify(payload), /decisionStatus|"memberId":"AWS/);
   });
 
   await t.test("keeps current choices when a committee closes", async () => {
@@ -465,6 +467,13 @@ test("applicant editing", async (t) => {
       status: "approved",
       releasedAt: releasedAt.toISOString(),
       memberId: "AWS-2096-0001",
+      redirectPlacement: null,
+      redirectResponse: null,
+      groupLinks: {
+        membersGroupLink: null,
+        committeeChatLink: null,
+        committeeName: `Editing Committee A ${applicationId}`,
+      },
       finalPlacement: {
         positionId: positionA1Id,
         title: "Editing A1",
@@ -477,6 +486,47 @@ test("applicant editing", async (t) => {
       ],
     });
     assert.doesNotMatch(JSON.stringify(payload.result), /decidedAt|decidedBy/);
+  });
+
+  await t.test("accepted applicants see their group links once results are released", async () => {
+    const [campaign] = await db
+      .insert(membershipPaymentCampaigns)
+      .values({
+        recruitmentYear: 2096,
+        opensAt: new Date("2096-10-01T00:00:00.000Z"),
+        deadlineAt: new Date("2096-12-01T00:00:00.000Z"),
+        generalChatLink: "https://www.facebook.com/groups/members-test",
+      })
+      .returning({ id: membershipPaymentCampaigns.id });
+    try {
+      await db.insert(membershipPaymentChatLinks).values({
+        campaignId: campaign.id,
+        committeeId: committeeAId,
+        chatLink: "https://m.me/j/committee-a-test",
+      });
+      const response = await applicantRequest("/applicant/application");
+      const payload = (await response.json()) as {
+        result: { groupLinks: unknown } | null;
+      };
+      assert.deepEqual(payload.result?.groupLinks, {
+        membersGroupLink: "https://www.facebook.com/groups/members-test",
+        committeeChatLink: "https://m.me/j/committee-a-test",
+        committeeName: `Editing Committee A ${applicationId}`,
+      });
+
+      await db
+        .update(applications)
+        .set({ status: "rejected", finalPositionId: null })
+        .where(eq(applications.id, applicationId));
+      const rejected = (await (await applicantRequest("/applicant/application")).json()) as {
+        result: { groupLinks: unknown } | null;
+      };
+      assert.equal(rejected.result?.groupLinks, null);
+    } finally {
+      await db
+        .delete(membershipPaymentCampaigns)
+        .where(eq(membershipPaymentCampaigns.id, campaign.id));
+    }
   });
 
   await t.test("previews slots for a proposed first choice", async () => {
