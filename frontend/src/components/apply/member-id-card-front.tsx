@@ -1,9 +1,5 @@
-"use client"
-
-import { useRef } from "react"
 import { UserRound } from "lucide-react"
 import Image from "next/image"
-import { Button } from "@/components/ui/button"
 
 const frontClasses =
   "absolute inset-0 flex flex-col overflow-hidden rounded-[24px] border border-biloba-flower/40 bg-gradient-to-b from-meteorite to-haiti text-blue-chalk shadow-xl backface-hidden"
@@ -25,8 +21,6 @@ const lineClasses = "font-sans text-sm text-blue-chalk/85"
 const positionClasses = "font-sans text-sm font-semibold leading-snug text-aquamarine"
 const idClasses = "font-mono text-sm font-bold tracking-wider text-biloba-flower"
 const dividerClasses = "my-1 h-px w-full bg-blue-chalk/15"
-const photoButtonClasses = "h-8 px-4 text-xs"
-const errorClasses = "px-5 pb-2 text-center font-sans text-[11px] text-rose-glow"
 
 type MemberIdCardFrontProps = {
   fullName: string
@@ -36,9 +30,6 @@ type MemberIdCardFrontProps = {
   memberId: string
   academicYear: string
   photoUrl: string | null
-  photoPending: boolean
-  photoError: string
-  onChoosePhoto: (file: File) => void
 }
 
 export function MemberIdCardFront({
@@ -49,12 +40,7 @@ export function MemberIdCardFront({
   memberId,
   academicYear,
   photoUrl,
-  photoPending,
-  photoError,
-  onChoosePhoto,
 }: MemberIdCardFrontProps) {
-  const inputRef = useRef<HTMLInputElement>(null)
-
   return (
     <div className={frontClasses}>
       <div className={headerClasses}>
@@ -73,26 +59,6 @@ export function MemberIdCardFront({
             <UserRound className="size-12 text-prelude" aria-hidden />
           )}
         </div>
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="hidden"
-          onChange={(event) => {
-            const file = event.target.files?.[0]
-            if (file) onChoosePhoto(file)
-            event.target.value = ""
-          }}
-        />
-        <Button
-          type="button"
-          color="purple"
-          className={photoButtonClasses}
-          disabled={photoPending}
-          onClick={() => inputRef.current?.click()}
-        >
-          {photoPending ? "Uploading…" : photoUrl ? "Change photo" : "Add photo"}
-        </Button>
         <div className={detailsClasses}>
           <p className={nameClasses}>{fullName}</p>
           <p className={lineClasses}>{studentNumber}</p>
@@ -104,7 +70,6 @@ export function MemberIdCardFront({
           <p className={idClasses}>{memberId}</p>
         </div>
       </div>
-      {photoError ? <p className={errorClasses} role="alert">{photoError}</p> : null}
     </div>
   )
 }
