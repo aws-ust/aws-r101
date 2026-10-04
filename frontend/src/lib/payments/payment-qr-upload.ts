@@ -39,5 +39,9 @@ export async function uploadPaymentQr(
   form.append("file", file)
   const response = await fetch(signed.url, { method: "POST", body: form })
   if (!response.ok) throw new Error("Could not upload the QR image.")
-  return completePaymentQrUpload({ ...metadata, key: signed.key })
+  return completePaymentQrUpload({
+    ...metadata,
+    key: signed.key,
+    fileName: file.name,
+  })
 }
