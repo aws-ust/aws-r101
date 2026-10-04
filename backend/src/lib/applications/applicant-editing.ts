@@ -17,6 +17,7 @@ import {
   validateChoiceUrls,
 } from "../apply/field-validation";
 import { formatBirthday } from "./applications";
+import { loadResultGroupLinks } from "./result-group-links";
 import {
   applicationKey,
   copyIncomingDocuments,
@@ -84,6 +85,7 @@ export async function getApplicantEditableApplication(applicationId: string) {
       status: applications.status,
       applicationType: applications.applicationType,
       archivedAt: applications.archivedAt,
+      recruitmentYear: applications.recruitmentYear,
       resultsReleasedAt: applications.resultsReleasedAt,
       redirectPositionId: applications.redirectPositionId,
       redirectResponse: applications.redirectResponse,
@@ -166,6 +168,20 @@ export async function getApplicantEditableApplication(applicationId: string) {
         .limit(1)
     : [undefined];
 
+  const acceptedCommittee =
+    application.redirectResponse === "accepted"
+      ? redirectPosition
+      : application.status === "approved" && !application.redirectPositionId
+        ? finalPlacement
+        : undefined;
+  const groupLinks =
+    application.resultsReleasedAt && acceptedCommittee
+      ? await loadResultGroupLinks(application.recruitmentYear, {
+          id: acceptedCommittee.committeeId,
+          name: acceptedCommittee.committee,
+        })
+      : null;
+
   return {
     applicationCode: application.applicationCode,
     status: application.status,
@@ -209,6 +225,7 @@ export async function getApplicantEditableApplication(applicationId: string) {
               }
             : null,
           redirectResponse: application.redirectResponse,
+          groupLinks,
           finalPlacement: finalPlacement
             ? {
                 positionId: finalPlacement.positionId,
