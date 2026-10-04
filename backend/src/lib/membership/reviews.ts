@@ -14,7 +14,8 @@ import {
   users,
 } from "../../db/schema";
 import { recruitmentYearInt } from "../applications/application-code";
-import { allocateMemberIds } from "../core/member-id";
+import { isExecutiveOfficeCommittee } from "../apply/committee-office-groups";
+import { allocateMemberId, type MemberPlacement } from "../core/member-id";
 import { MembershipPaymentError } from "./errors";
 import { createPaymentReceiptDownload } from "./receipts";
 
@@ -158,6 +159,30 @@ export async function getMembershipPaymentDetails(paymentId: string) {
   };
 }
 
+/** Executive associate, committee staff, or general member, from the accepted placement. */
+async function memberPlacement(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  applicationId: string,
+): Promise<MemberPlacement> {
+  const [row] = await tx
+    .select({
+      applicationType: applications.applicationType,
+      status: applications.status,
+      committee: committees.name,
+    })
+    .from(applications)
+    .leftJoin(positions, eq(applications.finalPositionId, positions.id))
+    .leftJoin(committees, eq(positions.committeeId, committees.id))
+    .where(eq(applications.id, applicationId))
+    .limit(1);
+  if (!row?.committee || row.applicationType !== "position" || row.status !== "approved") {
+    return { kind: "general" };
+  }
+  return isExecutiveOfficeCommittee(row.committee)
+    ? { kind: "ea", officeCommittee: row.committee }
+    : { kind: "staff" };
+}
+
 async function lockedPendingSubmission(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
   paymentId: string,
@@ -220,7 +245,11 @@ export async function verifyMembershipPayment(
     }
     let memberId = payment.memberId;
     if (!memberId) {
-      [memberId] = await allocateMemberIds(tx, payment.recruitmentYear, 1);
+      memberId = await allocateMemberId(
+        tx,
+        payment.recruitmentYear,
+        await memberPlacement(tx, payment.applicationId),
+      );
       await tx
         .update(applications)
         .set({ memberId, updatedAt: new Date() })

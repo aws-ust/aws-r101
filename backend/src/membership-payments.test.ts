@@ -236,7 +236,8 @@ test("membership payment workflow", async (t) => {
     const verified = await staffRequest(`/membership-payments/${payment.id}/verify`, hrToken, { method: "POST" });
     assert.equal(verified.status, 200);
     const verifiedBody = (await verified.json()) as { memberId: string; emailDelivery: { sent: number; failed: number } };
-    assert.match(verifiedBody.memberId, /^AWS-2096-\d{4}$/);
+    // 8 board seats + 0 EAs + 13 directors, so the first staff number is 22.
+    assert.equal(verifiedBody.memberId, "AWS-2096-0022");
     assert.equal(verifiedBody.emailDelivery.sent + verifiedBody.emailDelivery.failed, 1);
     const verifiedEmails = await db.select().from(emailNotifications).where(eq(emailNotifications.applicationId, ids.acceptedApplication));
     assert.equal(verifiedEmails.filter((row) => row.messageType === "membership_verified").length, 1);
