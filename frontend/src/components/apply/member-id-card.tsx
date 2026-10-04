@@ -14,7 +14,7 @@ const wrapperClasses = "flex flex-col items-center gap-4"
 // Portrait CR80 ID proportions (54 x 85.6 mm), at a comfortable on-screen width.
 const sceneClasses = "aspect-[54/85.6] w-[22rem] max-w-full perspective-distant"
 const flipperBaseClasses =
-  "relative size-full transition-transform duration-700 ease-in-out transform-3d motion-reduce:transition-none"
+  "relative size-full cursor-pointer transition-transform duration-700 ease-in-out transform-3d motion-reduce:transition-none"
 const flippedClasses = "rotate-y-180"
 const flipButtonClasses = "gap-2 px-4"
 
@@ -51,7 +51,15 @@ export function MemberIdCard({
   return (
     <div className={wrapperClasses}>
       <div className={sceneClasses}>
-        <div className={cn(flipperBaseClasses, flipped && flippedClasses)}>
+        {/* Clicking the card flips it; the Show back button below gives keyboard users the same action. */}
+        <div
+          className={cn(flipperBaseClasses, flipped && flippedClasses)}
+          onClick={(event) => {
+            // Let Change photo and other controls on the card work without flipping it.
+            if ((event.target as HTMLElement).closest("button, input, a")) return
+            setFlipped((current) => !current)
+          }}
+        >
           <MemberIdCardFront
             fullName={`${firstName} ${lastName}`.toUpperCase()}
             studentNumber={studentNumber ?? "—"}
