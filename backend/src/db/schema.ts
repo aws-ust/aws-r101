@@ -60,6 +60,7 @@ export const emailMessageType = pgEnum("email_message_type", [
   "result_redirected",
   "payment_invitation",
   "membership_confirmation",
+  "membership_verified",
 ]);
 export const emailDeliveryStatus = pgEnum("email_delivery_status", [
   "pending",
@@ -236,6 +237,7 @@ export const applications = pgTable(
       onDelete: "set null",
     }),
     memberId: varchar("member_id", { length: 32 }).unique(),
+    memberPhotoKey: text("member_photo_key"),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     archivedBy: uuid("archived_by").references(() => users.id, {
       onDelete: "set null",
