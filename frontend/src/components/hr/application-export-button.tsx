@@ -9,7 +9,7 @@ import {
 } from "@/lib/api/client"
 import { applicationsToCsv } from "@/lib/hr/applications-csv"
 
-const exportButtonClasses = "h-10 gap-2 px-5 font-mono text-xs"
+const exportButtonClasses = "h-12 gap-2 px-5 font-mono text-xs"
 
 type ApplicationExportButtonProps = {
   filters: ApplicationListParams

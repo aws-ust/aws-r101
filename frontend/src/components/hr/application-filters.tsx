@@ -17,11 +17,12 @@ import { cn } from "@/lib/utils"
 import type { ApplicationType } from "@/lib/types/application"
 import type { ApplicantListStatusTag } from "@/lib/hr/application-display"
 
+// Search gets its own row on medium screens; all four filters share one row on wide screens.
 const rowClasses =
-  "flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center xl:flex-nowrap"
-const searchClasses = `${fieldControlClasses} md:flex-1`
-const statusSelectClasses = cn(hrFilterSelectClasses, "md:w-52")
-const typeSelectClasses = cn(hrFilterSelectClasses, "md:w-52")
+  "grid grid-cols-1 gap-3 md:grid-cols-3 2xl:grid-cols-[minmax(14rem,1fr)_13rem_minmax(15rem,18rem)_12rem]"
+const searchClasses = cn(fieldControlClasses, "border border-blue-chalk/20 md:col-span-3 2xl:col-span-1")
+const statusSelectClasses = cn(hrFilterSelectClasses, "w-full")
+const typeSelectClasses = cn(hrFilterSelectClasses, "w-full")
 
 const STATUS_LABELS: Record<ApplicantListStatusTag, string> = {
   pending: "Pending",

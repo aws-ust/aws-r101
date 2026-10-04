@@ -6,9 +6,10 @@ import {
 import { ApplicationExportButton } from "@/components/hr/application-export-button"
 import { Button } from "@/components/ui/button"
 
-const toolbarClasses = "mt-8 flex flex-col gap-3 xl:flex-row xl:items-center"
+const toolbarClasses = "mt-8 flex flex-col gap-3 2xl:flex-row 2xl:items-start"
 const filtersClasses = "min-w-0 flex-1"
-const actionsClasses = "flex flex-col gap-3 sm:flex-row sm:justify-end"
+const addButtonClasses = "h-12 gap-2 px-5 font-mono text-xs"
+const actionsClasses = "flex flex-col gap-3 sm:flex-row sm:justify-end 2xl:shrink-0"
 
 export function HrApplicationListToolbar({
   variant,
@@ -32,7 +33,7 @@ export function HrApplicationListToolbar({
         {variant === "active" ? (
           <Button
             color="cyan"
-            className="h-10 gap-2 px-5 font-mono text-xs"
+            className={addButtonClasses}
             nativeButton={false}
             render={<Link href="/admin/hr/add" />}
           >
