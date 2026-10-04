@@ -2,12 +2,22 @@ import { and, desc, eq } from "drizzle-orm";
 import { db } from "../../db";
 import {
   applications,
+  committees,
   membershipPaymentCampaigns,
   membershipPayments,
   membershipPaymentSubmissions,
+  positions,
 } from "../../db/schema";
 import { MembershipPaymentError } from "./errors";
 import { normalizeDriveReceiptUrl } from "./receipt-link";
+import {
+  createMemberPhotoDownload,
+  createMemberPhotoUpload,
+  MAX_MEMBER_PHOTO_SIZE_BYTES,
+  persistMemberPhoto,
+  type MemberPhotoMetadata,
+} from "./member-photo";
+import { memberPositionLabel } from "./member-position";
 import { createPaymentQrDownload } from "./payment-qr";
 
 export type SubmitPaymentInput = {
@@ -61,6 +71,11 @@ async function loadApplicantPayment(applicationId: string) {
       applicationStatus: applications.status,
       archivedAt: applications.archivedAt,
       memberId: applications.memberId,
+      memberPhotoKey: applications.memberPhotoKey,
+      recruitmentYear: applications.recruitmentYear,
+      positionName: positions.name,
+      committeeName: committees.name,
+      generalChatLink: membershipPaymentCampaigns.generalChatLink,
       paymentStatus: membershipPayments.status,
       membershipStatus: membershipPayments.membershipStatus,
       confirmationStatus: membershipPayments.confirmationStatus,
@@ -86,6 +101,8 @@ async function loadApplicantPayment(applicationId: string) {
       eq(membershipPayments.campaignId, membershipPaymentCampaigns.id),
     )
     .innerJoin(applications, eq(membershipPayments.applicationId, applications.id))
+    .leftJoin(positions, eq(applications.finalPositionId, positions.id))
+    .leftJoin(committees, eq(positions.committeeId, committees.id))
     .where(eq(membershipPayments.applicationId, applicationId))
     .limit(1);
   if (!row) return null;
@@ -135,7 +152,10 @@ async function loadApplicantPayment(applicationId: string) {
 export async function getApplicantPayment(applicationId: string) {
   const row = await loadApplicantPayment(applicationId);
   if (!row) return null;
-  const released = row.confirmationStatus === "released";
+  // A failed email does not hide the details: they are released either way.
+  const released =
+    row.confirmationStatus === "released" ||
+    row.confirmationStatus === "email_failed";
   const [gcashQrImageUrl, bpiQrImageUrl] = await Promise.all([
     row.gcashQrImageKey
       ? createPaymentQrDownload(row.gcashQrImageKey)
@@ -144,6 +164,23 @@ export async function getApplicantPayment(applicationId: string) {
       ? createPaymentQrDownload(row.bpiQrImageKey)
       : row.bpiQrImageUrl,
   ]);
+  const acceptedIntoCommittee =
+    row.applicationType === "position" &&
+    row.applicationStatus === "approved" &&
+    Boolean(row.positionName);
+  const memberCard =
+    row.paymentStatus === "verified" &&
+    row.membershipStatus === "active" &&
+    row.memberId
+      ? {
+          memberId: row.memberId,
+          recruitmentYear: row.recruitmentYear,
+          position: memberPositionLabel(row),
+          photoUrl: row.memberPhotoKey
+            ? await createMemberPhotoDownload(row.memberPhotoKey)
+            : null,
+        }
+      : null;
   return {
     applicationCode: row.applicationCode,
     applicationType: row.applicationType,
@@ -186,8 +223,12 @@ export async function getApplicantPayment(applicationId: string) {
           reviewedAt: row.latestSubmission.reviewedAt?.toISOString() ?? null,
         }
       : null,
+    memberCard,
     memberId: released ? row.memberId : null,
-    chatLink: released ? row.assignedChatLink : null,
+    membersGroupLink: released ? row.generalChatLink : null,
+    committeeChatLink:
+      released && acceptedIntoCommittee ? row.assignedChatLink : null,
+    committeeName: released && acceptedIntoCommittee ? row.committeeName : null,
     confirmationReleasedAt:
       row.confirmationReleasedAt?.toISOString() ?? null,
   };
@@ -342,5 +383,40 @@ export async function submitApplicantPayment(
       );
     }
     throw error;
+  }
+}
+
+export async function createApplicantMemberPhotoUpload(
+  applicationId: string,
+  input: MemberPhotoMetadata,
+) {
+  await requireMemberCard(applicationId);
+  if (input.sizeBytes > MAX_MEMBER_PHOTO_SIZE_BYTES) {
+    throw new MembershipPaymentError("Photo must be 5 MB or smaller.");
+  }
+  return createMemberPhotoUpload(applicationId, input);
+}
+
+export async function completeApplicantMemberPhoto(
+  applicationId: string,
+  input: MemberPhotoMetadata & { key: string },
+) {
+  await requireMemberCard(applicationId);
+  const key = await persistMemberPhoto(applicationId, input);
+  await db
+    .update(applications)
+    .set({ memberPhotoKey: key, updatedAt: new Date() })
+    .where(eq(applications.id, applicationId));
+  const payment = await getApplicantPayment(applicationId);
+  return { memberCard: payment?.memberCard ?? null };
+}
+
+async function requireMemberCard(applicationId: string) {
+  const payment = await getApplicantPayment(applicationId);
+  if (!payment?.memberCard) {
+    throw new MembershipPaymentError(
+      "Your member ID is not available yet.",
+      409,
+    );
   }
 }
