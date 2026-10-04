@@ -21,6 +21,7 @@ export function HrMembershipPaymentsPage() {
     selected,
     setSelected,
     feedback,
+    setFeedback,
     loading,
     pending,
     refresh,
@@ -74,6 +75,7 @@ export function HrMembershipPaymentsPage() {
           role={role}
           onClose={() => setSelected(null)}
           onChanged={refresh}
+          onNotice={setFeedback}
         />
       ) : null}
     </main>

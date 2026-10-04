@@ -36,7 +36,7 @@ const actionFormClasses = "mt-4 flex flex-col gap-3 rounded-[14px] border border
 const errorClasses = "font-sans text-sm text-rose-glow"
 type ReviewAction = "reject" | "reverse" | null
 
-export function HrPaymentReviewDialog({ selected, role, onClose, onChanged }: { selected: PaymentListItem; role: "hr" | "admin"; onClose: () => void; onChanged: () => Promise<void> }) {
+export function HrPaymentReviewDialog({ selected, role, onClose, onChanged, onNotice }: { selected: PaymentListItem; role: "hr" | "admin"; onClose: () => void; onChanged: () => Promise<void>; onNotice?: (notice: { type: "success" | "error"; message: string }) => void }) {
   const [details, setDetails] = useState<PaymentDetails | null>(null)
   const [action, setAction] = useState<ReviewAction>(null)
   const [reason, setReason] = useState("")
@@ -62,8 +62,9 @@ export function HrPaymentReviewDialog({ selected, role, onClose, onChanged }: { 
     setPending(true)
     setError("")
     try {
-      await operation()
+      const result = await operation()
       await onChanged()
+      announceMemberEmail(result, onNotice)
       onClose()
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not review payment.")
@@ -95,6 +96,19 @@ export function HrPaymentReviewDialog({ selected, role, onClose, onChanged }: { 
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function announceMemberEmail(
+  result: unknown,
+  onNotice: ((notice: { type: "success" | "error"; message: string }) => void) | undefined,
+) {
+  const delivery = (result as { emailDelivery?: { sent: number; failed: number } } | undefined)?.emailDelivery
+  if (!delivery || !onNotice) return
+  onNotice(
+    delivery.failed > 0
+      ? { type: "error", message: "Payment verified, but the member email could not be sent. You can retry it later." }
+      : { type: "success", message: "Payment verified. The member email with their Member ID was sent." },
   )
 }
 
