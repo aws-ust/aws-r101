@@ -1,4 +1,3 @@
-import { officeForCommittee } from "@/lib/apply/committee-groups"
 import type { HrApplication } from "@/lib/types/hr-application"
 
 /** HR application list/detail status — one of four tags. */
@@ -19,31 +18,32 @@ export function applicantListStatusTag(
   return "pending"
 }
 
-function officeLabel(committee: string, office?: string | null) {
-  return office || officeForCommittee(committee) || committee
+function byPreference(application: HrApplication) {
+  return [...application.choices].sort(
+    (a, b) => a.preferenceRank - b.preferenceRank,
+  )
 }
 
-/** Applied role title, or destination office after accept/redirect. */
+/**
+ * The position shown next to an applicant: the redirected position when they
+ * were redirected, the accepted first or second choice once accepted, and
+ * their first choice while they are still being reviewed.
+ */
 export function applicationListPlacementLabel(application: HrApplication) {
-  const tag = applicantListStatusTag(application)
-  if (tag === "redirected" && application.redirectPlacement) {
-    return officeLabel(
-      application.redirectPlacement.committee,
-      application.redirectPlacement.office,
-    )
-  }
-  if (tag === "accepted") {
-    const committee =
-      application.finalPlacement?.committee ??
-      application.choices.find((choice) => choice.decisionStatus === "approved")
-        ?.committee
-    if (committee) return officeLabel(committee)
-  }
   if (application.applicationType === "member") return "Member-only"
-  return (
-    application.choices.find((choice) => choice.preferenceRank === 1)?.title ??
-    "—"
-  )
+  const choices = byPreference(application)
+  if (
+    application.redirectPlacement &&
+    application.redirectResponse !== "declined"
+  ) {
+    return application.redirectPlacement.title
+  }
+  if (applicantListStatusTag(application) === "accepted") {
+    const accepted = choices.find((choice) => choice.decisionStatus === "approved")
+    const title = accepted?.title ?? application.finalPlacement?.title
+    if (title) return title
+  }
+  return choices[0]?.title ?? "—"
 }
 
 export function redirectPlacementLabel(application: HrApplication): string | null {
