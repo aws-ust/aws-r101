@@ -385,17 +385,17 @@ test("applicant email templates use compact, plain formatting", async (t) => {
     assert.equal(AWS_DEV_ASSESSMENT_FILENAME, "AWS Dev Assessment.pdf");
   });
 
-  await t.test("redirected result email includes reply phrases without a dashboard link", () => {
+  await t.test("redirected result email links to the dashboard to respond", () => {
     const email = resultRedirectedTemplate({
       lastName: "Olmedo",
       position: "Development Committee Staff",
       committee: "Development Committee",
       cc: ["neilalfonz.casas.cics@ust.edu.ph"],
     });
-    assert.match(email.text, /I accept the position/);
-    assert.match(email.text, /I decline the position/);
-    assert.doesNotMatch(email.text, /\/apply\/dashboard/);
-    assert.match(email.html, /font-weight:bold;">I accept the position/);
+    assert.doesNotMatch(email.text, /I accept the position|I decline the position/);
+    assert.match(email.text, /accept or decline this redirected position/);
+    assert.match(email.text, /\/apply\/dashboard/);
+    assert.match(email.html, />Open Your Dashboard</);
     assert.deepEqual(email.cc, ["neilalfonz.casas.cics@ust.edu.ph"]);
     assert.doesNotMatch(email.text, /Executive Board of/);
   });

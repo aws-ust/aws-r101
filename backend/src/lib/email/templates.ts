@@ -520,6 +520,7 @@ export function resultRedirectedTemplate(input: {
   const subject = resultRedirectedSubject;
   const honorific = `Mx. ${input.lastName}`;
   const office = officeLabelForCommittee(input.committee);
+  const dashboardUrl = `${appBaseUrl()}/apply/dashboard`;
 
   const text = `Greetings from the Clouds!
 
@@ -534,19 +535,13 @@ Redirected position: ${input.position}
 Committee: ${input.committee}
 Office: ${office}
 
-How to respond
+Please open your applicant dashboard to accept or decline this redirected position. Your choice is final once confirmed.
 
-Please reply directly to this email with your decision. In your reply, include exactly one of the following (copy the line as written):
-
-To accept the redirected position:
-I accept the position
-
-To decline the redirected position:
-I decline the position
+Open your dashboard: ${dashboardUrl}
 
 If you decline this role, you may still continue with AWS Builders - UST as a general member.
 
-After we receive your reply—whether you accept or decline the redirected position—we will send you separate instructions for paying the membership fee. Please do not send a payment until you receive that message.
+After you respond—whether you accept or decline the redirected position—we will send you separate instructions for paying the membership fee. Please do not send a payment until you receive that message.
 
 Yours in Thomasian Leadership,
 The AWS Builders - UST Executive Board`;
@@ -572,14 +567,10 @@ The AWS Builders - UST Executive Board`;
     </td>
   </tr>
 </table>
-<p style="margin:0 0 8px;font-weight:bold;">How to respond</p>
-<p style="margin:0 0 16px;">Please reply directly to this email with your decision. In your reply, include exactly one of the following (copy the line as written):</p>
-<p style="margin:0 0 8px;">To accept the redirected position:</p>
-<p style="margin:0 0 12px;font-weight:bold;">I accept the position</p>
-<p style="margin:0 0 8px;">To decline the redirected position:</p>
-<p style="margin:0 0 16px;font-weight:bold;">I decline the position</p>
+<p style="margin:0 0 16px;">Please open your applicant dashboard to accept or decline this redirected position. Your choice is final once confirmed.</p>
+${ctaButton(dashboardUrl, "Open your dashboard")}
 <p style="margin:0 0 16px;">If you decline this role, you may still continue with AWS Builders - UST as a general member.</p>
-<p style="margin:0 0 16px;">After we receive your reply—whether you accept or decline the redirected position—we will send you separate instructions for paying the membership fee. Please do not send a payment until you receive that message.</p>
+<p style="margin:0 0 16px;">After you respond—whether you accept or decline the redirected position—we will send you separate instructions for paying the membership fee. Please do not send a payment until you receive that message.</p>
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
 <p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
   });
