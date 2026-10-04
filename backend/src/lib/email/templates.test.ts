@@ -16,6 +16,7 @@ import {
   officerApplicationNoticeTemplate,
   paymentInvitationTemplate,
   resultAcceptedTemplate,
+  resultMemberAcceptedTemplate,
   resultRejectedTemplate,
   resultRedirectedTemplate,
 } from "./templates";
@@ -112,6 +113,16 @@ test("applicant email templates use compact, plain formatting", async (t) => {
     assert.match(email.html, /cid:application-received-header@aws-ust/);
     assert.match(email.html, /<strong>Interview<\/strong>/);
     assert.equal(email.inline?.length, 1);
+  });
+
+  await t.test("renders the member-only accepted result without a position", () => {
+    const member = resultMemberAcceptedTemplate({ lastName: "Dela Cruz" });
+
+    assert.match(member.text, /Mx\. Dela Cruz/);
+    assert.match(member.text, /general member/);
+    assert.match(member.text, /Member ID will be available on your dashboard/);
+    assert.doesNotMatch(member.text, /newest|Position:/);
+    assert.match(member.html, /\/apply\/dashboard/);
   });
 
   await t.test("personalizes accepted and rejected result emails", (t) => {

@@ -32,6 +32,7 @@ export async function deliverResultNotifications(
       lastName: applicants.lastName,
       position: positions.name,
       redirectPositionId: applications.redirectPositionId,
+      applicationType: applications.applicationType,
     })
     .from(emailNotifications)
     .innerJoin(
@@ -79,7 +80,9 @@ export async function deliverResultNotifications(
       ) {
         return failed("Notification is not a result email.");
       }
-      if (row.messageType === "result_accepted" && !row.position) {
+      if (row.messageType === "result_accepted" &&
+        row.applicationType !== "member" &&
+        !row.position) {
         return failed("Accepted result has no final position.");
       }
       if (row.messageType === "result_redirected") {
@@ -121,6 +124,7 @@ export async function deliverResultNotifications(
           recipient: row.recipient,
           lastName: row.lastName,
           position: row.position,
+          applicationType: row.applicationType,
         });
         if (status !== "sent") {
           return {

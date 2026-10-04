@@ -32,6 +32,7 @@ import {
   membershipVerifiedTemplate,
   paymentInvitationTemplate,
   resultAcceptedTemplate,
+  resultMemberAcceptedTemplate,
   resultRejectedTemplate,
   resultRedirectedTemplate,
 } from "./templates";
@@ -490,13 +491,16 @@ export function deliverQueuedResultEmail(input: {
   lastName: string;
   position: string | null;
   committee?: string | null;
+  applicationType?: "position" | "member";
 }): Promise<EmailDeliveryStatus> {
   const rendered =
     input.messageType === "result_accepted"
-      ? resultAcceptedTemplate({
-          lastName: input.lastName,
-          position: input.position ?? "",
-        })
+      ? input.applicationType === "member"
+        ? resultMemberAcceptedTemplate({ lastName: input.lastName })
+        : resultAcceptedTemplate({
+            lastName: input.lastName,
+            position: input.position ?? "",
+          })
       : input.messageType === "result_redirected"
         ? resultRedirectedTemplate({
             lastName: input.lastName,

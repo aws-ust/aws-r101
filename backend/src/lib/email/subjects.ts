@@ -79,6 +79,10 @@ export const resultAcceptedSubject =
 export const resultRejectedSubject =
   "AWS Builders - UST R101 Recruitment Results";
 
+/** Accepted result for member-only (general member) applications. */
+export const resultMemberAcceptedSubject =
+  "Welcome to AWS Builders - UST! Your Membership Results";
+
 export const resultRedirectedSubject =
   "A New Placement Offer | AWS Builders - UST R101";
 
