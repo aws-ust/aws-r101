@@ -490,7 +490,6 @@ export function deliverQueuedResultEmail(input: {
   lastName: string;
   position: string | null;
   committee?: string | null;
-  cc?: string[];
 }): Promise<EmailDeliveryStatus> {
   const rendered =
     input.messageType === "result_accepted"
@@ -503,7 +502,6 @@ export function deliverQueuedResultEmail(input: {
             lastName: input.lastName,
             position: input.position ?? "",
             committee: input.committee ?? "",
-            cc: input.cc,
           })
         : resultRejectedTemplate({ lastName: input.lastName });
   return deliverNotification({

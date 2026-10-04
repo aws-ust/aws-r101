@@ -9,7 +9,6 @@ import {
 } from "../../db/schema";
 import { recruitmentYearInt } from "../applications/application-code";
 import { deliverQueuedResultEmail } from "../email/service";
-import { redirectPlacementCcEmails } from "../email/redirect-recipients";
 import { markFailed } from "../email/notifications";
 
 export type ResultEmailDeliverySummary = {
@@ -90,12 +89,6 @@ export async function deliverResultNotifications(
         if (!redirect) {
           return failed("Redirected result has no redirect position.");
         }
-        const cc = redirectPlacementCcEmails({
-          committee: redirect.committee,
-          positionTitle: redirect.title,
-        }).filter(
-          (address) => address.toLowerCase() !== row.recipient.toLowerCase(),
-        );
         try {
           const status = await deliverQueuedResultEmail({
             notificationId: row.id,
@@ -104,7 +97,6 @@ export async function deliverResultNotifications(
             lastName: row.lastName,
             position: redirect.title,
             committee: redirect.committee,
-            cc,
           });
           if (status !== "sent") {
             return {

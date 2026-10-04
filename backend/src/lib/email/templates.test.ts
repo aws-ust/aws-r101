@@ -390,13 +390,12 @@ test("applicant email templates use compact, plain formatting", async (t) => {
       lastName: "Olmedo",
       position: "Development Committee Staff",
       committee: "Development Committee",
-      cc: ["neilalfonz.casas.cics@ust.edu.ph"],
     });
     assert.doesNotMatch(email.text, /I accept the position|I decline the position/);
     assert.match(email.text, /accept or decline this redirected position/);
     assert.match(email.text, /\/apply\/dashboard/);
     assert.match(email.html, />Open Your Dashboard</);
-    assert.deepEqual(email.cc, ["neilalfonz.casas.cics@ust.edu.ph"]);
+    assert.equal(email.cc, undefined);
     assert.doesNotMatch(email.text, /Executive Board of/);
   });
 });

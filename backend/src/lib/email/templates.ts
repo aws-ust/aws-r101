@@ -515,7 +515,6 @@ export function resultRedirectedTemplate(input: {
   lastName: string;
   position: string;
   committee: string;
-  cc?: string[];
 }): RenderedEmail {
   const subject = resultRedirectedSubject;
   const honorific = `Mx. ${input.lastName}`;
@@ -579,7 +578,6 @@ ${ctaButton(dashboardUrl, "Open your dashboard")}
     subject,
     text,
     html,
-    cc: input.cc,
     inline: [brandedEmailHeaderInline()],
   };
 }
