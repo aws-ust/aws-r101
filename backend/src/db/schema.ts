@@ -696,13 +696,15 @@ export const membershipPaymentSubmissions = pgTable(
       length: 100,
     }).notNull(),
     amountCents: integer("amount_cents").notNull(),
-    receiptKey: text("receipt_key").notNull(),
-    receiptFileName: varchar("receipt_file_name", { length: 255 }).notNull(),
-    receiptMimeType: varchar("receipt_mime_type", { length: 50 }).notNull(),
-    receiptSizeBytes: integer("receipt_size_bytes").notNull(),
+    /** Google Drive link to the receipt. Older submissions used an uploaded file instead. */
+    receiptUrl: text("receipt_url"),
+    receiptKey: text("receipt_key"),
+    receiptFileName: varchar("receipt_file_name", { length: 255 }),
+    receiptMimeType: varchar("receipt_mime_type", { length: 50 }),
+    receiptSizeBytes: integer("receipt_size_bytes"),
     receiptChecksumSha256: varchar("receipt_checksum_sha256", {
       length: 44,
-    }).notNull(),
+    }),
     status: paymentSubmissionStatus().notNull().default("pending"),
     submittedAt: timestamp("submitted_at", { withTimezone: true })
       .notNull()

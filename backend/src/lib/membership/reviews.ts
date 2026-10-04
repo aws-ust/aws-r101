@@ -134,6 +134,7 @@ export async function getMembershipPaymentDetails(paymentId: string) {
       method: membershipPaymentSubmissions.method,
       referenceNumber: membershipPaymentSubmissions.referenceNumber,
       amountCents: membershipPaymentSubmissions.amountCents,
+      receiptUrl: membershipPaymentSubmissions.receiptUrl,
       receiptFileName: membershipPaymentSubmissions.receiptFileName,
       receiptMimeType: membershipPaymentSubmissions.receiptMimeType,
       receiptSizeBytes: membershipPaymentSubmissions.receiptSizeBytes,
@@ -379,6 +380,7 @@ export async function getPaymentReceiptUrl(
 ) {
   const [submission] = await db
     .select({
+      url: membershipPaymentSubmissions.receiptUrl,
       key: membershipPaymentSubmissions.receiptKey,
       fileName: membershipPaymentSubmissions.receiptFileName,
     })
@@ -391,7 +393,12 @@ export async function getPaymentReceiptUrl(
     )
     .limit(1);
   if (!submission) throw new MembershipPaymentError("Receipt not found.", 404);
-  return createPaymentReceiptDownload(submission.key, submission.fileName);
+  if (submission.url) return submission.url;
+  if (!submission.key) throw new MembershipPaymentError("Receipt not found.", 404);
+  return createPaymentReceiptDownload(
+    submission.key,
+    submission.fileName ?? "receipt",
+  );
 }
 
 export async function releaseMembershipConfirmations(actor: AuthenticatedUser) {

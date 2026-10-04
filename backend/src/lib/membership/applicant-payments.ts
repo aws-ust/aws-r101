@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "../../db";
 import {
@@ -8,28 +7,13 @@ import {
   membershipPaymentSubmissions,
 } from "../../db/schema";
 import { MembershipPaymentError } from "./errors";
-import {
-  createPaymentReceiptUpload,
-  MAX_RECEIPT_SIZE_BYTES,
-  persistPaymentReceipt,
-  RECEIPT_MIME_TYPES,
-  type ReceiptMimeType,
-  validatePaymentReceipt,
-} from "./receipts";
-import { deleteKeys } from "../applications/documents";
+import { normalizeDriveReceiptUrl } from "./receipt-link";
 import { createPaymentQrDownload } from "./payment-qr";
 
-export type ReceiptUploadInput = {
-  mimeType: ReceiptMimeType;
-  sizeBytes: number;
-  checksumSha256: string;
-};
-
-export type SubmitPaymentInput = ReceiptUploadInput & {
+export type SubmitPaymentInput = {
   method: "gcash" | "bpi";
   referenceNumber: string;
-  receiptKey: string;
-  receiptFileName: string;
+  receiptUrl: string;
 };
 
 function normalizeReferenceNumber(value: string) {
@@ -209,62 +193,15 @@ export async function getApplicantPayment(applicationId: string) {
   };
 }
 
-function validateReceiptInput(input: ReceiptUploadInput) {
-  if (!RECEIPT_MIME_TYPES.includes(input.mimeType)) {
-    throw new MembershipPaymentError("Receipt must be a JPEG, PNG, or WebP image.");
-  }
-  if (
-    !Number.isInteger(input.sizeBytes) ||
-    input.sizeBytes <= 0 ||
-    input.sizeBytes > MAX_RECEIPT_SIZE_BYTES
-  ) {
-    throw new MembershipPaymentError("Receipt image must be 10 MB or smaller.");
-  }
-  if (!/^[A-Za-z0-9+/]{43}=$/.test(input.checksumSha256)) {
-    throw new MembershipPaymentError("Receipt checksum is invalid.");
-  }
-}
-
-export async function createApplicantReceiptUpload(
-  applicationId: string,
-  input: ReceiptUploadInput,
-) {
-  validateReceiptInput(input);
-  const payment = await loadApplicantPayment(applicationId);
-  if (!payment) {
-    throw new MembershipPaymentError("Payment invitation not found.", 404);
-  }
-  if (
-    !canSubmit({
-      isOpen: payment.isOpen,
-      opensAt: payment.opensAt,
-      deadlineAt: payment.deadlineAt,
-      status: payment.paymentStatus,
-      resubmissionDeadlineAt: payment.resubmissionDeadlineAt,
-      archivedAt: payment.archivedAt,
-    })
-  ) {
-    throw new MembershipPaymentError("Payment submission is not available.", 409);
-  }
-  return createPaymentReceiptUpload({
-    applicationId,
-    uploadId: randomUUID(),
-    ...input,
-  });
-}
-
 export async function submitApplicantPayment(
   applicationId: string,
   input: SubmitPaymentInput,
 ) {
-  validateReceiptInput(input);
+  const receiptUrl = normalizeDriveReceiptUrl(input.receiptUrl);
   const referenceNumber = input.referenceNumber.trim();
   const referenceNumberNormalized = normalizeReferenceNumber(referenceNumber);
   if (referenceNumberNormalized.length < 4) {
     throw new MembershipPaymentError("Enter a valid payment reference number.");
-  }
-  if (!input.receiptFileName.trim()) {
-    throw new MembershipPaymentError("Receipt file name is required.");
   }
 
   const payment = await loadApplicantPayment(applicationId);
@@ -300,14 +237,6 @@ export async function submitApplicantPayment(
     throw new MembershipPaymentError("Payment submission is not available.", 409);
   }
 
-  await validatePaymentReceipt({
-    key: input.receiptKey,
-    applicationId,
-    mimeType: input.mimeType,
-    sizeBytes: input.sizeBytes,
-    checksumSha256: input.checksumSha256,
-  });
-
   const [duplicate] = await db
     .select({ id: membershipPaymentSubmissions.id })
     .from(membershipPaymentSubmissions)
@@ -327,14 +256,6 @@ export async function submitApplicantPayment(
       409,
     );
   }
-
-  const submissionId = randomUUID();
-  const storedReceiptKey = await persistPaymentReceipt({
-    incomingKey: input.receiptKey,
-    paymentId: payment.paymentId,
-    submissionId,
-    mimeType: input.mimeType,
-  });
 
   try {
     return await db.transaction(async (tx) => {
@@ -380,7 +301,6 @@ export async function submitApplicantPayment(
       const [submission] = await tx
         .insert(membershipPaymentSubmissions)
         .values({
-          id: submissionId,
           paymentId: locked.id,
           campaignId: payment.campaignId,
           attemptNumber: (latest?.attemptNumber ?? 0) + 1,
@@ -388,11 +308,7 @@ export async function submitApplicantPayment(
           referenceNumber,
           referenceNumberNormalized,
           amountCents: payment.amountCents,
-          receiptKey: storedReceiptKey,
-          receiptFileName: input.receiptFileName.trim().slice(0, 255),
-          receiptMimeType: input.mimeType,
-          receiptSizeBytes: input.sizeBytes,
-          receiptChecksumSha256: input.checksumSha256,
+          receiptUrl,
         })
         .returning({
           id: membershipPaymentSubmissions.id,
@@ -414,7 +330,6 @@ export async function submitApplicantPayment(
       };
     });
   } catch (error) {
-    await deleteKeys([storedReceiptKey]).catch(() => undefined);
     if (
       typeof error === "object" &&
       error !== null &&
