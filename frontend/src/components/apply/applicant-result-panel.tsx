@@ -47,7 +47,7 @@ function RedirectOfferBody({
   return (
     <>
       <h2 id="application-result-title" className={headingClasses}>
-        Redirected placement offer
+        Redirected Placement Offer
       </h2>
       <p className={bodyClasses}>
         You have been offered a redirected committee placement. Choose below
@@ -69,16 +69,19 @@ function RedirectOfferBody({
   )
 }
 
-function NotSelectedBody() {
+const declinedMessage =
+  "You declined the redirected committee placement. Thank you for your interest. You may still continue as a general member when payment opens."
+const notSelectedMessage =
+  "Thank you for applying. You were not selected for a committee position this term. You may still continue as a general member when payment opens."
+
+function NotSelectedBody({ declinedRedirect }: { declinedRedirect: boolean }) {
   return (
     <>
       <h2 id="application-result-title" className={headingClasses}>
-        Application update
+        Application Update
       </h2>
       <p className={bodyClasses}>
-        Thank you for applying. You were not selected for a committee position
-        this term. You may still continue as a general member when payment
-        opens.
+        {declinedRedirect ? declinedMessage : notSelectedMessage}
       </p>
     </>
   )
@@ -121,7 +124,7 @@ export function ApplicantResultPanel({
           {result.groupLinks ? <ApplicantGroupLinks {...result.groupLinks} /> : null}
         </>
       ) : (
-        <NotSelectedBody />
+        <NotSelectedBody declinedRedirect={result.redirectResponse === "declined"} />
       )}
     </section>
   )
