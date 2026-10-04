@@ -61,7 +61,7 @@ export function HrCommitteeFilterPicker({
           </span>
         ) : (
           <span className={cn(triggerCopyClasses, triggerPlaceholderClasses)}>
-            All committees
+            All Committees
           </span>
         )}
         <ChevronDownIcon className={triggerIconClasses} />
@@ -71,7 +71,7 @@ export function HrCommitteeFilterPicker({
           className={itemHoverClasses}
           onClick={() => onChange("")}
         >
-          All committees
+          All Committees
           {!value ? <CheckIcon className={selectedIconClasses} /> : null}
         </DropdownMenuItem>
         {groups.map((group) => (

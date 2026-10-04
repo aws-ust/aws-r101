@@ -37,8 +37,8 @@ function statusFilterLabel(status: HrFilters["status"]) {
 }
 
 const APPLICATION_TYPE_LABELS: Record<ApplicationType, string> = {
-  position: "Committee positions",
-  member: "Member-only",
+  position: "Committee Positions",
+  member: "Member-Only",
 }
 
 export type HrFilters = {
@@ -83,16 +83,16 @@ export function ApplicationFilters({ value, onChange }: ApplicationFiltersProps)
           className={typeSelectClasses}
           aria-label="Filter by application type"
         >
-          <SelectValue placeholder="All application types">
+          <SelectValue placeholder="All Application Types">
             {value.applicationType
               ? APPLICATION_TYPE_LABELS[value.applicationType]
-              : "All application types"}
+              : "All Application Types"}
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All application types</SelectItem>
-          <SelectItem value="position">Committee positions</SelectItem>
-          <SelectItem value="member">Member-only</SelectItem>
+          <SelectItem value="all">All Application Types</SelectItem>
+          <SelectItem value="position">Committee Positions</SelectItem>
+          <SelectItem value="member">Member-Only</SelectItem>
         </SelectContent>
       </Select>
       <HrCommitteeFilterPicker
