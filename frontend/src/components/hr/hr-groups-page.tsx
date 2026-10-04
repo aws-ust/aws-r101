@@ -1,6 +1,6 @@
 "use client"
 
-import { ActionFeedback } from "@/components/shared/action-feedback"
+import { HrFeedbackBanner } from "@/components/hr/hr-feedback-banner"
 import { SectionHeader } from "@/components/shared/section-header"
 import { HrPaymentLinksForm } from "@/components/hr/hr-payment-links-form"
 import { useHrPaymentWorkspace } from "@/components/hr/use-hr-payment-workspace"
@@ -20,7 +20,7 @@ export function HrGroupsPage() {
         title="Community Links"
         subtitle="Set the members Facebook group and the office and committee group chats that accepted applicants are invited to join."
       />
-      {feedback ? <ActionFeedback type={feedback.type} message={feedback.message} /> : null}
+      <HrFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
       {loading ? (
         <p className={`${bodyClasses} mt-8`}>Loading links…</p>
       ) : (

@@ -1,6 +1,6 @@
 "use client"
 
-import { ActionFeedback } from "@/components/shared/action-feedback"
+import { HrFeedbackBanner } from "@/components/hr/hr-feedback-banner"
 import { SectionHeader } from "@/components/shared/section-header"
 import { HrPaymentCampaignPanel } from "@/components/hr/hr-payment-campaign-panel"
 import { paymentCampaignDescription } from "@/components/hr/hr-payment-copy"
@@ -33,7 +33,6 @@ export function HrPaymentsPage() {
         title="Membership Payments"
         subtitle="Configure the payment period, official accounts, and track high-level payment status."
       />
-      {feedback ? <ActionFeedback type={feedback.type} message={feedback.message} /> : null}
       {loading ? (
         <p className={loadingClasses}>Loading payments…</p>
       ) : (
@@ -52,6 +51,7 @@ export function HrPaymentsPage() {
               title="Payment setup"
               description={paymentCampaignDescription()}
             >
+              <HrFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
               <HrPaymentCampaignPanel
                 campaign={campaign}
                 committees={committees}
