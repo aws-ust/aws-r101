@@ -324,4 +324,40 @@ test("membership payment workflow", async (t) => {
     assert.equal(reversed.status, "needs_resubmission");
     assert.match(application.memberId ?? "", /^AWS-2096-\d{4}$/);
   });
+
+  await t.test("applicant submits a Google Drive receipt link that HR can open", async () => {
+    const memberToken = (
+      await signApplicantToken({
+        applicationId: ids.memberApplication,
+        applicationCode: "AP-2096-810003",
+      })
+    ).token;
+    const submit = (receiptUrl: string, referenceNumber: string) =>
+      app.request("/applicant/payment/submit", {
+        method: "POST",
+        headers: {
+          ...originHeaders(),
+          "Content-Type": "application/json",
+          Cookie: `applicant_token=${memberToken}`,
+        },
+        body: JSON.stringify({ referenceNumber, receiptUrl }),
+      });
+
+    assert.equal((await submit("https://example.com/receipt.png", "REF-810003")).status, 400);
+    assert.equal((await submit("http://drive.google.com/file/d/abc/view", "REF-810003")).status, 400);
+    const driveLink = "https://drive.google.com/file/d/receipt-810003/view?usp=sharing";
+    const submitted = await submit(driveLink, "REF-810003");
+    assert.equal(submitted.status, 201);
+
+    const [payment] = await db.select().from(membershipPayments).where(eq(membershipPayments.applicationId, ids.memberApplication));
+    const [submission] = await db.select().from(membershipPaymentSubmissions).where(eq(membershipPaymentSubmissions.paymentId, payment.id));
+    assert.equal(payment.status, "pending_verification");
+    assert.equal(submission.method, "gcash");
+    assert.equal(submission.receiptUrl, driveLink);
+    assert.equal(submission.receiptKey, null);
+
+    const receipt = await staffRequest(`/membership-payments/${payment.id}/receipts/${submission.id}`, hrToken);
+    assert.equal(receipt.status, 200);
+    assert.deepEqual(await receipt.json(), { url: driveLink });
+  });
 });
