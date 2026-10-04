@@ -237,29 +237,10 @@ export function getApplicantPayment() {
   )
 }
 
-export function createApplicantPaymentReceiptUpload(body: {
-  mimeType: "image/jpeg" | "image/png" | "image/webp"
-  sizeBytes: number
-  checksumSha256: string
-}) {
-  return applicantFetch<{
-    url: string
-    fields: Record<string, string>
-    key: string
-  }>("/applicant/payment/receipt/presign", {
-    method: "POST",
-    body: JSON.stringify(body),
-  })
-}
-
 export function submitApplicantPayment(body: {
   method: "gcash" | "bpi"
   referenceNumber: string
-  receiptKey: string
-  receiptFileName: string
-  mimeType: "image/jpeg" | "image/png" | "image/webp"
-  sizeBytes: number
-  checksumSha256: string
+  receiptUrl: string
 }) {
   return applicantFetch("/applicant/payment/submit", {
     method: "POST",

@@ -21,7 +21,7 @@ const summaryItemClasses = "rounded-[12px] border border-blue-chalk/15 bg-haiti/
 const summaryLabelClasses = "font-mono text-[10px] uppercase tracking-[0.14em] text-prelude"
 const summaryValueClasses = "mt-1 font-sans text-sm font-semibold text-blue-chalk"
 const sectionStackClasses = "mt-6 flex flex-col gap-4"
-const methodGridClasses = "grid gap-3 xl:grid-cols-2"
+const methodGridClasses = "flex flex-wrap justify-center gap-6"
 const methodTitleClasses = "font-sans text-sm font-semibold text-blue-chalk"
 const errorClasses = "mt-3 font-sans text-sm text-rose-glow"
 const successClasses = "rounded-[14px] border border-aquamarine/35 bg-aquamarine/10 p-4"
@@ -111,7 +111,7 @@ function PaymentSubmissionSection({ payment, onSubmitted }: { payment: Applicant
       <ApplicantPaymentSection
         number="01"
         title="Payment instructions"
-        description="Pay using one of the official accounts below before submitting your receipt."
+        description="Pay using the official account below before submitting your receipt."
       >
         {payment.latestSubmission?.reviewReason ? <p className={errorClasses}>Reviewer note: {payment.latestSubmission.reviewReason}</p> : null}
         <div className={methodGridClasses}>
@@ -122,7 +122,7 @@ function PaymentSubmissionSection({ payment, onSubmitted }: { payment: Applicant
       <ApplicantPaymentSection
         number="02"
         title="Submit proof of payment"
-        description="Enter the reference number and upload a clear receipt image for manual verification."
+        description="Enter the reference number and a Google Drive link to a clear screenshot of your receipt for manual verification."
       >
         {payment.canSubmit ? <ApplicantPaymentForm payment={payment} onSubmitted={onSubmitted} /> : <p className={bodyClasses}>Payment submission is currently closed.</p>}
       </ApplicantPaymentSection>

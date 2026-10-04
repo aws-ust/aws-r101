@@ -79,9 +79,11 @@ export type PaymentSubmission = {
   method: "gcash" | "bpi"
   referenceNumber: string
   amountCents: number
-  receiptFileName: string
-  receiptMimeType: string
-  receiptSizeBytes: number
+  /** Google Drive link; older submissions have an uploaded file instead. */
+  receiptUrl: string | null
+  receiptFileName: string | null
+  receiptMimeType: string | null
+  receiptSizeBytes: number | null
   status: "pending" | "verified" | "rejected" | "reversed"
   submittedAt: string
   reviewedAt: string | null
