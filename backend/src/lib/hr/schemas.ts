@@ -127,11 +127,6 @@ export const applicationRedirectPlacementPatchSchema = z.object({
   ]),
 });
 
-export const applicationRedirectResponsePatchSchema = z.object({
-  response: z.enum(["accepted", "declined"], {
-    error: "response must be accepted or declined.",
-  }),
-});
 
 export function zodErrorMessage(error: z.ZodError): string {
   return error.issues[0]?.message ?? "Invalid request body.";

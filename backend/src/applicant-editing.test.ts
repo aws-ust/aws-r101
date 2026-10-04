@@ -711,4 +711,54 @@ test("applicant editing", async (t) => {
     );
     assert.equal(update.status, 503);
   });
+
+  await t.test("applicants accept or decline a redirect from the dashboard", async () => {
+    await resetApplication();
+    const offerRedirect = () =>
+      db
+        .update(applications)
+        .set({
+          status: "rejected",
+          finalPositionId: null,
+          redirectPositionId: positionA2Id,
+          redirectResponse: null,
+          redirectRespondedAt: null,
+          resultsReleasedAt: new Date("2096-09-30T12:00:00.000Z"),
+        })
+        .where(eq(applications.id, applicationId));
+    const respond = (response: string) =>
+      applicantRequest("/applicant/application/redirect-response", "POST", { response });
+
+    await offerRedirect();
+    const unauthenticated = await app.request("/applicant/application/redirect-response", {
+      method: "POST",
+      headers: originHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ response: "accepted" }),
+    });
+    assert.equal(unauthenticated.status, 401);
+    assert.equal((await respond("maybe")).status, 400);
+
+    const accepted = await respond("accepted");
+    assert.equal(accepted.status, 200);
+    const acceptedBody = (await accepted.json()) as {
+      status: string;
+      result: { redirectResponse: string | null } | null;
+    };
+    assert.equal(acceptedBody.status, "approved");
+    assert.equal(acceptedBody.result?.redirectResponse, "accepted");
+    const [row] = await db
+      .select({ finalPositionId: applications.finalPositionId })
+      .from(applications)
+      .where(eq(applications.id, applicationId));
+    assert.equal(row.finalPositionId, positionA2Id);
+    assert.equal((await respond("declined")).status, 409);
+
+    await offerRedirect();
+    const declined = (await (await respond("declined")).json()) as {
+      status: string;
+      result: { redirectResponse: string | null } | null;
+    };
+    assert.equal(declined.status, "rejected");
+    assert.equal(declined.result?.redirectResponse, "declined");
+  });
 });
