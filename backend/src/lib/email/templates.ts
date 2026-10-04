@@ -422,7 +422,7 @@ Position: ${input.position}
 
 Further instructions for the membership payment will be sent to you soon. Please do not send a payment until you receive them.
 
-Your Member ID and official group-chat link will be sent after your payment is verified.
+Your Member ID will be available on your dashboard after your payment is verified.
 
 Yours in Thomasian Leadership,
 The AWS Builders - UST Executive Board`;
@@ -447,7 +447,7 @@ The AWS Builders - UST Executive Board`;
   </tr>
 </table>
 <p style="margin:0 0 16px;">Further instructions for the membership payment will be sent to you soon. Please do not send a payment until you receive them.</p>
-<p style="margin:0 0 16px;">Your Member ID and official group-chat link will be sent after your payment is verified.</p>
+<p style="margin:0 0 16px;">Your Member ID will be available on your dashboard after your payment is verified.</p>
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
 <p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
   });
