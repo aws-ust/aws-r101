@@ -150,9 +150,6 @@ export async function getApplicantEditableApplication(applicationId: string) {
   const sortedChoices = [...choices].sort(
     (a, b) => a.preferenceRank - b.preferenceRank,
   );
-  const finalPlacement = sortedChoices.find(
-    (choice) => choice.positionId === application.finalPositionId,
-  );
 
   const [redirectPosition] = application.redirectPositionId
     ? await db
@@ -167,6 +164,12 @@ export async function getApplicantEditableApplication(applicationId: string) {
         .where(eq(positions.id, application.redirectPositionId))
         .limit(1)
     : [undefined];
+  // An accepted redirect places the applicant outside their own choices.
+  const finalPlacement =
+    sortedChoices.find((choice) => choice.positionId === application.finalPositionId) ??
+    (redirectPosition && redirectPosition.positionId === application.finalPositionId
+      ? redirectPosition
+      : undefined);
 
   const acceptedCommittee =
     application.redirectResponse === "accepted"

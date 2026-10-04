@@ -742,9 +742,13 @@ test("applicant editing", async (t) => {
     assert.equal(accepted.status, 200);
     const acceptedBody = (await accepted.json()) as {
       status: string;
-      result: { redirectResponse: string | null } | null;
+      result: {
+        redirectResponse: string | null;
+        finalPlacement: { positionId: string } | null;
+      } | null;
     };
     assert.equal(acceptedBody.status, "approved");
+    assert.equal(acceptedBody.result?.finalPlacement?.positionId, positionA2Id);
     assert.equal(acceptedBody.result?.redirectResponse, "accepted");
     const [row] = await db
       .select({ finalPositionId: applications.finalPositionId })
