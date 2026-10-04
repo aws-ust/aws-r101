@@ -250,7 +250,25 @@ export async function verifyMembershipPayment(
         updatedAt: reviewedAt,
       })
       .where(eq(membershipPayments.id, paymentId));
-    return { paymentId, memberId, verifiedAt: reviewedAt.toISOString() };
+    const [{ recipient }] = await tx
+      .select({ recipient: applicants.email })
+      .from(applications)
+      .innerJoin(applicants, eq(applications.applicantId, applicants.id))
+      .where(eq(applications.id, payment.applicationId));
+    const [notification] = await tx
+      .insert(emailNotifications)
+      .values({
+        applicationId: payment.applicationId,
+        messageType: "membership_verified" as const,
+        recipient,
+      })
+      .returning({ id: emailNotifications.id });
+    return {
+      paymentId,
+      memberId,
+      verifiedAt: reviewedAt.toISOString(),
+      notificationId: notification.id,
+    };
   });
 }
 
@@ -452,21 +470,28 @@ export async function releaseMembershipConfirmations(actor: AuthenticatedUser) {
     const linkByCommittee = new Map(
       links.map((link) => [link.committeeId, link.chatLink]),
     );
+    if (!campaign.generalChatLink) {
+      throw new MembershipPaymentError(
+        "Add the Members Facebook Group link on the Community Links page before releasing.",
+        409,
+      );
+    }
     const prepared = rows.map((row) => {
       const acceptedCommitteeApplicant =
         row.applicationType === "position" &&
         row.applicationStatus === "approved";
-      const chatLink = acceptedCommitteeApplicant
-        ? row.committeeId
+      const chatLink =
+        acceptedCommitteeApplicant && row.committeeId
           ? linkByCommittee.get(row.committeeId) ?? null
-          : null
-        : campaign.generalChatLink;
-      return { ...row, chatLink };
+          : null;
+      return { ...row, acceptedCommitteeApplicant, chatLink };
     });
-    const missingLinks = prepared.filter((row) => !row.chatLink).length;
+    const missingLinks = prepared.filter(
+      (row) => row.acceptedCommitteeApplicant && !row.chatLink,
+    ).length;
     if (missingLinks > 0) {
       throw new MembershipPaymentError(
-        `Add the required group-chat links for ${missingLinks} verified member${missingLinks === 1 ? "" : "s"}.`,
+        `Add the office or committee group chat links on the Community Links page for ${missingLinks} verified member${missingLinks === 1 ? "" : "s"}.`,
         409,
       );
     }

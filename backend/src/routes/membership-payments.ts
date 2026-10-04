@@ -342,9 +342,14 @@ membershipPaymentRoutes.post(
     const paymentId = c.req.param("paymentId");
     if (!UUID_RE.test(paymentId)) return c.json({ error: "Invalid payment id." }, 400);
     try {
-      return c.json(
-        await verifyMembershipPayment(paymentId, getCurrentUser(c)),
+      const { notificationId, ...verified } = await verifyMembershipPayment(
+        paymentId,
+        getCurrentUser(c),
       );
+      const emailDelivery = await deliverMembershipNotifications([
+        notificationId,
+      ]);
+      return c.json({ ...verified, emailDelivery });
     } catch (error) {
       const result = paymentError(error);
       return c.json(result.body, result.status);
