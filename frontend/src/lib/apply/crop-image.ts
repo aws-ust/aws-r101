@@ -1,4 +1,28 @@
 export type PixelCrop = { x: number; y: number; width: number; height: number }
+export type ImageSize = { width: number; height: number }
+
+/**
+ * A square crop (in image pixels) at the given zoom, centered on `center`
+ * and kept inside the image. Zoom 1 spans the image's short side.
+ */
+export function squareCropAt(
+  image: ImageSize,
+  zoom: number,
+  center: { x: number; y: number },
+): PixelCrop {
+  const side = Math.min(image.width, image.height) / zoom
+  const clamp = (value: number, max: number) => Math.min(Math.max(value, 0), max)
+  return {
+    x: clamp(center.x - side / 2, image.width - side),
+    y: clamp(center.y - side / 2, image.height - side),
+    width: side,
+    height: side,
+  }
+}
+
+export function cropCenter(crop: PixelCrop) {
+  return { x: crop.x + crop.width / 2, y: crop.y + crop.height / 2 }
+}
 
 const OUTPUT_SIZE = 800
 const JPEG_QUALITY = 0.9
