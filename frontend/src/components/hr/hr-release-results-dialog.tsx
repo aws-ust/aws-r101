@@ -52,7 +52,7 @@ export function HrReleaseResultsDialog({
           </Button>
           <Button
             type="button"
-            color="danger"
+            color="cyan"
             disabled={pending}
             onClick={onConfirm}
           >
