@@ -472,7 +472,7 @@ Good day, ${honorific},
 
 Thank you for applying to AWS Builders - UST and for the time and care you put into R101. We saw the effort you brought to this process, and it meant a lot to us.
 
-After careful deliberation, we regret to inform you that you were not selected for a committee position this term. This was not an easy decision. We had a highly competitive pool of applicants, and choosing among so many strong builders was genuinely difficult.
+After careful deliberation, we regret to inform you that you were not selected for a committee position this term. We had a highly competitive pool of applicants, and choosing among so many strong builders was genuinely difficult.
 
 You are still eligible to join AWS Builders - UST as a general member. Further instructions for the membership payment will be sent to you soon. Please do not send a payment yet.
 
@@ -494,7 +494,7 @@ The AWS Builders - UST Executive Board`;
 <p style="margin:0 0 0;line-height:8px;font-size:8px;">&nbsp;</p>
 <p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
 <p style="margin:0 0 16px;">Thank you for applying to AWS Builders - UST and for the time and care you put into R101. We saw the effort you brought to this process, and it meant a lot to us.</p>
-<p style="margin:0 0 16px;">After careful deliberation, we regret to inform you that you were not selected for a committee position this term. This was not an easy decision. We had a highly competitive pool of applicants, and choosing among so many strong builders was genuinely difficult.</p>
+<p style="margin:0 0 16px;">After careful deliberation, we regret to inform you that you were not selected for a committee position this term. We had a highly competitive pool of applicants, and choosing among so many strong builders was genuinely difficult.</p>
 <p style="margin:0 0 16px;">You are still eligible to join AWS Builders - UST as a general member. Further instructions for the membership payment will be sent to you soon. Please do not send a payment yet.</p>
 <p style="margin:0 0 16px;">Please know that this outcome does not take away from what you showed us. We would be glad to see you at our events and workshops, and we hope you will consider applying again in a future cycle.</p>
 <p style="margin:0 0 16px;">Thank you again, ${escapeHtml(honorific)}. We wish you the very best, and we hope our paths still cross in the cloud.</p>
