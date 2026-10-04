@@ -8,7 +8,6 @@ import { glassPanelClasses } from "@/lib/site/surface"
 const panelClasses = `${glassPanelClasses} mt-6 rounded-[22px] px-5 py-6`
 const eyebrowClasses = "font-mono text-[10px] uppercase tracking-[0.16em] text-aquamarine"
 const titleClasses = "mt-2 font-sans text-2xl font-bold text-blue-chalk"
-const bodyClasses = "mt-2 font-sans text-sm leading-relaxed text-prelude"
 const cardAreaClasses = "mt-6 flex justify-center"
 
 type MemberSectionProps = {
@@ -22,10 +21,7 @@ export function ApplicantMemberSection({ payment, card, application, onCardChang
   return (
     <section className={panelClasses} aria-labelledby="member-id-title">
       <p className={eyebrowClasses}>Membership</p>
-      <h2 id="member-id-title" className={titleClasses}>You are a member</h2>
-      <p className={bodyClasses}>
-        Your payment is verified. This is your digital AWS Builders - UST member ID.
-      </p>
+      <h2 id="member-id-title" className={titleClasses}>Official Digital Membership ID</h2>
       <div className={cardAreaClasses}>
         <MemberIdCard
           card={card}
