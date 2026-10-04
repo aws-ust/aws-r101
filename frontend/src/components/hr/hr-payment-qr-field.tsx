@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef } from "react"
-import { QrPreview } from "@/components/hr/hr-payment-qr-preview"
+import { QrPreview } from "@/components/shared/qr-preview"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 
