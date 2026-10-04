@@ -136,9 +136,20 @@ export type ApplicantPayment = {
     reviewedAt: string | null
     reviewReason: string | null
   } | null
+  /** Set once HR verifies the payment; drives the digital member ID. */
+  memberCard: MemberCard | null
   memberId: string | null
-  chatLink: string | null
+  membersGroupLink: string | null
+  committeeChatLink: string | null
+  committeeName: string | null
   confirmationReleasedAt: string | null
+}
+
+export type MemberCard = {
+  memberId: string
+  recruitmentYear: number
+  position: string
+  photoUrl: string | null
 }
 
 async function applicantFetch<T>(
@@ -246,6 +257,33 @@ export function submitApplicantPayment(body: {
     method: "POST",
     body: JSON.stringify(body),
   })
+}
+
+export function createMemberPhotoUpload(body: {
+  mimeType: "image/jpeg" | "image/png" | "image/webp"
+  sizeBytes: number
+  checksumSha256: string
+}) {
+  return applicantFetch<{
+    url: string
+    fields: Record<string, string>
+    key: string
+  }>("/applicant/payment/member-photo/presign", {
+    method: "POST",
+    body: JSON.stringify(body),
+  })
+}
+
+export function completeMemberPhotoUpload(body: {
+  mimeType: "image/jpeg" | "image/png" | "image/webp"
+  sizeBytes: number
+  checksumSha256: string
+  key: string
+}) {
+  return applicantFetch<{ memberCard: MemberCard | null }>(
+    "/applicant/payment/member-photo/complete",
+    { method: "POST", body: JSON.stringify(body) },
+  )
 }
 
 export async function logoutApplicant() {

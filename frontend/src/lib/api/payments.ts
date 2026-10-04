@@ -190,7 +190,10 @@ export function getPaymentReceiptUrl(paymentId: string, submissionId: string) {
 }
 
 export function verifyPayment(paymentId: string) {
-  return apiFetch(`/membership-payments/${paymentId}/verify`, {
+  return apiFetch<{
+    memberId: string
+    emailDelivery: { sent: number; failed: number }
+  }>(`/membership-payments/${paymentId}/verify`, {
     method: "POST",
   })
 }
