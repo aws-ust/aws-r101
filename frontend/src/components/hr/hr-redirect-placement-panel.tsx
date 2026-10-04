@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import {
   listPositionApprovalTargets,
   patchApplicationRedirectPlacement,
-  patchApplicationRedirectResponse,
   type PositionApprovalTarget,
 } from "@/lib/api"
 import { redirectPlacementLabel } from "@/lib/hr/application-display"
@@ -24,6 +23,7 @@ const headerClasses = "font-sans text-lg font-semibold text-blue-chalk"
 const helpClasses = "mt-1 font-sans text-sm leading-relaxed text-pretty text-prelude"
 const editorClasses = "mt-4 flex min-w-0 flex-col gap-4"
 const actionsClasses = "flex flex-wrap gap-2"
+const waitingClasses = "mt-4 font-sans text-sm text-prelude"
 const tagClasses =
   "inline-flex w-fit items-center rounded-pill bg-daisy-bush/70 px-3 py-0.5 font-mono text-[11px] text-blue-chalk"
 
@@ -100,7 +100,7 @@ export function HrRedirectPlacementPanel({ application, onUpdated }: Props) {
 
   const tag = redirectPlacementLabel(application)
   const canEditPlacement = !application.redirectResponse
-  const canRecordResponse =
+  const awaitingApplicant =
     Boolean(application.redirectPlacement) &&
     Boolean(application.resultsReleasedAt) &&
     !application.redirectResponse
@@ -130,29 +130,6 @@ export function HrRedirectPlacementPanel({ application, onUpdated }: Props) {
     }
   }
 
-  async function recordResponse(response: "accepted" | "declined") {
-    setPending(response)
-    setFeedback(null)
-    try {
-      onUpdated(await patchApplicationRedirectResponse(application.id, response))
-      setFeedback({
-        type: "success",
-        message:
-          response === "accepted"
-            ? "Recorded acceptance of the redirected role."
-            : "Recorded decline — applicant continues as a general member.",
-      })
-    } catch (error) {
-      setFeedback({
-        type: "error",
-        message:
-          error instanceof Error ? error.message : "Could not record the redirect response.",
-      })
-    } finally {
-      setPending(null)
-    }
-  }
-
   return (
     <section className={panelClasses} aria-labelledby="redirect-placement-title">
       <div className="flex flex-wrap items-center gap-3">
@@ -163,8 +140,8 @@ export function HrRedirectPlacementPanel({ application, onUpdated }: Props) {
       </div>
       <p className={helpClasses}>
         Offer a committee position outside the applicant&apos;s choices. Results release
-        sends the redirected-placement email. Record their email reply here when it
-        arrives. Saving a redirect un-accepts any approved choice.
+        sends the redirected-placement email, and the applicant accepts or declines from
+        their dashboard. Saving a redirect un-accepts any approved choice.
       </p>
       {feedback ? (
         <div className="mt-4">
@@ -215,25 +192,10 @@ export function HrRedirectPlacementPanel({ application, onUpdated }: Props) {
           {application.redirectPlacement.title}
         </p>
       ) : null}
-      {canRecordResponse ? (
-        <div className={actionsClasses}>
-          <Button
-            color="cyan"
-            className="h-9 rounded-pill px-4 font-mono text-xs"
-            disabled={Boolean(pending)}
-            onClick={() => void recordResponse("accepted")}
-          >
-            Record accepted redirect
-          </Button>
-          <Button
-            color="purple"
-            className="h-9 rounded-pill px-4 font-mono text-xs"
-            disabled={Boolean(pending)}
-            onClick={() => void recordResponse("declined")}
-          >
-            Record declined — member
-          </Button>
-        </div>
+      {awaitingApplicant ? (
+        <p className={waitingClasses}>
+          Waiting for the applicant to accept or decline on their dashboard.
+        </p>
       ) : null}
     </section>
   )
