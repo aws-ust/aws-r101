@@ -10,6 +10,7 @@ import {
   applicants,
   applications,
   committees,
+  emailNotifications,
   membershipPaymentCampaigns,
   membershipPayments,
   membershipPaymentSubmissions,
@@ -234,6 +235,20 @@ test("membership payment workflow", async (t) => {
     await db.update(applications).set({ archivedAt: null }).where(eq(applications.id, ids.acceptedApplication));
     const verified = await staffRequest(`/membership-payments/${payment.id}/verify`, hrToken, { method: "POST" });
     assert.equal(verified.status, 200);
+    const verifiedBody = (await verified.json()) as { memberId: string; emailDelivery: { sent: number; failed: number } };
+    assert.match(verifiedBody.memberId, /^AWS-2096-\d{4}$/);
+    assert.equal(verifiedBody.emailDelivery.sent + verifiedBody.emailDelivery.failed, 1);
+    const verifiedEmails = await db.select().from(emailNotifications).where(eq(emailNotifications.applicationId, ids.acceptedApplication));
+    assert.equal(verifiedEmails.filter((row) => row.messageType === "membership_verified").length, 1);
+    const afterVerify = (await (await app.request("/applicant/payment", { headers: { Cookie: `applicant_token=${applicantToken}` } })).json()) as { payment: { memberCard: { memberId: string; position: string; photoUrl: string | null } | null; membersGroupLink: string | null } };
+    assert.equal(afterVerify.payment.memberCard?.memberId, verifiedBody.memberId);
+    assert.equal(afterVerify.payment.memberCard?.position, "Payment Staff");
+    assert.equal(afterVerify.payment.memberCard?.photoUrl, null);
+    assert.equal(afterVerify.payment.membersGroupLink, null);
+    const photoBody = JSON.stringify({ mimeType: "image/png", sizeBytes: 100, checksumSha256: "A".repeat(43) + "=" });
+    const photoPresign = await app.request("/applicant/payment/member-photo/presign", { method: "POST", headers: { ...originHeaders(), "Content-Type": "application/json", Cookie: `applicant_token=${applicantToken}` }, body: photoBody });
+    assert.equal(photoPresign.status, 201);
+    assert.match(((await photoPresign.json()) as { key: string }).key, new RegExp(`^incoming/member-photos/${ids.acceptedApplication}/`));
     const [application] = await db.select({ memberId: applications.memberId }).from(applications).where(eq(applications.id, ids.acceptedApplication));
     assert.match(application.memberId ?? "", /^AWS-2096-\d{4}$/);
   });
@@ -299,6 +314,9 @@ test("membership payment workflow", async (t) => {
     const [payment] = await db.select().from(membershipPayments).where(eq(membershipPayments.applicationId, ids.acceptedApplication));
     assert.equal(payment.assignedChatLink, "https://m.me/j/committee-test");
     assert.equal(payment.confirmationStatus, "email_failed");
+    const released = (await (await app.request("/applicant/payment", { headers: { Cookie: `applicant_token=${applicantToken}` } })).json()) as { payment: { membersGroupLink: string | null; committeeChatLink: string | null } };
+    assert.equal(released.payment.membersGroupLink, "https://m.me/j/general-test");
+    assert.equal(released.payment.committeeChatLink, "https://m.me/j/committee-test");
     assert.equal((await staffRequest("/membership-payments/emails/retry-confirmations", financeToken, { method: "POST" })).status, 401);
     const confirmationRetry = await staffRequest(
       "/membership-payments/emails/retry-confirmations",
