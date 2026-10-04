@@ -192,6 +192,13 @@ export function getApplicantApplication() {
   return applicantFetch<ApplicantApplication>("/applicant/application")
 }
 
+export function respondToRedirect(response: "accepted" | "declined") {
+  return applicantFetch<ApplicantApplication>("/applicant/application/redirect-response", {
+    method: "POST",
+    body: JSON.stringify({ response }),
+  })
+}
+
 export function updateApplicantChoices(body: {
   choices: { positionId: string; preferenceRank: 1 | 2 }[]
   slotId?: string

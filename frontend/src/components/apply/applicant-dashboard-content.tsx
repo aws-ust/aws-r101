@@ -132,7 +132,10 @@ export function ApplicantDashboardContent({
       {application.applicationType !== "position" ? (
         <ApplicantMembershipStatus application={application} />
       ) : application.result ? (
-        <ApplicantResultPanel result={application.result} />
+        <ApplicantResultPanel
+          result={application.result}
+          onApplicationUpdated={onApplicationUpdated}
+        />
       ) : (
         <ApplicantPendingSections {...props} />
       )}

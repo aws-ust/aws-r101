@@ -1,5 +1,6 @@
 import { ApplicantGroupLinks } from "@/components/apply/applicant-group-links"
-import type { ApplicantResult } from "@/lib/api/applicant"
+import { ApplicantRedirectResponse } from "@/components/apply/applicant-redirect-response"
+import type { ApplicantApplication, ApplicantResult } from "@/lib/api/applicant"
 import { glassPanelClasses } from "@/lib/site/surface"
 const panelClasses = `${glassPanelClasses} mt-6 rounded-[22px] px-5 py-5`
 const eyebrowClasses =
@@ -36,20 +37,33 @@ function PlacementDetail({
   )
 }
 
-function RedirectOfferBody({ placement }: { placement: Placement | null }) {
+function RedirectOfferBody({
+  placement,
+  onApplicationUpdated,
+}: {
+  placement: Placement | null
+  onApplicationUpdated: (application: ApplicantApplication) => void
+}) {
   return (
     <>
       <h2 id="application-result-title" className={headingClasses}>
         Redirected placement offer
       </h2>
       <p className={bodyClasses}>
-        You have been offered a redirected committee placement. Reply to the
-        placement email with your decision. Membership payment instructions
-        will be sent after HR records your reply.
+        You have been offered a redirected committee placement. Choose below
+        whether to accept it. Membership payment instructions will follow your
+        answer.
       </p>
       <span className={tagClasses}>Redirected — awaiting your reply</span>
       {placement ? (
-        <PlacementDetail label="Offered placement" placement={placement} />
+        <>
+          <PlacementDetail label="Offered placement" placement={placement} />
+          <ApplicantRedirectResponse
+            position={placement.title}
+            committee={placement.committee}
+            onApplicationUpdated={onApplicationUpdated}
+          />
+        </>
       ) : null}
     </>
   )
@@ -78,7 +92,13 @@ function resolvePlacement(result: ApplicantResult, redirectPending: boolean) {
   return result.finalPlacement
 }
 
-export function ApplicantResultPanel({ result }: { result: ApplicantResult }) {
+export function ApplicantResultPanel({
+  result,
+  onApplicationUpdated,
+}: {
+  result: ApplicantResult
+  onApplicationUpdated: (application: ApplicantApplication) => void
+}) {
   const redirectPending =
     result.redirectPlacement !== null && result.redirectResponse === null
   const accepted =
@@ -90,7 +110,7 @@ export function ApplicantResultPanel({ result }: { result: ApplicantResult }) {
     <section className={panelClasses} aria-labelledby="application-result-title">
       <p className={eyebrowClasses}>Final Result</p>
       {redirectPending ? (
-        <RedirectOfferBody placement={placement} />
+        <RedirectOfferBody placement={placement} onApplicationUpdated={onApplicationUpdated} />
       ) : accepted && placement ? (
         <>
           <PlacementDetail
