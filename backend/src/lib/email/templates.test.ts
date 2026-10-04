@@ -12,6 +12,7 @@ import {
   applicationSubmittedTemplate,
   memberRegistrationTemplate,
   membershipConfirmationTemplate,
+  membershipVerifiedTemplate,
   officerApplicationNoticeTemplate,
   paymentInvitationTemplate,
   resultAcceptedTemplate,
@@ -166,7 +167,7 @@ test("applicant email templates use compact, plain formatting", async (t) => {
     assert.match(invitation.text, /general member/);
     assert.match(invitation.text, /₱250\.00/);
     assert.match(invitation.text, /manual verification/);
-    assert.match(invitation.html, />Open payment instructions</);
+    assert.match(invitation.html, />Open Payment Instructions</);
   });
 
   await t.test("includes the Member ID and assigned group-chat link", () => {
@@ -174,13 +175,42 @@ test("applicant email templates use compact, plain formatting", async (t) => {
       lastName: "Olmedo",
       memberId: "AWS-2026-0123",
       placement: "Development Committee Staff",
-      chatLink: "https://m.me/j/development-test",
+      membersGroupLink: "https://www.facebook.com/groups/members-test",
+      committeeChatLink: "https://m.me/j/development-test",
+      committeeName: "Development Committee",
     });
 
     assert.match(confirmation.subject, /AWS-2026-0123/);
     assert.match(confirmation.text, /Development Committee Staff/);
+    assert.match(confirmation.text, /groups\/members-test/);
     assert.match(confirmation.text, /https:\/\/m\.me\/j\/development-test/);
-    assert.match(confirmation.html, />Join the Messenger group chat</);
+    assert.match(confirmation.html, />Join The Members Facebook Group</);
+    assert.match(confirmation.html, />Join The Development Committee Group Chat</);
+
+    const general = membershipConfirmationTemplate({
+      lastName: "Olmedo",
+      memberId: "AWS-2026-0124",
+      placement: null,
+      membersGroupLink: "https://www.facebook.com/groups/members-test",
+      committeeChatLink: null,
+      committeeName: null,
+    });
+    assert.match(general.html, />Join The Members Facebook Group</);
+    assert.doesNotMatch(general.html, /Group Chat</);
+  });
+
+  await t.test("verification email welcomes a bona fide member with their Member ID", () => {
+    const email = membershipVerifiedTemplate({
+      lastName: "Olmedo",
+      memberId: "AWS-2026-0123",
+      position: "Executive Assistant to the Chief Relations Officer",
+    });
+
+    assert.match(email.subject, /AWS-2026-0123/);
+    assert.match(email.text, /bona fide member of AWS Builders - UST/);
+    assert.match(email.text, /Member ID: AWS-2026-0123/);
+    assert.match(email.text, /Executive Assistant to the Chief Relations Officer/);
+    assert.match(email.html, />View Your Member ID</);
   });
 
   await t.test("application received includes dev exam copy when Development is a choice", () => {

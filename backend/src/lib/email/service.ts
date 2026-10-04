@@ -29,6 +29,7 @@ import {
   officerApplicationNoticeTemplate,
   memberRegistrationTemplate,
   membershipConfirmationTemplate,
+  membershipVerifiedTemplate,
   paymentInvitationTemplate,
   resultAcceptedTemplate,
   resultRejectedTemplate,
@@ -515,6 +516,12 @@ export function deliverQueuedResultEmail(input: {
 
 export function renderPaymentInvitation(input: Parameters<typeof paymentInvitationTemplate>[0]) {
   return paymentInvitationTemplate(input);
+}
+
+export function renderMembershipVerified(
+  input: Parameters<typeof membershipVerifiedTemplate>[0],
+) {
+  return membershipVerifiedTemplate(input);
 }
 
 export function renderMembershipConfirmation(

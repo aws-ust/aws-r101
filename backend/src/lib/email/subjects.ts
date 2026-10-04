@@ -89,3 +89,7 @@ export function paymentInvitationSubject(applicationCode: string): string {
 export function membershipConfirmationSubject(memberId: string): string {
   return `Welcome to AWS Builders - UST | ${memberId}`;
 }
+
+export function membershipVerifiedSubject(memberId: string): string {
+  return `You are officially a Builder! | AWS Builders - UST (${memberId})`;
+}

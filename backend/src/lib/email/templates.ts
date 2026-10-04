@@ -11,6 +11,7 @@ import {
   officerApplicationNoticeSubject,
   memberRegistrationSubject,
   membershipConfirmationSubject,
+  membershipVerifiedSubject,
   paymentInvitationSubject,
   resultAcceptedSubject,
   resultRejectedSubject,
@@ -654,28 +655,78 @@ ${ctaButton(statusUrl, "Open payment instructions")}
   };
 }
 
-export function membershipConfirmationTemplate(input: {
+export function membershipVerifiedTemplate(input: {
   lastName: string;
   memberId: string;
-  chatLink: string;
-  placement: string | null;
+  position: string;
 }): RenderedEmail {
   const honorific = `Mx. ${input.lastName}`;
-  const placement = input.placement ?? "General Member";
-  const text = `Greetings from the Clouds!\n\nGood day, ${honorific},\n\nYour membership payment has been verified. Welcome to AWS Builders - UST!\n\nMember ID: ${input.memberId}\nMembership: ${placement}\n\nJoin your official Messenger group chat: ${input.chatLink}\n\nYours in Thomasian Leadership,\nThe AWS Builders - UST Executive Board`;
+  const dashboardUrl = `${appBaseUrl()}/apply/dashboard`;
+  const text = `Greetings from the Clouds!\n\nGood day, ${honorific},\n\nYour membership payment has been verified. You are now a bona fide member of AWS Builders - UST!\n\nMember ID: ${input.memberId}\nMembership: ${input.position}\n\nPlease keep your Member ID for your records. You will use it for events, attendance, and other member services. You can also view your digital member ID anytime on your applicant dashboard: ${dashboardUrl}\n\nLinks to join the Members Facebook Group and your committee group chat will be sent in a separate email soon.\n\nYours in Thomasian Leadership,\nThe AWS Builders - UST Executive Board`;
   const html = wrapBrandedHtml({
     eyebrow: "AWS BUILDERS – UST",
     bannerTitle: "WELCOME, BUILDER!",
     bannerSub: input.memberId,
-    heading: "Membership Confirmed",
+    heading: "You Are Now a Member",
     headerImageUrl: `cid:${APPLICATION_RECEIVED_HEADER_CID}`,
     headerImageAlt: "AWS Builders - UST — It's Always Day One",
     inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
 <p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
-<p style="margin:0 0 16px;">Your membership payment has been verified. Welcome to AWS Builders - UST!</p>
+<p style="margin:0 0 16px;">Your membership payment has been verified. You are now a bona fide member of AWS Builders - UST!</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;background:#f8f5ff;border-radius:8px;">
+  <tr>
+    <td style="padding:16px 18px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#170f33;">
+      <p style="margin:0 0 8px;"><strong>Member ID</strong><br>${escapeHtml(input.memberId)}</p>
+      <p style="margin:0;"><strong>Membership</strong><br>${escapeHtml(input.position)}</p>
+    </td>
+  </tr>
+</table>
+<p style="margin:0 0 16px;">Please keep your Member ID for your records. You will use it for events, attendance, and other member services. You can also view your digital member ID anytime on your applicant dashboard.</p>
+${ctaButton(dashboardUrl, "View your member ID")}
+<p style="margin:0 0 16px;">Links to join the Members Facebook Group and your committee group chat will be sent in a separate email soon.</p>
+<p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
+<p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
+  });
+  return {
+    subject: membershipVerifiedSubject(input.memberId),
+    text,
+    html,
+    inline: [brandedEmailHeaderInline()],
+  };
+}
+
+export function membershipConfirmationTemplate(input: {
+  lastName: string;
+  memberId: string;
+  membersGroupLink: string;
+  committeeChatLink: string | null;
+  committeeName: string | null;
+  placement: string | null;
+}): RenderedEmail {
+  const honorific = `Mx. ${input.lastName}`;
+  const placement = input.placement ?? "General Member";
+  const committeeLabel = input.committeeName ?? "Committee";
+  const committeeText = input.committeeChatLink
+    ? `\n${committeeLabel} group chat: ${input.committeeChatLink}`
+    : "";
+  const text = `Greetings from the Clouds!\n\nGood day, ${honorific},\n\nHere are your official AWS Builders - UST groups. Please join them so you do not miss announcements and updates.\n\nMember ID: ${input.memberId}\nMembership: ${placement}\n\nMembers Facebook Group: ${input.membersGroupLink}${committeeText}\n\nYours in Thomasian Leadership,\nThe AWS Builders - UST Executive Board`;
+  const committeeButton = input.committeeChatLink
+    ? ctaButton(input.committeeChatLink, `Join the ${committeeLabel} group chat`)
+    : "";
+  const html = wrapBrandedHtml({
+    eyebrow: "AWS BUILDERS – UST",
+    bannerTitle: "WELCOME, BUILDER!",
+    bannerSub: input.memberId,
+    heading: "Join Your AWS Builders Groups",
+    headerImageUrl: `cid:${APPLICATION_RECEIVED_HEADER_CID}`,
+    headerImageAlt: "AWS Builders - UST — It's Always Day One",
+    inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
+<p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
+<p style="margin:0 0 16px;">Here are your official AWS Builders - UST groups. Please join them so you do not miss announcements and updates.</p>
 <p style="margin:0 0 8px;"><strong>Member ID:</strong> ${escapeHtml(input.memberId)}</p>
 <p style="margin:0 0 16px;"><strong>Membership:</strong> ${escapeHtml(placement)}</p>
-${ctaButton(input.chatLink, "Join the Messenger group chat")}
+${ctaButton(input.membersGroupLink, "Join the Members Facebook Group")}
+${committeeButton}
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
 <p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
   });
