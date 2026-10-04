@@ -19,7 +19,7 @@ import type { ApplicantListStatusTag } from "@/lib/hr/application-display"
 
 // Search gets its own row on medium screens; all four filters share one row on wide screens.
 const rowClasses =
-  "grid grid-cols-1 gap-3 md:grid-cols-3 2xl:grid-cols-[minmax(14rem,1fr)_13rem_minmax(15rem,18rem)_12rem]"
+  "grid grid-cols-1 gap-3 md:grid-cols-3 2xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)_minmax(0,1.2fr)_minmax(0,1fr)]"
 const searchClasses = cn(fieldControlClasses, "border border-blue-chalk/20 md:col-span-3 2xl:col-span-1")
 const statusSelectClasses = cn(hrFilterSelectClasses, "w-full")
 const typeSelectClasses = cn(hrFilterSelectClasses, "w-full")
