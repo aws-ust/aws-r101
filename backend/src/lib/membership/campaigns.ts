@@ -41,7 +41,10 @@ export type PaymentQrInput = {
   checksumSha256: string;
 };
 
-export type CompletePaymentQrInput = PaymentQrInput & { key: string };
+export type CompletePaymentQrInput = PaymentQrInput & {
+  key: string;
+  fileName?: string;
+};
 
 function clean(value: string | null) {
   const trimmed = value?.trim() ?? "";
@@ -220,10 +223,11 @@ export async function completeCurrentPaymentQrUpload(
     );
   }
   const key = await persistPaymentQr({ campaignId: campaign.id, ...input });
+  const fileName = clean(input.fileName ?? null);
   const values =
     input.provider === "gcash"
-      ? { gcashQrImageKey: key }
-      : { bpiQrImageKey: key };
+      ? { gcashQrImageKey: key, gcashQrFileName: fileName }
+      : { bpiQrImageKey: key, bpiQrFileName: fileName };
   const [updated] = await db
     .update(membershipPaymentCampaigns)
     .set({ ...values, updatedAt: new Date() })

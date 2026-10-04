@@ -176,3 +176,23 @@ export function createPaymentQrDownload(key: string) {
     { expiresIn: 10 * 60 },
   );
 }
+
+type CampaignQrFields = {
+  gcashQrImageKey: string | null;
+  gcashQrImageUrl: string | null;
+  bpiQrImageKey: string | null;
+  bpiQrImageUrl: string | null;
+};
+
+/** Adds short-lived download URLs so HR can preview the saved QR images. */
+export async function withQrPreviewUrls<T extends CampaignQrFields>(campaign: T) {
+  const [gcashQrPreviewUrl, bpiQrPreviewUrl] = await Promise.all([
+    campaign.gcashQrImageKey
+      ? createPaymentQrDownload(campaign.gcashQrImageKey)
+      : campaign.gcashQrImageUrl,
+    campaign.bpiQrImageKey
+      ? createPaymentQrDownload(campaign.bpiQrImageKey)
+      : campaign.bpiQrImageUrl,
+  ]);
+  return { ...campaign, gcashQrPreviewUrl, bpiQrPreviewUrl };
+}
