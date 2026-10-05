@@ -54,7 +54,7 @@ export function MemberIdCardFront({
           {photoUrl ? (
             // Signed S3 URLs are dynamic, so next/image cannot optimize them.
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={photoUrl} alt={`${fullName} ID photo`} className="size-full object-cover" />
+            <img src={photoUrl} alt={fullName} className="size-full object-cover" />
           ) : (
             <UserRound className="size-12 text-prelude" aria-hidden />
           )}

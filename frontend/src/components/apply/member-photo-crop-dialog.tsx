@@ -107,7 +107,7 @@ export function MemberPhotoCropDialog({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={imageSrc}
-              alt="Photo to crop"
+              alt="Your upload, ready to crop"
               onLoad={(event) => {
                 const size = { width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight }
                 setImage(size)
