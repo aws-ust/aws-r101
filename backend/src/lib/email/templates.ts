@@ -653,22 +653,16 @@ function pesoAmount(amountCents: number) {
   }).format(amountCents / 100);
 }
 
-function paymentApplicantMessage(
-  kind: "accepted" | "rejected" | "member",
-) {
-  if (kind === "accepted") {
-    return "Your committee application was accepted. Complete your membership payment using the official details in your applicant dashboard.";
-  }
-  if (kind === "rejected") {
-    return "You may still join AWS Builders - UST as a general member. Complete your membership payment using the official details in your applicant dashboard.";
-  }
-  return "Your member-only registration is eligible for payment. Complete your membership payment using the official details in your applicant dashboard.";
-}
+// One message for everyone invited to pay: accepted committee members,
+// member-only applicants, and anyone joining as a general member.
+const paymentInvitationMessage =
+  "The membership payment period for AWS Builders - UST is now open. To complete your membership, please pay the membership fee using the official payment details on your applicant dashboard.";
+const paymentVerificationNote =
+  "Your payment is only marked as paid after our Finance team verifies your receipt.";
 
 export function paymentInvitationTemplate(input: {
   lastName: string;
   applicationCode: string;
-  kind: "accepted" | "rejected" | "member";
   amountCents: number;
   deadlineAt: Date;
 }): RenderedEmail {
@@ -680,8 +674,8 @@ export function paymentInvitationTemplate(input: {
     timeStyle: "short",
   });
   const statusUrl = `${appBaseUrl()}/apply/status`;
-  const message = paymentApplicantMessage(input.kind);
-  const text = `Greetings from the Clouds!\n\nGood day, ${honorific},\n\n${message}\n\nAmount: ${amount}\nDeadline: ${deadline}\nApplication ID: ${input.applicationCode}\n\nOpen your application: ${statusUrl}\n\nPayment is only marked paid after manual verification.\n\nYours in Thomasian Leadership,\nThe AWS Builders - UST Executive Board`;
+  const message = paymentInvitationMessage;
+  const text = `Greetings from the Clouds!\n\nGood day, ${honorific},\n\n${message}\n\nAmount: ${amount}\nDeadline: ${deadline}\nApplication ID: ${input.applicationCode}\n\nOpen payment instructions: ${statusUrl}\n\n${paymentVerificationNote}\n\nYours in Thomasian Leadership,\nThe AWS Builders - UST Executive Board`;
   const html = wrapBrandedHtml({
     eyebrow: "AWS BUILDERS – UST",
     bannerTitle: "MEMBERSHIP PAYMENT",
@@ -696,7 +690,7 @@ export function paymentInvitationTemplate(input: {
 <p style="margin:0 0 8px;"><strong>Deadline:</strong> ${escapeHtml(deadline)}</p>
 <p style="margin:0 0 16px;"><strong>Application ID:</strong> ${escapeHtml(input.applicationCode)}</p>
 ${ctaButton(statusUrl, "Open payment instructions")}
-<p style="margin:0 0 16px;">Your payment is only marked as paid after an authorized reviewer verifies the receipt.</p>
+<p style="margin:0 0 16px;">${escapeHtml(paymentVerificationNote)}</p>
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
 <p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
   });

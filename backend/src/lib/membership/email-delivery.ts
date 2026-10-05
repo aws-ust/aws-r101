@@ -72,12 +72,6 @@ export async function deliverMembershipNotifications(
         return "failed" as const;
       }
       if (row.messageType === "payment_invitation") {
-        const kind =
-          row.applicationType === "member"
-            ? "member"
-            : row.applicationStatus === "approved"
-              ? "accepted"
-              : "rejected";
         return deliverNotification({
           notificationId: row.notificationId,
           messageType: row.messageType,
@@ -85,7 +79,6 @@ export async function deliverMembershipNotifications(
           rendered: renderPaymentInvitation({
             lastName: row.lastName,
             applicationCode: row.applicationCode,
-            kind,
             amountCents: row.amountCents,
             deadlineAt: row.deadlineAt,
           }),

@@ -175,15 +175,15 @@ test("applicant email templates use compact, plain formatting", async (t) => {
     const invitation = paymentInvitationTemplate({
       lastName: "Olmedo",
       applicationCode: "AP-2026-288404",
-      kind: "rejected",
       amountCents: 25000,
       deadlineAt: new Date("2026-10-31T15:59:00.000Z"),
     });
 
     assert.match(invitation.subject, /AP-2026-288404/);
-    assert.match(invitation.text, /general member/);
+    assert.match(invitation.text, /membership payment period/);
+    assert.doesNotMatch(invitation.text, /general member|committee application/);
     assert.match(invitation.text, /₱250\.00/);
-    assert.match(invitation.text, /manual verification/);
+    assert.match(invitation.text, /Finance team verifies your receipt/);
     assert.match(invitation.html, />Open Payment Instructions</);
   });
 
