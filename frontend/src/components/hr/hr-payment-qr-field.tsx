@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 
 const sectionClasses = "mt-5 border-t border-blue-chalk/15 pt-5"
-const sectionTitleClasses = "mb-3 font-sans text-sm font-semibold text-biloba-flower"
+const sectionTitleClasses = "font-sans text-sm font-semibold text-biloba-flower"
+const audienceClasses = "mt-1 font-sans text-xs text-prelude"
+const headerClasses = "mb-3"
 const rowClasses = "flex flex-col gap-4 sm:flex-row sm:items-start"
 const fieldClasses = "flex min-w-0 flex-1 flex-col gap-2"
 const fileNameClasses = "truncate font-sans text-sm font-medium text-blue-chalk"
@@ -15,7 +17,10 @@ const actionsClasses = "mt-1 flex flex-wrap gap-2"
 const actionButtonClasses = "h-9 px-4 text-xs"
 
 type PaymentQrFieldProps = {
+  id: string
   label: string
+  /** Who pays through this QR, shown under the title. */
+  audience?: string
   savedPreviewUrl: string | null
   savedFileName: string | null
   hasSavedQr: boolean
@@ -33,14 +38,15 @@ function useFilePreviewUrl(file: File | null) {
 }
 
 export function PaymentQrField({
+  id,
   label,
+  audience,
   savedPreviewUrl,
   savedFileName,
   hasSavedQr,
   qrFile,
   onQr,
 }: PaymentQrFieldProps) {
-  const id = `${label.toLowerCase()}-qr`
   const inputRef = useRef<HTMLInputElement>(null)
   const pendingPreviewUrl = useFilePreviewUrl(qrFile)
   const previewUrl = pendingPreviewUrl ?? savedPreviewUrl
@@ -53,7 +59,10 @@ export function PaymentQrField({
 
   return (
     <div className={sectionClasses}>
-      <p className={sectionTitleClasses}>{label}</p>
+      <div className={headerClasses}>
+        <p className={sectionTitleClasses}>{label}</p>
+        {audience ? <p className={audienceClasses}>{audience}</p> : null}
+      </div>
       <div className={rowClasses}>
         {previewUrl ? (
           <QrPreview

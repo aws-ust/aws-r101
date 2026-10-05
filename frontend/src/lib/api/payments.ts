@@ -18,6 +18,10 @@ export type PaymentCampaign = {
   gcashAccountNumber: string | null
   gcashQrImageUrl: string | null
   gcashQrImageKey: string | null
+  /** CFO's QR for everyone accepted into a committee (EAs and staff). */
+  gcashCoreQrImageKey?: string | null
+  gcashCoreQrFileName?: string | null
+  gcashCoreQrPreviewUrl?: string | null
   gcashQrFileName?: string | null
   bpiAccountName: string | null
   bpiAccountNumber: string | null
@@ -110,7 +114,7 @@ export type PaymentDetailsInput = Pick<
   | "bpiAccountNumber"
 > & { amountCents: number }
 
-export type PaymentQrProvider = "gcash" | "bpi"
+export type PaymentQrProvider = "gcash" | "gcash_core" | "bpi"
 export type PaymentQrMimeType = "image/jpeg" | "image/png" | "image/webp"
 export type PaymentQrUploadInput = {
   provider: PaymentQrProvider
