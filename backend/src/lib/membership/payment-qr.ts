@@ -20,7 +20,8 @@ export const PAYMENT_QR_MIME_TYPES = [
   "image/webp",
 ] as const;
 export type PaymentQrMimeType = (typeof PAYMENT_QR_MIME_TYPES)[number];
-export type PaymentQrProvider = "gcash" | "bpi";
+/** "gcash" is the Director for Finance's QR for general members; "gcash_core" is the CFO's for accepted committee members. */
+export type PaymentQrProvider = "gcash" | "gcash_core" | "bpi";
 
 const EXTENSIONS: Record<PaymentQrMimeType, string> = {
   "image/jpeg": "jpg",
@@ -180,19 +181,23 @@ export function createPaymentQrDownload(key: string) {
 type CampaignQrFields = {
   gcashQrImageKey: string | null;
   gcashQrImageUrl: string | null;
+  gcashCoreQrImageKey: string | null;
   bpiQrImageKey: string | null;
   bpiQrImageUrl: string | null;
 };
 
 /** Adds short-lived download URLs so HR can preview the saved QR images. */
 export async function withQrPreviewUrls<T extends CampaignQrFields>(campaign: T) {
-  const [gcashQrPreviewUrl, bpiQrPreviewUrl] = await Promise.all([
+  const [gcashQrPreviewUrl, gcashCoreQrPreviewUrl, bpiQrPreviewUrl] = await Promise.all([
     campaign.gcashQrImageKey
       ? createPaymentQrDownload(campaign.gcashQrImageKey)
       : campaign.gcashQrImageUrl,
+    campaign.gcashCoreQrImageKey
+      ? createPaymentQrDownload(campaign.gcashCoreQrImageKey)
+      : null,
     campaign.bpiQrImageKey
       ? createPaymentQrDownload(campaign.bpiQrImageKey)
       : campaign.bpiQrImageUrl,
   ]);
-  return { ...campaign, gcashQrPreviewUrl, bpiQrPreviewUrl };
+  return { ...campaign, gcashQrPreviewUrl, gcashCoreQrPreviewUrl, bpiQrPreviewUrl };
 }

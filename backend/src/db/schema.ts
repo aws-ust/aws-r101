@@ -531,6 +531,9 @@ export const membershipPaymentCampaigns = pgTable(
     gcashQrImageUrl: text("gcash_qr_image_url"),
     gcashQrImageKey: text("gcash_qr_image_key"),
     gcashQrFileName: text("gcash_qr_file_name"),
+    /** CFO's GCash QR, used by everyone accepted into a committee (EAs and staff). */
+    gcashCoreQrImageKey: text("gcash_core_qr_image_key"),
+    gcashCoreQrFileName: text("gcash_core_qr_file_name"),
     bpiAccountName: varchar("bpi_account_name", { length: 150 }),
     bpiAccountNumber: varchar("bpi_account_number", { length: 50 }),
     bpiQrImageUrl: text("bpi_qr_image_url"),

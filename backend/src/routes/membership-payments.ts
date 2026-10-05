@@ -65,7 +65,7 @@ const paymentDetailsSchema = z.object({
   bpiAccountNumber: nullableAccountNumber,
 });
 const paymentQrSchema = z.object({
-  provider: z.enum(["gcash", "bpi"]),
+  provider: z.enum(["gcash", "gcash_core", "bpi"]),
   mimeType: z.enum(PAYMENT_QR_MIME_TYPES),
   sizeBytes: z.number().int().positive().max(MAX_PAYMENT_QR_SIZE_BYTES),
   checksumSha256: z.string().regex(/^[A-Za-z0-9+/]{43}=$/),

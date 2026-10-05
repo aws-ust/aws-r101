@@ -92,6 +92,7 @@ async function loadApplicantPayment(applicationId: string) {
       gcashAccountNumber: membershipPaymentCampaigns.gcashAccountNumber,
       gcashQrImageUrl: membershipPaymentCampaigns.gcashQrImageUrl,
       gcashQrImageKey: membershipPaymentCampaigns.gcashQrImageKey,
+      gcashCoreQrImageKey: membershipPaymentCampaigns.gcashCoreQrImageKey,
       bpiAccountName: membershipPaymentCampaigns.bpiAccountName,
       bpiAccountNumber: membershipPaymentCampaigns.bpiAccountNumber,
       bpiQrImageUrl: membershipPaymentCampaigns.bpiQrImageUrl,
@@ -158,18 +159,24 @@ export async function getApplicantPayment(applicationId: string) {
   const released =
     row.confirmationStatus === "released" ||
     row.confirmationStatus === "email_failed";
-  const [gcashQrImageUrl, bpiQrImageUrl] = await Promise.all([
-    row.gcashQrImageKey
-      ? createPaymentQrDownload(row.gcashQrImageKey)
-      : row.gcashQrImageUrl,
-    row.bpiQrImageKey
-      ? createPaymentQrDownload(row.bpiQrImageKey)
-      : row.bpiQrImageUrl,
-  ]);
   const acceptedIntoCommittee =
     row.applicationType === "position" &&
     row.applicationStatus === "approved" &&
     Boolean(row.positionName);
+  // Anyone accepted into a committee (EAs and staff, including accepted
+  // redirects) pays through the CFO's QR. General members (member-only,
+  // rejected, and redirected applicants who declined or haven't answered) use
+  // the Director for Finance's. Fall back to that one if the CFO's is missing.
+  const gcashQrKey =
+    acceptedIntoCommittee && row.gcashCoreQrImageKey
+      ? row.gcashCoreQrImageKey
+      : row.gcashQrImageKey;
+  const [gcashQrImageUrl, bpiQrImageUrl] = await Promise.all([
+    gcashQrKey ? createPaymentQrDownload(gcashQrKey) : row.gcashQrImageUrl,
+    row.bpiQrImageKey
+      ? createPaymentQrDownload(row.bpiQrImageKey)
+      : row.bpiQrImageUrl,
+  ]);
   const memberCard =
     row.paymentStatus === "verified" &&
     row.membershipStatus === "active" &&
@@ -262,6 +269,7 @@ export async function submitApplicantPayment(
     input.method === "gcash" &&
     !payment.gcashAccountNumber &&
     !payment.gcashQrImageKey &&
+    !payment.gcashCoreQrImageKey &&
     !payment.gcashQrImageUrl
   ) {
     throw new MembershipPaymentError("GCash is not available for this payment period.");

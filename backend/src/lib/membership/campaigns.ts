@@ -146,6 +146,7 @@ export async function saveCurrentPaymentDetails(input: PaymentDetailsInput) {
         amountCents: membershipPaymentCampaigns.amountCents,
         gcashQrImageKey: membershipPaymentCampaigns.gcashQrImageKey,
         gcashQrImageUrl: membershipPaymentCampaigns.gcashQrImageUrl,
+        gcashCoreQrImageKey: membershipPaymentCampaigns.gcashCoreQrImageKey,
         bpiQrImageKey: membershipPaymentCampaigns.bpiQrImageKey,
         bpiQrImageUrl: membershipPaymentCampaigns.bpiQrImageUrl,
       })
@@ -232,7 +233,9 @@ export async function completeCurrentPaymentQrUpload(
   const values =
     input.provider === "gcash"
       ? { gcashQrImageKey: key, gcashQrFileName: fileName }
-      : { bpiQrImageKey: key, bpiQrFileName: fileName };
+      : input.provider === "gcash_core"
+        ? { gcashCoreQrImageKey: key, gcashCoreQrFileName: fileName }
+        : { bpiQrImageKey: key, bpiQrFileName: fileName };
   const [updated] = await db
     .update(membershipPaymentCampaigns)
     .set({ ...values, updatedAt: new Date() })
@@ -245,6 +248,7 @@ type PaymentAccountFields = {
   gcashAccountNumber: string | null;
   gcashQrImageKey: string | null;
   gcashQrImageUrl: string | null;
+  gcashCoreQrImageKey: string | null;
   bpiAccountNumber: string | null;
   bpiQrImageKey: string | null;
   bpiQrImageUrl: string | null;
@@ -256,6 +260,7 @@ export function hasPaymentAccount(campaign: PaymentAccountFields) {
     campaign.gcashAccountNumber ||
       campaign.gcashQrImageKey ||
       campaign.gcashQrImageUrl ||
+      campaign.gcashCoreQrImageKey ||
       campaign.bpiAccountNumber ||
       campaign.bpiQrImageKey ||
       campaign.bpiQrImageUrl,
