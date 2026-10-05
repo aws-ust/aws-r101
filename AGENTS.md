@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Drop-in operating instructions for coding agents. Read this file before every task.
+Drop-in operating instructions for coding agents. Read this file in its entirety and follow the directions before every task.
 
 **Working code only. Finish the job. Plausibility is not correctness.**
 
@@ -120,12 +120,14 @@ For every task:
 ## 8. When to ask, when to proceed
 
 **Ask before proceeding when:**
+
 - The request has two plausible interpretations and the choice materially affects the output.
 - The change touches something you've been told is load-bearing, versioned, or has a migration path.
 - You need a credential, a secret, or a production resource you don't have access to.
 - The user's stated goal and the literal request appear to conflict.
 
 **Proceed without asking when:**
+
 - The task is trivial and reversible (typo, rename a local variable, add a log line).
 - The ambiguity can be resolved by reading the code or running a command.
 - The user has already answered the question once in this session.
@@ -150,12 +152,14 @@ Boris Cherny (creator of Claude Code) keeps his team's file around 100 lines. Un
 ## 10. Project context
 
 ### Stack
+
 - Language: TypeScript throughout (frontend and backend)
 - Framework(s): Next.js 16 (App Router) + React 19 + Tailwind CSS 4 on the frontend; Hono on Node (deployed to AWS Lambda) on the backend; Drizzle ORM against PostgreSQL; AWS CDK for infra
 - Package manager: pnpm workspace (`frontend`, `backend`)
 - Runtime / deployment target: PostgreSQL 17 via Docker Compose for local dev; backend ships as a Lambda behind CDK-managed infra in AWS
 
 ### Commands
+
 - Install: `pnpm install` from the repo root
 - Dev (both apps): `pnpm dev`; frontend only: `cd frontend && pnpm dev`; backend only: `cd backend && pnpm dev`
 - Build: `cd frontend && pnpm build`
@@ -165,6 +169,7 @@ Boris Cherny (creator of Claude Code) keeps his team's file around 100 lines. Un
 - Deploy: `pnpm deploy` (`cd backend && cdk deploy`)
 
 ### Layout
+
 - `frontend/src/app` — Next.js App Router pages; `frontend/src/components` — shared components, with primitives under `frontend/src/components/ui`
 - `backend/src` — Hono app (`app.ts`), local dev server (`server.ts`), Lambda entry (`lambda.ts`), and `backend/src/db` (Drizzle `schema.ts`, `seed.ts`)
 - `backend/infra` — AWS CDK stack definitions
@@ -172,11 +177,13 @@ Boris Cherny (creator of Claude Code) keeps his team's file around 100 lines. Un
 - Tests live in: `backend/smoke-test.sh`; no frontend tests are configured
 
 ### Conventions specific to this repo
+
 - This repo is shadcn v4 on **Base UI** (`frontend/components.json` → `"base-nova"`), not Radix — never add `@radix-ui/*`
 - `backend/src/db/schema.ts` is the source of truth for the DB — never hand-write SQL for schema changes
 - See [`frontend/AGENTS.md`](./frontend/AGENTS.md) for frontend-specific rules (Tailwind usage, component sizing, the `cn`/`glass` utilities)
 
 ### Forbidden
+
 - Do not add `@radix-ui/*` packages — this repo uses Base UI primitives
 - Do not hand-write SQL migrations — change `backend/src/db/schema.ts` and run `pnpm db:push`
 
@@ -191,8 +198,6 @@ When the user corrects your approach, append a one-line rule here before ending 
 (none yet)
 
 ---
-
-
 
 <!-- BEGIN:nextjs-agent-rules -->
 
@@ -224,4 +229,3 @@ schema changes.
   safe to re-run.
 
 Typical local setup: `pnpm db:up && pnpm db:push && pnpm db:seed`.
-
