@@ -134,6 +134,7 @@ export function ApplicantDashboardContent({
       ) : application.result ? (
         <ApplicantResultPanel
           result={application.result}
+          choices={application.choices}
           onApplicationUpdated={onApplicationUpdated}
         />
       ) : (

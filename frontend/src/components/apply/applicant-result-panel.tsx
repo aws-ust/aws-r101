@@ -1,6 +1,11 @@
 import { ApplicantGroupLinks } from "@/components/apply/applicant-group-links"
 import { ApplicantRedirectResponse } from "@/components/apply/applicant-redirect-response"
-import type { ApplicantApplication, ApplicantResult } from "@/lib/api/applicant"
+import { ApplicantRejectedChoices } from "@/components/apply/applicant-rejected-choices"
+import type {
+  ApplicantApplication,
+  ApplicantChoice,
+  ApplicantResult,
+} from "@/lib/api/applicant"
 import { glassPanelClasses } from "@/lib/site/surface"
 const panelClasses = `${glassPanelClasses} mt-6 rounded-[22px] px-5 py-5`
 const eyebrowClasses =
@@ -74,7 +79,13 @@ const declinedMessage =
 const notSelectedMessage =
   "Thank you for applying. You were not selected for a committee position this term. You may still continue as a general member when payment opens."
 
-function NotSelectedBody({ declinedRedirect }: { declinedRedirect: boolean }) {
+function NotSelectedBody({
+  declinedRedirect,
+  choices,
+}: {
+  declinedRedirect: boolean
+  choices: ApplicantChoice[]
+}) {
   return (
     <>
       <h2 id="application-result-title" className={headingClasses}>
@@ -83,6 +94,7 @@ function NotSelectedBody({ declinedRedirect }: { declinedRedirect: boolean }) {
       <p className={bodyClasses}>
         {declinedRedirect ? declinedMessage : notSelectedMessage}
       </p>
+      <ApplicantRejectedChoices choices={choices} />
     </>
   )
 }
@@ -97,9 +109,11 @@ function resolvePlacement(result: ApplicantResult, redirectPending: boolean) {
 
 export function ApplicantResultPanel({
   result,
+  choices,
   onApplicationUpdated,
 }: {
   result: ApplicantResult
+  choices: ApplicantChoice[]
   onApplicationUpdated: (application: ApplicantApplication) => void
 }) {
   const redirectPending =
@@ -124,7 +138,10 @@ export function ApplicantResultPanel({
           {result.groupLinks ? <ApplicantGroupLinks {...result.groupLinks} /> : null}
         </>
       ) : (
-        <NotSelectedBody declinedRedirect={result.redirectResponse === "declined"} />
+        <NotSelectedBody
+          declinedRedirect={result.redirectResponse === "declined"}
+          choices={choices}
+        />
       )}
     </section>
   )
