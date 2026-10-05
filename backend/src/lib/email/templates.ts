@@ -411,6 +411,7 @@ export function resultAcceptedTemplate(input: {
 }): RenderedEmail {
   const subject = resultAcceptedSubject;
   const honorific = `Mx. ${input.lastName}`;
+  const statusUrl = `${appBaseUrl()}/apply/status`;
 
   const text = `Greetings from the Clouds!
 
@@ -420,6 +421,10 @@ Good day, ${honorific},
 Congratulations! We are thrilled to welcome you to AWS Builders - UST as our newest ${input.position}. Your passion, skills, and enthusiasm stood out throughout R101, and we cannot wait to build with you.
 
 Position: ${input.position}
+
+Open your applicant dashboard to view your application details and the group chats you are invited to join.
+
+View your application: ${statusUrl}
 
 Further instructions for the membership payment will be sent to you soon. Please do not send a payment until you receive them.
 
@@ -447,6 +452,8 @@ The AWS Builders - UST Executive Board`;
     </td>
   </tr>
 </table>
+<p style="margin:0 0 16px;">Open your applicant dashboard to view your application details and the group chats you are invited to join.</p>
+${ctaButton(statusUrl, "View Your Application")}
 <p style="margin:0 0 16px;">Further instructions for the membership payment will be sent to you soon. Please do not send a payment until you receive them.</p>
 <p style="margin:0 0 16px;">Your Member ID will be available on your dashboard after your payment is verified.</p>
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
@@ -466,7 +473,7 @@ export function resultMemberAcceptedTemplate(input: {
 }): RenderedEmail {
   const subject = resultMemberAcceptedSubject;
   const honorific = `Mx. ${input.lastName}`;
-  const dashboardUrl = `${appBaseUrl()}/apply/dashboard`;
+  const statusUrl = `${appBaseUrl()}/apply/status`;
 
   const text = `Greetings from the Clouds!
 
@@ -479,7 +486,7 @@ Further instructions for the membership payment will be sent to you soon. Please
 
 Your Member ID will be available on your dashboard after your payment is verified.
 
-Open your dashboard: ${dashboardUrl}
+View your application: ${statusUrl}
 
 Yours in Thomasian Leadership,
 The AWS Builders - UST Executive Board`;
@@ -497,7 +504,7 @@ The AWS Builders - UST Executive Board`;
 <p style="margin:0 0 16px;">Congratulations! Your membership application has been accepted, and we are thrilled to welcome you to AWS Builders - UST as a general member. We cannot wait to see you at our events and workshops.</p>
 <p style="margin:0 0 16px;">Further instructions for the membership payment will be sent to you soon. Please do not send a payment until you receive them.</p>
 <p style="margin:0 0 16px;">Your Member ID will be available on your dashboard after your payment is verified.</p>
-${ctaButton(dashboardUrl, "Open your dashboard")}
+${ctaButton(statusUrl, "View Your Application")}
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
 <p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
   });
@@ -515,6 +522,7 @@ export function resultRejectedTemplate(input: {
 }): RenderedEmail {
   const subject = resultRejectedSubject;
   const honorific = `Mx. ${input.lastName}`;
+  const statusUrl = `${appBaseUrl()}/apply/status`;
 
   const text = `Greetings from the Clouds!
 
@@ -526,6 +534,10 @@ Thank you for applying to AWS Builders - UST and for the time and care you put i
 After careful deliberation, we regret to inform you that you were not selected for a committee position this term. We had a highly competitive pool of applicants, and choosing among so many strong builders was genuinely difficult.
 
 You are still eligible to join AWS Builders - UST as a general member. Further instructions for the membership payment will be sent to you soon. Please do not send a payment yet.
+
+You can view your application and results on your applicant dashboard.
+
+View your application: ${statusUrl}
 
 Please know that this outcome does not take away from what you showed us. We would be glad to see you at our events and workshops, and we hope you will consider applying again in a future cycle.
 
@@ -546,7 +558,9 @@ The AWS Builders - UST Executive Board`;
 <p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
 <p style="margin:0 0 16px;">Thank you for applying to AWS Builders - UST and for the time and care you put into R101. We saw the effort you brought to this process, and it meant a lot to us.</p>
 <p style="margin:0 0 16px;">After careful deliberation, we regret to inform you that you were not selected for a committee position this term. We had a highly competitive pool of applicants, and choosing among so many strong builders was genuinely difficult.</p>
-<p style="margin:0 0 16px;">You are still eligible to join AWS Builders - UST as a general member. Further instructions for the membership payment will be sent to you soon. Please do not send a payment yet.</p>
+<p style="margin:0 0 16px;"><strong>You are still eligible to join AWS Builders - UST as a general member.</strong> Further instructions for the membership payment will be sent to you soon. Please do not send a payment yet.</p>
+<p style="margin:0 0 16px;">You can view your application and results on your applicant dashboard.</p>
+${ctaButton(statusUrl, "View Your Application")}
 <p style="margin:0 0 16px;">Please know that this outcome does not take away from what you showed us. We would be glad to see you at our events and workshops, and we hope you will consider applying again in a future cycle.</p>
 <p style="margin:0 0 16px;">Thank you again, ${escapeHtml(honorific)}. We wish you the very best, and we hope our paths still cross in the cloud.</p>
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
@@ -569,7 +583,7 @@ export function resultRedirectedTemplate(input: {
   const subject = resultRedirectedSubject;
   const honorific = `Mx. ${input.lastName}`;
   const office = officeLabelForCommittee(input.committee);
-  const dashboardUrl = `${appBaseUrl()}/apply/dashboard`;
+  const dashboardUrl = `${appBaseUrl()}/apply/status`;
 
   const text = `Greetings from the Clouds!
 
@@ -618,7 +632,7 @@ The AWS Builders - UST Executive Board`;
 </table>
 <p style="margin:0 0 16px;">Please open your applicant dashboard to accept or decline this redirected position. Your choice is final once confirmed.</p>
 ${ctaButton(dashboardUrl, "Open your dashboard")}
-<p style="margin:0 0 16px;">If you decline this role, you may still continue with AWS Builders - UST as a general member.</p>
+<p style="margin:0 0 16px;"><strong>If you decline this role, you may still continue with AWS Builders - UST as a general member.</strong></p>
 <p style="margin:0 0 16px;">After you respond—whether you accept or decline the redirected position—we will send you separate instructions for paying the membership fee. Please do not send a payment until you receive that message.</p>
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
 <p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,

@@ -122,7 +122,8 @@ test("applicant email templates use compact, plain formatting", async (t) => {
     assert.match(member.text, /general member/);
     assert.match(member.text, /Member ID will be available on your dashboard/);
     assert.doesNotMatch(member.text, /newest|Position:/);
-    assert.match(member.html, /\/apply\/dashboard/);
+    assert.match(member.text, /\/apply\/status/);
+    assert.match(member.html, /View Your Application/);
   });
 
   await t.test("personalizes accepted and rejected result emails", (t) => {
@@ -138,6 +139,9 @@ test("applicant email templates use compact, plain formatting", async (t) => {
     assert.match(accepted.text, /Development Committee Staff/);
     assert.match(accepted.html, /Development Committee Staff/);
     assert.match(accepted.text, /Member ID.*after your payment is verified/s);
+    assert.match(accepted.text, /group chats you are invited to join/);
+    assert.match(accepted.text, /\/apply\/status/);
+    assert.match(accepted.html, /View Your Application/);
     assert.match(accepted.html, /cid:application-received-header@aws-ust/);
     assert.match(accepted.text, /instructions for the membership payment will be sent/);
     assert.doesNotMatch(accepted.text, /₱250/);
@@ -146,6 +150,8 @@ test("applicant email templates use compact, plain formatting", async (t) => {
     assert.match(rejected.subject, /R101/);
     assert.match(rejected.text, /not selected for a committee position/);
     assert.match(rejected.text, /still eligible to join AWS Builders - UST/);
+    assert.match(rejected.text, /\/apply\/status/);
+    assert.match(rejected.html, /View Your Application/);
     assert.doesNotMatch(rejected.text, /₱250/);
     assert.doesNotMatch(rejected.text, /Membership ID/);
     assert.match(rejected.html, /Yours in Thomasian Leadership,/);
@@ -404,7 +410,7 @@ test("applicant email templates use compact, plain formatting", async (t) => {
     });
     assert.doesNotMatch(email.text, /I accept the position|I decline the position/);
     assert.match(email.text, /accept or decline this redirected position/);
-    assert.match(email.text, /\/apply\/dashboard/);
+    assert.match(email.text, /\/apply\/status/);
     assert.match(email.html, />Open Your Dashboard</);
     assert.equal(email.cc, undefined);
     assert.doesNotMatch(email.text, /Executive Board of/);
