@@ -280,9 +280,7 @@ async function queryResultsPreview(
           : null,
         choices,
         willGenerateMemberId: false,
-        willSendEmail:
-          row.applicationType === "position" &&
-          result.classification !== "incomplete",
+        willSendEmail: result.classification !== "incomplete",
       };
     },
   );

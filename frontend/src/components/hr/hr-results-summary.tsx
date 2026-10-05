@@ -3,11 +3,11 @@ import type { ResultsPreview } from "@/lib/api/client"
 import { formatSubheaderLabel } from "@/lib/site/button-label"
 import { glassPanelClasses, subheaderLabelClasses } from "@/lib/site/surface"
 
-const summaryGridClasses = "grid gap-3 sm:grid-cols-2 xl:grid-cols-5"
+const summaryGridClasses = "grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6"
 const summaryCardClasses = `${glassPanelClasses} rounded-[20px] px-5 py-4`
 const valueClasses = "mt-2 font-sans text-3xl font-bold text-blue-chalk"
 const actionPanelClasses = `${glassPanelClasses} mt-4 flex flex-col gap-4 rounded-[20px] px-5 py-5 lg:flex-row lg:items-center lg:justify-between`
-const actionCopyClasses = "max-w-2xl font-sans text-sm leading-relaxed text-prelude"
+const actionCopyClasses = "max-w-3xl font-sans text-sm leading-relaxed text-prelude"
 const actionButtonsClasses = "flex flex-wrap gap-3"
 
 type Props = {

@@ -29,8 +29,10 @@ import {
   officerApplicationNoticeTemplate,
   memberRegistrationTemplate,
   membershipConfirmationTemplate,
+  membershipVerifiedTemplate,
   paymentInvitationTemplate,
   resultAcceptedTemplate,
+  resultMemberAcceptedTemplate,
   resultRejectedTemplate,
   resultRedirectedTemplate,
 } from "./templates";
@@ -489,20 +491,21 @@ export function deliverQueuedResultEmail(input: {
   lastName: string;
   position: string | null;
   committee?: string | null;
-  cc?: string[];
+  applicationType?: "position" | "member";
 }): Promise<EmailDeliveryStatus> {
   const rendered =
     input.messageType === "result_accepted"
-      ? resultAcceptedTemplate({
-          lastName: input.lastName,
-          position: input.position ?? "",
-        })
+      ? input.applicationType === "member"
+        ? resultMemberAcceptedTemplate({ lastName: input.lastName })
+        : resultAcceptedTemplate({
+            lastName: input.lastName,
+            position: input.position ?? "",
+          })
       : input.messageType === "result_redirected"
         ? resultRedirectedTemplate({
             lastName: input.lastName,
             position: input.position ?? "",
             committee: input.committee ?? "",
-            cc: input.cc,
           })
         : resultRejectedTemplate({ lastName: input.lastName });
   return deliverNotification({
@@ -515,6 +518,12 @@ export function deliverQueuedResultEmail(input: {
 
 export function renderPaymentInvitation(input: Parameters<typeof paymentInvitationTemplate>[0]) {
   return paymentInvitationTemplate(input);
+}
+
+export function renderMembershipVerified(
+  input: Parameters<typeof membershipVerifiedTemplate>[0],
+) {
+  return membershipVerifiedTemplate(input);
 }
 
 export function renderMembershipConfirmation(

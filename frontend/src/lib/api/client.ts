@@ -205,15 +205,6 @@ export function patchApplicationRedirectPlacementRequest(
   });
 }
 
-export function patchApplicationRedirectResponseRequest(
-  id: string,
-  response: "accepted" | "declined",
-) {
-  return apiFetch<HrApplication>(`/applications/${id}/redirect-response`, {
-    method: "PATCH",
-    body: JSON.stringify({ response }),
-  });
-}
 
 type PositionApiRow = {
   id: string;

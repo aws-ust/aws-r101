@@ -14,7 +14,8 @@ import {
   users,
 } from "../../db/schema";
 import { recruitmentYearInt } from "../applications/application-code";
-import { allocateMemberIds } from "../core/member-id";
+import { isExecutiveOfficeCommittee } from "../apply/committee-office-groups";
+import { allocateMemberId, type MemberPlacement } from "../core/member-id";
 import { MembershipPaymentError } from "./errors";
 import { createPaymentReceiptDownload } from "./receipts";
 
@@ -134,6 +135,7 @@ export async function getMembershipPaymentDetails(paymentId: string) {
       method: membershipPaymentSubmissions.method,
       referenceNumber: membershipPaymentSubmissions.referenceNumber,
       amountCents: membershipPaymentSubmissions.amountCents,
+      receiptUrl: membershipPaymentSubmissions.receiptUrl,
       receiptFileName: membershipPaymentSubmissions.receiptFileName,
       receiptMimeType: membershipPaymentSubmissions.receiptMimeType,
       receiptSizeBytes: membershipPaymentSubmissions.receiptSizeBytes,
@@ -155,6 +157,30 @@ export async function getMembershipPaymentDetails(paymentId: string) {
       reviewedAt: submission.reviewedAt?.toISOString() ?? null,
     })),
   };
+}
+
+/** Executive associate, committee staff, or general member, from the accepted placement. */
+async function memberPlacement(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  applicationId: string,
+): Promise<MemberPlacement> {
+  const [row] = await tx
+    .select({
+      applicationType: applications.applicationType,
+      status: applications.status,
+      committee: committees.name,
+    })
+    .from(applications)
+    .leftJoin(positions, eq(applications.finalPositionId, positions.id))
+    .leftJoin(committees, eq(positions.committeeId, committees.id))
+    .where(eq(applications.id, applicationId))
+    .limit(1);
+  if (!row?.committee || row.applicationType !== "position" || row.status !== "approved") {
+    return { kind: "general" };
+  }
+  return isExecutiveOfficeCommittee(row.committee)
+    ? { kind: "ea", officeCommittee: row.committee }
+    : { kind: "staff" };
 }
 
 async function lockedPendingSubmission(
@@ -219,7 +245,11 @@ export async function verifyMembershipPayment(
     }
     let memberId = payment.memberId;
     if (!memberId) {
-      [memberId] = await allocateMemberIds(tx, payment.recruitmentYear, 1);
+      memberId = await allocateMemberId(
+        tx,
+        payment.recruitmentYear,
+        await memberPlacement(tx, payment.applicationId),
+      );
       await tx
         .update(applications)
         .set({ memberId, updatedAt: new Date() })
@@ -249,7 +279,25 @@ export async function verifyMembershipPayment(
         updatedAt: reviewedAt,
       })
       .where(eq(membershipPayments.id, paymentId));
-    return { paymentId, memberId, verifiedAt: reviewedAt.toISOString() };
+    const [{ recipient }] = await tx
+      .select({ recipient: applicants.email })
+      .from(applications)
+      .innerJoin(applicants, eq(applications.applicantId, applicants.id))
+      .where(eq(applications.id, payment.applicationId));
+    const [notification] = await tx
+      .insert(emailNotifications)
+      .values({
+        applicationId: payment.applicationId,
+        messageType: "membership_verified" as const,
+        recipient,
+      })
+      .returning({ id: emailNotifications.id });
+    return {
+      paymentId,
+      memberId,
+      verifiedAt: reviewedAt.toISOString(),
+      notificationId: notification.id,
+    };
   });
 }
 
@@ -379,6 +427,7 @@ export async function getPaymentReceiptUrl(
 ) {
   const [submission] = await db
     .select({
+      url: membershipPaymentSubmissions.receiptUrl,
       key: membershipPaymentSubmissions.receiptKey,
       fileName: membershipPaymentSubmissions.receiptFileName,
     })
@@ -391,7 +440,12 @@ export async function getPaymentReceiptUrl(
     )
     .limit(1);
   if (!submission) throw new MembershipPaymentError("Receipt not found.", 404);
-  return createPaymentReceiptDownload(submission.key, submission.fileName);
+  if (submission.url) return submission.url;
+  if (!submission.key) throw new MembershipPaymentError("Receipt not found.", 404);
+  return createPaymentReceiptDownload(
+    submission.key,
+    submission.fileName ?? "receipt",
+  );
 }
 
 export async function releaseMembershipConfirmations(actor: AuthenticatedUser) {
@@ -445,21 +499,28 @@ export async function releaseMembershipConfirmations(actor: AuthenticatedUser) {
     const linkByCommittee = new Map(
       links.map((link) => [link.committeeId, link.chatLink]),
     );
+    if (!campaign.generalChatLink) {
+      throw new MembershipPaymentError(
+        "Add the Members Facebook Group link on the Community Links page before releasing.",
+        409,
+      );
+    }
     const prepared = rows.map((row) => {
       const acceptedCommitteeApplicant =
         row.applicationType === "position" &&
         row.applicationStatus === "approved";
-      const chatLink = acceptedCommitteeApplicant
-        ? row.committeeId
+      const chatLink =
+        acceptedCommitteeApplicant && row.committeeId
           ? linkByCommittee.get(row.committeeId) ?? null
-          : null
-        : campaign.generalChatLink;
-      return { ...row, chatLink };
+          : null;
+      return { ...row, acceptedCommitteeApplicant, chatLink };
     });
-    const missingLinks = prepared.filter((row) => !row.chatLink).length;
+    const missingLinks = prepared.filter(
+      (row) => row.acceptedCommitteeApplicant && !row.chatLink,
+    ).length;
     if (missingLinks > 0) {
       throw new MembershipPaymentError(
-        `Add the required group-chat links for ${missingLinks} verified member${missingLinks === 1 ? "" : "s"}.`,
+        `Add the office or committee group chat links on the Community Links page for ${missingLinks} verified member${missingLinks === 1 ? "" : "s"}.`,
         409,
       );
     }

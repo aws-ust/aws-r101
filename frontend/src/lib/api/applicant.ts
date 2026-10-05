@@ -33,6 +33,14 @@ export type ApplicantResult = {
     committee: string
   } | null
   redirectResponse: "accepted" | "declined" | null
+  /** Group links for accepted applicants, available as soon as results release. */
+  groupLinks: {
+    membersGroupLink: string | null
+    committeeChatLink: string | null
+    committeeName: string | null
+    /** Core team chat; only set for executive associates. */
+    coreTeamChatLink: string | null
+  } | null
   finalPlacement: {
     positionId: string
     title: string
@@ -116,12 +124,12 @@ export type ApplicantPayment = {
   paymentMethods: {
     gcash: {
       accountName: string | null
-      accountNumber: string
+      accountNumber: string | null
       qrImageUrl: string | null
     } | null
     bpi: {
       accountName: string | null
-      accountNumber: string
+      accountNumber: string | null
       qrImageUrl: string | null
     } | null
   }
@@ -136,9 +144,22 @@ export type ApplicantPayment = {
     reviewedAt: string | null
     reviewReason: string | null
   } | null
+  /** Set once HR verifies the payment; drives the digital member ID. */
+  memberCard: MemberCard | null
   memberId: string | null
-  chatLink: string | null
+  membersGroupLink: string | null
+  committeeChatLink: string | null
+  committeeName: string | null
+  /** Core team chat; only set for executive associates. */
+  coreTeamChatLink: string | null
   confirmationReleasedAt: string | null
+}
+
+export type MemberCard = {
+  memberId: string
+  recruitmentYear: number
+  position: string
+  photoUrl: string | null
 }
 
 async function applicantFetch<T>(
@@ -173,6 +194,13 @@ async function applicantFetch<T>(
 
 export function getApplicantApplication() {
   return applicantFetch<ApplicantApplication>("/applicant/application")
+}
+
+export function respondToRedirect(response: "accepted" | "declined") {
+  return applicantFetch<ApplicantApplication>("/applicant/application/redirect-response", {
+    method: "POST",
+    body: JSON.stringify({ response }),
+  })
 }
 
 export function updateApplicantChoices(body: {
@@ -237,7 +265,18 @@ export function getApplicantPayment() {
   )
 }
 
-export function createApplicantPaymentReceiptUpload(body: {
+export function submitApplicantPayment(body: {
+  method: "gcash" | "bpi"
+  referenceNumber: string
+  receiptUrl: string
+}) {
+  return applicantFetch("/applicant/payment/submit", {
+    method: "POST",
+    body: JSON.stringify(body),
+  })
+}
+
+export function createMemberPhotoUpload(body: {
   mimeType: "image/jpeg" | "image/png" | "image/webp"
   sizeBytes: number
   checksumSha256: string
@@ -246,25 +285,22 @@ export function createApplicantPaymentReceiptUpload(body: {
     url: string
     fields: Record<string, string>
     key: string
-  }>("/applicant/payment/receipt/presign", {
+  }>("/applicant/payment/member-photo/presign", {
     method: "POST",
     body: JSON.stringify(body),
   })
 }
 
-export function submitApplicantPayment(body: {
-  method: "gcash" | "bpi"
-  referenceNumber: string
-  receiptKey: string
-  receiptFileName: string
+export function completeMemberPhotoUpload(body: {
   mimeType: "image/jpeg" | "image/png" | "image/webp"
   sizeBytes: number
   checksumSha256: string
+  key: string
 }) {
-  return applicantFetch("/applicant/payment/submit", {
-    method: "POST",
-    body: JSON.stringify(body),
-  })
+  return applicantFetch<{ memberCard: MemberCard | null }>(
+    "/applicant/payment/member-photo/complete",
+    { method: "POST", body: JSON.stringify(body) },
+  )
 }
 
 export async function logoutApplicant() {

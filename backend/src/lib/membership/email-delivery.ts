@@ -3,6 +3,7 @@ import { db } from "../../db";
 import {
   applicants,
   applications,
+  committees,
   emailNotifications,
   membershipPaymentCampaigns,
   membershipPayments,
@@ -11,10 +12,12 @@ import {
 import {
   deliverNotification,
   renderMembershipConfirmation,
+  renderMembershipVerified,
   renderPaymentInvitation,
 } from "../email/service";
 import { markFailed } from "../email/notifications";
 import { recruitmentYearInt } from "../applications/application-code";
+import { memberPositionLabel } from "./member-position";
 
 export type MembershipEmailDeliverySummary = {
   sent: number;
@@ -37,6 +40,8 @@ export async function deliverMembershipNotifications(
       lastName: applicants.lastName,
       memberId: applications.memberId,
       position: positions.name,
+      committeeName: committees.name,
+      generalChatLink: membershipPaymentCampaigns.generalChatLink,
       amountCents: membershipPaymentCampaigns.amountCents,
       deadlineAt: membershipPaymentCampaigns.deadlineAt,
       paymentId: membershipPayments.id,
@@ -54,6 +59,7 @@ export async function deliverMembershipNotifications(
       eq(membershipPayments.campaignId, membershipPaymentCampaigns.id),
     )
     .leftJoin(positions, eq(applications.finalPositionId, positions.id))
+    .leftJoin(committees, eq(positions.committeeId, committees.id))
     .where(inArray(emailNotifications.id, notificationIds));
 
   const results = await Promise.allSettled(
@@ -66,12 +72,6 @@ export async function deliverMembershipNotifications(
         return "failed" as const;
       }
       if (row.messageType === "payment_invitation") {
-        const kind =
-          row.applicationType === "member"
-            ? "member"
-            : row.applicationStatus === "approved"
-              ? "accepted"
-              : "rejected";
         return deliverNotification({
           notificationId: row.notificationId,
           messageType: row.messageType,
@@ -79,14 +79,38 @@ export async function deliverMembershipNotifications(
           rendered: renderPaymentInvitation({
             lastName: row.lastName,
             applicationCode: row.applicationCode,
-            kind,
             amountCents: row.amountCents,
             deadlineAt: row.deadlineAt,
           }),
         });
       }
+      if (row.messageType === "membership_verified") {
+        if (!row.memberId) {
+          await markFailed(row.notificationId, "Member ID has not been assigned.");
+          return "failed" as const;
+        }
+        return deliverNotification({
+          notificationId: row.notificationId,
+          messageType: row.messageType,
+          recipient: row.recipient,
+          rendered: renderMembershipVerified({
+            lastName: row.lastName,
+            memberId: row.memberId,
+            position: memberPositionLabel({
+              applicationType: row.applicationType,
+              applicationStatus: row.applicationStatus,
+              positionName: row.position,
+              committeeName: row.committeeName,
+            }),
+          }),
+        });
+      }
       if (row.messageType === "membership_confirmation") {
-        if (!row.memberId || !row.chatLink) {
+        const acceptedIntoCommittee =
+          row.applicationType === "position" &&
+          row.applicationStatus === "approved" &&
+          Boolean(row.position);
+        if (!row.memberId || !row.generalChatLink) {
           await markFailed(
             row.notificationId,
             "Verified membership details are incomplete.",
@@ -105,7 +129,9 @@ export async function deliverMembershipNotifications(
             rendered: renderMembershipConfirmation({
               lastName: row.lastName,
               memberId: row.memberId,
-              chatLink: row.chatLink,
+              membersGroupLink: row.generalChatLink,
+              committeeChatLink: acceptedIntoCommittee ? row.chatLink : null,
+              committeeName: acceptedIntoCommittee ? row.committeeName : null,
               placement:
                 row.applicationType === "position" &&
                 row.applicationStatus === "approved"
@@ -141,7 +167,10 @@ export async function deliverMembershipNotifications(
 }
 
 export async function retryFailedMembershipEmails(
-  messageType: "payment_invitation" | "membership_confirmation",
+  messageType:
+    | "payment_invitation"
+    | "membership_confirmation"
+    | "membership_verified",
 ) {
   const recruitmentYear = recruitmentYearInt();
   const ids = await db.transaction(async (tx) => {

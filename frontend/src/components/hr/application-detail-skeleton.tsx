@@ -1,16 +1,16 @@
 import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
-import { glassPanelClasses, pageShellClasses } from "@/lib/site/surface"
+import { glassPanelClasses, hrPageShellClasses } from "@/lib/site/surface"
 
 const backClasses =
-  "mb-3 mt-1 inline-flex font-mono text-xs text-prelude hover:text-blue-chalk"
+  "mb-4 mt-3 inline-flex w-fit font-mono text-xs text-prelude hover:text-blue-chalk"
 const panelClasses = `${glassPanelClasses} mt-8 px-6 py-8 md:px-10`
 const metaRowClasses = "flex flex-wrap gap-x-8 gap-y-3"
 
 export function HrApplicationDetailSkeleton() {
   return (
     <main
-      className={pageShellClasses}
+      className={hrPageShellClasses}
       role="status"
       aria-busy="true"
       aria-label="Loading application"

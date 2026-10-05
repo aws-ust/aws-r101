@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils"
 
 const triggerClasses = cn(
   fieldControlClasses,
-  "flex h-auto min-h-12 cursor-pointer items-center justify-between gap-3 py-2.5 text-left font-sans hover:bg-haiti hover:ring-2 hover:ring-biloba-flower/50 md:min-w-[17rem] md:max-w-[20rem]"
+  "flex h-auto min-h-12 w-full cursor-pointer items-center justify-between gap-3 border border-blue-chalk/20 py-2.5 text-left font-sans transition-colors hover:border-biloba-flower/50 hover:bg-haiti/90"
 )
 const triggerCopyClasses = "flex min-w-0 flex-1 flex-col gap-0.5"
 const triggerOfficeClasses = "truncate text-sm font-medium text-blue-chalk"
@@ -61,7 +61,7 @@ export function HrCommitteeFilterPicker({
           </span>
         ) : (
           <span className={cn(triggerCopyClasses, triggerPlaceholderClasses)}>
-            All committees
+            All Committees
           </span>
         )}
         <ChevronDownIcon className={triggerIconClasses} />
@@ -71,7 +71,7 @@ export function HrCommitteeFilterPicker({
           className={itemHoverClasses}
           onClick={() => onChange("")}
         >
-          All committees
+          All Committees
           {!value ? <CheckIcon className={selectedIconClasses} /> : null}
         </DropdownMenuItem>
         {groups.map((group) => (

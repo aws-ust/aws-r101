@@ -327,12 +327,15 @@ async function attachRelations(
     const choices = (choicesByApp.get(row.id) ?? []).sort(
       (a, b) => a.preferenceRank - b.preferenceRank,
     );
-    const finalPlacement = choices.find(
-      (choice) => choice.positionId === row.finalPositionId,
-    );
     const redirect = row.redirectPositionId
       ? redirectById.get(row.redirectPositionId)
       : null;
+    // An accepted redirect places the applicant outside their own choices.
+    const finalPlacement =
+      choices.find((choice) => choice.positionId === row.finalPositionId) ??
+      (redirect && redirect.id === row.finalPositionId
+        ? { positionId: redirect.id, committee: redirect.committee, title: redirect.title }
+        : undefined);
     return {
       id: row.id,
       applicationCode: row.applicationCode,

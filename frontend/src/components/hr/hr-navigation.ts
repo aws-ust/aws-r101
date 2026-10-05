@@ -3,6 +3,7 @@ import {
   CalendarRange,
   ClipboardCheck,
   ClipboardList,
+  MessagesSquare,
   Send,
   Users,
   WalletCards,
@@ -34,6 +35,7 @@ function isApplicationDetailPath(pathname: string) {
         "payments",
         "membership",
         "committees",
+        "groups",
       ].includes(match[1]),
   )
 }
@@ -64,7 +66,7 @@ export const hrNavigationSections: HrNavigationSection[] = [
         active: (path) => path.startsWith("/admin/hr/committees"),
       },
       {
-        label: "Recruitment setup",
+        label: "Recruitment Setup",
         href: "/admin/hr/season",
         icon: CalendarRange,
         active: (path) => path.startsWith("/admin/hr/season"),
@@ -94,6 +96,12 @@ export const hrNavigationSections: HrNavigationSection[] = [
         href: "/admin/hr/membership",
         icon: ClipboardCheck,
         active: (path) => path.startsWith("/admin/hr/membership"),
+      },
+      {
+        label: "Community Links",
+        href: "/admin/hr/groups",
+        icon: MessagesSquare,
+        active: (path) => path.startsWith("/admin/hr/groups"),
       },
     ],
   },

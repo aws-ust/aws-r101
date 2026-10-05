@@ -313,4 +313,45 @@ test("HR committee decisions", async (t) => {
       200,
     );
   });
+
+  await t.test("a redirect and an accepted choice replace each other", async () => {
+    const redirect = (redirectPositionId: string | null) =>
+      app.request(`/applications/${applicationId}/redirect-placement`, {
+        method: "PATCH",
+        headers: originHeaders({
+          "content-type": "application/json",
+          Authorization: `Bearer ${token}`,
+        }),
+        body: JSON.stringify({ redirectPositionId }),
+      });
+    type Payload = {
+      status: string;
+      choices: { positionId: string; decisionStatus: string }[];
+      finalPlacement: { positionId: string } | null;
+      redirectPlacement: { positionId: string } | null;
+    };
+
+    await db
+      .update(applications)
+      .set({ redirectResponse: null })
+      .where(eq(applications.id, applicationId));
+    const approved = (await (
+      await decisionRequest({ positionId: positionIds[0], decisionStatus: "approved" })
+    ).json()) as Payload;
+    assert.equal(approved.status, "approved");
+
+    const redirected = await redirect(positionIds[1]);
+    assert.equal(redirected.status, 200);
+    const afterRedirect = (await redirected.json()) as Payload;
+    assert.equal(afterRedirect.redirectPlacement?.positionId, positionIds[1]);
+    assert.equal(afterRedirect.finalPlacement, null);
+    assert.equal(afterRedirect.status, "pending");
+    assert.ok(afterRedirect.choices.every((choice) => choice.decisionStatus !== "approved"));
+
+    const reapproved = (await (
+      await decisionRequest({ positionId: positionIds[0], decisionStatus: "approved" })
+    ).json()) as Payload;
+    assert.equal(reapproved.redirectPlacement, null);
+    assert.equal(reapproved.finalPlacement?.positionId, positionIds[0]);
+  });
 });

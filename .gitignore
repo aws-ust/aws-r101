@@ -46,3 +46,6 @@ yarn-error.log*
 # present for TypeScript to type CSS side-effect imports and Next types.
 # Keep it tracked so editors don't report missing './globals.css' types.
 .neon
+
+# Local S3 (LocalStack) upload backup
+.localstack-s3/

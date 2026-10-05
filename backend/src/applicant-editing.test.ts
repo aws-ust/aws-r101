@@ -16,6 +16,8 @@ import {
   committees,
   interviewBookings,
   interviewSlots,
+  membershipPaymentCampaigns,
+  membershipPaymentChatLinks,
   positions,
   recruitmentWindows,
 } from "./db/schema";
@@ -376,7 +378,7 @@ test("applicant editing", async (t) => {
       ["resume"],
     );
     assert.equal(payload.result, null);
-    assert.doesNotMatch(JSON.stringify(payload), /decisionStatus|memberId/);
+    assert.doesNotMatch(JSON.stringify(payload), /decisionStatus|"memberId":"AWS/);
   });
 
   await t.test("keeps current choices when a committee closes", async () => {
@@ -465,6 +467,14 @@ test("applicant editing", async (t) => {
       status: "approved",
       releasedAt: releasedAt.toISOString(),
       memberId: "AWS-2096-0001",
+      redirectPlacement: null,
+      redirectResponse: null,
+      groupLinks: {
+        membersGroupLink: null,
+        committeeChatLink: null,
+        committeeName: `Editing Committee A ${applicationId}`,
+        coreTeamChatLink: null,
+      },
       finalPlacement: {
         positionId: positionA1Id,
         title: "Editing A1",
@@ -477,6 +487,50 @@ test("applicant editing", async (t) => {
       ],
     });
     assert.doesNotMatch(JSON.stringify(payload.result), /decidedAt|decidedBy/);
+  });
+
+  await t.test("accepted applicants see their group links once results are released", async () => {
+    const [campaign] = await db
+      .insert(membershipPaymentCampaigns)
+      .values({
+        recruitmentYear: 2096,
+        opensAt: new Date("2096-10-01T00:00:00.000Z"),
+        deadlineAt: new Date("2096-12-01T00:00:00.000Z"),
+        generalChatLink: "https://www.facebook.com/groups/members-test",
+        coreTeamChatLink: "https://m.me/j/core-team-test",
+      })
+      .returning({ id: membershipPaymentCampaigns.id });
+    try {
+      await db.insert(membershipPaymentChatLinks).values({
+        campaignId: campaign.id,
+        committeeId: committeeAId,
+        chatLink: "https://m.me/j/committee-a-test",
+      });
+      const response = await applicantRequest("/applicant/application");
+      const payload = (await response.json()) as {
+        result: { groupLinks: unknown } | null;
+      };
+      assert.deepEqual(payload.result?.groupLinks, {
+        membersGroupLink: "https://www.facebook.com/groups/members-test",
+        committeeChatLink: "https://m.me/j/committee-a-test",
+        committeeName: `Editing Committee A ${applicationId}`,
+        // Only executive associates get the core team chat.
+        coreTeamChatLink: null,
+      });
+
+      await db
+        .update(applications)
+        .set({ status: "rejected", finalPositionId: null })
+        .where(eq(applications.id, applicationId));
+      const rejected = (await (await applicantRequest("/applicant/application")).json()) as {
+        result: { groupLinks: unknown } | null;
+      };
+      assert.equal(rejected.result?.groupLinks, null);
+    } finally {
+      await db
+        .delete(membershipPaymentCampaigns)
+        .where(eq(membershipPaymentCampaigns.id, campaign.id));
+    }
   });
 
   await t.test("previews slots for a proposed first choice", async () => {
@@ -660,5 +714,59 @@ test("applicant editing", async (t) => {
       choicesEditBody(),
     );
     assert.equal(update.status, 503);
+  });
+
+  await t.test("applicants accept or decline a redirect from the dashboard", async () => {
+    await resetApplication();
+    const offerRedirect = () =>
+      db
+        .update(applications)
+        .set({
+          status: "rejected",
+          finalPositionId: null,
+          redirectPositionId: positionA2Id,
+          redirectResponse: null,
+          redirectRespondedAt: null,
+          resultsReleasedAt: new Date("2096-09-30T12:00:00.000Z"),
+        })
+        .where(eq(applications.id, applicationId));
+    const respond = (response: string) =>
+      applicantRequest("/applicant/application/redirect-response", "POST", { response });
+
+    await offerRedirect();
+    const unauthenticated = await app.request("/applicant/application/redirect-response", {
+      method: "POST",
+      headers: originHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ response: "accepted" }),
+    });
+    assert.equal(unauthenticated.status, 401);
+    assert.equal((await respond("maybe")).status, 400);
+
+    const accepted = await respond("accepted");
+    assert.equal(accepted.status, 200);
+    const acceptedBody = (await accepted.json()) as {
+      status: string;
+      result: {
+        redirectResponse: string | null;
+        finalPlacement: { positionId: string } | null;
+      } | null;
+    };
+    assert.equal(acceptedBody.status, "approved");
+    assert.equal(acceptedBody.result?.finalPlacement?.positionId, positionA2Id);
+    assert.equal(acceptedBody.result?.redirectResponse, "accepted");
+    const [row] = await db
+      .select({ finalPositionId: applications.finalPositionId })
+      .from(applications)
+      .where(eq(applications.id, applicationId));
+    assert.equal(row.finalPositionId, positionA2Id);
+    assert.equal((await respond("declined")).status, 409);
+
+    await offerRedirect();
+    const declined = (await (await respond("declined")).json()) as {
+      status: string;
+      result: { redirectResponse: string | null } | null;
+    };
+    assert.equal(declined.status, "rejected");
+    assert.equal(declined.result?.redirectResponse, "declined");
   });
 });

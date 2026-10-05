@@ -84,3 +84,23 @@ export function officeLabelForCommittee(committee: string): string {
       ?.office ?? committee
   );
 }
+
+const OFFICE_PREFIX = "Office of the ";
+
+export function isExecutiveOfficeCommittee(committee: string): boolean {
+  return committee.startsWith(OFFICE_PREFIX);
+}
+
+/** "Office of the ..." committees in hierarchy order (CEO -> CCO), one per executive board seat. */
+export function executiveOfficeCommittees(): string[] {
+  return COMMITTEE_OFFICE_GROUPS.flatMap((group) =>
+    group.committees.filter(isExecutiveOfficeCommittee),
+  );
+}
+
+/** Staff committees in hierarchy order, one per committee director. */
+export function staffCommittees(): string[] {
+  return COMMITTEE_OFFICE_GROUPS.flatMap((group) =>
+    group.committees.filter((committee) => !isExecutiveOfficeCommittee(committee)),
+  );
+}

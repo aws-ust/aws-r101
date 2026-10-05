@@ -1,35 +1,30 @@
-import { randomUUID } from "node:crypto";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "../../db";
 import {
   applications,
+  committees,
   membershipPaymentCampaigns,
   membershipPayments,
   membershipPaymentSubmissions,
+  positions,
 } from "../../db/schema";
 import { MembershipPaymentError } from "./errors";
+import { normalizeDriveReceiptUrl } from "./receipt-link";
 import {
-  createPaymentReceiptUpload,
-  MAX_RECEIPT_SIZE_BYTES,
-  persistPaymentReceipt,
-  RECEIPT_MIME_TYPES,
-  type ReceiptMimeType,
-  validatePaymentReceipt,
-} from "./receipts";
-import { deleteKeys } from "../applications/documents";
+  createMemberPhotoDownload,
+  createMemberPhotoUpload,
+  MAX_MEMBER_PHOTO_SIZE_BYTES,
+  persistMemberPhoto,
+  type MemberPhotoMetadata,
+} from "./member-photo";
+import { isExecutiveOfficeCommittee } from "../apply/committee-office-groups";
+import { memberPositionLabel } from "./member-position";
 import { createPaymentQrDownload } from "./payment-qr";
 
-export type ReceiptUploadInput = {
-  mimeType: ReceiptMimeType;
-  sizeBytes: number;
-  checksumSha256: string;
-};
-
-export type SubmitPaymentInput = ReceiptUploadInput & {
+export type SubmitPaymentInput = {
   method: "gcash" | "bpi";
   referenceNumber: string;
-  receiptKey: string;
-  receiptFileName: string;
+  receiptUrl: string;
 };
 
 function normalizeReferenceNumber(value: string) {
@@ -77,6 +72,12 @@ async function loadApplicantPayment(applicationId: string) {
       applicationStatus: applications.status,
       archivedAt: applications.archivedAt,
       memberId: applications.memberId,
+      memberPhotoKey: applications.memberPhotoKey,
+      recruitmentYear: applications.recruitmentYear,
+      positionName: positions.name,
+      committeeName: committees.name,
+      generalChatLink: membershipPaymentCampaigns.generalChatLink,
+      coreTeamChatLink: membershipPaymentCampaigns.coreTeamChatLink,
       paymentStatus: membershipPayments.status,
       membershipStatus: membershipPayments.membershipStatus,
       confirmationStatus: membershipPayments.confirmationStatus,
@@ -91,6 +92,7 @@ async function loadApplicantPayment(applicationId: string) {
       gcashAccountNumber: membershipPaymentCampaigns.gcashAccountNumber,
       gcashQrImageUrl: membershipPaymentCampaigns.gcashQrImageUrl,
       gcashQrImageKey: membershipPaymentCampaigns.gcashQrImageKey,
+      gcashCoreQrImageKey: membershipPaymentCampaigns.gcashCoreQrImageKey,
       bpiAccountName: membershipPaymentCampaigns.bpiAccountName,
       bpiAccountNumber: membershipPaymentCampaigns.bpiAccountNumber,
       bpiQrImageUrl: membershipPaymentCampaigns.bpiQrImageUrl,
@@ -102,6 +104,8 @@ async function loadApplicantPayment(applicationId: string) {
       eq(membershipPayments.campaignId, membershipPaymentCampaigns.id),
     )
     .innerJoin(applications, eq(membershipPayments.applicationId, applications.id))
+    .leftJoin(positions, eq(applications.finalPositionId, positions.id))
+    .leftJoin(committees, eq(positions.committeeId, committees.id))
     .where(eq(membershipPayments.applicationId, applicationId))
     .limit(1);
   if (!row) return null;
@@ -151,15 +155,41 @@ async function loadApplicantPayment(applicationId: string) {
 export async function getApplicantPayment(applicationId: string) {
   const row = await loadApplicantPayment(applicationId);
   if (!row) return null;
-  const released = row.confirmationStatus === "released";
+  // A failed email does not hide the details: they are released either way.
+  const released =
+    row.confirmationStatus === "released" ||
+    row.confirmationStatus === "email_failed";
+  const acceptedIntoCommittee =
+    row.applicationType === "position" &&
+    row.applicationStatus === "approved" &&
+    Boolean(row.positionName);
+  // Anyone accepted into a committee (EAs and staff, including accepted
+  // redirects) pays through the CFO's QR. General members (member-only,
+  // rejected, and redirected applicants who declined or haven't answered) use
+  // the Director for Finance's. Fall back to that one if the CFO's is missing.
+  const gcashQrKey =
+    acceptedIntoCommittee && row.gcashCoreQrImageKey
+      ? row.gcashCoreQrImageKey
+      : row.gcashQrImageKey;
   const [gcashQrImageUrl, bpiQrImageUrl] = await Promise.all([
-    row.gcashQrImageKey
-      ? createPaymentQrDownload(row.gcashQrImageKey)
-      : row.gcashQrImageUrl,
+    gcashQrKey ? createPaymentQrDownload(gcashQrKey) : row.gcashQrImageUrl,
     row.bpiQrImageKey
       ? createPaymentQrDownload(row.bpiQrImageKey)
       : row.bpiQrImageUrl,
   ]);
+  const memberCard =
+    row.paymentStatus === "verified" &&
+    row.membershipStatus === "active" &&
+    row.memberId
+      ? {
+          memberId: row.memberId,
+          recruitmentYear: row.recruitmentYear,
+          position: memberPositionLabel(row),
+          photoUrl: row.memberPhotoKey
+            ? await createMemberPhotoDownload(row.memberPhotoKey)
+            : null,
+        }
+      : null;
   return {
     applicationCode: row.applicationCode,
     applicationType: row.applicationType,
@@ -172,14 +202,14 @@ export async function getApplicantPayment(applicationId: string) {
     deadlineAt: row.deadlineAt.toISOString(),
     resubmissionDeadlineAt: row.resubmissionDeadlineAt?.toISOString() ?? null,
     paymentMethods: {
-      gcash: row.gcashAccountNumber
+      gcash: row.gcashAccountNumber || gcashQrImageUrl
         ? {
             accountName: row.gcashAccountName,
             accountNumber: row.gcashAccountNumber,
             qrImageUrl: gcashQrImageUrl,
           }
         : null,
-      bpi: row.bpiAccountNumber
+      bpi: row.bpiAccountNumber || bpiQrImageUrl
         ? {
             accountName: row.bpiAccountName,
             accountNumber: row.bpiAccountNumber,
@@ -202,79 +232,54 @@ export async function getApplicantPayment(applicationId: string) {
           reviewedAt: row.latestSubmission.reviewedAt?.toISOString() ?? null,
         }
       : null,
+    memberCard,
     memberId: released ? row.memberId : null,
-    chatLink: released ? row.assignedChatLink : null,
+    membersGroupLink: released ? row.generalChatLink : null,
+    committeeChatLink:
+      released && acceptedIntoCommittee ? row.assignedChatLink : null,
+    committeeName: released && acceptedIntoCommittee ? row.committeeName : null,
+    coreTeamChatLink:
+      released &&
+      acceptedIntoCommittee &&
+      row.committeeName &&
+      isExecutiveOfficeCommittee(row.committeeName)
+        ? row.coreTeamChatLink
+        : null,
     confirmationReleasedAt:
       row.confirmationReleasedAt?.toISOString() ?? null,
   };
-}
-
-function validateReceiptInput(input: ReceiptUploadInput) {
-  if (!RECEIPT_MIME_TYPES.includes(input.mimeType)) {
-    throw new MembershipPaymentError("Receipt must be a JPEG, PNG, or WebP image.");
-  }
-  if (
-    !Number.isInteger(input.sizeBytes) ||
-    input.sizeBytes <= 0 ||
-    input.sizeBytes > MAX_RECEIPT_SIZE_BYTES
-  ) {
-    throw new MembershipPaymentError("Receipt image must be 10 MB or smaller.");
-  }
-  if (!/^[A-Za-z0-9+/]{43}=$/.test(input.checksumSha256)) {
-    throw new MembershipPaymentError("Receipt checksum is invalid.");
-  }
-}
-
-export async function createApplicantReceiptUpload(
-  applicationId: string,
-  input: ReceiptUploadInput,
-) {
-  validateReceiptInput(input);
-  const payment = await loadApplicantPayment(applicationId);
-  if (!payment) {
-    throw new MembershipPaymentError("Payment invitation not found.", 404);
-  }
-  if (
-    !canSubmit({
-      isOpen: payment.isOpen,
-      opensAt: payment.opensAt,
-      deadlineAt: payment.deadlineAt,
-      status: payment.paymentStatus,
-      resubmissionDeadlineAt: payment.resubmissionDeadlineAt,
-      archivedAt: payment.archivedAt,
-    })
-  ) {
-    throw new MembershipPaymentError("Payment submission is not available.", 409);
-  }
-  return createPaymentReceiptUpload({
-    applicationId,
-    uploadId: randomUUID(),
-    ...input,
-  });
 }
 
 export async function submitApplicantPayment(
   applicationId: string,
   input: SubmitPaymentInput,
 ) {
-  validateReceiptInput(input);
+  const receiptUrl = normalizeDriveReceiptUrl(input.receiptUrl);
   const referenceNumber = input.referenceNumber.trim();
   const referenceNumberNormalized = normalizeReferenceNumber(referenceNumber);
   if (referenceNumberNormalized.length < 4) {
     throw new MembershipPaymentError("Enter a valid payment reference number.");
-  }
-  if (!input.receiptFileName.trim()) {
-    throw new MembershipPaymentError("Receipt file name is required.");
   }
 
   const payment = await loadApplicantPayment(applicationId);
   if (!payment) {
     throw new MembershipPaymentError("Payment invitation not found.", 404);
   }
-  if (input.method === "gcash" && !payment.gcashAccountNumber) {
+  if (
+    input.method === "gcash" &&
+    !payment.gcashAccountNumber &&
+    !payment.gcashQrImageKey &&
+    !payment.gcashCoreQrImageKey &&
+    !payment.gcashQrImageUrl
+  ) {
     throw new MembershipPaymentError("GCash is not available for this payment period.");
   }
-  if (input.method === "bpi" && !payment.bpiAccountNumber) {
+  if (
+    input.method === "bpi" &&
+    !payment.bpiAccountNumber &&
+    !payment.bpiQrImageKey &&
+    !payment.bpiQrImageUrl
+  ) {
     throw new MembershipPaymentError("BPI is not available for this payment period.");
   }
   if (
@@ -289,14 +294,6 @@ export async function submitApplicantPayment(
   ) {
     throw new MembershipPaymentError("Payment submission is not available.", 409);
   }
-
-  await validatePaymentReceipt({
-    key: input.receiptKey,
-    applicationId,
-    mimeType: input.mimeType,
-    sizeBytes: input.sizeBytes,
-    checksumSha256: input.checksumSha256,
-  });
 
   const [duplicate] = await db
     .select({ id: membershipPaymentSubmissions.id })
@@ -317,14 +314,6 @@ export async function submitApplicantPayment(
       409,
     );
   }
-
-  const submissionId = randomUUID();
-  const storedReceiptKey = await persistPaymentReceipt({
-    incomingKey: input.receiptKey,
-    paymentId: payment.paymentId,
-    submissionId,
-    mimeType: input.mimeType,
-  });
 
   try {
     return await db.transaction(async (tx) => {
@@ -370,7 +359,6 @@ export async function submitApplicantPayment(
       const [submission] = await tx
         .insert(membershipPaymentSubmissions)
         .values({
-          id: submissionId,
           paymentId: locked.id,
           campaignId: payment.campaignId,
           attemptNumber: (latest?.attemptNumber ?? 0) + 1,
@@ -378,11 +366,7 @@ export async function submitApplicantPayment(
           referenceNumber,
           referenceNumberNormalized,
           amountCents: payment.amountCents,
-          receiptKey: storedReceiptKey,
-          receiptFileName: input.receiptFileName.trim().slice(0, 255),
-          receiptMimeType: input.mimeType,
-          receiptSizeBytes: input.sizeBytes,
-          receiptChecksumSha256: input.checksumSha256,
+          receiptUrl,
         })
         .returning({
           id: membershipPaymentSubmissions.id,
@@ -404,7 +388,6 @@ export async function submitApplicantPayment(
       };
     });
   } catch (error) {
-    await deleteKeys([storedReceiptKey]).catch(() => undefined);
     if (
       typeof error === "object" &&
       error !== null &&
@@ -417,5 +400,40 @@ export async function submitApplicantPayment(
       );
     }
     throw error;
+  }
+}
+
+export async function createApplicantMemberPhotoUpload(
+  applicationId: string,
+  input: MemberPhotoMetadata,
+) {
+  await requireMemberCard(applicationId);
+  if (input.sizeBytes > MAX_MEMBER_PHOTO_SIZE_BYTES) {
+    throw new MembershipPaymentError("Photo must be 5 MB or smaller.");
+  }
+  return createMemberPhotoUpload(applicationId, input);
+}
+
+export async function completeApplicantMemberPhoto(
+  applicationId: string,
+  input: MemberPhotoMetadata & { key: string },
+) {
+  await requireMemberCard(applicationId);
+  const key = await persistMemberPhoto(applicationId, input);
+  await db
+    .update(applications)
+    .set({ memberPhotoKey: key, updatedAt: new Date() })
+    .where(eq(applications.id, applicationId));
+  const payment = await getApplicantPayment(applicationId);
+  return { memberCard: payment?.memberCard ?? null };
+}
+
+async function requireMemberCard(applicationId: string) {
+  const payment = await getApplicantPayment(applicationId);
+  if (!payment?.memberCard) {
+    throw new MembershipPaymentError(
+      "Your member ID is not available yet.",
+      409,
+    );
   }
 }

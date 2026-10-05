@@ -22,7 +22,6 @@ import {
 } from "../lib/applications/application-decisions";
 import {
   RedirectPlacementError,
-  recordRedirectResponse,
   updateRedirectPlacement,
 } from "../lib/applications/redirect-placement";
 import { validateChoiceUrls } from "../lib/apply/field-validation";
@@ -46,7 +45,6 @@ import {
   applicationDecisionPatchSchema,
   applicationEmailPatchSchema,
   applicationRedirectPlacementPatchSchema,
-  applicationRedirectResponsePatchSchema,
   zodErrorMessage,
 } from "../lib/hr/schemas";
 import { logHrAudit } from "../lib/hr/audit";
@@ -346,39 +344,6 @@ applicationsRoutes.patch("/:id/redirect-placement", requireAuth, async (c) => {
     logHrAudit({
       actorEmail: reviewerEmail,
       action: "application.redirect_placement",
-      resourceType: "application",
-      resourceId: id,
-    });
-    return c.json(updated);
-  } catch (error) {
-    if (error instanceof RedirectPlacementError) {
-      return c.json({ error: error.message }, error.status);
-    }
-    throw error;
-  }
-});
-
-applicationsRoutes.patch("/:id/redirect-response", requireAuth, async (c) => {
-  const id = c.req.param("id");
-  if (!isUuid(id)) {
-    return c.json({ error: "Invalid application id." }, 400);
-  }
-
-  const body = await c.req.json().catch(() => null);
-  const parsed = applicationRedirectResponsePatchSchema.safeParse(body);
-  if (!parsed.success) {
-    return c.json({ error: zodErrorMessage(parsed.error) }, 400);
-  }
-
-  const payload = c.get("jwtPayload") as { sub?: unknown };
-  const reviewerEmail =
-    typeof payload.sub === "string" ? payload.sub : undefined;
-
-  try {
-    const updated = await recordRedirectResponse(id, parsed.data.response);
-    logHrAudit({
-      actorEmail: reviewerEmail,
-      action: "application.redirect_response",
       resourceType: "application",
       resourceId: id,
     });

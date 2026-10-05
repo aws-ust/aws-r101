@@ -1,13 +1,13 @@
 "use client"
 
-import { ActionFeedback } from "@/components/shared/action-feedback"
+import { HrFeedbackBanner } from "@/components/hr/hr-feedback-banner"
 import { SectionHeader } from "@/components/shared/section-header"
 import { HrPaymentCampaignPanel } from "@/components/hr/hr-payment-campaign-panel"
 import { paymentCampaignDescription } from "@/components/hr/hr-payment-copy"
 import { HrPaymentSection } from "@/components/hr/hr-payment-section"
 import { HrPaymentSummary } from "@/components/hr/hr-payment-summary"
 import { useHrPaymentWorkspace } from "@/components/hr/use-hr-payment-workspace"
-import { pageShellClasses } from "@/lib/site/surface"
+import { hrPageShellClasses } from "@/lib/site/surface"
 
 const stackClasses = "mt-6 flex flex-col gap-8"
 const loadingClasses = "mt-8 font-sans text-sm text-prelude"
@@ -27,13 +27,12 @@ export function HrPaymentsPage() {
   } = useHrPaymentWorkspace()
 
   return (
-    <main className={pageShellClasses}>
+    <main className={hrPageShellClasses}>
       <SectionHeader
         eyebrow="// PAYMENTS"
         title="Membership Payments"
         subtitle="Configure the payment period, official accounts, and track high-level payment status."
       />
-      {feedback ? <ActionFeedback type={feedback.type} message={feedback.message} /> : null}
       {loading ? (
         <p className={loadingClasses}>Loading payments…</p>
       ) : (
@@ -52,6 +51,7 @@ export function HrPaymentsPage() {
               title="Payment setup"
               description={paymentCampaignDescription()}
             >
+              <HrFeedbackBanner feedback={feedback} onDismiss={() => setFeedback(null)} />
               <HrPaymentCampaignPanel
                 campaign={campaign}
                 committees={committees}

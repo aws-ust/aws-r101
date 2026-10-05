@@ -10,6 +10,10 @@ import {
   type UpdateApplicantApplicationInput,
 } from "../lib/applications/applicant-editing";
 import {
+  recordRedirectResponse,
+  RedirectPlacementError,
+} from "../lib/applications/redirect-placement";
+import {
   fireApplicantChoiceEditNotifications,
   loadApplicantEditEmailSnapshot,
 } from "../lib/email/service";
@@ -274,5 +278,23 @@ applicantApplicationRoutes.patch("/application", async (c) => {
   } catch (error) {
     const result = editError(error);
     return c.json(result.body, result.status);
+  }
+});
+
+applicantApplicationRoutes.post("/application/redirect-response", async (c) => {
+  const body = (await c.req.json().catch(() => null)) as { response?: unknown } | null;
+  const response = body?.response;
+  if (response !== "accepted" && response !== "declined") {
+    return c.json({ error: "response must be accepted or declined." }, 400);
+  }
+  const session = getApplicantSession(c);
+  try {
+    await recordRedirectResponse(session.applicationId, response);
+    return c.json(await getApplicantEditableApplication(session.applicationId));
+  } catch (error) {
+    if (error instanceof RedirectPlacementError) {
+      return c.json({ error: error.message }, error.status);
+    }
+    throw error;
   }
 });

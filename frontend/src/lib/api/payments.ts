@@ -18,11 +18,21 @@ export type PaymentCampaign = {
   gcashAccountNumber: string | null
   gcashQrImageUrl: string | null
   gcashQrImageKey: string | null
+  /** CFO's QR for everyone accepted into a committee (EAs and staff). */
+  gcashCoreQrImageKey?: string | null
+  gcashCoreQrFileName?: string | null
+  gcashCoreQrPreviewUrl?: string | null
+  gcashQrFileName?: string | null
   bpiAccountName: string | null
   bpiAccountNumber: string | null
   bpiQrImageUrl: string | null
   bpiQrImageKey: string | null
+  bpiQrFileName?: string | null
+  /** Short-lived signed URLs for previewing the saved QR images. */
+  gcashQrPreviewUrl?: string | null
+  bpiQrPreviewUrl?: string | null
   generalChatLink: string | null
+  coreTeamChatLink: string | null
   committeeChatLinks: { committeeId: string; chatLink: string }[]
 }
 
@@ -74,9 +84,11 @@ export type PaymentSubmission = {
   method: "gcash" | "bpi"
   referenceNumber: string
   amountCents: number
-  receiptFileName: string
-  receiptMimeType: string
-  receiptSizeBytes: number
+  /** Google Drive link; older submissions have an uploaded file instead. */
+  receiptUrl: string | null
+  receiptFileName: string | null
+  receiptMimeType: string | null
+  receiptSizeBytes: number | null
   status: "pending" | "verified" | "rejected" | "reversed"
   submittedAt: string
   reviewedAt: string | null
@@ -90,7 +102,7 @@ export type PaymentDetails = PaymentListItem & {
 
 export type PaymentScheduleInput = Pick<
   PaymentCampaign,
-  "opensAt" | "deadlineAt" | "generalChatLink" | "committeeChatLinks"
+  "opensAt" | "deadlineAt" | "generalChatLink" | "coreTeamChatLink" | "committeeChatLinks"
 >
 
 export type PaymentDetailsInput = Pick<
@@ -102,7 +114,7 @@ export type PaymentDetailsInput = Pick<
   | "bpiAccountNumber"
 > & { amountCents: number }
 
-export type PaymentQrProvider = "gcash" | "bpi"
+export type PaymentQrProvider = "gcash" | "gcash_core" | "bpi"
 export type PaymentQrMimeType = "image/jpeg" | "image/png" | "image/webp"
 export type PaymentQrUploadInput = {
   provider: PaymentQrProvider
@@ -143,7 +155,7 @@ export function createPaymentQrUpload(body: PaymentQrUploadInput) {
 }
 
 export function completePaymentQrUpload(
-  body: PaymentQrUploadInput & { key: string },
+  body: PaymentQrUploadInput & { key: string; fileName?: string },
 ) {
   return apiFetch<PaymentCampaign>(
     "/membership-payments/campaign/payment-qr/complete",
@@ -183,7 +195,10 @@ export function getPaymentReceiptUrl(paymentId: string, submissionId: string) {
 }
 
 export function verifyPayment(paymentId: string) {
-  return apiFetch(`/membership-payments/${paymentId}/verify`, {
+  return apiFetch<{
+    memberId: string
+    emailDelivery: { sent: number; failed: number }
+  }>(`/membership-payments/${paymentId}/verify`, {
     method: "POST",
   })
 }

@@ -1,5 +1,5 @@
 export function paymentCampaignDescription() {
-  return "Set the payment dates, account details, QR images, and group-chat links before opening submissions."
+  return "Set the payment dates, account details, and QR images before opening submissions."
 }
 
 export function paymentReviewDescription() {

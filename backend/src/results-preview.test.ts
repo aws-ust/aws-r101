@@ -258,6 +258,7 @@ test("results release preview", async (t) => {
       pendingRelease: 5,
       accepted: 1,
       rejected: 1,
+      redirected: 0,
       incomplete: 3,
       alreadyReleased: 1,
       archived: 1,
@@ -444,6 +445,7 @@ test("results release preview", async (t) => {
       pendingRelease: 5,
       accepted: 4,
       rejected: 1,
+      redirected: 0,
       incomplete: 0,
       alreadyReleased: 1,
       archived: 1,
@@ -693,6 +695,7 @@ test("results release preview", async (t) => {
       pendingRelease: 1,
       accepted: 1,
       rejected: 0,
+      redirected: 0,
       incomplete: 0,
       alreadyReleased: 6,
       archived: 1,
@@ -714,7 +717,7 @@ test("results release preview", async (t) => {
         finalPlacement: null,
         choices: [],
         willGenerateMemberId: false,
-        willSendEmail: false,
+        willSendEmail: true,
       },
     ]);
 
@@ -733,14 +736,18 @@ test("results release preview", async (t) => {
         accepted: release.accepted,
         rejected: release.rejected,
         memberIdsGenerated: release.memberIdsGenerated,
-        emailDelivery: release.emailDelivery,
+        emailDelivery: {
+          queued: release.emailDelivery.queued,
+          sent: release.emailDelivery.sent,
+          failed: release.emailDelivery.failed,
+        },
       },
       {
         released: 1,
         accepted: 1,
         rejected: 0,
         memberIdsGenerated: 0,
-        emailDelivery: { queued: 0, sent: 0, failed: 0 },
+        emailDelivery: { queued: 1, sent: 0, failed: 1 },
       },
     );
 
@@ -757,9 +764,9 @@ test("results release preview", async (t) => {
     assert.ok(releasedMember.resultsReleasedAt instanceof Date);
 
     const memberNotifications = await db
-      .select({ id: emailNotifications.id })
+      .select({ messageType: emailNotifications.messageType })
       .from(emailNotifications)
       .where(eq(emailNotifications.applicationId, memberApplicationId));
-    assert.equal(memberNotifications.length, 0);
+    assert.deepEqual(memberNotifications, [{ messageType: "result_accepted" }]);
   });
 });

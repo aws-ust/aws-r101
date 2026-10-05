@@ -79,6 +79,10 @@ export const resultAcceptedSubject =
 export const resultRejectedSubject =
   "AWS Builders - UST R101 Recruitment Results";
 
+/** Accepted result for member-only (general member) applications. */
+export const resultMemberAcceptedSubject =
+  "Welcome to AWS Builders - UST! Your Membership Results";
+
 export const resultRedirectedSubject =
   "A New Placement Offer | AWS Builders - UST R101";
 
@@ -88,4 +92,8 @@ export function paymentInvitationSubject(applicationCode: string): string {
 
 export function membershipConfirmationSubject(memberId: string): string {
   return `Welcome to AWS Builders - UST | ${memberId}`;
+}
+
+export function membershipVerifiedSubject(memberId: string): string {
+  return `You are officially a Builder! | AWS Builders - UST (${memberId})`;
 }

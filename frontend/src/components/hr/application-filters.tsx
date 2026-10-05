@@ -17,11 +17,12 @@ import { cn } from "@/lib/utils"
 import type { ApplicationType } from "@/lib/types/application"
 import type { ApplicantListStatusTag } from "@/lib/hr/application-display"
 
+// Search gets its own row on medium screens; all four filters share one row on wide screens.
 const rowClasses =
-  "flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center xl:flex-nowrap"
-const searchClasses = `${fieldControlClasses} md:flex-1`
-const statusSelectClasses = cn(hrFilterSelectClasses, "md:w-52")
-const typeSelectClasses = cn(hrFilterSelectClasses, "md:w-52")
+  "grid grid-cols-1 gap-3 md:grid-cols-3 2xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)_minmax(0,1.2fr)_minmax(0,1fr)]"
+const searchClasses = cn(fieldControlClasses, "border border-blue-chalk/20 md:col-span-3 2xl:col-span-1")
+const statusSelectClasses = cn(hrFilterSelectClasses, "w-full")
+const typeSelectClasses = cn(hrFilterSelectClasses, "w-full")
 
 const STATUS_LABELS: Record<ApplicantListStatusTag, string> = {
   pending: "Pending",
@@ -37,8 +38,8 @@ function statusFilterLabel(status: HrFilters["status"]) {
 }
 
 const APPLICATION_TYPE_LABELS: Record<ApplicationType, string> = {
-  position: "Committee positions",
-  member: "Member-only",
+  position: "Committee Positions",
+  member: "Member-Only",
 }
 
 export type HrFilters = {
@@ -83,16 +84,16 @@ export function ApplicationFilters({ value, onChange }: ApplicationFiltersProps)
           className={typeSelectClasses}
           aria-label="Filter by application type"
         >
-          <SelectValue placeholder="All application types">
+          <SelectValue placeholder="All Application Types">
             {value.applicationType
               ? APPLICATION_TYPE_LABELS[value.applicationType]
-              : "All application types"}
+              : "All Application Types"}
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All application types</SelectItem>
-          <SelectItem value="position">Committee positions</SelectItem>
-          <SelectItem value="member">Member-only</SelectItem>
+          <SelectItem value="all">All Application Types</SelectItem>
+          <SelectItem value="position">Committee Positions</SelectItem>
+          <SelectItem value="member">Member-Only</SelectItem>
         </SelectContent>
       </Select>
       <HrCommitteeFilterPicker

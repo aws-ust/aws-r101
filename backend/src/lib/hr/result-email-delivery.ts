@@ -9,7 +9,6 @@ import {
 } from "../../db/schema";
 import { recruitmentYearInt } from "../applications/application-code";
 import { deliverQueuedResultEmail } from "../email/service";
-import { redirectPlacementCcEmails } from "../email/redirect-recipients";
 import { markFailed } from "../email/notifications";
 
 export type ResultEmailDeliverySummary = {
@@ -33,6 +32,7 @@ export async function deliverResultNotifications(
       lastName: applicants.lastName,
       position: positions.name,
       redirectPositionId: applications.redirectPositionId,
+      applicationType: applications.applicationType,
     })
     .from(emailNotifications)
     .innerJoin(
@@ -80,7 +80,9 @@ export async function deliverResultNotifications(
       ) {
         return failed("Notification is not a result email.");
       }
-      if (row.messageType === "result_accepted" && !row.position) {
+      if (row.messageType === "result_accepted" &&
+        row.applicationType !== "member" &&
+        !row.position) {
         return failed("Accepted result has no final position.");
       }
       if (row.messageType === "result_redirected") {
@@ -90,12 +92,6 @@ export async function deliverResultNotifications(
         if (!redirect) {
           return failed("Redirected result has no redirect position.");
         }
-        const cc = redirectPlacementCcEmails({
-          committee: redirect.committee,
-          positionTitle: redirect.title,
-        }).filter(
-          (address) => address.toLowerCase() !== row.recipient.toLowerCase(),
-        );
         try {
           const status = await deliverQueuedResultEmail({
             notificationId: row.id,
@@ -104,7 +100,6 @@ export async function deliverResultNotifications(
             lastName: row.lastName,
             position: redirect.title,
             committee: redirect.committee,
-            cc,
           });
           if (status !== "sent") {
             return {
@@ -129,6 +124,7 @@ export async function deliverResultNotifications(
           recipient: row.recipient,
           lastName: row.lastName,
           position: row.position,
+          applicationType: row.applicationType,
         });
         if (status !== "sent") {
           return {

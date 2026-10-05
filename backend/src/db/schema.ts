@@ -60,6 +60,7 @@ export const emailMessageType = pgEnum("email_message_type", [
   "result_redirected",
   "payment_invitation",
   "membership_confirmation",
+  "membership_verified",
 ]);
 export const emailDeliveryStatus = pgEnum("email_delivery_status", [
   "pending",
@@ -236,6 +237,7 @@ export const applications = pgTable(
       onDelete: "set null",
     }),
     memberId: varchar("member_id", { length: 32 }).unique(),
+    memberPhotoKey: text("member_photo_key"),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     archivedBy: uuid("archived_by").references(() => users.id, {
       onDelete: "set null",
@@ -528,11 +530,17 @@ export const membershipPaymentCampaigns = pgTable(
     gcashAccountNumber: varchar("gcash_account_number", { length: 50 }),
     gcashQrImageUrl: text("gcash_qr_image_url"),
     gcashQrImageKey: text("gcash_qr_image_key"),
+    gcashQrFileName: text("gcash_qr_file_name"),
+    /** CFO's GCash QR, used by everyone accepted into a committee (EAs and staff). */
+    gcashCoreQrImageKey: text("gcash_core_qr_image_key"),
+    gcashCoreQrFileName: text("gcash_core_qr_file_name"),
     bpiAccountName: varchar("bpi_account_name", { length: 150 }),
     bpiAccountNumber: varchar("bpi_account_number", { length: 50 }),
     bpiQrImageUrl: text("bpi_qr_image_url"),
     bpiQrImageKey: text("bpi_qr_image_key"),
+    bpiQrFileName: text("bpi_qr_file_name"),
     generalChatLink: text("general_chat_link"),
+    coreTeamChatLink: text("core_team_chat_link"),
     openedAt: timestamp("opened_at", { withTimezone: true }),
     openedBy: uuid("opened_by").references(() => users.id, {
       onDelete: "set null",
@@ -694,13 +702,15 @@ export const membershipPaymentSubmissions = pgTable(
       length: 100,
     }).notNull(),
     amountCents: integer("amount_cents").notNull(),
-    receiptKey: text("receipt_key").notNull(),
-    receiptFileName: varchar("receipt_file_name", { length: 255 }).notNull(),
-    receiptMimeType: varchar("receipt_mime_type", { length: 50 }).notNull(),
-    receiptSizeBytes: integer("receipt_size_bytes").notNull(),
+    /** Google Drive link to the receipt. Older submissions used an uploaded file instead. */
+    receiptUrl: text("receipt_url"),
+    receiptKey: text("receipt_key"),
+    receiptFileName: varchar("receipt_file_name", { length: 255 }),
+    receiptMimeType: varchar("receipt_mime_type", { length: 50 }),
+    receiptSizeBytes: integer("receipt_size_bytes"),
     receiptChecksumSha256: varchar("receipt_checksum_sha256", {
       length: 44,
-    }).notNull(),
+    }),
     status: paymentSubmissionStatus().notNull().default("pending"),
     submittedAt: timestamp("submitted_at", { withTimezone: true })
       .notNull()

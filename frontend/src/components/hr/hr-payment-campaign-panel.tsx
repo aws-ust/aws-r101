@@ -56,14 +56,14 @@ function PaymentCampaignHeader({ campaign, role, pending, onCampaign, onPending,
   )
 }
 
-function PaymentCampaignForms({ campaign, committees, role, onCampaign, onFeedback }: CampaignPanelProps) {
+function PaymentCampaignForms({ campaign, role, onCampaign, onFeedback }: CampaignPanelProps) {
   const canManagePeriod = role === "hr" || role === "admin"
   const canManageDetails = role === "hr" || role === "admin"
   return (
     <>
       {canManagePeriod ? (
         <div className="mt-6">
-          <HrPaymentScheduleForm campaign={campaign} committees={committees} onSaved={(saved) => { onCampaign(saved); onFeedback({ type: "success", message: "Payment period and links saved." }) }} />
+          <HrPaymentScheduleForm campaign={campaign} onSaved={(saved) => { onCampaign(saved); onFeedback({ type: "success", message: "Payment period saved." }) }} />
         </div>
       ) : null}
       {canManageDetails ? (

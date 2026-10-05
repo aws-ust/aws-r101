@@ -13,6 +13,7 @@ import {
 import {
   MAX_PAYMENT_QR_SIZE_BYTES,
   PAYMENT_QR_MIME_TYPES,
+  withQrPreviewUrls,
 } from "../lib/membership/payment-qr";
 import {
   deliverMembershipNotifications,
@@ -45,6 +46,7 @@ const scheduleSchema = z.object({
   opensAt: z.string().datetime({ offset: true }),
   deadlineAt: z.string().datetime({ offset: true }),
   generalChatLink: nullableUrl,
+  coreTeamChatLink: nullableUrl.optional(),
   committeeChatLinks: z.array(
     z.object({
       committeeId: z.string().uuid(),
@@ -63,13 +65,14 @@ const paymentDetailsSchema = z.object({
   bpiAccountNumber: nullableAccountNumber,
 });
 const paymentQrSchema = z.object({
-  provider: z.enum(["gcash", "bpi"]),
+  provider: z.enum(["gcash", "gcash_core", "bpi"]),
   mimeType: z.enum(PAYMENT_QR_MIME_TYPES),
   sizeBytes: z.number().int().positive().max(MAX_PAYMENT_QR_SIZE_BYTES),
   checksumSha256: z.string().regex(/^[A-Za-z0-9+/]{43}=$/),
 });
 const completePaymentQrSchema = paymentQrSchema.extend({
   key: z.string().trim().min(1).max(500),
+  fileName: z.string().trim().max(255).optional(),
 });
 const reviewSchema = z.object({
   reason: z.string().trim().min(1).max(1000),
@@ -92,7 +95,10 @@ export const membershipPaymentRoutes = new Hono();
 membershipPaymentRoutes.use("*", requireRoles("hr", "admin"));
 
 membershipPaymentRoutes.get("/campaign", async (c) => {
-  return c.json({ campaign: await getCurrentPaymentCampaign() });
+  const campaign = await getCurrentPaymentCampaign();
+  return c.json({
+    campaign: campaign ? await withQrPreviewUrls(campaign) : null,
+  });
 });
 
 membershipPaymentRoutes.put(
@@ -110,11 +116,13 @@ membershipPaymentRoutes.put(
     }
     try {
       return c.json(
-        await saveCurrentPaymentSchedule({
-          ...parsed.data,
-          opensAt: new Date(parsed.data.opensAt),
-          deadlineAt: new Date(parsed.data.deadlineAt),
-        }),
+        await withQrPreviewUrls(
+          await saveCurrentPaymentSchedule({
+            ...parsed.data,
+            opensAt: new Date(parsed.data.opensAt),
+            deadlineAt: new Date(parsed.data.deadlineAt),
+          }),
+        ),
       );
     } catch (error) {
       const result = paymentError(error);
@@ -134,7 +142,9 @@ membershipPaymentRoutes.put(
       return c.json({ error: "Enter valid payment amount and account details." }, 400);
     }
     try {
-      return c.json(await saveCurrentPaymentDetails(parsed.data));
+      return c.json(
+        await withQrPreviewUrls(await saveCurrentPaymentDetails(parsed.data)),
+      );
     } catch (error) {
       const result = paymentError(error);
       return c.json(result.body, result.status);
@@ -172,7 +182,11 @@ membershipPaymentRoutes.post(
       return c.json({ error: "Enter valid uploaded QR image details." }, 400);
     }
     try {
-      return c.json(await completeCurrentPaymentQrUpload(parsed.data));
+      return c.json(
+        await withQrPreviewUrls(
+          await completeCurrentPaymentQrUpload(parsed.data),
+        ),
+      );
     } catch (error) {
       const result = paymentError(error);
       return c.json(result.body, result.status);
@@ -329,9 +343,14 @@ membershipPaymentRoutes.post(
     const paymentId = c.req.param("paymentId");
     if (!UUID_RE.test(paymentId)) return c.json({ error: "Invalid payment id." }, 400);
     try {
-      return c.json(
-        await verifyMembershipPayment(paymentId, getCurrentUser(c)),
+      const { notificationId, ...verified } = await verifyMembershipPayment(
+        paymentId,
+        getCurrentUser(c),
       );
+      const emailDelivery = await deliverMembershipNotifications([
+        notificationId,
+      ]);
+      return c.json({ ...verified, emailDelivery });
     } catch (error) {
       const result = paymentError(error);
       return c.json(result.body, result.status);

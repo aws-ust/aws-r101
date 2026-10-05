@@ -273,6 +273,13 @@ main:has(#committee-quiz) .faq-section {
   * {
     @apply border-border outline-ring/50;
   }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="option"],
+  [role="menuitem"],
+  select:not(:disabled) {
+    cursor: pointer;
+  }
   body {
     @apply bg-background text-foreground relative;
     overflow-x: clip;

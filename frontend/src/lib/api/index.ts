@@ -21,7 +21,6 @@ import {
   patchApplicantEmailRequest,
   resendApplicationSubmittedEmailRequest,
   patchApplicationRedirectPlacementRequest,
-  patchApplicationRedirectResponseRequest,
   postApplication,
   postHrApplication,
   postHrUploadPresign,
@@ -296,12 +295,6 @@ export function patchApplicationRedirectPlacement(
   return patchApplicationRedirectPlacementRequest(id, redirectPositionId)
 }
 
-export function patchApplicationRedirectResponse(
-  id: string,
-  response: "accepted" | "declined",
-) {
-  return patchApplicationRedirectResponseRequest(id, response)
-}
 
 export function fullName(app: Application) {
   return `${app.firstName} ${app.lastName}`

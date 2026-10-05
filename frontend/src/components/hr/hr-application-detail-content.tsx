@@ -15,7 +15,7 @@ import type { HrApplication } from "@/lib/types/hr-application"
 import {
   displayTitleLeadingClasses,
   glassPanelClasses,
-  pageShellClasses,
+  hrPageShellClasses,
 } from "@/lib/site/surface"
 import {
   applicantListStatusTag,
@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils"
 const eyebrowClasses =
   "w-fit font-mono text-xs font-medium uppercase tracking-wide text-aquamarine"
 const backClasses =
-  "mb-4 inline-flex items-center gap-2 rounded-pill border border-blue-chalk/15 bg-haiti/30 px-3 py-2 font-mono text-xs text-prelude transition-colors hover:border-biloba-flower/35 hover:bg-meteorite/40 hover:text-blue-chalk"
+  "mb-4 mt-3 inline-flex w-fit items-center gap-1.5 font-mono text-xs text-prelude transition-colors hover:text-blue-chalk"
 const headingRowClasses = "flex flex-wrap items-center gap-3"
 const titleClasses = `max-w-full font-sans text-4xl font-bold text-balance break-words text-blue-chalk md:text-5xl ${displayTitleLeadingClasses}`
 const placementSummaryClasses =
@@ -69,7 +69,7 @@ export function HrApplicationDetailContent({
   const backLabel = viewingArchive ? "Back to Archive" : "Back to Applications"
 
   return (
-    <main className={cn(pageShellClasses, "min-w-0 max-w-full overflow-x-clip")}>
+    <main className={cn(hrPageShellClasses, "min-w-0 max-w-full overflow-x-clip")}>
       <p className={eyebrowClasses}>
         {viewingArchive ? "// ARCHIVE" : "// APPLICATIONS"}
       </p>

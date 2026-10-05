@@ -6,6 +6,11 @@ import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { LazyMotion, domAnimation, useReducedMotion } from "motion/react"
+import { ApplyFormActions } from "@/components/apply/apply-form-actions"
+import {
+  persistApplyFormDraft,
+  useApplyFormDraft,
+} from "@/components/apply/use-apply-form-draft"
 import { ApplyStepper } from "@/components/apply/stepper"
 import {
   applyFormDefaults,
@@ -38,6 +43,7 @@ import { ApplyFormSteps } from "@/components/apply/apply-form-steps"
 import { UST_EMAIL_DOMAIN } from "@/lib/constants"
 import {
   applyFlowShellClasses,
+  hrPageShellClasses,
   glassPanelClasses,
   ghostPillButtonClasses,
 } from "@/lib/site/surface"
@@ -47,9 +53,6 @@ type FormStep = 1 | 2 | 3 | 4 | 5 | 6
 type CompletedUploadSession = { fingerprint: string; id: string; expiresAt: string }
 
 const panelShellClasses = `mx-auto w-full min-w-0 max-w-full overflow-x-clip ${glassPanelClasses} px-4 py-8 md:px-8`
-const actionsClasses =
-  "mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
-const nextButtonClasses = "h-10 px-5 text-xs"
 const errorClasses = "mt-4 text-sm text-aquamarine"
 const slideSpring = { type: "spring" as const, stiffness: 400, damping: 35 }
 const slideSnap = { duration: 0 }
@@ -64,23 +67,14 @@ function fieldErrors<T extends object>(errors: Record<string, { message?: string
   return Object.fromEntries(Object.entries(errors ?? {}).map(([key, error]) => [key, error?.message ?? ""])) as Partial<Record<keyof T, string>>
 }
 
-function draftUploadMeta(upload: UploadValues): ApplyFormDraft["upload"] {
-  return {
-    resumeDisplayName: upload.resume?.name ?? upload.resumeDisplayName,
-    registrationDisplayName: upload.registration?.name ?? upload.registrationDisplayName,
-  }
-}
-
-function persistApplyFormDraft(step: FormStep, values: ApplyFormValues) {
-  if (step > 5) return
-  saveApplyFormDraft({
-    step: step as ApplyFormDraft["step"],
-    privacy: values.privacy,
-    general: values.general,
-    committee: values.committee,
-    upload: draftUploadMeta(values.upload),
-  })
-}
+const STEP_FIELD = {
+  1: "privacy",
+  2: "committee",
+  3: "general",
+  4: "upload",
+  5: "upload",
+  6: "upload",
+} as const
 
 const draftDocumentKeys: DraftDocumentKey[] = ["resume", "registration"]
 
@@ -109,7 +103,6 @@ export function ApplyForm({ initialPositionId, mode = "public" }: ApplyFormProps
     firstTitle: "",
     secondTitle: "",
   })
-  const [draftReady, setDraftReady] = useState(false)
   const {
     formState: { errors },
     getValues,
@@ -128,72 +121,16 @@ export function ApplyForm({ initialPositionId, mode = "public" }: ApplyFormProps
   const committee = watch("committee")
   const upload = watch("upload")
 
-  useEffect(() => {
-    if (hrMode) {
-      setDraftReady(true)
-      return
-    }
-    let cancelled = false
-    void (async () => {
-      const draft = loadApplyFormDraft()
-      const files = await loadAllDraftDocuments()
-      if (cancelled) return
-      if (draft) {
-        reset({
-          privacy: draft.privacy,
-          general: draft.general,
-          committee: draft.committee,
-          upload: {
-            resume: files.resume ?? null,
-            registration: files.registration ?? null,
-            resumeDisplayName: files.resume?.name ?? draft.upload.resumeDisplayName,
-            registrationDisplayName: files.registration?.name ?? draft.upload.registrationDisplayName,
-          },
-        })
-        setStep(draft.step)
-      }
-      setDraftReady(true)
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [hrMode, reset])
-
-  useEffect(() => {
-    if (hrMode || !draftReady) return
-    let timer: ReturnType<typeof setTimeout> | undefined
-    const subscription = watch((value) => {
-      if (timer) clearTimeout(timer)
-      timer = setTimeout(() => {
-        persistApplyFormDraft(step, getValues())
-      }, 250)
-    })
-    return () => {
-      subscription.unsubscribe()
-      if (timer) clearTimeout(timer)
-    }
-  }, [draftReady, getValues, hrMode, step, watch])
-
-  useEffect(() => {
-    if (hrMode || !draftReady) return
-    persistApplyFormDraft(step, getValues())
-  }, [draftReady, getValues, hrMode, step])
-
-  useEffect(() => {
-    if (hrMode || !draftReady || !initialPositionId) return
-    let cancelled = false
-    listOpenPositions().then((rows) => {
-      const position = rows.find((row) => row.id === initialPositionId)
-      if (!cancelled && position) {
-        setValue("committee.applicationType", "position")
-        setValue("committee.firstCommittee", position.committee)
-        setValue("committee.firstPositionId", position.id)
-        setValue("committee.firstPositionTitle", position.title)
-        setValue("committee.slotId", "")
-      }
-    }).catch(() => {})
-    return () => { cancelled = true }
-  }, [draftReady, hrMode, initialPositionId, setValue])
+  useApplyFormDraft({
+    hrMode,
+    step,
+    initialPositionId,
+    reset,
+    watch,
+    getValues,
+    setValue,
+    onRestoreStep: setStep,
+  })
 
   const updatePrivacy = (patch: Partial<PrivacyValues>) => {
     for (const [key, value] of Object.entries(patch)) setValue(`privacy.${key}` as never, value as never, { shouldDirty: true, shouldTouch: true })
@@ -220,8 +157,7 @@ export function ApplyForm({ initialPositionId, mode = "public" }: ApplyFormProps
 
   async function goNext() {
     setServerError("")
-    const name = step === 1 ? "privacy" : step === 2 ? "committee" : step === 3 ? "general" : "upload"
-    if (!(await trigger(name, { shouldFocus: true }))) return
+    if (!(await trigger(STEP_FIELD[step], { shouldFocus: true }))) return
     setDirection(1)
     setStep((current) => (current + 1) as FormStep)
   }
@@ -279,10 +215,11 @@ export function ApplyForm({ initialPositionId, mode = "public" }: ApplyFormProps
     committee: fieldErrors<CommitteeValues>(errors.committee as never),
     upload: fieldErrors<UploadValues>(errors.upload as never),
   }
-  const panelWidth = step === 2 || step === 5 ? "max-w-6xl" : "max-w-2xl"
+  const wideStep = step === 2 || step === 5
+  const panelWidth = wideStep ? (hrMode ? "max-w-none" : "max-w-6xl") : "max-w-2xl"
 
   return (
-    <main className={applyFlowShellClasses}>
+    <main className={hrMode ? hrPageShellClasses : applyFlowShellClasses}>
       <LazyMotion features={domAnimation}>
         <div className="flex min-w-0 flex-col gap-10">
         <SectionHeader
@@ -321,43 +258,14 @@ export function ApplyForm({ initialPositionId, mode = "public" }: ApplyFormProps
             />
           </div>
           {step !== 6 ? (
-            <div className={actionsClasses}>
-              {step === 1 ? (
-                <Button
-                  color="purple"
-                  className={ghostPillButtonClasses}
-                  nativeButton={false}
-                  render={<Link href={hrMode ? "/admin/hr" : "/apply/positions"} />}
-                  disabled={submitting}
-                >
-                  {hrMode ? "Cancel" : "← Back"}
-                </Button>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <Button
-                    type="button"
-                    color="purple"
-                    className={ghostPillButtonClasses}
-                    onClick={goBack}
-                    disabled={submitting}
-                  >
-                    ← Back
-                  </Button>
-                  {hrMode ? (
-                    <Button
-                      color="purple"
-                      className={ghostPillButtonClasses}
-                      nativeButton={false}
-                      render={<Link href="/admin/hr" />}
-                      disabled={submitting}
-                    >
-                      Cancel
-                    </Button>
-                  ) : null}
-                </div>
-              )}
-              {step === 5 ? <Button type="button" color="cyan" className={nextButtonClasses} onClick={submit} disabled={submitting}>{hrMode ? "Add Applicant" : "Submit Application"}</Button> : <Button type="button" color="cyan" className={nextButtonClasses} onClick={goNext}>Next → Step {step + 1}</Button>}
-            </div>
+            <ApplyFormActions
+              step={step}
+              hrMode={hrMode}
+              submitting={submitting}
+              onBack={goBack}
+              onNext={goNext}
+              onSubmit={submit}
+            />
           ) : null}
         </div>
         </div>

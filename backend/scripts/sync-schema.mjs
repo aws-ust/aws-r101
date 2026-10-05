@@ -187,6 +187,7 @@ try {
     "officer_interview_rescheduled",
     "applicant_dev_exam",
     "member_registration",
+    "membership_verified",
   ]) {
     await sql.unsafe(`
       DO $$ BEGIN
