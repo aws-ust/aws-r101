@@ -4,16 +4,19 @@ import {
   membershipPaymentCampaigns,
   membershipPaymentChatLinks,
 } from "../../db/schema";
+import { isExecutiveOfficeCommittee } from "../apply/committee-office-groups";
 
 export type ResultGroupLinks = {
   membersGroupLink: string | null;
   committeeChatLink: string | null;
   committeeName: string | null;
+  /** Core team chat (EB, EAs and directors); only sent to executive associates. */
+  coreTeamChatLink: string | null;
 };
 
 /**
- * The Members Facebook Group and the accepted committee's group chat, as set
- * on the Community Links page. Accepted applicants can use these as soon as
+ * The Members Facebook Group, the accepted committee's group chat and, for
+ * executive associates, the core team chat, as set on the Community Links page. Accepted applicants can use these as soon as
  * their results are released, before any payment happens.
  */
 export async function loadResultGroupLinks(
@@ -24,12 +27,18 @@ export async function loadResultGroupLinks(
     .select({
       id: membershipPaymentCampaigns.id,
       generalChatLink: membershipPaymentCampaigns.generalChatLink,
+      coreTeamChatLink: membershipPaymentCampaigns.coreTeamChatLink,
     })
     .from(membershipPaymentCampaigns)
     .where(eq(membershipPaymentCampaigns.recruitmentYear, recruitmentYear))
     .limit(1);
   if (!campaign) {
-    return { membersGroupLink: null, committeeChatLink: null, committeeName: committee.name };
+    return {
+      membersGroupLink: null,
+      committeeChatLink: null,
+      committeeName: committee.name,
+      coreTeamChatLink: null,
+    };
   }
   const [link] = await db
     .select({ chatLink: membershipPaymentChatLinks.chatLink })
@@ -45,5 +54,8 @@ export async function loadResultGroupLinks(
     membersGroupLink: campaign.generalChatLink,
     committeeChatLink: link?.chatLink ?? null,
     committeeName: committee.name,
+    coreTeamChatLink: isExecutiveOfficeCommittee(committee.name)
+      ? campaign.coreTeamChatLink
+      : null,
   };
 }

@@ -473,6 +473,7 @@ test("applicant editing", async (t) => {
         membersGroupLink: null,
         committeeChatLink: null,
         committeeName: `Editing Committee A ${applicationId}`,
+        coreTeamChatLink: null,
       },
       finalPlacement: {
         positionId: positionA1Id,
@@ -496,6 +497,7 @@ test("applicant editing", async (t) => {
         opensAt: new Date("2096-10-01T00:00:00.000Z"),
         deadlineAt: new Date("2096-12-01T00:00:00.000Z"),
         generalChatLink: "https://www.facebook.com/groups/members-test",
+        coreTeamChatLink: "https://m.me/j/core-team-test",
       })
       .returning({ id: membershipPaymentCampaigns.id });
     try {
@@ -512,6 +514,8 @@ test("applicant editing", async (t) => {
         membersGroupLink: "https://www.facebook.com/groups/members-test",
         committeeChatLink: "https://m.me/j/committee-a-test",
         committeeName: `Editing Committee A ${applicationId}`,
+        // Only executive associates get the core team chat.
+        coreTeamChatLink: null,
       });
 
       await db

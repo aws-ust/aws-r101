@@ -36,6 +36,7 @@ function inHierarchyOrder(committees: CommitteeApplicationStatus[]) {
 function defaults(campaign: PaymentCampaign) {
   return {
     generalChatLink: campaign.generalChatLink ?? "",
+    coreTeamChatLink: campaign.coreTeamChatLink ?? "",
     committeeLinks: Object.fromEntries(
       campaign.committeeChatLinks.map((link) => [link.committeeId, link.chatLink]),
     ) as Record<string, string>,
@@ -61,6 +62,7 @@ export function HrPaymentLinksForm({ campaign, committees, onSaved }: LinksFormP
         opensAt: campaign.opensAt,
         deadlineAt: campaign.deadlineAt,
         generalChatLink: form.generalChatLink.trim() || null,
+        coreTeamChatLink: form.coreTeamChatLink.trim() || null,
         committeeChatLinks: committees.flatMap((committee) => {
           const chatLink = form.committeeLinks[committee.id]?.trim()
           return chatLink ? [{ committeeId: committee.id, chatLink }] : []
@@ -91,6 +93,28 @@ export function HrPaymentLinksForm({ campaign, committees, onSaved }: LinksFormP
             }
           />
         </div>
+      </div>
+      <div className={sectionClasses}>
+        <p className={sectionTitleClasses}>Core Team Group Chat</p>
+        <div className={gridClasses}>
+          <div className={fullFieldClasses}>
+            <FieldLabel htmlFor="core-team-chat">Core team group chat</FieldLabel>
+            <Input
+              id="core-team-chat"
+              type="url"
+              inputMode="url"
+              placeholder="https://m.me/j/…"
+              value={form.coreTeamChatLink}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, coreTeamChatLink: event.target.value }))
+              }
+            />
+          </div>
+        </div>
+        <p className={`${helpClasses} mt-3`}>
+          For the Executive Board, Executive Associates and Directors. Accepted Executive
+          Associates see this link on their dashboard.
+        </p>
       </div>
       <div className={sectionClasses}>
         <p className={sectionTitleClasses}>Office and Committee Group Chats</p>

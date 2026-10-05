@@ -17,6 +17,7 @@ import {
   persistMemberPhoto,
   type MemberPhotoMetadata,
 } from "./member-photo";
+import { isExecutiveOfficeCommittee } from "../apply/committee-office-groups";
 import { memberPositionLabel } from "./member-position";
 import { createPaymentQrDownload } from "./payment-qr";
 
@@ -76,6 +77,7 @@ async function loadApplicantPayment(applicationId: string) {
       positionName: positions.name,
       committeeName: committees.name,
       generalChatLink: membershipPaymentCampaigns.generalChatLink,
+      coreTeamChatLink: membershipPaymentCampaigns.coreTeamChatLink,
       paymentStatus: membershipPayments.status,
       membershipStatus: membershipPayments.membershipStatus,
       confirmationStatus: membershipPayments.confirmationStatus,
@@ -229,6 +231,13 @@ export async function getApplicantPayment(applicationId: string) {
     committeeChatLink:
       released && acceptedIntoCommittee ? row.assignedChatLink : null,
     committeeName: released && acceptedIntoCommittee ? row.committeeName : null,
+    coreTeamChatLink:
+      released &&
+      acceptedIntoCommittee &&
+      row.committeeName &&
+      isExecutiveOfficeCommittee(row.committeeName)
+        ? row.coreTeamChatLink
+        : null,
     confirmationReleasedAt:
       row.confirmationReleasedAt?.toISOString() ?? null,
   };

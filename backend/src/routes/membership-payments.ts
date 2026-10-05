@@ -46,6 +46,7 @@ const scheduleSchema = z.object({
   opensAt: z.string().datetime({ offset: true }),
   deadlineAt: z.string().datetime({ offset: true }),
   generalChatLink: nullableUrl,
+  coreTeamChatLink: nullableUrl.optional(),
   committeeChatLinks: z.array(
     z.object({
       committeeId: z.string().uuid(),

@@ -38,6 +38,8 @@ export type ApplicantResult = {
     membersGroupLink: string | null
     committeeChatLink: string | null
     committeeName: string | null
+    /** Core team chat; only set for executive associates. */
+    coreTeamChatLink: string | null
   } | null
   finalPlacement: {
     positionId: string
@@ -148,6 +150,8 @@ export type ApplicantPayment = {
   membersGroupLink: string | null
   committeeChatLink: string | null
   committeeName: string | null
+  /** Core team chat; only set for executive associates. */
+  coreTeamChatLink: string | null
   confirmationReleasedAt: string | null
 }
 

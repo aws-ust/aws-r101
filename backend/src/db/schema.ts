@@ -537,6 +537,7 @@ export const membershipPaymentCampaigns = pgTable(
     bpiQrImageKey: text("bpi_qr_image_key"),
     bpiQrFileName: text("bpi_qr_file_name"),
     generalChatLink: text("general_chat_link"),
+    coreTeamChatLink: text("core_team_chat_link"),
     openedAt: timestamp("opened_at", { withTimezone: true }),
     openedBy: uuid("opened_by").references(() => users.id, {
       onDelete: "set null",

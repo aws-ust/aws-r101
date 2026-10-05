@@ -49,6 +49,7 @@ export function HrPaymentScheduleForm({ campaign, onSaved }: { campaign: Payment
         opensAt,
         deadlineAt,
         generalChatLink: campaign?.generalChatLink ?? null,
+        coreTeamChatLink: campaign?.coreTeamChatLink ?? null,
         committeeChatLinks: campaign?.committeeChatLinks ?? [],
       })
       onSaved(saved)

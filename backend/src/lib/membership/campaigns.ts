@@ -23,6 +23,8 @@ export type PaymentScheduleInput = {
   opensAt: Date;
   deadlineAt: Date;
   generalChatLink: string | null;
+  /** Left unchanged when omitted. */
+  coreTeamChatLink?: string | null;
   committeeChatLinks: { committeeId: string; chatLink: string }[];
 };
 
@@ -97,6 +99,9 @@ export async function saveCurrentPaymentSchedule(
       opensAt: input.opensAt,
       deadlineAt: input.deadlineAt,
       generalChatLink: clean(input.generalChatLink),
+      ...(input.coreTeamChatLink === undefined
+        ? {}
+        : { coreTeamChatLink: clean(input.coreTeamChatLink) }),
       updatedAt: new Date(),
     };
     const [campaign] = existing

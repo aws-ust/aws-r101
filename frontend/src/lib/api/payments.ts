@@ -28,6 +28,7 @@ export type PaymentCampaign = {
   gcashQrPreviewUrl?: string | null
   bpiQrPreviewUrl?: string | null
   generalChatLink: string | null
+  coreTeamChatLink: string | null
   committeeChatLinks: { committeeId: string; chatLink: string }[]
 }
 
@@ -97,7 +98,7 @@ export type PaymentDetails = PaymentListItem & {
 
 export type PaymentScheduleInput = Pick<
   PaymentCampaign,
-  "opensAt" | "deadlineAt" | "generalChatLink" | "committeeChatLinks"
+  "opensAt" | "deadlineAt" | "generalChatLink" | "coreTeamChatLink" | "committeeChatLinks"
 >
 
 export type PaymentDetailsInput = Pick<

@@ -36,6 +36,7 @@ export function ApplicantMemberSection({ payment, card, application, onCardChang
         membersGroupLink={payment.membersGroupLink}
         committeeChatLink={payment.committeeChatLink}
         committeeName={payment.committeeName}
+        coreTeamChatLink={payment.coreTeamChatLink}
       />
     </section>
   )
