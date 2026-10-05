@@ -64,8 +64,9 @@ class BackendStack extends cdk.Stack {
       encryption: s3.BucketEncryption.S3_MANAGED,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       enforceSSL: true,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-      autoDeleteObjects: true,
+      // Holds payment QR codes, member photos and applicant documents, so keep
+      // the bucket and its files even if the stack is deleted or replaced.
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
       lifecycleRules: [{ prefix: "incoming/", expiration: cdk.Duration.days(1) }],
       cors: [{
         allowedOrigins: [corsOrigin],
