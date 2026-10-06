@@ -237,7 +237,7 @@ test("membership payment workflow", async (t) => {
     assert.equal(verified.status, 200);
     const verifiedBody = (await verified.json()) as { memberId: string; emailDelivery: { sent: number; failed: number } };
     // 8 board seats + 0 EAs + 13 directors, so the first staff number is 22.
-    assert.equal(verifiedBody.memberId, "AWS-2096-0022");
+    assert.equal(verifiedBody.memberId, "AWS-9697-0022");
     assert.equal(verifiedBody.emailDelivery.sent + verifiedBody.emailDelivery.failed, 1);
     const verifiedEmails = await db.select().from(emailNotifications).where(eq(emailNotifications.applicationId, ids.acceptedApplication));
     assert.equal(verifiedEmails.filter((row) => row.messageType === "membership_verified").length, 1);
@@ -251,7 +251,7 @@ test("membership payment workflow", async (t) => {
     assert.equal(photoPresign.status, 201);
     assert.match(((await photoPresign.json()) as { key: string }).key, new RegExp(`^incoming/member-photos/${ids.acceptedApplication}/`));
     const [application] = await db.select({ memberId: applications.memberId }).from(applications).where(eq(applications.id, ids.acceptedApplication));
-    assert.match(application.memberId ?? "", /^AWS-2096-\d{4}$/);
+    assert.match(application.memberId ?? "", /^AWS-9697-\d{4}$/);
   });
 
   await t.test("HR can reject a receipt for resubmission", async () => {
@@ -341,7 +341,7 @@ test("membership payment workflow", async (t) => {
     const [application] = await db.select({ memberId: applications.memberId }).from(applications).where(eq(applications.id, ids.acceptedApplication));
     assert.equal(reversed.membershipStatus, "revoked");
     assert.equal(reversed.status, "needs_resubmission");
-    assert.match(application.memberId ?? "", /^AWS-2096-\d{4}$/);
+    assert.match(application.memberId ?? "", /^AWS-9697-\d{4}$/);
   });
 
   await t.test("applicant submits a Google Drive receipt link that HR can open", async () => {
