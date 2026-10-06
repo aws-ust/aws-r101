@@ -32,7 +32,11 @@ export const RESULT_MESSAGE_TYPES = [
 export const UNCERTAIN_PREFIX = "Uncertain:";
 const UNCERTAIN_MESSAGE = `${UNCERTAIN_PREFIX} delivery may have completed before the sender stopped. Check the Sent folder before resending.`;
 
-/** Gmail allows about 2.5 sends/second per user; stay well under it. */
+/**
+ * Minimum time between the starts of two sends. Gmail allows about 2.5
+ * sends/second per user and limits concurrent requests, so sends stay
+ * sequential and this only stops a fast Gmail from being hit too quickly.
+ */
 const DEFAULT_SPACING_MS = 600;
 const STALE_SENDING_MS = 10 * 60 * 1000;
 const MAX_TRANSIENT_ATTEMPTS = 8;
@@ -267,6 +271,7 @@ export async function runOutbox(options: {
       if (await waitUntil(await nextScheduledAt(options.ids))) continue;
       break;
     }
+    const sendStartedAt = Date.now();
     const outcome = await deliverClaimed(row, options.prepare, send);
     if (outcome.kind === "stop") {
       summary.deferred += 1;
@@ -274,7 +279,9 @@ export async function runOutbox(options: {
       break;
     }
     summary[outcome.kind] += 1;
-    await sleep(spacingMs);
+    // Count the gap from when this send started, so a slow Gmail response
+    // is not followed by another full pause.
+    await sleep(Math.max(spacingMs - (Date.now() - sendStartedAt), 0));
   }
   return summary;
 }

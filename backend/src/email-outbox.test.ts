@@ -101,6 +101,18 @@ test("email outbox", async (t) => {
     assert.ok([...(await statuses(ids)).values()].every((row) => row.status === "sent"));
   });
 
+  await t.test("counts the spacing from when a send starts, not when it ends", async () => {
+    const ids = await queue(5);
+    const send: SendEmail = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      return { providerMessageId: randomUUID() };
+    };
+    const startedAt = Date.now();
+    await runOutbox({ budgetMs: 10_000, prepare: prepareQueuedEmail, send, spacingMs: 100, ids });
+    // 5 sends at 100ms apart is about 500ms; adding the pause after each 60ms send would be about 800ms.
+    assert.ok(Date.now() - startedAt < 700, `took ${Date.now() - startedAt}ms`);
+  });
+
   await t.test("backs off and stops when Gmail says to slow down", async () => {
     const ids = await queue(3);
     let calls = 0;
