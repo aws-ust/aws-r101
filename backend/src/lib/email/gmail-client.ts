@@ -7,6 +7,16 @@ import type {
 } from "./types";
 import { fromHeader, replyToEmail } from "./config";
 
+export type GmailSendError = Error & {
+  status?: number;
+  /** Gmail's machine-readable reason, e.g. "userRateLimitExceeded". */
+  reason?: string;
+  /** No answer in time: the email may or may not have been sent. */
+  timedOut?: boolean;
+};
+
+const SEND_TIMEOUT_MS = 30_000;
+
 function base64UrlEncode(value: string): string {
   return Buffer.from(value, "utf8")
     .toString("base64")
@@ -116,6 +126,7 @@ function buildRfc2822Message(input: SendEmailInput): string {
       [`Cc: ${input.cc.join(", ")}`]
     : []),
     `Reply-To: ${replyToEmail()}`,
+    ...(input.messageId ? [`Message-ID: <${input.messageId}>`] : []),
     `Subject: ${encodeHeaderValue(input.subject)}`,
     "MIME-Version: 1.0",
   ];
@@ -135,6 +146,10 @@ function buildRfc2822Message(input: SendEmailInput): string {
   return lines.join("\r\n");
 }
 
+// One client per process: it keeps the access token and only refreshes it
+// when it is about to expire, instead of minting a new token for every email.
+let oauthClient: OAuth2Client | null = null;
+
 async function getAccessToken(): Promise<string> {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -143,13 +158,26 @@ async function getAccessToken(): Promise<string> {
     throw new Error("Gmail credentials are not configured");
   }
 
-  const client = new OAuth2Client(clientId, clientSecret);
-  client.setCredentials({ refresh_token: refreshToken });
-  const { token } = await client.getAccessToken();
+  if (!oauthClient) {
+    oauthClient = new OAuth2Client(clientId, clientSecret);
+    oauthClient.setCredentials({ refresh_token: refreshToken });
+  }
+  const { token } = await oauthClient.getAccessToken();
   if (!token) {
     throw new Error("Failed to obtain Gmail access token");
   }
   return token;
+}
+
+function gmailErrorReason(body: string): string | undefined {
+  try {
+    const parsed = JSON.parse(body) as {
+      error?: { errors?: { reason?: string }[]; status?: string };
+    };
+    return parsed.error?.errors?.[0]?.reason ?? parsed.error?.status;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function sendViaGmail(
@@ -158,24 +186,38 @@ export async function sendViaGmail(
   const accessToken = await getAccessToken();
   const raw = base64UrlEncode(buildRfc2822Message(input));
 
-  const response = await fetch(
-    "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
+  let response: Response;
+  try {
+    response = await fetch(
+      "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ raw }),
+        signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
       },
-      body: JSON.stringify({ raw }),
-    },
-  );
+    );
+  } catch (err) {
+    if (err instanceof Error && err.name === "TimeoutError") {
+      const timeout = new Error(
+        `Gmail did not answer within ${SEND_TIMEOUT_MS / 1000}s`,
+      ) as GmailSendError;
+      timeout.timedOut = true;
+      throw timeout;
+    }
+    throw err;
+  }
 
   if (!response.ok) {
     const body = await response.text().catch(() => "");
     const error = new Error(
       `Gmail send failed (${response.status}): ${body.slice(0, 500)}`,
-    ) as Error & { status?: number };
+    ) as GmailSendError;
     error.status = response.status;
+    error.reason = gmailErrorReason(body);
     throw error;
   }
 
