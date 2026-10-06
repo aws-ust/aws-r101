@@ -170,7 +170,7 @@ export function openPaymentCampaign() {
   return apiFetch<{
     eligible: number
     created: number
-    emailDelivery: { queued: number; sent: number; failed: number }
+    emailDelivery: { queued: number }
   }>("/membership-payments/campaign/open", { method: "POST" })
 }
 
@@ -197,7 +197,8 @@ export function getPaymentReceiptUrl(paymentId: string, submissionId: string) {
 export function verifyPayment(paymentId: string) {
   return apiFetch<{
     memberId: string
-    emailDelivery: { sent: number; failed: number }
+    /** queued: Gmail asked to slow down, so the email will go out shortly in the background. */
+    emailDelivery: { sent: number; failed: number; queued: number }
   }>(`/membership-payments/${paymentId}/verify`, {
     method: "POST",
   })
@@ -226,19 +227,19 @@ export function reversePayment(
 export function releaseMembershipConfirmations() {
   return apiFetch<{
     released: number
-    emailDelivery: { queued: number; sent: number; failed: number }
+    emailDelivery: { queued: number }
   }>("/membership-payments/confirmations/release", { method: "POST" })
 }
 
 export function retryPaymentInvitationEmails() {
-  return apiFetch<{ retried: number; sent: number; failed: number }>(
+  return apiFetch<{ retried: number }>(
     "/membership-payments/emails/retry-invitations",
     { method: "POST" },
   )
 }
 
 export function retryMembershipConfirmationEmails() {
-  return apiFetch<{ retried: number; sent: number; failed: number }>(
+  return apiFetch<{ retried: number }>(
     "/membership-payments/emails/retry-confirmations",
     { method: "POST" },
   )
