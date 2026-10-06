@@ -158,6 +158,35 @@ class BackendStack extends cdk.Stack {
       },
     );
 
+    // Sends queued bulk emails (results, payment invitations, confirmations)
+    // a few per second so Gmail's per-user rate limit is never exceeded. The
+    // API starts it when emails are queued and it restarts itself while work
+    // remains; there is no polling schedule, so Neon can scale to zero.
+    const emailOutboxFunctionName = `${this.stackName}-email-outbox`;
+    const emailOutboxFunction = new NodejsFunction(this, "EmailOutboxFunction", {
+      functionName: emailOutboxFunctionName,
+      entry: path.join(__dirname, "../src/email-outbox-worker.ts"),
+      handler: "handler",
+      runtime: lambda.Runtime.NODEJS_22_X,
+      memorySize: 512,
+      timeout: cdk.Duration.minutes(10),
+      logRetention: logs.RetentionDays.ONE_WEEK,
+      depsLockFilePath: path.join(__dirname, "../../pnpm-lock.yaml"),
+      bundling: {
+        minify: true,
+        sourceMap: true,
+        commandHooks: emailAssetBundlingHooks,
+      },
+      environment,
+    });
+    emailOutboxFunction.grantInvoke(apiFunction);
+    apiFunction.addEnvironment("EMAIL_OUTBOX_FUNCTION_NAME", emailOutboxFunction.functionName);
+    // Built from the name (not the function) so the role doesn't depend on the function it belongs to.
+    emailOutboxFunction.addToRolePolicy(new iam.PolicyStatement({
+      actions: ["lambda:InvokeFunction"],
+      resources: [`arn:aws:lambda:${this.region}:${this.account}:function:${emailOutboxFunctionName}`],
+    }));
+
     const integration = new HttpLambdaIntegration("ApiIntegration", apiFunction);
     const httpApi = new apigateway.HttpApi(this, "HttpApi", {
       defaultIntegration: integration,
