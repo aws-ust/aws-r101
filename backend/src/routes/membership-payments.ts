@@ -15,10 +15,9 @@ import {
   PAYMENT_QR_MIME_TYPES,
   withQrPreviewUrls,
 } from "../lib/membership/payment-qr";
-import {
-  deliverMembershipNotifications,
-  retryFailedMembershipEmails,
-} from "../lib/membership/email-delivery";
+import { kickEmailOutbox } from "../lib/email/outbox-kick";
+import { sendQueuedNow } from "../lib/email/queued-emails";
+import { retryFailedMembershipEmails } from "../lib/membership/email-delivery";
 import { MembershipPaymentError } from "../lib/membership/errors";
 import {
   getMembershipPaymentDetails,
@@ -200,16 +199,12 @@ membershipPaymentRoutes.post(
   async (c) => {
     try {
       const opened = await openCurrentPaymentCampaign(getCurrentUser(c));
-      const emailDelivery = await deliverMembershipNotifications(
-        opened.notificationIds,
-      );
+      // Invitations go out through the background email outbox.
+      if (opened.notificationIds.length > 0) await kickEmailOutbox();
       return c.json({
         eligible: opened.eligible,
         created: opened.created,
-        emailDelivery: {
-          queued: opened.notificationIds.length,
-          ...emailDelivery,
-        },
+        emailDelivery: { queued: opened.notificationIds.length },
       });
     } catch (error) {
       const result = paymentError(error);
@@ -237,15 +232,11 @@ membershipPaymentRoutes.post(
   async (c) => {
     try {
       const release = await releaseMembershipConfirmations(getCurrentUser(c));
-      const emailDelivery = await deliverMembershipNotifications(
-        release.notificationIds,
-      );
+      // Confirmations go out through the background email outbox.
+      if (release.notificationIds.length > 0) await kickEmailOutbox();
       return c.json({
         released: release.released,
-        emailDelivery: {
-          queued: release.notificationIds.length,
-          ...emailDelivery,
-        },
+        emailDelivery: { queued: release.notificationIds.length },
       });
     } catch (error) {
       const result = paymentError(error);
@@ -258,7 +249,9 @@ membershipPaymentRoutes.post(
   "/emails/retry-invitations",
   requireRoles("hr", "admin"),
   async (c) => {
-    return c.json(await retryFailedMembershipEmails("payment_invitation"));
+    const result = await retryFailedMembershipEmails("payment_invitation");
+    if (result.retried > 0) await kickEmailOutbox();
+    return c.json(result);
   },
 );
 
@@ -266,7 +259,9 @@ membershipPaymentRoutes.post(
   "/emails/retry-confirmations",
   requireRoles("hr", "admin"),
   async (c) => {
-    return c.json(await retryFailedMembershipEmails("membership_confirmation"));
+    const result = await retryFailedMembershipEmails("membership_confirmation");
+    if (result.retried > 0) await kickEmailOutbox();
+    return c.json(result);
   },
 );
 
@@ -347,9 +342,8 @@ membershipPaymentRoutes.post(
         paymentId,
         getCurrentUser(c),
       );
-      const emailDelivery = await deliverMembershipNotifications([
-        notificationId,
-      ]);
+      const emailDelivery = await sendQueuedNow([notificationId]);
+      if (emailDelivery.queued > 0) await kickEmailOutbox();
       return c.json({ ...verified, emailDelivery });
     } catch (error) {
       const result = paymentError(error);

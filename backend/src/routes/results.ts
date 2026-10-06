@@ -1,9 +1,9 @@
 import { Hono } from "hono";
 import { requireAuth } from "../auth";
-import {
-  deliverResultNotifications,
-  retryFailedResultEmails,
-} from "../lib/hr/result-email-delivery";
+import { recruitmentYearInt } from "../lib/applications/application-code";
+import { outboxLeaseActive, outboxStatus, RESULT_MESSAGE_TYPES } from "../lib/email/outbox";
+import { kickEmailOutbox } from "../lib/email/outbox-kick";
+import { retryFailedResultEmails } from "../lib/hr/result-email-delivery";
 import {
   releaseResults,
   ResultsReleaseBlockedError,
@@ -31,19 +31,12 @@ resultsRoutes.post("/release", async (c) => {
       action: "results.release",
       resourceType: "results_batch",
     });
-    const delivery = await deliverResultNotifications(
-      release.notificationIds,
-    );
+    // Emails are sent by the background outbox, a few per second, so the
+    // request returns right away instead of racing Gmail's rate limit.
+    if (release.notificationIds.length > 0) await kickEmailOutbox();
     return c.json({
       ...release.summary,
-      emailDelivery: {
-        queued: release.notificationIds.length,
-        sent: delivery.sent,
-        failed: delivery.failed,
-        ...(delivery.failures.length > 0
-          ? { failures: delivery.failures }
-          : {}),
-      },
+      emailDelivery: { queued: release.notificationIds.length },
     });
   } catch (error) {
     if (error instanceof ResultsReleaseBlockedError) {
@@ -56,6 +49,26 @@ resultsRoutes.post("/release", async (c) => {
   }
 });
 
+resultsRoutes.get("/emails/status", async (c) => {
+  const status = await outboxStatus({
+    messageTypes: RESULT_MESSAGE_TYPES,
+    recruitmentYear: recruitmentYearInt(),
+  });
+  // HR polls this while emails go out; restart the worker if it stopped with
+  // emails still queued (e.g. after waiting out a Gmail limit).
+  if (status.queued > 0 && !(await outboxLeaseActive())) await kickEmailOutbox();
+  return c.json(status);
+});
+
 resultsRoutes.post("/emails/retry-failed", async (c) => {
-  return c.json(await retryFailedResultEmails());
+  const result = await retryFailedResultEmails();
+  if (result.retried > 0) await kickEmailOutbox();
+  return c.json(result);
+});
+
+/** Resends emails that may already have been delivered; HR checks the Sent folder first. */
+resultsRoutes.post("/emails/retry-uncertain", async (c) => {
+  const result = await retryFailedResultEmails({ uncertain: true });
+  if (result.retried > 0) await kickEmailOutbox();
+  return c.json(result);
 });

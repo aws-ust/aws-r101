@@ -17,6 +17,7 @@ import {
   positions,
   users,
 } from "./db/schema";
+import { runEmailOutbox } from "./lib/email/queued-emails";
 import { originHeaders } from "./test-support/request";
 
 const databaseUrl = process.env.DATABASE_URL ?? "";
@@ -182,7 +183,15 @@ test("membership payment workflow", async (t) => {
     const opened = await staffRequest("/membership-payments/campaign/open", hrToken, { method: "POST" });
     assert.equal(opened.status, 200);
     const payload = (await opened.json()) as { eligible: number; created: number };
-    assert.deepEqual(payload, { eligible: 3, created: 3, emailDelivery: { queued: 3, sent: 0, failed: 3 } });
+    assert.deepEqual(payload, { eligible: 3, created: 3, emailDelivery: { queued: 3 } });
+    // Email is switched off in tests, so the background outbox fails them.
+    assert.deepEqual(await runEmailOutbox({ budgetMs: 5_000 }), {
+      skipped: false,
+      sent: 0,
+      failed: 3,
+      deferred: 0,
+      uncertain: 0,
+    });
     assert.equal((await staffRequest("/membership-payments/emails/retry-invitations", financeToken, { method: "POST" })).status, 401);
     const invitationRetry = await staffRequest(
       "/membership-payments/emails/retry-invitations",
@@ -190,11 +199,8 @@ test("membership payment workflow", async (t) => {
       { method: "POST" },
     );
     assert.equal(invitationRetry.status, 200);
-    assert.deepEqual(await invitationRetry.json(), {
-      retried: 3,
-      sent: 0,
-      failed: 3,
-    });
+    assert.deepEqual(await invitationRetry.json(), { retried: 3 });
+    await runEmailOutbox({ budgetMs: 5_000 });
     assert.equal((await db.select().from(membershipPayments)).filter((row) => row.applicationId === ids.archivedApplication).length, 0);
     const changedAmount = JSON.stringify({
       ...JSON.parse(details),
@@ -312,6 +318,7 @@ test("membership payment workflow", async (t) => {
     assert.equal((await staffRequest("/membership-payments/confirmations/release", financeToken, { method: "POST" })).status, 401);
     const response = await staffRequest("/membership-payments/confirmations/release", hrToken, { method: "POST" });
     assert.equal(response.status, 200);
+    await runEmailOutbox({ budgetMs: 5_000 });
     const [payment] = await db.select().from(membershipPayments).where(eq(membershipPayments.applicationId, ids.acceptedApplication));
     assert.equal(payment.assignedChatLink, "https://m.me/j/committee-test");
     assert.equal(payment.confirmationStatus, "email_failed");
@@ -325,11 +332,7 @@ test("membership payment workflow", async (t) => {
       { method: "POST" },
     );
     assert.equal(confirmationRetry.status, 200);
-    assert.deepEqual(await confirmationRetry.json(), {
-      retried: 1,
-      sent: 0,
-      failed: 1,
-    });
+    assert.deepEqual(await confirmationRetry.json(), { retried: 1 });
   });
 
   await t.test("HR can reverse verification and Member ID is retained", async () => {

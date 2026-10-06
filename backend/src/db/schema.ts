@@ -64,6 +64,7 @@ export const emailMessageType = pgEnum("email_message_type", [
 ]);
 export const emailDeliveryStatus = pgEnum("email_delivery_status", [
   "pending",
+  "sending",
   "sent",
   "failed",
 ]);
@@ -315,12 +316,30 @@ export const emailNotifications = pgTable(
       .notNull()
       .defaultNow(),
     sentAt: timestamp("sent_at", { withTimezone: true }),
+    /** When a queued email is next due; null means due now. */
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
+    /** When a worker moved the row to "sending". */
+    claimedAt: timestamp("claimed_at", { withTimezone: true }),
   },
   (t) => [
     index("idx_email_notifications_application").on(t.applicationId),
     index("idx_email_notifications_status_created").on(t.status, t.createdAt),
+    index("idx_email_notifications_status_next_attempt").on(
+      t.status,
+      t.nextAttemptAt,
+    ),
   ],
 );
+
+/**
+ * Single-row lease so only one email outbox worker sends at a time; two
+ * workers would double the send rate and trip Gmail's per-user limit.
+ */
+export const emailOutboxLease = pgTable("email_outbox_lease", {
+  id: integer().primaryKey(),
+  holder: text().notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});
 
 export const applicantOtpChallenges = pgTable(
   "applicant_otp_challenges",
