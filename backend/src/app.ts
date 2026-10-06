@@ -15,6 +15,7 @@ import { resultsRoutes } from "./routes/results";
 import { interviewWindowRoutes } from "./routes/interview-window";
 import { applicantPaymentRoutes } from "./routes/applicant-payments";
 import { membershipPaymentRoutes } from "./routes/membership-payments";
+import { memberVerificationRoutes } from "./routes/member-verification";
 import {
   AUTH_COOKIE_NAME,
   authCookieOptions,
@@ -122,5 +123,6 @@ app.route("/recruitment-window", recruitmentWindowRoutes);
 app.route("/results", resultsRoutes);
 app.route("/interview-window", interviewWindowRoutes);
 app.route("/membership-payments", membershipPaymentRoutes);
+app.route("/members", memberVerificationRoutes);
 
 export type AppType = typeof app;

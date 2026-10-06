@@ -81,16 +81,32 @@ export function pickMemberSequence(
   return general;
 }
 
-function memberSequence(memberId: string | null, recruitmentYear: number) {
-  const match = memberId?.match(new RegExp(`^AWS-${recruitmentYear}-(\\d{4})$`));
-  return match ? Number(match[1]) : null;
+/**
+ * The academic-year code in a Member ID: the last two digits of the year the
+ * term starts and of the year it ends, so recruitment year 2026 (A.Y.
+ * 2026-2027) is "2627".
+ */
+export function academicYearCode(recruitmentYear: number): string {
+  const twoDigits = (year: number) => String(year % 100).padStart(2, "0");
+  return `${twoDigits(recruitmentYear)}${twoDigits(recruitmentYear + 1)}`;
 }
 
-function formatMemberId(recruitmentYear: number, sequence: number): string {
+/**
+ * The sequence number of an issued ID. IDs issued before the academic-year
+ * format (AWS-<recruitment year>-NNNN) are still read, so their numbers stay
+ * taken and are never handed out again.
+ */
+function memberSequence(memberId: string | null, recruitmentYear: number) {
+  const prefixes = [academicYearCode(recruitmentYear), String(recruitmentYear)];
+  const match = memberId?.match(/^AWS-(\d{4})-(\d{4})$/);
+  return match && prefixes.includes(match[1]) ? Number(match[2]) : null;
+}
+
+export function formatMemberId(recruitmentYear: number, sequence: number): string {
   if (sequence > MAX_SEQUENCE) {
     throw new Error(`Member ID capacity reached for ${recruitmentYear}.`);
   }
-  return `AWS-${recruitmentYear}-${String(sequence).padStart(4, "0")}`;
+  return `AWS-${academicYearCode(recruitmentYear)}-${String(sequence).padStart(4, "0")}`;
 }
 
 /** Accepted placements plus pending redirect offers, which might still be accepted. */

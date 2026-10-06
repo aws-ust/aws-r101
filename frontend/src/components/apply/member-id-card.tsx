@@ -64,9 +64,10 @@ export function MemberIdCard({
             position={card.position}
             memberId={card.memberId}
             academicYear={academicYearLabel(card.recruitmentYear)}
+            issuedAt={card.issuedAt}
             photoUrl={card.photoUrl}
           />
-          <MemberIdCardBack memberId={card.memberId} />
+          <MemberIdCardBack />
         </div>
         {/* Mouse shortcut only: the Show back button below is the keyboard and
             screen-reader control, so this stays out of the tab order. */}

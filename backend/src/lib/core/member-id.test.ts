@@ -4,7 +4,12 @@ import {
   executiveOfficeCommittees,
   staffCommittees,
 } from "../apply/committee-office-groups";
-import { buildMemberIdLayout, pickMemberSequence } from "./member-id";
+import {
+  academicYearCode,
+  buildMemberIdLayout,
+  formatMemberId,
+  pickMemberSequence,
+} from "./member-id";
 
 const offices = executiveOfficeCommittees();
 const [ceo, coo, cro, corpSec, cto, cfo, chro, cco] = offices;
@@ -85,4 +90,13 @@ test("member ID picking", async (t) => {
       assert.ok(sequence > 27, `general member got reserved number ${sequence}`);
     }
   });
+});
+
+test("Member IDs carry the academic-year code", () => {
+  assert.equal(academicYearCode(2026), "2627");
+  assert.equal(academicYearCode(2099), "9900");
+  assert.equal(academicYearCode(2008), "0809");
+  assert.equal(formatMemberId(2026, 189), "AWS-2627-0189");
+  assert.equal(formatMemberId(2026, 1), "AWS-2627-0001");
+  assert.throws(() => formatMemberId(2026, 10_000), /capacity/);
 });

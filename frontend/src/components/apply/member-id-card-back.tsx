@@ -1,52 +1,37 @@
 import Image from "next/image"
+import { MemberIdCloud } from "@/components/apply/member-id-cloud"
 
+// The brand side: Espi on a flat white cloud with the wordmark, centred as one
+// group, and flat purple clouds around them. No gradients.
 const backClasses =
-  "absolute inset-0 flex flex-col items-center justify-between overflow-hidden rounded-[24px] border border-biloba-flower/40 bg-gradient-to-br from-haiti via-meteorite to-daisy-bush px-7 py-12 text-blue-chalk shadow-xl backface-hidden rotate-y-180"
-const markClasses = "flex flex-1 flex-col items-center justify-center gap-4 text-center"
-const logoClasses = "size-28 rounded-[20px] bg-white p-3"
-const orgClasses = "font-sans text-xl font-extrabold leading-tight tracking-wide"
-const taglineClasses = "font-mono text-[11px] tracking-[0.2em] text-aquamarine"
-const signatureClasses = "flex w-full flex-col items-center gap-2"
-const ruleClasses = "h-px w-full bg-blue-chalk/40"
-const signatureLabelClasses = "font-mono text-[9px] font-bold tracking-[0.18em] text-blue-chalk/80"
-const barcodeClasses =
-  "flex h-14 w-full items-stretch justify-center gap-[2px] rounded-[6px] bg-white px-3 py-2"
-const barcodeIdClasses = "font-mono text-[11px] font-bold tracking-[0.12em]"
-const BAR_COUNT = 44
+  "absolute inset-0 flex flex-col items-center justify-center overflow-hidden rounded-[22px] bg-haiti px-6 py-8 text-center text-white shadow-xl backface-hidden rotate-y-180"
+const heroClasses = "relative grid w-full place-items-center pt-2"
+const espiCloudClasses = "absolute bottom-1 h-28 w-[92%]"
+const espiClasses = "relative h-auto w-[82%]"
+const brandClasses = "relative mt-6 flex flex-col gap-2"
+const wordmarkClasses = "font-sans text-xl font-extrabold tracking-[0.04em]"
+const taglineClasses = "font-mono text-[10px] tracking-[0.28em] text-prelude"
 
-/** Deterministic bar widths (1-3px) so a Member ID always draws the same code. */
-function barWidths(memberId: string) {
-  const widths: number[] = []
-  for (let round = 0; widths.length < BAR_COUNT; round++) {
-    for (const char of memberId) {
-      if (widths.length === BAR_COUNT) break
-      widths.push(((char.charCodeAt(0) + round * 7) % 3) + 1)
-    }
-  }
-  return widths
-}
+const cloudFill = "bg-daisy-bush/70"
+const cloudTopLeftClasses = "absolute -left-6 top-6 h-10 w-24"
+const cloudTopRightClasses = "absolute -right-8 top-24 h-12 w-28"
+const cloudLowLeftClasses = "absolute -left-4 bottom-24 h-8 w-20"
+const cloudBottomRightClasses = "absolute -right-6 bottom-8 h-10 w-24"
 
-export function MemberIdCardBack({ memberId }: { memberId: string }) {
+export function MemberIdCardBack() {
   return (
     <div className={backClasses}>
-      <div className={markClasses}>
-        <Image src="/aws-logo.png" alt="" width={96} height={96} className={logoClasses} />
-        <p className={orgClasses}>AWS BUILDERS – UST</p>
-        <p className={taglineClasses}>IT’S ALWAYS DAY ONE</p>
+      <MemberIdCloud className={cloudTopLeftClasses} fillClassName={cloudFill} />
+      <MemberIdCloud className={cloudTopRightClasses} fillClassName={cloudFill} />
+      <MemberIdCloud className={cloudLowLeftClasses} fillClassName={cloudFill} />
+      <MemberIdCloud className={cloudBottomRightClasses} fillClassName={cloudFill} />
+      <div className={heroClasses}>
+        <MemberIdCloud className={espiCloudClasses} fillClassName="bg-white" />
+        <Image src="/espi.png" alt="Espi, the AWS Builders – UST mascot" width={1080} height={1080} className={espiClasses} />
       </div>
-      <div className={signatureClasses}>
-        <div className={ruleClasses} />
-        <p className={signatureLabelClasses}>MEMBER SIGNATURE</p>
-        <div className={barcodeClasses} aria-hidden>
-          {barWidths(memberId).map((width, index) => (
-            <span
-              key={index}
-              className="bg-haiti"
-              style={{ width: `${width}px`, opacity: index % 5 === 4 ? 0 : 1 }}
-            />
-          ))}
-        </div>
-        <p className={barcodeIdClasses}>{memberId}</p>
+      <div className={brandClasses}>
+        <p className={wordmarkClasses}>AWS BUILDERS – UST</p>
+        <p className={taglineClasses}>IT’S ALWAYS DAY ONE</p>
       </div>
     </div>
   )
