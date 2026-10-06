@@ -70,9 +70,10 @@ export function MemberIdCard({
             position={card.position}
             memberId={card.memberId}
             academicYear={academicYearLabel(card.recruitmentYear)}
+            issuedAt={card.issuedAt}
             photoUrl={card.photoUrl}
           />
-          <MemberIdCardBack memberId={card.memberId} />
+          <MemberIdCardBack />
         </div>
       </div>
       <div className={actionsClasses}>
