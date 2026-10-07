@@ -19,6 +19,7 @@ import { kickEmailOutbox } from "../lib/email/outbox-kick";
 import { sendQueuedNow } from "../lib/email/queued-emails";
 import { retryFailedMembershipEmails } from "../lib/membership/email-delivery";
 import { MembershipPaymentError } from "../lib/membership/errors";
+import { listDirectoryMembers } from "../lib/membership/member-directory";
 import {
   getMembershipPaymentDetails,
   getPaymentReceiptUrl,
@@ -264,6 +265,11 @@ membershipPaymentRoutes.post(
     return c.json(result);
   },
 );
+
+/** Verified members of the current year, for the HR Members page. */
+membershipPaymentRoutes.get("/members", async (c) => {
+  return c.json({ members: await listDirectoryMembers() });
+});
 
 membershipPaymentRoutes.get("/export", async (c) => {
   const rows = await listVerifiedMembersForExport();
