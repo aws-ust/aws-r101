@@ -8,6 +8,8 @@ import {
 } from "../../db/schema";
 import { recruitmentYearInt } from "../applications/application-code";
 import { outboxStatus, RESULT_MESSAGE_TYPES } from "../email/outbox";
+import { getInterviewWindow } from "../interview/window";
+import { getRecruitmentWindow } from "../recruitment/window";
 
 /**
  * Where the recruitment season stands. Each stage is a running total of
@@ -38,18 +40,32 @@ export type SeasonAttention = {
   emailsInFlight: number;
   /** Membership payments waiting for an officer to verify. */
   paymentsToVerify: number;
+  /** Position applicants who have not booked an interview. */
+  noInterview: number;
+};
+
+/** ISO timestamps, or null when an officer has not set that period yet. */
+export type SeasonPeriod = { startsAt: string; endsAt: string } | null;
+
+export type SeasonSchedule = {
+  applications: SeasonPeriod;
+  interviews: SeasonPeriod;
+  /** Membership payment: opens at `startsAt`, due at `endsAt`. */
+  payments: SeasonPeriod;
 };
 
 export type SeasonOverview = {
   recruitmentYear: number;
   stages: SeasonStages;
   attention: SeasonAttention;
+  schedule: SeasonSchedule;
 };
 
 async function countApplications(year: number) {
   const [row] = await db
     .select({
       applied: sql<number>`count(*)::int`,
+      positionApplicants: sql<number>`count(*) filter (where ${applications.applicationType} = 'position')::int`,
       undecided: sql<number>`count(*) filter (where ${applications.status} = 'pending')::int`,
       released: sql<number>`count(*) filter (where ${applications.resultsReleasedAt} is not null)::int`,
       unreleasedDecided: sql<number>`count(*) filter (where ${applications.status} <> 'pending' and ${applications.resultsReleasedAt} is null)::int`,
@@ -97,14 +113,34 @@ async function countPayments(year: number) {
   return row;
 }
 
+async function paymentPeriod(year: number): Promise<SeasonPeriod> {
+  const [row] = await db
+    .select({
+      opensAt: membershipPaymentCampaigns.opensAt,
+      deadlineAt: membershipPaymentCampaigns.deadlineAt,
+    })
+    .from(membershipPaymentCampaigns)
+    .where(eq(membershipPaymentCampaigns.recruitmentYear, year))
+    .limit(1);
+  return row ? { startsAt: row.opensAt.toISOString(), endsAt: row.deadlineAt.toISOString() } : null;
+}
+
+function period(window: { startsAt: Date; endsAt: Date } | null): SeasonPeriod {
+  return window ? { startsAt: window.startsAt.toISOString(), endsAt: window.endsAt.toISOString() } : null;
+}
+
 export async function getSeasonOverview(): Promise<SeasonOverview> {
   const year = recruitmentYearInt();
-  const [apps, interviewBooked, payments, email] = await Promise.all([
-    countApplications(year),
-    countInterviews(year),
-    countPayments(year),
-    outboxStatus({ messageTypes: RESULT_MESSAGE_TYPES, recruitmentYear: year }),
-  ]);
+  const [apps, interviewBooked, payments, email, applicationWindow, interviewWindow, paymentWindow] =
+    await Promise.all([
+      countApplications(year),
+      countInterviews(year),
+      countPayments(year),
+      outboxStatus({ messageTypes: RESULT_MESSAGE_TYPES, recruitmentYear: year }),
+      getRecruitmentWindow(),
+      getInterviewWindow(),
+      paymentPeriod(year),
+    ]);
 
   return {
     recruitmentYear: year,
@@ -122,6 +158,12 @@ export async function getSeasonOverview(): Promise<SeasonOverview> {
       emailProblems: email.failed + email.uncertain,
       emailsInFlight: email.queued + email.sending,
       paymentsToVerify: payments.toVerify,
+      noInterview: apps.positionApplicants - interviewBooked,
+    },
+    schedule: {
+      applications: period(applicationWindow),
+      interviews: period(interviewWindow),
+      payments: paymentWindow,
     },
   };
 }

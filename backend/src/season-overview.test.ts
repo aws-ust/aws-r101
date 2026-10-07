@@ -124,4 +124,10 @@ test("season overview counts what each list shows", async () => {
   assert.equal(overview.attention.undecided, before.attention.undecided + 1);
   assert.equal(overview.attention.readyToRelease, before.attention.readyToRelease + 1);
   assert.equal(overview.attention.paymentsToVerify, before.attention.paymentsToVerify + 1);
+  // Three position applicants, two with a booked interview.
+  assert.equal(overview.attention.noInterview, before.attention.noInterview + 1);
+  assert.deepEqual(overview.schedule.payments, {
+    startsAt: "2097-10-01T00:00:00.000Z",
+    endsAt: "2097-12-01T00:00:00.000Z",
+  });
 });
