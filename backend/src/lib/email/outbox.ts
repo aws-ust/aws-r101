@@ -441,7 +441,9 @@ export async function outboxStatus(options: {
     })
     .from(emailNotifications)
     .where(scope)
-    .groupBy(emailNotifications.status, uncertain);
+    // By position: the LIKE pattern is a bound parameter, so repeating the
+    // expression here would not match the select list and Postgres rejects it.
+    .groupBy(emailNotifications.status, sql`2`);
   const status: OutboxStatus = { queued: 0, sending: 0, sent: 0, failed: 0, uncertain: 0, problems: [] };
   for (const row of counts) {
     if (row.status === "pending") status.queued += row.count;
