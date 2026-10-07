@@ -34,7 +34,7 @@ const brandTitleClasses =
 const triggerClasses =
   "size-9 shrink-0 rounded-full border border-blue-chalk/20 bg-haiti/40 text-blue-chalk hover:border-aquamarine/40 hover:bg-aquamarine/15 hover:text-aquamarine"
 const sidebarBodyClasses =
-  "flex-1 overflow-visible bg-haiti/50 px-3 py-4 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:overflow-visible group-data-[collapsible=icon]:px-0"
+  "min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-haiti/50 px-3 py-4 [scrollbar-color:rgb(198_184_232/0.3)_transparent] [scrollbar-width:thin] group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0"
 const sidebarFooterClasses =
   "border-t border-blue-chalk/20 bg-meteorite/40 p-3 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:px-0"
 const logoutButtonClasses =
