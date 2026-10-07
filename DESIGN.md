@@ -218,5 +218,10 @@ type above are unchanged, but the working areas differ from the public site.
 - **One accent job.** `aquamarine` marks the single thing that needs work on a
   screen (the lit station on the stage line, counts that need an officer).
 - **Stage line.** The recruitment stages (Applied, Interview booked, Decided,
-  Released, Payment sent, Member) are drawn as one line of stations. Counts are
-  running totals defined once in `backend/src/lib/hr/season-overview.ts`.
+  Released, Payment sent, Member) are drawn as one vertical line of stations in
+  the Overview rail. Counts are running totals defined once in
+  `backend/src/lib/hr/season-overview.ts`. Only the station that needs work is
+  aquamarine; a station is drawn as done only when something reached it.
+- **Worklist.** Ready tasks first, then blocked, then watching, with one
+  aquamarine button on the first ready row. Rows switch layout on their own
+  panel width (container queries), not the viewport.
