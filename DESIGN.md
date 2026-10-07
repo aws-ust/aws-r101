@@ -227,3 +227,9 @@ type above are unchanged, but the working areas differ from the public site.
 - **Worklist.** Ready tasks first, then blocked, then watching, with one
   aquamarine button on the first ready row. Rows switch layout on their own
   panel width (container queries), not the viewport.
+- **Members.** Scope tabs (Members, Not paid yet) over a toolbar of search
+  (`/` focuses it), one dropdown, a List / By committee switch and Export. Paid
+  members come first in Member ID order, then the officers, who have no ID
+  ("No ID yet"). By committee nests each committee under its executive office.
+  Not paid yet reads from the payments dashboard and says "Pay by" or
+  "Expired". Student No. and Section show from 1400px.
