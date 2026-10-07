@@ -9,13 +9,8 @@ export type StageStation = {
   href: string
   /** The station an officer should look at first, if any work is waiting. */
   needsWork: boolean
-}
-
-export type AttentionItem = {
-  key: keyof SeasonAttention
-  count: number
-  text: string
-  href: string
+  /** Before the station that needs work, at it, or after it (idle when nothing is waiting). */
+  state: "done" | "current" | "ahead" | "idle"
 }
 
 const STAGES: { key: StageKey; label: string; href: string }[] = [
@@ -27,11 +22,7 @@ const STAGES: { key: StageKey; label: string; href: string }[] = [
   { key: "member", label: "Member", href: "/admin/hr/members" },
 ]
 
-function pick(count: number, one: string, many: string) {
-  return count === 1 ? one : many
-}
-
-/** Which stage the open attention items belong to, so that station is lit. */
+/** Which stage the open work belongs to, so that station is lit. */
 function stagesNeedingWork(attention: SeasonAttention): Set<StageKey> {
   const waiting = new Set<StageKey>()
   if (attention.undecided > 0) waiting.add("decided")
@@ -40,49 +31,25 @@ function stagesNeedingWork(attention: SeasonAttention): Set<StageKey> {
   return waiting
 }
 
+function stationState(index: number, frontier: number, count: number): StageStation["state"] {
+  if (frontier < 0) return "idle"
+  if (index === frontier) return "current"
+  // Before the station that needs work, but only drawn as done when something got there.
+  return index < frontier && count > 0 ? "done" : "ahead"
+}
+
 export function buildStations({ stages, attention }: SeasonOverview): StageStation[] {
   const waiting = stagesNeedingWork(attention)
-  const first = STAGES.find((stage) => waiting.has(stage.key))?.key
-  return STAGES.map((stage) => ({
+  const frontier = STAGES.findIndex((stage) => waiting.has(stage.key))
+  return STAGES.map((stage, index) => ({
     ...stage,
     count: stages[stage.key],
-    needsWork: stage.key === first,
+    needsWork: index === frontier,
+    state: stationState(index, frontier, stages[stage.key]),
   }))
 }
 
-/** What needs an officer, most urgent first. Items with nothing waiting are left out. */
-export function buildAttentionItems({ attention }: SeasonOverview): AttentionItem[] {
-  const items: AttentionItem[] = [
-    {
-      key: "undecided",
-      count: attention.undecided,
-      text: `${pick(attention.undecided, "application is", "applications are")} waiting on a committee decision`,
-      href: "/admin/hr?status=pending",
-    },
-    {
-      key: "emailProblems",
-      count: attention.emailProblems,
-      text: `${pick(attention.emailProblems, "result email", "result emails")} failed or may not have arrived`,
-      href: "/admin/hr/results",
-    },
-    {
-      key: "readyToRelease",
-      count: attention.readyToRelease,
-      text: `${pick(attention.readyToRelease, "decided application has", "decided applications have")} no released result yet`,
-      href: "/admin/hr/results",
-    },
-    {
-      key: "paymentsToVerify",
-      count: attention.paymentsToVerify,
-      text: `${pick(attention.paymentsToVerify, "membership payment is", "membership payments are")} waiting for verification`,
-      href: "/admin/hr/membership",
-    },
-    {
-      key: "emailsInFlight",
-      count: attention.emailsInFlight,
-      text: `${pick(attention.emailsInFlight, "result email is", "result emails are")} still sending`,
-      href: "/admin/hr/results",
-    },
-  ]
-  return items.filter((item) => item.count > 0)
+/** Picks the singular or plural phrase for a count: pick(1, "is", "are"). */
+export function pick(count: number, one: string, many: string) {
+  return count === 1 ? one : many
 }

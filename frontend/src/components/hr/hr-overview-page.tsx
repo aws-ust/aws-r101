@@ -1,15 +1,27 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { HrNeedsYou } from "@/components/hr/hr-needs-you"
+import { HrOverviewBriefing } from "@/components/hr/hr-overview-briefing"
+import { HrSeasonSchedule } from "@/components/hr/hr-season-schedule"
 import { HrStageLine } from "@/components/hr/hr-stage-line"
+import { HrWorklist } from "@/components/hr/hr-worklist"
 import { SectionHeader } from "@/components/shared/section-header"
 import { getSeasonOverview, type SeasonOverview } from "@/lib/api/overview"
-import { buildAttentionItems, buildStations } from "@/lib/hr/overview"
+import { buildStations } from "@/lib/hr/overview"
+import { buildBriefing } from "@/lib/hr/overview-briefing"
+import { buildSchedule } from "@/lib/hr/overview-schedule"
+import { buildTasks } from "@/lib/hr/overview-tasks"
 import { dashboardTitleClasses } from "@/lib/site/dashboard-surface"
 import { hrPageShellClasses } from "@/lib/site/surface"
 
-const bodyClasses = "mt-10 flex flex-col gap-10"
+// One column on small screens: briefing and worklist, then the schedule, then the
+// stage line. From xl the schedule and the stage line stack in a rail beside them.
+const layoutClasses =
+  "mt-10 grid gap-12 xl:grid-cols-[minmax(0,1fr)_21rem] xl:grid-rows-[auto_1fr] xl:gap-x-14"
+const mainColumnClasses = "flex min-w-0 flex-col gap-12 xl:col-start-1 xl:row-span-2"
+const scheduleClasses = "min-w-0 xl:col-start-2 xl:row-start-1"
+const seasonClasses = "min-w-0 xl:col-start-2 xl:row-start-2 xl:self-start"
+const seasonHeadingClasses = "font-sans text-lg font-semibold text-blue-chalk"
 const statusClasses = "mt-10 font-sans text-sm text-prelude"
 const errorClasses = "mt-10 font-sans text-sm text-rose-glow"
 
@@ -20,6 +32,7 @@ function seasonSubtitle(year: number) {
 export function HrOverviewPage() {
   const [overview, setOverview] = useState<SeasonOverview | null>(null)
   const [error, setError] = useState("")
+  const [now] = useState(() => new Date())
 
   useEffect(() => {
     let cancelled = false
@@ -37,8 +50,16 @@ export function HrOverviewPage() {
     }
   }, [])
 
-  const stations = useMemo(() => (overview ? buildStations(overview) : []), [overview])
-  const items = useMemo(() => (overview ? buildAttentionItems(overview) : []), [overview])
+  const view = useMemo(
+    () =>
+      overview && {
+        briefing: buildBriefing(overview, now),
+        tasks: buildTasks(overview, now),
+        schedule: buildSchedule(overview, now),
+        stations: buildStations(overview),
+      },
+    [overview, now],
+  )
 
   return (
     <main className={hrPageShellClasses}>
@@ -51,16 +72,27 @@ export function HrOverviewPage() {
         <p className={errorClasses} role="alert">
           {error}
         </p>
-      ) : overview === null ? (
+      ) : view === null ? (
         <p className={statusClasses} role="status">
           Loading the season…
         </p>
-      ) : overview.stages.applied === 0 ? (
-        <p className={statusClasses}>No applications yet for this recruitment year.</p>
       ) : (
-        <div className={bodyClasses}>
-          <HrStageLine stations={stations} />
-          <HrNeedsYou items={items} />
+        <div className={layoutClasses}>
+          <div className={mainColumnClasses}>
+            <HrOverviewBriefing briefing={view.briefing} />
+            <HrWorklist tasks={view.tasks} />
+          </div>
+          <div className={scheduleClasses}>
+            <HrSeasonSchedule rows={view.schedule} />
+          </div>
+          <section className={seasonClasses} aria-labelledby="season-so-far-heading">
+            <h3 id="season-so-far-heading" className={seasonHeadingClasses}>
+              The season so far
+            </h3>
+            <div className="mt-3">
+              <HrStageLine stations={view.stations} />
+            </div>
+          </section>
         </div>
       )}
     </main>
