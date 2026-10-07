@@ -1,7 +1,9 @@
 export const APPLICATION_PAGE_SIZE = 10
+/** Applications table: dense rows, about one laptop screen of work per page. */
+export const APPLICATION_TABLE_PAGE_SIZE = 25
 
-export function pageCount(total: number) {
-  return Math.max(1, Math.ceil(total / APPLICATION_PAGE_SIZE))
+export function pageCount(total: number, pageSize = APPLICATION_PAGE_SIZE) {
+  return Math.max(1, Math.ceil(total / pageSize))
 }
 
 export function pageSlice<T>(items: T[], page: number) {

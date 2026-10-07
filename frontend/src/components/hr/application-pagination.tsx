@@ -25,6 +25,7 @@ type ApplicationPaginationProps = {
   onPageChange: (page: number) => void
   /** What is being paged, as shown in "Showing 1–10 of 25 …". */
   noun?: string
+  pageSize?: number
 }
 
 export function ApplicationPagination({
@@ -32,11 +33,12 @@ export function ApplicationPagination({
   page,
   onPageChange,
   noun = "applications",
+  pageSize = APPLICATION_PAGE_SIZE,
 }: ApplicationPaginationProps) {
-  const totalPages = pageCount(total)
+  const totalPages = pageCount(total, pageSize)
   const safePage = Math.min(page, totalPages)
-  const start = total === 0 ? 0 : (safePage - 1) * APPLICATION_PAGE_SIZE + 1
-  const end = Math.min(safePage * APPLICATION_PAGE_SIZE, total)
+  const start = total === 0 ? 0 : (safePage - 1) * pageSize + 1
+  const end = Math.min(safePage * pageSize, total)
   const pages = buildPageList(safePage, totalPages)
 
   if (total === 0) {

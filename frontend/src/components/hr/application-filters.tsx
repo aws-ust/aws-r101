@@ -1,46 +1,22 @@
 "use client"
 
-import { useMemo } from "react"
+import { useState, type ReactNode } from "react"
+import { SlidersHorizontal } from "lucide-react"
+import { ApplicationFilterSelects } from "@/components/hr/application-filter-selects"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { HrCommitteeFilterPicker } from "@/components/hr/hr-committee-filter-picker"
-import { groupedCommitteesForPicker } from "@/lib/apply/committee-groups"
-import { fieldControlClasses, hrFilterSelectClasses } from "@/lib/site/surface"
-import { useOpenPositions } from "@/lib/api"
+import { fieldControlClasses } from "@/lib/site/surface"
 import { cn } from "@/lib/utils"
 import type { ApplicationType } from "@/lib/types/application"
-import type { ApplicantListStatusTag } from "@/lib/hr/application-display"
 
-// Search gets its own row on medium screens; all four filters share one row on wide screens.
-const rowClasses =
-  "grid grid-cols-1 gap-3 md:grid-cols-3 2xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)_minmax(0,1.2fr)_minmax(0,1fr)]"
-const searchClasses = cn(fieldControlClasses, "border border-blue-chalk/20 md:col-span-3 2xl:col-span-1")
-const statusSelectClasses = cn(hrFilterSelectClasses, "w-full")
-const typeSelectClasses = cn(hrFilterSelectClasses, "w-full")
-
-const STATUS_LABELS: Record<ApplicantListStatusTag, string> = {
-  pending: "Pending",
-  accepted: "Accepted",
-  rejected: "Rejected",
-  redirected: "Redirected",
-}
-
-function statusFilterLabel(status: HrFilters["status"]) {
-  if (!status) return "All Statuses"
-  if (status === "approved") return STATUS_LABELS.accepted
-  return STATUS_LABELS[status]
-}
-
-const APPLICATION_TYPE_LABELS: Record<ApplicationType, string> = {
-  position: "Committee Positions",
-  member: "Member-Only",
-}
+const wrapClasses = "flex flex-col gap-3"
+const topRowClasses = "flex flex-col gap-3 lg:flex-row lg:items-start"
+const searchClasses = cn(fieldControlClasses, "border border-blue-chalk/20 lg:flex-1")
+const actionsClasses = "grid grid-cols-2 gap-3 lg:flex lg:shrink-0"
+const filtersToggleClasses =
+  "flex h-12 w-full cursor-pointer items-center justify-between rounded-[20px] border border-blue-chalk/20 bg-haiti/70 px-4 font-sans text-sm text-blue-chalk outline-none transition-colors hover:border-biloba-flower/50 focus-visible:ring-2 focus-visible:ring-aquamarine/40 lg:hidden"
+const activeCountClasses =
+  "rounded-pill bg-aquamarine px-2 py-0.5 font-sans text-xs font-semibold text-haiti"
+const selectsClasses = "grid-cols-1 gap-3 lg:grid lg:grid-cols-3"
 
 export type HrFilters = {
   query: string
@@ -52,78 +28,51 @@ export type HrFilters = {
 type ApplicationFiltersProps = {
   value: HrFilters
   onChange: (patch: Partial<HrFilters>) => void
+  /** Page actions (add, export) that sit beside the search box. */
+  actions?: ReactNode
 }
 
-export function ApplicationFilters({ value, onChange }: ApplicationFiltersProps) {
-  const { committees } = useOpenPositions()
-  const committeeGroups = useMemo(
-    () => groupedCommitteesForPicker(committees),
-    [committees]
-  )
+function activeFilterCount(value: HrFilters) {
+  return [value.committee, value.status, value.applicationType].filter(Boolean).length
+}
+
+export function ApplicationFilters({ value, onChange, actions }: ApplicationFiltersProps) {
+  const activeCount = activeFilterCount(value)
+  const [open, setOpen] = useState(activeCount > 0)
 
   return (
-    <div className={rowClasses}>
-      <Input
-        value={value.query}
-        onChange={(event) => onChange({ query: event.target.value })}
-        placeholder="Search applicant name..."
-        className={searchClasses}
-        aria-label="Search applicant name"
-      />
-      <Select
-        value={value.applicationType || "all"}
-        onValueChange={(next) =>
-          onChange({
-            applicationType: (!next || next === "all"
-              ? ""
-              : next) as HrFilters["applicationType"],
-          })
-        }
+    <div className={wrapClasses}>
+      <div className={topRowClasses}>
+        <Input
+          value={value.query}
+          onChange={(event) => onChange({ query: event.target.value })}
+          placeholder="Search applicant name..."
+          className={searchClasses}
+          aria-label="Search applicant name"
+        />
+        {actions ? <div className={actionsClasses}>{actions}</div> : null}
+      </div>
+      <button
+        type="button"
+        className={filtersToggleClasses}
+        aria-expanded={open}
+        aria-controls="application-filter-selects"
+        onClick={() => setOpen((current) => !current)}
       >
-        <SelectTrigger
-          className={typeSelectClasses}
-          aria-label="Filter by application type"
-        >
-          <SelectValue placeholder="All Application Types">
-            {value.applicationType
-              ? APPLICATION_TYPE_LABELS[value.applicationType]
-              : "All Application Types"}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Application Types</SelectItem>
-          <SelectItem value="position">Committee Positions</SelectItem>
-          <SelectItem value="member">Member-Only</SelectItem>
-        </SelectContent>
-      </Select>
-      <HrCommitteeFilterPicker
-        value={value.committee}
-        groups={committeeGroups}
-        onChange={(committee) => onChange({ committee })}
-      />
-      <Select
-        value={value.status || "all"}
-        onValueChange={(next) =>
-          onChange({
-            status: (!next || next === "all"
-              ? ""
-              : next) as HrFilters["status"],
-          })
-        }
+        <span className="flex items-center gap-2">
+          <SlidersHorizontal className="size-4 text-prelude" aria-hidden />
+          Filters
+        </span>
+        {activeCount > 0 ? (
+          <span className={activeCountClasses}>{activeCount} active</span>
+        ) : null}
+      </button>
+      <div
+        id="application-filter-selects"
+        className={cn(selectsClasses, open ? "grid" : "hidden")}
       >
-        <SelectTrigger className={statusSelectClasses} aria-label="Filter by status">
-          <SelectValue placeholder="All Statuses">
-            {statusFilterLabel(value.status)}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Statuses</SelectItem>
-          <SelectItem value="pending">Pending</SelectItem>
-          <SelectItem value="approved">Accepted</SelectItem>
-          <SelectItem value="rejected">Rejected</SelectItem>
-          <SelectItem value="redirected">Redirected</SelectItem>
-        </SelectContent>
-      </Select>
+        <ApplicationFilterSelects value={value} onChange={onChange} />
+      </div>
     </div>
   )
 }
