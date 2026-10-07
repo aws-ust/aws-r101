@@ -3,6 +3,7 @@ import {
   CalendarRange,
   ClipboardCheck,
   ClipboardList,
+  IdCard,
   MessagesSquare,
   Send,
   Users,
@@ -36,11 +37,24 @@ function isApplicationDetailPath(pathname: string) {
         "membership",
         "committees",
         "groups",
+        "members",
       ].includes(match[1]),
   )
 }
 
 export const hrNavigationSections: HrNavigationSection[] = [
+  {
+    label: "People",
+    visible: () => true,
+    items: [
+      {
+        label: "Members",
+        href: "/admin/hr/members",
+        icon: IdCard,
+        active: (path) => path.startsWith("/admin/hr/members"),
+      },
+    ],
+  },
   {
     label: "Recruitment",
     visible: () => true,

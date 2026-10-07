@@ -21,10 +21,10 @@ import { formatSubheaderLabel } from "@/lib/site/button-label"
 const groupLabelClasses =
   "mb-2.5 px-3 font-mono text-[10px] tracking-[0.16em] text-biloba-flower group-data-[collapsible=icon]:mb-0 group-data-[collapsible=icon]:sr-only"
 const navigationWrapperClasses = "flex w-full flex-col"
-const recruitmentGroupClasses =
-  "pb-4 group-data-[collapsible=icon]:pb-3"
-const membershipGroupClasses =
+const peopleGroupClasses = "pb-4 group-data-[collapsible=icon]:pb-3"
+const dividedGroupClasses =
   "border-t border-blue-chalk/15 pt-4 group-data-[collapsible=icon]:pt-3"
+const recruitmentGroupClasses = `pb-4 group-data-[collapsible=icon]:pb-3 ${dividedGroupClasses}`
 const menuClasses = "w-full gap-1.5 group-data-[collapsible=icon]:items-center"
 const itemClasses =
   "w-full group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center"
@@ -37,8 +37,9 @@ const tooltipClasses =
   "glass rounded-pill border border-biloba-flower/40 bg-haiti/90 px-3 py-1.5 font-sans text-sm text-blue-chalk shadow-[0_8px_24px_-8px_rgba(0,0,0,0.5)] [&_.cn-tooltip-arrow]:hidden"
 
 function sectionGroupClasses(label: string) {
+  if (label === "People") return peopleGroupClasses
   if (label === "Recruitment") return recruitmentGroupClasses
-  if (label === "Membership") return membershipGroupClasses
+  if (label === "Membership") return dividedGroupClasses
   return undefined
 }
 

@@ -23,12 +23,15 @@ type ApplicationPaginationProps = {
   total: number
   page: number
   onPageChange: (page: number) => void
+  /** What is being paged, as shown in "Showing 1–10 of 25 …". */
+  noun?: string
 }
 
 export function ApplicationPagination({
   total,
   page,
   onPageChange,
+  noun = "applications",
 }: ApplicationPaginationProps) {
   const totalPages = pageCount(total)
   const safePage = Math.min(page, totalPages)
@@ -43,7 +46,7 @@ export function ApplicationPagination({
   return (
     <div className={footerClasses}>
       <p className={summaryClasses}>
-        Showing {start}–{end} of {total} applications
+        Showing {start}–{end} of {total} {noun}
       </p>
 
       {totalPages > 1 ? (
