@@ -196,3 +196,27 @@ that rotates to an × on open. Use this as the reference until Figma has one.
 - Quiz is embedded in Committees, not a standalone section — confirm whether
   it should be pulled out before building it as its own component per the
   tracked issue.
+
+## Dashboard working surfaces (HR and applicant)
+
+The HR dashboard and the applicant dashboard are Operate surfaces: palette and
+type above are unchanged, but the working areas differ from the public site.
+
+- **Solid, not glass.** Panels, rows and tables use the classes in
+  `frontend/src/lib/site/dashboard-surface.ts` (solid `haiti` fill, 1px
+  `blue-chalk` hairline). `glass` stays on dialogs, menus, sheets and the
+  public site. Do not change `glassPanelClasses` for dashboard work; it is
+  shared with the public pages and the payments screens.
+- **No eyebrows.** Dashboard headings carry their own weight; `SectionHeader`
+  takes no `// EYEBROW` label there.
+- **12px floor.** Any text that carries data is at least 12px, in the same
+  fonts. The 10px mono labels remain only for sidebar group names.
+- **Density by pointer.** Compact rows for mouse and trackpad; 44px targets on
+  coarse pointers (`pointer-coarse:`). The Applications table starts at the
+  `xl` breakpoint because the persistent sidebar takes 256px; below that,
+  rows are two lines.
+- **One accent job.** `aquamarine` marks the single thing that needs work on a
+  screen (the lit station on the stage line, counts that need an officer).
+- **Stage line.** The recruitment stages (Applied, Interview booked, Decided,
+  Released, Payment sent, Member) are drawn as one line of stations. Counts are
+  running totals defined once in `backend/src/lib/hr/season-overview.ts`.
