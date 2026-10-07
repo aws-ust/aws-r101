@@ -463,11 +463,7 @@ test("results release preview", async (t) => {
       rejected: number;
       memberIdsGenerated: number;
       releasedAt: string;
-      emailDelivery: {
-        queued: number;
-        sent: number;
-        failed: number;
-      };
+      emailDelivery: { queued: number };
     };
     assert.deepEqual(
       {
@@ -484,9 +480,8 @@ test("results release preview", async (t) => {
       },
     );
     assert.ok(Number.isFinite(Date.parse(payload.releasedAt)));
-    assert.equal(payload.emailDelivery.queued, 5);
-    assert.equal(payload.emailDelivery.sent, 0);
-    assert.equal(payload.emailDelivery.failed, 5);
+    // Release only queues the emails; the background outbox sends them.
+    assert.deepEqual(payload.emailDelivery, { queued: 5 });
 
     const released = await db
       .select({
@@ -532,7 +527,7 @@ test("results release preview", async (t) => {
         inArray(emailNotifications.applicationId, applicationIds.slice(0, 5)),
       );
     assert.equal(resultNotifications.length, 5);
-    assert.ok(resultNotifications.every((row) => row.status === "failed"));
+    assert.ok(resultNotifications.every((row) => row.status === "pending"));
     assert.deepEqual(
       new Map(
         resultNotifications.map((row) => [row.applicationId, row.messageType]),
@@ -554,11 +549,7 @@ test("results release preview", async (t) => {
       rejected: 0,
       memberIdsGenerated: 0,
       releasedAt: null,
-      emailDelivery: {
-        queued: 0,
-        sent: 0,
-        failed: 0,
-      },
+      emailDelivery: { queued: 0 },
     });
 
     const afterRepeat = await db
@@ -588,12 +579,20 @@ test("results release preview", async (t) => {
     );
   });
 
-  await t.test("retries only failed result emails", async () => {
-    const [sentNotification] = await db
+  await t.test("retries only definitely failed result emails", async () => {
+    const queued = await db
       .select({ id: emailNotifications.id })
       .from(emailNotifications)
-      .where(eq(emailNotifications.messageType, "result_accepted"))
-      .limit(1);
+      .where(inArray(emailNotifications.applicationId, applicationIds.slice(0, 5)));
+    const [sentNotification, uncertainNotification, ...failedNotifications] = queued;
+    await db
+      .update(emailNotifications)
+      .set({ status: "failed", lastError: "Gmail send failed (403): userRateLimitExceeded" })
+      .where(inArray(emailNotifications.id, failedNotifications.map((row) => row.id)));
+    await db
+      .update(emailNotifications)
+      .set({ status: "failed", lastError: "Uncertain: delivery may have completed." })
+      .where(eq(emailNotifications.id, uncertainNotification.id));
     await db
       .update(emailNotifications)
       .set({
@@ -615,11 +614,18 @@ test("results release preview", async (t) => {
 
     const response = await retryFailedEmailsRequest();
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), {
-      retried: 4,
-      sent: 0,
-      failed: 4,
-    });
+    // Uncertain emails may already have been delivered, so they are left for HR.
+    assert.deepEqual(await response.json(), { retried: failedNotifications.length });
+    const requeued = await db
+      .select({ status: emailNotifications.status, nextAttemptAt: emailNotifications.nextAttemptAt })
+      .from(emailNotifications)
+      .where(inArray(emailNotifications.id, failedNotifications.map((row) => row.id)));
+    assert.ok(requeued.every((row) => row.status === "pending" && row.nextAttemptAt instanceof Date));
+    const [stillUncertain] = await db
+      .select({ status: emailNotifications.status })
+      .from(emailNotifications)
+      .where(eq(emailNotifications.id, uncertainNotification.id));
+    assert.equal(stillUncertain.status, "failed");
 
     const [stillSent] = await db
       .select({ status: emailNotifications.status })
@@ -728,7 +734,7 @@ test("results release preview", async (t) => {
       accepted: number;
       rejected: number;
       memberIdsGenerated: number;
-      emailDelivery: { queued: number; sent: number; failed: number };
+      emailDelivery: { queued: number };
     };
     assert.deepEqual(
       {
@@ -736,18 +742,14 @@ test("results release preview", async (t) => {
         accepted: release.accepted,
         rejected: release.rejected,
         memberIdsGenerated: release.memberIdsGenerated,
-        emailDelivery: {
-          queued: release.emailDelivery.queued,
-          sent: release.emailDelivery.sent,
-          failed: release.emailDelivery.failed,
-        },
+        emailDelivery: release.emailDelivery,
       },
       {
         released: 1,
         accepted: 1,
         rejected: 0,
         memberIdsGenerated: 0,
-        emailDelivery: { queued: 1, sent: 0, failed: 1 },
+        emailDelivery: { queued: 1 },
       },
     );
 

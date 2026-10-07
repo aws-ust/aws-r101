@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { ActionFeedback } from "@/components/shared/action-feedback"
 import { HrReleaseResultsDialog } from "@/components/hr/hr-release-results-dialog"
+import { HrResultEmailStatus } from "@/components/hr/hr-result-email-status"
 import { HrResultsList } from "@/components/hr/hr-results-list"
 import { HrResultsSummary } from "@/components/hr/hr-results-summary"
 import { SectionHeader } from "@/components/shared/section-header"
@@ -29,6 +30,8 @@ export function HrResultsPage() {
   const [pendingAction, setPendingAction] = useState<
     "release" | "retry" | null
   >(null)
+  // Bumped after a release or retry so the email progress panel reloads.
+  const [emailStatusKey, setEmailStatusKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -76,11 +79,8 @@ export function HrResultsPage() {
     }
 
     setReleaseOpen(false)
-    let message = `Released ${result.released} results. ${result.emailDelivery.sent} emails sent${result.emailDelivery.failed > 0 ? `; ${result.emailDelivery.failed} failed and can be retried.` : "."}`
-    const firstFailure = result.emailDelivery.failures?.[0]
-    if (firstFailure) {
-      message += ` ${firstFailure.recipient}: ${firstFailure.error}`
-    }
+    let message = `Released ${result.released} results. ${result.emailDelivery.queued} emails are being sent in the background; progress is shown below.`
+    setEmailStatusKey((key) => key + 1)
     try {
       await refreshPreview()
     } catch {
@@ -100,8 +100,9 @@ export function HrResultsPage() {
         message:
           result.retried === 0
             ? "There were no failed result emails to retry."
-            : `Retried ${result.retried} emails. ${result.sent} sent${result.failed > 0 ? `; ${result.failed} still failed.` : "."}`,
+            : `Queued ${result.retried} failed emails to send again in the background.`,
       })
+      setEmailStatusKey((key) => key + 1)
     } catch (error: unknown) {
       setFeedback({
         type: "error",
@@ -135,6 +136,7 @@ export function HrResultsPage() {
             onRelease={() => setReleaseOpen(true)}
             onRetry={() => void retryEmails()}
           />
+          <HrResultEmailStatus refreshKey={emailStatusKey} />
           <section>
             <h3 className={listHeadingClasses}>Release preview</h3>
             <p className={listSubtitleClasses}>

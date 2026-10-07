@@ -76,7 +76,7 @@ export function useHrPaymentWorkspace() {
         const result = await releaseMembershipConfirmations()
         setFeedback({
           type: "success",
-          message: `Released ${result.released} membership confirmations. ${result.emailDelivery.sent} emails sent${result.emailDelivery.failed ? `; ${result.emailDelivery.failed} failed.` : "."}`,
+          message: `Released ${result.released} membership confirmations. ${result.emailDelivery.queued} emails are being sent in the background.`,
         })
       } else {
         const result =
@@ -87,7 +87,10 @@ export function useHrPaymentWorkspace() {
           kind === "retry-invitations" ? "invitation" : "confirmation"
         setFeedback({
           type: "success",
-          message: `Retried ${result.retried} ${label} emails. ${result.sent} sent${result.failed ? `; ${result.failed} still failed.` : "."}`,
+          message:
+            result.retried === 0
+              ? `There were no failed ${label} emails to retry.`
+              : `Queued ${result.retried} ${label} emails to send again in the background.`,
         })
       }
       await refresh()

@@ -103,12 +103,14 @@ function announceMemberEmail(
   result: unknown,
   onNotice: ((notice: { type: "success" | "error"; message: string }) => void) | undefined,
 ) {
-  const delivery = (result as { emailDelivery?: { sent: number; failed: number } } | undefined)?.emailDelivery
+  const delivery = (result as { emailDelivery?: { sent: number; failed: number; queued?: number } } | undefined)?.emailDelivery
   if (!delivery || !onNotice) return
   onNotice(
     delivery.failed > 0
       ? { type: "error", message: "Payment verified, but the member email could not be sent. You can retry it later." }
-      : { type: "success", message: "Payment verified. The member email with their Member ID was sent." },
+      : delivery.queued
+        ? { type: "success", message: "Payment verified. The member email with their Member ID will go out in a few minutes." }
+        : { type: "success", message: "Payment verified. The member email with their Member ID was sent." },
   )
 }
 

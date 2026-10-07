@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { QrPreview } from "@/components/shared/qr-preview"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -28,13 +28,20 @@ type PaymentQrFieldProps = {
   onQr: (value: File | null) => void
 }
 
+/**
+ * Preview link for a picked file. It is created in the file-pick event (not
+ * during render) and released when replaced or when the field unmounts.
+ */
 function useFilePreviewUrl(file: File | null) {
-  const url = useMemo(() => (file ? URL.createObjectURL(file) : null), [file])
+  const [picked, setPicked] = useState<{ file: File; url: string } | null>(null)
+  const current = picked?.url
   useEffect(() => {
-    if (!url) return
-    return () => URL.revokeObjectURL(url)
-  }, [url])
-  return url
+    if (!current) return
+    return () => URL.revokeObjectURL(current)
+  }, [current])
+  const pick = (next: File | null) =>
+    setPicked(next ? { file: next, url: URL.createObjectURL(next) } : null)
+  return { url: file && picked?.file === file ? picked.url : null, pick }
 }
 
 export function PaymentQrField({
@@ -48,7 +55,7 @@ export function PaymentQrField({
   onQr,
 }: PaymentQrFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null)
-  const pendingPreviewUrl = useFilePreviewUrl(qrFile)
+  const { url: pendingPreviewUrl, pick } = useFilePreviewUrl(qrFile)
   const previewUrl = pendingPreviewUrl ?? savedPreviewUrl
   const fileName = qrFile?.name ?? (hasSavedQr ? savedFileName ?? `${label} QR` : null)
   const help = qrFile
@@ -81,7 +88,9 @@ export function PaymentQrField({
             accept="image/jpeg,image/png,image/webp"
             className="hidden"
             onChange={(event) => {
-              onQr(event.target.files?.[0] ?? null)
+              const file = event.target.files?.[0] ?? null
+              pick(file)
+              onQr(file)
               event.target.value = ""
             }}
           />

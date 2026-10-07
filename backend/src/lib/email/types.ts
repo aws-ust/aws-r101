@@ -23,7 +23,8 @@ export type EmailFileAttachment = {
   content: Buffer;
 };
 
-export type EmailDeliveryStatus = "pending" | "sent" | "failed";
+/** "sending" means a worker has claimed the row and the Gmail call may be in flight. */
+export type EmailDeliveryStatus = "pending" | "sending" | "sent" | "failed";
 
 export type EmailInlineAttachment = {
   cid: string;
@@ -49,6 +50,8 @@ export type SendEmailInput = {
   html: string;
   inline?: EmailInlineAttachment[];
   attachments?: EmailFileAttachment[];
+  /** Stable Message-ID so a resent copy of the same notification is recognisable. */
+  messageId?: string;
 };
 
 export type SendEmailResult = {

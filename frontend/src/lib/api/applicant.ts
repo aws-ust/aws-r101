@@ -158,6 +158,8 @@ export type ApplicantPayment = {
 export type MemberCard = {
   memberId: string
   recruitmentYear: number
+  /** When HR verified the payment; shown as the card's issue date. */
+  issuedAt: string | null
   position: string
   photoUrl: string | null
 }

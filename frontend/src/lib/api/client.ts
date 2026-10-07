@@ -541,12 +541,18 @@ export type ReleaseResultsResponse = {
   rejected: number;
   memberIdsGenerated: number;
   releasedAt: string | null;
-  emailDelivery: {
-    queued: number;
-    sent: number;
-    failed: number;
-    failures?: { recipient: string; error: string }[];
-  };
+  /** Emails are queued and sent in the background; see getResultEmailStatus. */
+  emailDelivery: { queued: number };
+};
+
+export type ResultEmailStatus = {
+  queued: number;
+  sending: number;
+  sent: number;
+  failed: number;
+  /** Failed rows that may already have reached the applicant. */
+  uncertain: number;
+  problems: { id: string; recipient: string; error: string | null; uncertain: boolean }[];
 };
 
 export function getResultsPreview() {
@@ -560,10 +566,19 @@ export function releaseResultsRequest() {
 }
 
 export function retryFailedResultEmailsRequest() {
-  return apiFetch<{ retried: number; sent: number; failed: number }>(
-    "/results/emails/retry-failed",
-    { method: "POST" },
-  );
+  return apiFetch<{ retried: number }>("/results/emails/retry-failed", {
+    method: "POST",
+  });
+}
+
+export function retryUncertainResultEmailsRequest() {
+  return apiFetch<{ retried: number }>("/results/emails/retry-uncertain", {
+    method: "POST",
+  });
+}
+
+export function getResultEmailStatus() {
+  return apiFetch<ResultEmailStatus>("/results/emails/status");
 }
 
 type LoginResponse = {

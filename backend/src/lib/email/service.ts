@@ -484,36 +484,29 @@ export async function sendResultRejected(input: {
   });
 }
 
-export function deliverQueuedResultEmail(input: {
-  notificationId: string;
+export function renderResultEmail(input: {
   messageType: "result_accepted" | "result_rejected" | "result_redirected";
-  recipient: string;
   lastName: string;
   position: string | null;
   committee?: string | null;
   applicationType?: "position" | "member";
-}): Promise<EmailDeliveryStatus> {
-  const rendered =
-    input.messageType === "result_accepted"
-      ? input.applicationType === "member"
-        ? resultMemberAcceptedTemplate({ lastName: input.lastName })
-        : resultAcceptedTemplate({
-            lastName: input.lastName,
-            position: input.position ?? "",
-          })
-      : input.messageType === "result_redirected"
-        ? resultRedirectedTemplate({
-            lastName: input.lastName,
-            position: input.position ?? "",
-            committee: input.committee ?? "",
-          })
-        : resultRejectedTemplate({ lastName: input.lastName });
-  return deliverNotification({
-    notificationId: input.notificationId,
-    messageType: input.messageType,
-    recipient: input.recipient,
-    rendered,
-  });
+}): RenderedEmail {
+  if (input.messageType === "result_accepted") {
+    return input.applicationType === "member"
+      ? resultMemberAcceptedTemplate({ lastName: input.lastName })
+      : resultAcceptedTemplate({
+          lastName: input.lastName,
+          position: input.position ?? "",
+        });
+  }
+  if (input.messageType === "result_redirected") {
+    return resultRedirectedTemplate({
+      lastName: input.lastName,
+      position: input.position ?? "",
+      committee: input.committee ?? "",
+    });
+  }
+  return resultRejectedTemplate({ lastName: input.lastName });
 }
 
 export function renderPaymentInvitation(input: Parameters<typeof paymentInvitationTemplate>[0]) {

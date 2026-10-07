@@ -86,7 +86,7 @@ async function updatePaymentPeriod(open: boolean, campaign: PaymentCampaign, onC
   try {
     if (open) {
       const result = await openPaymentCampaign()
-      onFeedback({ type: "success", message: `Payment period opened for ${result.eligible} eligible applicants. ${result.emailDelivery.sent} invitation emails sent${result.emailDelivery.failed ? `; ${result.emailDelivery.failed} failed.` : "."}` })
+      onFeedback({ type: "success", message: `Payment period opened for ${result.eligible} eligible applicants. ${result.emailDelivery.queued} invitation emails are being sent in the background.` })
       onCampaign({ ...campaign, isOpen: true })
     } else {
       onCampaign(await closePaymentCampaign())

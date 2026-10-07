@@ -73,6 +73,7 @@ async function loadApplicantPayment(applicationId: string) {
       archivedAt: applications.archivedAt,
       memberId: applications.memberId,
       memberPhotoKey: applications.memberPhotoKey,
+      verifiedAt: membershipPayments.verifiedAt,
       recruitmentYear: applications.recruitmentYear,
       positionName: positions.name,
       committeeName: committees.name,
@@ -184,6 +185,7 @@ export async function getApplicantPayment(applicationId: string) {
       ? {
           memberId: row.memberId,
           recruitmentYear: row.recruitmentYear,
+          issuedAt: row.verifiedAt?.toISOString() ?? null,
           position: memberPositionLabel(row),
           photoUrl: row.memberPhotoKey
             ? await createMemberPhotoDownload(row.memberPhotoKey)

@@ -13,10 +13,12 @@ import { cn } from "@/lib/utils"
 
 const wrapperClasses = "flex flex-col items-center gap-4"
 // Portrait CR80 ID proportions (54 x 85.6 mm), at a comfortable on-screen width.
-const sceneClasses = "aspect-[54/85.6] w-[22rem] max-w-full perspective-distant"
+const sceneClasses = "relative aspect-[54/85.6] w-[22rem] max-w-full perspective-distant"
 const flipperBaseClasses =
-  "relative size-full cursor-pointer transition-transform duration-700 ease-in-out transform-3d motion-reduce:transition-none"
+  "relative size-full transition-transform duration-700 ease-in-out transform-3d motion-reduce:transition-none"
 const flippedClasses = "rotate-y-180"
+// Invisible click target over the whole card, so a mouse click anywhere flips it.
+const flipOverlayClasses = "absolute inset-0 z-10 cursor-pointer rounded-[24px] outline-none"
 const flipButtonClasses = "gap-2 px-4"
 const actionsClasses = "flex flex-wrap items-center justify-center gap-3"
 const errorClasses = "text-center font-sans text-xs text-rose-glow"
@@ -54,15 +56,7 @@ export function MemberIdCard({
   return (
     <div className={wrapperClasses}>
       <div className={sceneClasses}>
-        {/* Clicking the card flips it; the Show back button below gives keyboard users the same action. */}
-        <div
-          className={cn(flipperBaseClasses, flipped && flippedClasses)}
-          onClick={(event) => {
-            // Let links and other controls on the card work without flipping it.
-            if ((event.target as HTMLElement).closest("button, input, a")) return
-            setFlipped((current) => !current)
-          }}
-        >
+        <div className={cn(flipperBaseClasses, flipped && flippedClasses)}>
           <MemberIdCardFront
             fullName={`${firstName} ${lastName}`.toUpperCase()}
             studentNumber={studentNumber ?? "—"}
@@ -70,10 +64,20 @@ export function MemberIdCard({
             position={card.position}
             memberId={card.memberId}
             academicYear={academicYearLabel(card.recruitmentYear)}
+            issuedAt={card.issuedAt}
             photoUrl={card.photoUrl}
           />
-          <MemberIdCardBack memberId={card.memberId} />
+          <MemberIdCardBack />
         </div>
+        {/* Mouse shortcut only: the Show back button below is the keyboard and
+            screen-reader control, so this stays out of the tab order. */}
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-hidden
+          className={flipOverlayClasses}
+          onClick={() => setFlipped((current) => !current)}
+        />
       </div>
       <div className={actionsClasses}>
         <MemberPhotoButton
