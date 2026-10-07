@@ -17,7 +17,7 @@ import {
 
 const footerClasses =
   "mt-8 flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:justify-between"
-const summaryClasses = "font-mono text-xs tracking-wide text-prelude"
+const summaryClasses = "whitespace-nowrap font-mono text-xs tracking-wide text-prelude"
 
 type ApplicationPaginationProps = {
   total: number
