@@ -64,6 +64,7 @@ export function HrOverviewPage() {
   return (
     <main className={hrPageShellClasses}>
       <SectionHeader
+        eyebrow="// SEASON STATUS"
         title="Overview"
         titleClassName={dashboardTitleClasses}
         subtitle={overview ? seasonSubtitle(overview.recruitmentYear) : undefined}

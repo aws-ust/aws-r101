@@ -21,6 +21,7 @@ import {
   filterMemberEntries,
   type MemberFilter,
 } from "@/lib/members/directory"
+import { dashboardTitleClasses } from "@/lib/site/dashboard-surface"
 import { fieldControlClasses, hrFilterSelectClasses, hrPageShellClasses } from "@/lib/site/surface"
 import { cn } from "@/lib/utils"
 
@@ -62,7 +63,11 @@ export function HrMembersPage() {
 
   return (
     <main className={hrPageShellClasses}>
-      <SectionHeader eyebrow="// MEMBERSHIP" title="Members" />
+      <SectionHeader
+        eyebrow="// MEMBERSHIP"
+        title="Members"
+        titleClassName={dashboardTitleClasses}
+      />
       {error ? (
         <p className={errorClasses} role="alert">
           {error}

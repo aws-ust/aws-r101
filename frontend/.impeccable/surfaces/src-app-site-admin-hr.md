@@ -38,7 +38,7 @@ Mode: Operate. Established world (DESIGN.md palette and Poppins / JetBrains Mono
 
 ## Direction contract: Overview (Briefing and Worklist, seed 077fb446)
 THESIS: The Overview answers "where are we and what do I do next" in plain sentences and a worklist where every task has its own button. It refuses a wall of counts over an empty screen.
-OWN-WORLD: Existing palette and Poppins. Solid haiti panels with hairlines. Aquamarine marks the single primary action and the lit stage; blocked and watch states use prelude and rose-glow. No eyebrows, no icon-heading cards, no gradients.
+OWN-WORLD: Existing palette and Poppins. Solid haiti panels with hairlines. Aquamarine marks the single primary action and the lit stage; blocked and watch states use prelude and rose-glow. Mono `// LABEL` eyebrows that name the area, never repeat the title; no icon-heading cards, no gradients.
 STORY: An officer opens the page and reads one large sentence on the state of the season, sees which task is ready, blocked (with the reason) or only worth watching, and acts from the row.
 FIRST VIEWPORT: Left column: the briefing sentence at 28-32px with two supporting lines, then the worklist (up to four rows, one aquamarine button on the first ready row). Right rail (xl and up): season schedule in date order with Open, Closed or Opens-in states, and under it the compact vertical stage line. On smaller screens one column: briefing, worklist, schedule, stage line. Ready tasks come first, then blocked, then watching; the interview task only shows once interviews are open.
 FORM: Briefing and Worklist, option 2 of the dealt hand (dealt 6, 3, 2); seed key 077fb446.

@@ -207,8 +207,10 @@ type above are unchanged, but the working areas differ from the public site.
   `blue-chalk` hairline). `glass` stays on dialogs, menus, sheets and the
   public site. Do not change `glassPanelClasses` for dashboard work; it is
   shared with the public pages and the payments screens.
-- **No eyebrows.** Dashboard headings carry their own weight; `SectionHeader`
-  takes no `// EYEBROW` label there.
+- **Eyebrows name the area, never the title.** Dashboard page headers keep the
+  site's mono `// LABEL`, but it says something the title does not
+  (`// MEMBERSHIP` over Members, `// SEASON STATUS` over Overview), at the
+  dashboard title scale (24-30px), not the public site's 48px.
 - **12px floor.** Any text that carries data is at least 12px, in the same
   fonts. The 10px mono labels remain only for sidebar group names.
 - **Density by pointer.** Compact rows for mouse and trackpad; 44px targets on
