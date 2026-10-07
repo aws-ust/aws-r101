@@ -12,7 +12,8 @@ const subtitleClasses =
   "max-w-[680px] font-sans text-base leading-relaxed text-prelude"
 
 type SectionHeaderProps = {
-  eyebrow: string
+  /** Omit on dashboard pages: the heading carries its own weight. */
+  eyebrow?: string
   title: ReactNode
   subtitle?: string
   className?: string
@@ -28,7 +29,7 @@ export function SectionHeader({
 }: SectionHeaderProps) {
   return (
     <div className={cn("flex flex-col gap-3", className)}>
-      <p className={eyebrowClasses}>{eyebrow}</p>
+      {eyebrow ? <p className={eyebrowClasses}>{eyebrow}</p> : null}
       <h2 className={cn(titleClasses, titleClassName)}>{title}</h2>
       {subtitle ? <p className={subtitleClasses}>{subtitle}</p> : null}
     </div>

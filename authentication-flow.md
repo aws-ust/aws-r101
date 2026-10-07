@@ -151,7 +151,7 @@ flowchart TD
 ## Flow
 
 1. The HR login form submits credentials to the Next.js `loginAction`, which calls the backend directly. The backend compares them with `HR_EMAIL` and `HR_PASSWORD`; no user-table lookup occurs in this flow.
-2. A valid HR login produces an HS256 JWT whose subject is the normalized email. The server action stores the returned token in the frontend's HTTP-only `hr_token` cookie and redirects to `/admin/hr`.
+2. A valid HR login produces an HS256 JWT whose subject is the normalized email. The server action stores the returned token in the frontend's HTTP-only `hr_token` cookie and redirects to `/admin/hr/overview`.
 3. The protected HR layout calls `/auth/me` with that cookie. `requireAuth` accepts `hr_token` or a Bearer token, verifies it with `JWT_SECRET`, and allows the layout only when it is valid; failed session checks remove the frontend cookie and redirect to `/login`.
 4. Applicant access begins with an application code and email. The backend looks up the application, applies resend and hourly limits, stores only an HMAC hash of a newly generated OTP, and attempts to email the plaintext code. Unknown identities receive the same generic accepted response, so the endpoint does not reveal whether an application exists.
 5. The applicant submits the six-digit code. A matching unexpired, unconsumed OTP is atomically consumed before the backend signs an applicant-scoped HS256 JWT and sets the HTTP-only `applicant_token` cookie.

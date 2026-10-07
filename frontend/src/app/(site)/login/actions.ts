@@ -109,7 +109,7 @@ export async function loginAction(
     maxAge,
   })
 
-  redirect("/admin/hr")
+  redirect("/admin/hr/overview")
 }
 
 export async function logoutHrSession(): Promise<void> {

@@ -4,6 +4,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   IdCard,
+  LayoutDashboard,
   MessagesSquare,
   Send,
   Users,
@@ -38,11 +39,24 @@ function isApplicationDetailPath(pathname: string) {
         "committees",
         "groups",
         "members",
+        "overview",
       ].includes(match[1]),
   )
 }
 
 export const hrNavigationSections: HrNavigationSection[] = [
+  {
+    label: "Season",
+    visible: () => true,
+    items: [
+      {
+        label: "Overview",
+        href: "/admin/hr/overview",
+        icon: LayoutDashboard,
+        active: (path) => path.startsWith("/admin/hr/overview"),
+      },
+    ],
+  },
   {
     label: "People",
     visible: () => true,

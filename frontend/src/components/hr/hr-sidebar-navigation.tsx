@@ -37,7 +37,8 @@ const tooltipClasses =
   "glass rounded-pill border border-biloba-flower/40 bg-haiti/90 px-3 py-1.5 font-sans text-sm text-blue-chalk shadow-[0_8px_24px_-8px_rgba(0,0,0,0.5)] [&_.cn-tooltip-arrow]:hidden"
 
 function sectionGroupClasses(label: string) {
-  if (label === "People") return peopleGroupClasses
+  if (label === "Season") return peopleGroupClasses
+  if (label === "People") return recruitmentGroupClasses
   if (label === "Recruitment") return recruitmentGroupClasses
   if (label === "Membership") return dividedGroupClasses
   return undefined
