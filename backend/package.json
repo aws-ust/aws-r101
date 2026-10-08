@@ -17,6 +17,7 @@
     "test:scheduling": "tsx --test --test-concurrency=1 src/interview-scheduling.test.ts",
     "test:results": "tsx --test --test-concurrency=1 src/results-preview.test.ts",
     "test:payments": "tsx --test --test-concurrency=1 src/membership-payments.test.ts",
+    "test:officers": "tsx --test --test-concurrency=1 src/officer-members.test.ts",
     "test:archive": "tsx --test --test-concurrency=1 src/application-archiving.test.ts",
     "test:listing": "tsx --test --test-concurrency=1 src/application-listing.test.ts",
     "test:uploads": "tsx --test --test-concurrency=1 src/upload-sessions.test.ts",
@@ -29,6 +30,7 @@
     "db:push": "node --env-file-if-exists=../.env ./node_modules/drizzle-kit/bin.cjs push",
     "db:sync": "node --env-file-if-exists=../.env scripts/sync-schema.mjs",
     "db:seed": "tsx --env-file=../.env src/db/seed.ts",
+    "db:seed-officers": "tsx --env-file=../.env src/db/seed-officers.ts",
     "db:studio": "drizzle-kit studio",
     "test:overview": "tsx --test --test-concurrency=1 src/season-overview.test.ts",
     "test:outbox":"tsx --test --test-concurrency=1 src/email-outbox.test.ts"
