@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { respondToRedirect, type ApplicantApplication } from "@/lib/api/applicant"
+import { dashboardActionTargetClasses } from "@/lib/site/dashboard-surface"
 
 const actionsClasses = "mt-5 flex flex-wrap gap-3"
 const errorClasses = "font-sans text-sm text-rose-glow"
@@ -66,10 +67,10 @@ export function ApplicantRedirectResponse({
   return (
     <>
       <div className={actionsClasses}>
-        <Button type="button" color="cyan" onClick={() => setAnswer("accepted")}>
+        <Button type="button" color="cyan" className={dashboardActionTargetClasses} onClick={() => setAnswer("accepted")}>
           Accept the position
         </Button>
-        <Button type="button" color="purple" onClick={() => setAnswer("declined")}>
+        <Button type="button" color="purple" className={dashboardActionTargetClasses} onClick={() => setAnswer("declined")}>
           Decline
         </Button>
       </div>

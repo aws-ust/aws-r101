@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { PdfFileDrop } from "@/components/apply/pdf-file-drop"
 import { Button } from "@/components/ui/button"
+import { dashboardActionTargetClasses } from "@/lib/site/dashboard-surface"
 import {
   applicationDocumentPdfSizeLimitMessage,
   documentFileNameFormatExample,
@@ -21,12 +22,12 @@ import {
   uploadDocumentFiles,
 } from "@/lib/apply/document-upload"
 
-const stackClasses = "mt-8 flex flex-col gap-5"
-const headingClasses = "font-sans text-sm font-semibold text-biloba-flower"
+const stackClasses = "mt-6 flex flex-col gap-5"
+const headingClasses = "font-sans text-sm font-semibold text-blue-chalk"
 const hintClasses = "font-sans text-xs text-prelude"
 const errorClasses = "text-sm text-rose-glow"
 const successClasses = "text-sm text-aquamarine"
-const submitClasses = "h-10 w-fit px-5 text-xs"
+const submitClasses = `h-10 w-fit px-5 text-xs ${dashboardActionTargetClasses}`
 
 type DocKey = DocumentType
 
@@ -120,7 +121,7 @@ export function ApplicantDocumentEditor({
 
   return (
     <div className={stackClasses}>
-      <h2 className={headingClasses}>Replace documents</h2>
+      <h4 className={headingClasses}>Replace documents</h4>
       <p className={hintClasses}>
         Upload only the files you want to change. Names must match{" "}
         {documentFileNameFormatExample("resume")}, etc., using your last name.
@@ -132,6 +133,7 @@ export function ApplicantDocumentEditor({
         file={resume}
         displayName={resume ? undefined : currentName(application.documents, "resume")}
         required={false}
+        compact
         onFile={setResume}
       />
       <PdfFileDrop
@@ -144,6 +146,7 @@ export function ApplicantDocumentEditor({
             : currentName(application.documents, "registration")
         }
         required={false}
+        compact
         onFile={setRegistration}
       />
       {error ? (
@@ -158,7 +161,7 @@ export function ApplicantDocumentEditor({
       ) : null}
       <Button
         type="button"
-        color="cyan"
+        color="purple"
         className={submitClasses}
         disabled={pending}
         onClick={() => void save()}

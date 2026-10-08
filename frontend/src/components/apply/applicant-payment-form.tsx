@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { dashboardActionTargetClasses } from "@/lib/site/dashboard-surface"
 import {
   submitApplicantPayment,
   type ApplicantPayment,
@@ -13,7 +14,7 @@ const formClasses = "flex flex-col gap-4"
 const fieldClasses = "flex flex-col gap-2"
 const helpClasses = "font-sans text-xs leading-relaxed text-prelude"
 const errorClasses = "font-sans text-sm text-rose-glow"
-const buttonClasses = "w-fit px-5"
+const buttonClasses = `w-fit px-5 ${dashboardActionTargetClasses}`
 
 const DRIVE_HOSTS = ["drive.google.com", "docs.google.com"]
 

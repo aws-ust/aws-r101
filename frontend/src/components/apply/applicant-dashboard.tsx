@@ -3,48 +3,35 @@
 import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ApplicantDashboardContent } from "@/components/apply/applicant-dashboard-content"
+import {
+  ApplicantDashboardHeaderSkeleton,
+  ApplicantDashboardSkeleton,
+} from "@/components/apply/applicant-dashboard-skeleton"
+import type { InitialApplicantPayment } from "@/components/apply/use-applicant-payment"
+import { SectionHeader } from "@/components/shared/section-header"
 import { ApiError } from "@/lib/api/client"
 import {
   getApplicantApplication,
   updateApplicantChoices,
   type ApplicantApplication,
 } from "@/lib/api/applicant"
-import {
-  ApplicantDashboardHeaderSkeleton,
-  ApplicantDashboardSkeleton,
-} from "@/components/apply/applicant-dashboard-skeleton"
-import { SectionHeader } from "@/components/shared/section-header"
-import { glassPanelClasses } from "@/lib/site/surface"
+import { applicantDashboardState } from "@/lib/apply/dashboard-state"
+import { dashboardPanelClasses, dashboardTitleClasses } from "@/lib/site/dashboard-surface"
+import { cn } from "@/lib/utils"
 
-const panelClasses = `${glassPanelClasses} min-w-0 w-full max-w-full overflow-x-clip px-4 py-8 md:px-10`
-const missingClasses = "mt-8 font-sans text-sm text-prelude"
-
-function ApplicantDashboardSectionHeader({ resultsReleased }: { resultsReleased: boolean }) {
-  return (
-    <SectionHeader
-      eyebrow="// APPLICANT DASHBOARD"
-      title={resultsReleased ? "Your Results" : "Your application"}
-      titleClassName="max-w-none text-balance"
-      subtitle={
-        resultsReleased
-          ? undefined
-          : "Review what you submitted and update committee choices, documents, or your interview while recruitment week is open."
-      }
-    />
-  )
-}
+// Header, then one column of solid sections in a fixed order.
+const stackClasses = "flex min-w-0 flex-col gap-4"
+const missingClasses = cn(dashboardPanelClasses, "px-5 py-5 font-sans text-sm text-blue-chalk sm:px-6")
+const EYEBROW = "// APPLICANT DASHBOARD"
 
 type ApplicantDashboardProps = {
   initialApplication?: ApplicantApplication | null
+  initialPayment?: InitialApplicantPayment
 }
 
-export function ApplicantDashboard({
-  initialApplication = null,
-}: ApplicantDashboardProps) {
+export function ApplicantDashboard({ initialApplication = null, initialPayment = null }: ApplicantDashboardProps) {
   const router = useRouter()
-  const [application, setApplication] = useState<ApplicantApplication | null>(
-    initialApplication,
-  )
+  const [application, setApplication] = useState<ApplicantApplication | null>(initialApplication)
   const [loading, setLoading] = useState(initialApplication === null)
   const [error, setError] = useState("")
   const [saveError, setSaveError] = useState("")
@@ -64,14 +51,10 @@ export function ApplicantDashboard({
       .catch((err: unknown) => {
         if (cancelled) return
         if (err instanceof ApiError && err.status === 401) {
-          setError(
-            "Your session expired. Open the application status page to sign in again."
-          )
+          setError("Your session expired. Open the application status page to sign in again.")
           return
         }
-        setError(
-          err instanceof Error ? err.message : "Could not load your application."
-        )
+        setError(err instanceof Error ? err.message : "Could not load your application.")
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -81,12 +64,7 @@ export function ApplicantDashboard({
     }
   }, [])
 
-  async function onSave(input: {
-    choices: { positionId: string; preferenceRank: 1 | 2 }[]
-    slotId?: string
-    portfolioUrl?: string
-    githubUrl?: string
-  }) {
+  async function onSave(input: Parameters<typeof updateApplicantChoices>[0]) {
     setSaveError("")
     setSaveSuccess("")
     setPending(true)
@@ -100,21 +78,16 @@ export function ApplicantDashboard({
         router.replace("/apply/status")
         return
       }
-      setSaveError(
-        err instanceof Error ? err.message : "Could not update committee choices."
-      )
+      setSaveError(err instanceof Error ? err.message : "Could not update committee choices.")
     } finally {
       setPending(false)
     }
   }
 
-  const handlePreviewPositionIdChange = useCallback(
-    (positionId: string | undefined) => {
-      setPreviewPositionId(positionId)
-      setPreviewSlotId("")
-    },
-    [],
-  )
+  const handlePreviewPositionIdChange = useCallback((positionId: string | undefined) => {
+    setPreviewPositionId(positionId)
+    setPreviewSlotId("")
+  }, [])
 
   if (loading) {
     return (
@@ -128,31 +101,41 @@ export function ApplicantDashboard({
   if (error || !application) {
     return (
       <>
-        <ApplicantDashboardSectionHeader resultsReleased={false} />
-        <p className={missingClasses}>{error || "Application not found."}</p>
+        <SectionHeader eyebrow={EYEBROW} title="Your application" titleClassName={dashboardTitleClasses} level="h1" />
+        <p className={missingClasses} role="alert">
+          {error || "Application not found."}
+        </p>
       </>
     )
   }
 
-  const resultsReleased = Boolean(application.result)
+  const state = applicantDashboardState(application)
 
   return (
     <>
-      <ApplicantDashboardSectionHeader resultsReleased={resultsReleased} />
-    <section className={panelClasses}>
-      <ApplicantDashboardContent
-        application={application}
-        pending={pending}
-        saveError={saveError}
-        saveSuccess={saveSuccess}
-        previewPositionId={previewPositionId}
-        previewSlotId={previewSlotId}
-        onPreviewSlotIdChange={setPreviewSlotId}
-        onPreviewPositionIdChange={handlePreviewPositionIdChange}
-        onSave={onSave}
-        onApplicationUpdated={setApplication}
+      <SectionHeader
+        eyebrow={EYEBROW}
+        title={state.title}
+        subtitle={state.subtitle}
+        titleClassName={dashboardTitleClasses}
+        level="h1"
       />
-    </section>
+      <div className={stackClasses}>
+        <ApplicantDashboardContent
+          application={application}
+          state={state}
+          initialPayment={initialPayment}
+          pending={pending}
+          saveError={saveError}
+          saveSuccess={saveSuccess}
+          previewPositionId={previewPositionId}
+          previewSlotId={previewSlotId}
+          onPreviewSlotIdChange={setPreviewSlotId}
+          onPreviewPositionIdChange={handlePreviewPositionIdChange}
+          onSave={onSave}
+          onApplicationUpdated={setApplication}
+        />
+      </div>
     </>
   )
 }

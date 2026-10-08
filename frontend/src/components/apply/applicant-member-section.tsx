@@ -1,27 +1,29 @@
 "use client"
 
-import { ApplicantGroupLinks } from "@/components/apply/applicant-group-links"
+import { ApplicantSection } from "@/components/apply/applicant-section"
 import { MemberIdCard } from "@/components/apply/member-id-card"
-import type { ApplicantApplication, ApplicantPayment, MemberCard } from "@/lib/api/applicant"
-import { glassPanelClasses } from "@/lib/site/surface"
+import type { ApplicantApplication, MemberCard } from "@/lib/api/applicant"
+import { validThroughLabel } from "@/lib/members/id-card"
 
-const panelClasses = `${glassPanelClasses} mt-6 rounded-[22px] px-5 py-6`
-const eyebrowClasses = "font-mono text-[10px] uppercase tracking-[0.16em] text-aquamarine"
-const titleClasses = "mt-2 font-sans text-2xl font-bold text-blue-chalk"
-const cardAreaClasses = "mt-6 flex justify-center"
+// Block-level, so the card's max-w-full measures the panel, not itself.
+const cardAreaClasses = "min-w-0 py-2"
 
 type MemberSectionProps = {
-  payment: ApplicantPayment
   card: MemberCard
   application: Pick<ApplicantApplication, "firstName" | "lastName" | "studentNumber" | "section">
   onCardChange: (card: MemberCard) => void
+  milestone: boolean
 }
 
-export function ApplicantMemberSection({ payment, card, application, onCardChange }: MemberSectionProps) {
+export function ApplicantMemberSection({ card, application, onCardChange, milestone }: MemberSectionProps) {
   return (
-    <section className={panelClasses} aria-labelledby="member-id-title">
-      <p className={eyebrowClasses}>Membership</p>
-      <h2 id="member-id-title" className={titleClasses}>Official Digital Membership ID</h2>
+    <ApplicantSection
+      area="MEMBERSHIP"
+      titleId="member-id-title"
+      title="Official Digital Membership ID"
+      status={`Member ID ${card.memberId} · valid through ${validThroughLabel(card.recruitmentYear)}`}
+      milestone={milestone}
+    >
       <div className={cardAreaClasses}>
         <MemberIdCard
           card={card}
@@ -32,12 +34,6 @@ export function ApplicantMemberSection({ payment, card, application, onCardChang
           onCardChange={onCardChange}
         />
       </div>
-      <ApplicantGroupLinks
-        membersGroupLink={payment.membersGroupLink}
-        committeeChatLink={payment.committeeChatLink}
-        committeeName={payment.committeeName}
-        coreTeamChatLink={payment.coreTeamChatLink}
-      />
-    </section>
+    </ApplicantSection>
   )
 }
