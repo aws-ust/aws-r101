@@ -237,8 +237,10 @@ type above are unchanged, but the working areas differ from the public site.
   the old `/admin/hr/membership` redirects to the review tab). A status strip
   of counts in work order (Pending verification first, Eligible last) filters
   the list; only a pending count above zero is aquamarine. Tabs: To review
-  (pending receipts, oldest first), All payments (Members toolbar and
-  filters), Setup (period, amount and GCash QRs). Export, Retry Emails and
+  (pending receipts, oldest first) and All payments (Members toolbar and
+  filters). The period, amount and GCash QRs live on their own page,
+  Payment Setup (`/admin/hr/payments/setup`, its own sidebar entry), and
+  Payments points to it while the period or amount is missing. Export, Retry Emails and
   Release Confirmations sit beside the tabs; Release always confirms with the
   count. A row opens a review panel, docked and sticky from 1280px and a sheet
   below: facts, every submission with a large mono reference and copy, then
@@ -246,6 +248,13 @@ type above are unchanged, but the working areas differ from the public site.
   new deadline. A decision moves to the next receipt and focuses it; ↑ / ↓
   and Esc work unless a field, menu or picker has the key. Rows lay out by
   the table's own width (container queries).
+- **HR sidebar.** Grouped by what the work is, not by page: Overview alone
+  at the top; Recruitment (Applications, Results, Archive); Membership
+  (Members, Payments, Community Links); Setup (Recruitment Setup, Committees,
+  Payment Setup) pinned to the foot, since configuration is visited a few
+  times a season. Every group below Overview is set off by a hairline. Rows are compact (36px, 44px on touch); the only lit things are the
+  current page's pill and its aquamarine icon. Navigation lives in
+  `frontend/src/components/hr/hr-navigation.ts`.
 - **Applicant dashboard.** One column of solid sections in a fixed order:
   identity, result or application (choices, interview, edit choices),
   groups, payment, membership ID. The page title is the h1 and its subtitle
