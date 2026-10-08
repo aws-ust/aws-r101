@@ -19,6 +19,7 @@ import {
   positions,
   recruitmentWindows,
   interviewWindows,
+  users,
 } from "./db/schema";
 import { originHeaders } from "./test-support/request";
 
@@ -61,9 +62,11 @@ let slotA1Id = "";
 let slotA2Id = "";
 let slotB1Id = "";
 let closedSlotId = "";
+const hrEmail = `scheduling-hr-${runId}@aws-ust.org`;
 
 after(async () => {
   try {
+    await db.delete(users).where(eq(users.email, hrEmail));
     await db.delete(applicants).where(inArray(applicants.id, applicantIds));
     await db
       .delete(committees)
@@ -203,7 +206,15 @@ test("interview scheduling backend", async (t) => {
     }),
   );
 
-  hrToken = (await signToken("scheduling-hr@aws-ust.org")).token;
+  // HR routes load the user, so the token needs a real HR account behind it.
+  await db.insert(users).values({
+    email: hrEmail,
+    passwordHash: "x",
+    firstName: "Scheduling",
+    lastName: "HR",
+    role: "hr",
+  });
+  hrToken = (await signToken(hrEmail)).token;
   for (let index = 0; index < applicationIds.length; index += 1) {
     applicantTokens.push(
       (

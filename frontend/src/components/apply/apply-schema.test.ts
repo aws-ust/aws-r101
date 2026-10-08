@@ -47,12 +47,13 @@ test("apply schema rejects 10,000,001-byte PDFs with the existing message", () =
   if (!result.success) assert.ok(result.error.issues.some((issue) => issue.message === "Each PDF must be 10 MB or smaller."))
 })
 
-test("apply schema validates document names against the applicant last name", () => {
+// The file-name check (CV_lastname.pdf, RegForm_lastname.pdf) is off on purpose
+// (commit 336283f, "remove faulty form validation muna"). Any PDF name is accepted.
+test("apply schema does not enforce document file names", () => {
   const values = validForm()
   values.upload.registration = file("registration.pdf")
   const result = applySchema.safeParse(values)
-  assert.equal(result.success, false)
-  if (!result.success) assert.ok(result.error.issues.some((issue) => issue.message.includes("RegForm_Lastname.pdf")))
+  assert.equal(result.success, true, result.success ? "" : JSON.stringify(result.error.issues))
 })
 
 test("apply schema accepts Member-only applications without choices or interview slots", () => {
