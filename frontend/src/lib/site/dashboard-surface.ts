@@ -16,3 +16,6 @@ export const dashboardTitleClasses = "max-w-none text-balance text-2xl md:text-3
 
 /** 44px touch targets on coarse pointers, compact on mouse and trackpad. */
 export const dashboardRowTargetClasses = "min-h-9 pointer-coarse:min-h-11"
+
+/** Buttons keep their size on desktop and grow to 44px on touch screens. */
+export const dashboardActionTargetClasses = "pointer-coarse:min-h-11"

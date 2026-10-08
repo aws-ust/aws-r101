@@ -18,6 +18,8 @@ type SectionHeaderProps = {
   subtitle?: string
   className?: string
   titleClassName?: string
+  /** h1 when this is the page's own title, as on the dashboards. */
+  level?: "h1" | "h2"
 }
 
 export function SectionHeader({
@@ -26,11 +28,12 @@ export function SectionHeader({
   subtitle,
   className,
   titleClassName,
+  level: Heading = "h2",
 }: SectionHeaderProps) {
   return (
     <div className={cn("flex flex-col gap-3", className)}>
       {eyebrow ? <p className={eyebrowClasses}>{eyebrow}</p> : null}
-      <h2 className={cn(titleClasses, titleClassName)}>{title}</h2>
+      <Heading className={cn(titleClasses, titleClassName)}>{title}</Heading>
       {subtitle ? <p className={subtitleClasses}>{subtitle}</p> : null}
     </div>
   )
