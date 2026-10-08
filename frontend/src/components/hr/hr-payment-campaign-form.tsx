@@ -15,7 +15,7 @@ import {
 import { formatSubheaderLabel } from "@/lib/site/button-label"
 import { subheaderLabelClasses } from "@/lib/site/surface"
 
-const gridClasses = "grid gap-4 md:grid-cols-2"
+const gridClasses = "grid gap-4 @sm:grid-cols-2"
 const fieldClasses = "flex flex-col gap-2"
 const errorClasses = "mt-3 font-sans text-sm text-rose-glow"
 

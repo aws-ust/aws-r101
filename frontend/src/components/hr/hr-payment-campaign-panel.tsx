@@ -9,17 +9,19 @@ import {
   openPaymentCampaign,
   type PaymentCampaign,
 } from "@/lib/api/payments"
-import { dashboardPanelClasses } from "@/lib/site/dashboard-surface"
+import { dashboardActionTargetClasses, dashboardPanelClasses } from "@/lib/site/dashboard-surface"
 import { cn } from "@/lib/utils"
 
-// Solid like every dashboard working surface.
-const panelClasses = cn(dashboardPanelClasses, "px-5 py-5 sm:px-6 sm:py-6")
-const headingRowClasses = "flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between"
+// Two jobs side by side on wide screens: when payments run (a narrow column)
+// and what applicants pay and where (the wide one). Stacked below xl.
+const layoutClasses = "grid items-start gap-4 xl:grid-cols-[minmax(20rem,24rem)_minmax(0,1fr)]"
+// Solid like every dashboard working surface; @container lets the forms
+// inside lay out by the panel's own width.
+const panelClasses = cn(dashboardPanelClasses, "@container min-w-0 px-5 py-5 sm:px-6 sm:py-6")
 const titleClasses = "font-sans text-lg font-bold text-blue-chalk"
 const bodyClasses = "mt-1 font-sans text-sm leading-relaxed text-prelude"
-const buttonRowClasses = "flex flex-wrap gap-2"
-const groupClasses = "mt-8 border-t border-blue-chalk/10 pt-6"
-const groupTitleClasses = "font-sans text-base font-semibold text-blue-chalk"
+const toggleClasses = cn("mt-4 w-full sm:w-fit", dashboardActionTargetClasses)
+const formClasses = "mt-6"
 
 type Feedback = { type: "success" | "error"; message: string }
 type CampaignPanelProps = {
@@ -34,52 +36,53 @@ type CampaignPanelProps = {
 
 export function HrPaymentCampaignPanel(props: CampaignPanelProps) {
   return (
-    <section className={panelClasses}>
-      <PaymentCampaignHeader {...props} />
-      <PaymentCampaignForms {...props} />
-    </section>
-  )
-}
-
-function PaymentCampaignHeader({ campaign, role, pending, onCampaign, onPending, onFeedback }: CampaignPanelProps) {
-  const canManagePeriod = role === "hr" || role === "admin"
-  return (
-    <div className={headingRowClasses}>
-      <div>
-        <h2 className={titleClasses}>Payment Period</h2>
-        <p className={bodyClasses}>{campaignStatus(campaign)}</p>
-      </div>
-      {canManagePeriod && campaign ? (
-        <div className={buttonRowClasses}>
-          <Button type="button" color={campaign.isOpen ? "danger" : "cyan"} disabled={pending} onClick={() => void updatePaymentPeriod(!campaign.isOpen, campaign, onCampaign, onPending, onFeedback)}>
-            {campaign.isOpen ? "Close payments" : "Open and send invitations"}
-          </Button>
-        </div>
-      ) : null}
+    <div className={layoutClasses}>
+      <PaymentPeriodPanel {...props} />
+      <PaymentDetailsPanel {...props} />
     </div>
   )
 }
 
-function PaymentCampaignForms({ campaign, role, onCampaign, onFeedback }: CampaignPanelProps) {
-  const canManagePeriod = role === "hr" || role === "admin"
-  const canManageDetails = role === "hr" || role === "admin"
+function PaymentPeriodPanel({ campaign, role, pending, onCampaign, onPending, onFeedback }: CampaignPanelProps) {
+  const canManage = role === "hr" || role === "admin"
   return (
-    <>
-      {canManagePeriod ? (
-        <div className="mt-6">
+    <section className={panelClasses} aria-labelledby="payment-period-title">
+      <h2 id="payment-period-title" className={titleClasses}>Payment Period</h2>
+      <p className={bodyClasses}>{campaignStatus(campaign)}</p>
+      {canManage && campaign ? (
+        <Button
+          type="button"
+          color={campaign.isOpen ? "danger" : "cyan"}
+          className={toggleClasses}
+          disabled={pending}
+          onClick={() => void updatePaymentPeriod(!campaign.isOpen, campaign, onCampaign, onPending, onFeedback)}
+        >
+          {campaign.isOpen ? "Close payments" : "Open and send invitations"}
+        </Button>
+      ) : null}
+      {canManage ? (
+        <div className={formClasses}>
           <HrPaymentScheduleForm campaign={campaign} onSaved={(saved) => { onCampaign(saved); onFeedback({ type: "success", message: "Payment period saved." }) }} />
         </div>
       ) : null}
-      {canManageDetails ? (
-        <div className={groupClasses}>
-          <h3 className={groupTitleClasses}>Amount and GCash QR codes</h3>
-          <p className={bodyClasses}>Applicants see the amount and the QR for how they pay.</p>
-          <div className="mt-4">
-          {campaign ? <HrPaymentDetailsForm campaign={campaign} onSaved={(saved) => { onCampaign(saved); onFeedback({ type: "success", message: "Payment amount and accounts saved." }) }} /> : <p className={bodyClasses}>Save the payment period before adding the amount and official payment accounts.</p>}
-          </div>
-        </div>
-      ) : null}
-    </>
+    </section>
+  )
+}
+
+function PaymentDetailsPanel({ campaign, role, onCampaign, onFeedback }: CampaignPanelProps) {
+  if (role !== "hr" && role !== "admin") return null
+  return (
+    <section className={panelClasses} aria-labelledby="payment-details-title">
+      <h2 id="payment-details-title" className={titleClasses}>Amount and GCash QR codes</h2>
+      <p className={bodyClasses}>Applicants see the amount and the QR for how they pay.</p>
+      <div className={formClasses}>
+        {campaign ? (
+          <HrPaymentDetailsForm campaign={campaign} onSaved={(saved) => { onCampaign(saved); onFeedback({ type: "success", message: "Payment amount and accounts saved." }) }} />
+        ) : (
+          <p className={bodyClasses}>Save the payment period before adding the amount and official payment accounts.</p>
+        )}
+      </div>
+    </section>
   )
 }
 
