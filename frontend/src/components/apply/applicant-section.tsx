@@ -11,7 +11,7 @@ export const applicantSectionPanelClasses = cn(dashboardPanelClasses, "min-w-0 p
 export const applicantSectionAreaClasses = "font-mono text-xs uppercase tracking-[0.14em] text-prelude"
 export const applicantSectionTitleClasses = "mt-2 font-sans text-xl font-bold text-balance break-words text-blue-chalk"
 export const applicantSectionStatusClasses =
-  "mt-1.5 max-w-[68ch] font-sans text-sm leading-relaxed text-pretty text-prelude"
+  "mt-1.5 font-sans text-sm leading-relaxed text-pretty text-prelude"
 const bodyClasses = "mt-5"
 
 // Milestone: the newest thing the applicant earned (their committee, their ID)
@@ -24,7 +24,7 @@ const shadeClasses = "absolute inset-0 -z-10 bg-linear-to-r from-haiti/80 via-ha
 // Clears Espi on the right; the status keeps a reading measure.
 const bandTextClasses = "pr-24 sm:pr-48"
 const bandAreaClasses = "font-mono text-xs uppercase tracking-[0.14em] text-blue-chalk/80"
-const bandStatusClasses = "mt-1.5 max-w-[60ch] font-sans text-sm leading-relaxed text-pretty text-blue-chalk/85"
+const bandStatusClasses = "mt-1.5 font-sans text-sm leading-relaxed text-pretty text-blue-chalk/85"
 const espiClasses =
   "espi-rise pointer-events-none absolute -bottom-6 right-2 h-auto w-28 drop-shadow-[0_8px_18px_rgb(23_15_51/0.45)] sm:right-6 sm:w-36"
 const milestoneBodyClasses = "px-5 pb-5 pt-5 sm:px-6 sm:pb-6"

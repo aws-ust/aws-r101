@@ -14,7 +14,7 @@ import type { InterviewSeasonBounds } from "@/lib/season/interview"
 
 // Same frame as every dashboard section. The status line says where the
 // applicant stands: their booked slot, or that they still need one.
-const hintClasses = "mt-4 max-w-[68ch] font-sans text-sm leading-relaxed text-pretty text-prelude"
+const hintClasses = "mt-4 font-sans text-sm leading-relaxed text-pretty text-prelude"
 const committeeClasses = "mt-1 font-mono text-xs text-prelude"
 const bookingActionsClasses = "mt-3 flex flex-wrap items-center gap-3"
 const lockClasses =

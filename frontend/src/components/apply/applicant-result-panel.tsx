@@ -7,7 +7,7 @@ import { formatDisplayDate } from "@/lib/datetime/display"
 
 const AREA = "FINAL RESULT"
 const TITLE_ID = "application-result-title"
-const offerBodyClasses = "max-w-[68ch] font-sans text-sm leading-relaxed text-pretty text-blue-chalk"
+const offerBodyClasses = "font-sans text-sm leading-relaxed text-pretty text-blue-chalk"
 
 function releasedOn(result: ApplicantResult) {
   return formatDisplayDate(new Date(result.releasedAt), { month: "long", day: "numeric", year: "numeric" })

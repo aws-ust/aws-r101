@@ -13,7 +13,7 @@ const labelClasses = "font-sans text-xs text-prelude"
 const valueClasses = "mt-0.5 min-w-0 break-words font-sans text-sm text-blue-chalk"
 const linkClasses =
   "text-blue-chalk underline decoration-blue-chalk/35 underline-offset-4 transition-colors hover:text-aquamarine hover:decoration-aquamarine"
-const motivationClasses = "mt-0.5 max-w-[68ch] font-sans text-sm leading-relaxed text-pretty whitespace-pre-line text-blue-chalk"
+const motivationClasses = "mt-0.5 font-sans text-sm leading-relaxed text-pretty whitespace-pre-line text-blue-chalk"
 
 function Fact({ label, children, wide = false }: { label: string; children: ReactNode; wide?: boolean }) {
   return (
