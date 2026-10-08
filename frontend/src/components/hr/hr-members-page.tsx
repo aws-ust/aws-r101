@@ -23,7 +23,7 @@ import { hrPageShellClasses } from "@/lib/site/surface"
 const exportClasses = "h-12 w-full gap-2 px-5 font-mono text-xs lg:w-auto"
 const paymentsLinkClasses =
   "inline-flex min-h-11 items-center rounded-md px-1 font-sans text-sm text-blue-chalk underline underline-offset-4 outline-none hover:text-aquamarine focus-visible:ring-2 focus-visible:ring-aquamarine/60"
-const contentClasses = "mt-6"
+const contentClasses = "mt-6 flex flex-col gap-4"
 const ROLE_ORDER: MemberFilter[] = ["all", "eb", "ea", "director", "staff", "general"]
 const UNPAID_ORDER: UnpaidFilter[] = [
   "all",
