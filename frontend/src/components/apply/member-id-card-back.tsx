@@ -1,37 +1,49 @@
 import Image from "next/image"
-import { MemberIdCloud } from "@/components/apply/member-id-cloud"
+import { MemberIdBarcode } from "@/components/apply/member-id-barcode"
 
-// The brand side: Espi on a flat white cloud with the wordmark, centred as one
-// group, and flat purple clouds around them. No gradients.
+// Night sky with the cloud wordmark, and the member ID as a barcode at the
+// foot. Sizes are cqw of the card (the nearest @container), measured from the
+// 1183px-wide design comp, so the face scales as one picture. The face fills
+// its parent; the flip and shadow belong to whoever places it.
 const backClasses =
-  "absolute inset-0 flex flex-col items-center justify-center overflow-hidden rounded-[22px] bg-haiti px-6 py-8 text-center text-white shadow-xl backface-hidden rotate-y-180"
-const heroClasses = "relative grid w-full place-items-center pt-2"
-const espiCloudClasses = "absolute bottom-1 h-28 w-[92%]"
-const espiClasses = "relative h-auto w-[82%]"
-const brandClasses = "relative mt-6 flex flex-col gap-2"
-const wordmarkClasses = "font-sans text-xl font-extrabold tracking-[0.04em]"
-const taglineClasses = "font-mono text-[10px] tracking-[0.28em] text-prelude"
+  "absolute inset-0 overflow-hidden rounded-[1.7cqw] border-[0.4cqw] border-[#3f2794] bg-[#2a1670] text-white"
+const backgroundClasses = "object-cover"
+const logoClasses = "absolute left-1/2 top-[20.5%] h-auto w-[66cqw] -translate-x-1/2"
+const footerClasses = "absolute inset-x-0 bottom-[6.5%] flex flex-col items-center gap-[1.5cqw]"
+const barcodeClasses = "h-[13.3cqw] w-[54.7cqw]"
+const memberIdClasses = "text-[2.6cqw] font-bold leading-none tracking-[0.02em] tabular-nums"
 
-const cloudFill = "bg-daisy-bush/70"
-const cloudTopLeftClasses = "absolute -left-6 top-6 h-10 w-24"
-const cloudTopRightClasses = "absolute -right-8 top-24 h-12 w-28"
-const cloudLowLeftClasses = "absolute -left-4 bottom-24 h-8 w-20"
-const cloudBottomRightClasses = "absolute -right-6 bottom-8 h-10 w-24"
+type MemberIdCardBackProps = {
+  memberId: string
+  /** Full-resolution, eagerly loaded artwork for saving the card as an image. */
+  forExport?: boolean
+}
 
-export function MemberIdCardBack() {
+export function MemberIdCardBack({ memberId, forExport = false }: MemberIdCardBackProps) {
+  const loading = forExport ? "eager" : undefined
+
   return (
     <div className={backClasses}>
-      <MemberIdCloud className={cloudTopLeftClasses} fillClassName={cloudFill} />
-      <MemberIdCloud className={cloudTopRightClasses} fillClassName={cloudFill} />
-      <MemberIdCloud className={cloudLowLeftClasses} fillClassName={cloudFill} />
-      <MemberIdCloud className={cloudBottomRightClasses} fillClassName={cloudFill} />
-      <div className={heroClasses}>
-        <MemberIdCloud className={espiCloudClasses} fillClassName="bg-white" />
-        <Image src="/espi.png" alt="Espi, the AWS Builders – UST mascot" width={1080} height={1080} className={espiClasses} />
-      </div>
-      <div className={brandClasses}>
-        <p className={wordmarkClasses}>AWS BUILDERS – UST</p>
-        <p className={taglineClasses}>IT’S ALWAYS DAY ONE</p>
+      <Image
+        src="/member-id/back-bg.png"
+        alt=""
+        fill
+        sizes={forExport ? "1183px" : "24rem"}
+        loading={loading}
+        className={backgroundClasses}
+      />
+      <Image
+        src="/member-id/back-logo.png"
+        alt="AWS Builders – UST"
+        width={900}
+        height={540}
+        sizes={forExport ? "780px" : "16rem"}
+        loading={loading}
+        className={logoClasses}
+      />
+      <div className={footerClasses}>
+        <MemberIdBarcode value={memberId} className={barcodeClasses} />
+        <p className={memberIdClasses}>{memberId}</p>
       </div>
     </div>
   )

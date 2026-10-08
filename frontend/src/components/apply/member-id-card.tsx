@@ -3,22 +3,30 @@
 import { useState } from "react"
 import { RotateCw } from "lucide-react"
 import { MemberIdCardBack } from "@/components/apply/member-id-card-back"
-import { MemberIdCardFront } from "@/components/apply/member-id-card-front"
+import { memberIdCardFont } from "@/components/apply/member-id-card-font"
+import { MemberIdCardFront, type MemberIdCardFrontProps } from "@/components/apply/member-id-card-front"
+import { MemberIdExportStage } from "@/components/apply/member-id-export-stage"
+import { MemberIdSaveMenu } from "@/components/apply/member-id-save-menu"
 import { MemberPhotoButton } from "@/components/apply/member-photo-button"
 import { MemberPhotoCropDialog } from "@/components/apply/member-photo-crop-dialog"
+import { useMemberIdExport } from "@/components/apply/use-member-id-export"
 import { useMemberPhotoUpload } from "@/components/apply/use-member-photo-upload"
 import { Button } from "@/components/ui/button"
 import type { MemberCard } from "@/lib/api/applicant"
+import { academicYearLabel, issuedOnLabel, validThroughLabel } from "@/lib/members/id-card"
 import { cn } from "@/lib/utils"
 
 const wrapperClasses = "flex flex-col items-center gap-4"
-// Portrait CR80 ID proportions (54 x 85.6 mm), at a comfortable on-screen width.
-const sceneClasses = "relative aspect-[54/85.6] w-[22rem] max-w-full perspective-distant"
+// The design comp's proportions (1183 x 1664). The scene is the size
+// container: both faces size everything in cqw so they scale as one picture.
+const sceneClasses = "@container relative aspect-[1183/1664] w-[24rem] max-w-full perspective-distant"
 const flipperBaseClasses =
   "relative size-full transition-transform duration-700 ease-in-out transform-3d motion-reduce:transition-none"
 const flippedClasses = "rotate-y-180"
+const faceSlotClasses = "absolute inset-0 rounded-[1.7cqw] shadow-xl backface-hidden"
+const backSlotClasses = "rotate-y-180"
 // Invisible click target over the whole card, so a mouse click anywhere flips it.
-const flipOverlayClasses = "absolute inset-0 z-10 cursor-pointer rounded-[24px] outline-none"
+const flipOverlayClasses = "absolute inset-0 z-10 cursor-pointer rounded-[1.7cqw] outline-none"
 const flipButtonClasses = "gap-2 px-4"
 const actionsClasses = "flex flex-wrap items-center justify-center gap-3"
 const errorClasses = "text-center font-sans text-xs text-rose-glow"
@@ -32,10 +40,6 @@ type MemberIdCardProps = {
   onCardChange: (card: MemberCard) => void
 }
 
-function academicYearLabel(recruitmentYear: number) {
-  return `${recruitmentYear}-${recruitmentYear + 1}`
-}
-
 export function MemberIdCard({
   card,
   firstName,
@@ -47,6 +51,22 @@ export function MemberIdCard({
   const [flipped, setFlipped] = useState(false)
   const [chosenPhoto, setChosenPhoto] = useState<{ src: string; name: string } | null>(null)
   const photo = useMemberPhotoUpload(onCardChange)
+  const { stageRef, job: exportJob, pending: saving, error: saveError, save } = useMemberIdExport(
+    card.memberId,
+    card.photoUrl,
+  )
+  const front: Omit<MemberIdCardFrontProps, "forExport"> = {
+    fullName: `${firstName} ${lastName}`,
+    studentNumber: studentNumber ?? "—",
+    section: section ?? "—",
+    position: card.position,
+    memberId: card.memberId,
+    academicYear: academicYearLabel(card.recruitmentYear),
+    issuedOn: issuedOnLabel(card.issuedAt),
+    validThrough: validThroughLabel(card.recruitmentYear),
+    photoUrl: card.photoUrl,
+  }
+  const error = photo.error ?? saveError
 
   function closeCrop() {
     if (chosenPhoto) URL.revokeObjectURL(chosenPhoto.src)
@@ -55,19 +75,14 @@ export function MemberIdCard({
 
   return (
     <div className={wrapperClasses}>
-      <div className={sceneClasses}>
+      <div className={cn(sceneClasses, memberIdCardFont.className)}>
         <div className={cn(flipperBaseClasses, flipped && flippedClasses)}>
-          <MemberIdCardFront
-            fullName={`${firstName} ${lastName}`.toUpperCase()}
-            studentNumber={studentNumber ?? "—"}
-            section={section ?? "—"}
-            position={card.position}
-            memberId={card.memberId}
-            academicYear={academicYearLabel(card.recruitmentYear)}
-            issuedAt={card.issuedAt}
-            photoUrl={card.photoUrl}
-          />
-          <MemberIdCardBack />
+          <div className={faceSlotClasses}>
+            <MemberIdCardFront {...front} />
+          </div>
+          <div className={cn(faceSlotClasses, backSlotClasses)}>
+            <MemberIdCardBack memberId={card.memberId} />
+          </div>
         </div>
         {/* Mouse shortcut only: the Show back button below is the keyboard and
             screen-reader control, so this stays out of the tab order. */}
@@ -95,8 +110,16 @@ export function MemberIdCard({
           <RotateCw className="size-4" aria-hidden />
           {flipped ? "Show front" : "Show back"}
         </Button>
+        <MemberIdSaveMenu pending={saving} onSave={(side) => void save(side)} />
       </div>
-      {photo.error ? <p className={errorClasses} role="alert">{photo.error}</p> : null}
+      {error ? <p className={errorClasses} role="alert">{error}</p> : null}
+      {exportJob ? (
+        <MemberIdExportStage
+          ref={stageRef}
+          side={exportJob.side}
+          front={{ ...front, photoUrl: exportJob.photoUrl }}
+        />
+      ) : null}
       {chosenPhoto ? (
         <MemberPhotoCropDialog
           imageSrc={chosenPhoto.src}

@@ -1,6 +1,10 @@
 /** Saves text as a CSV file in the browser, with a BOM so Excel reads UTF-8 names correctly. */
 export function downloadCsv(fileName: string, csv: string) {
-  const blob = new Blob(["﻿", csv], { type: "text/csv;charset=utf-8" })
+  downloadBlob(fileName, new Blob(["﻿", csv], { type: "text/csv;charset=utf-8" }))
+}
+
+/** Hands a file to the browser's download flow. */
+export function downloadBlob(fileName: string, blob: Blob) {
   const url = URL.createObjectURL(blob)
   const link = document.createElement("a")
   link.href = url

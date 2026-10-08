@@ -5,6 +5,9 @@ import { membersToCsv, unpaidToCsv } from "./csv"
 import { buildMemberEntries, filterMemberEntries, splitByMemberId } from "./directory"
 import { buildCommitteeGroups, GENERAL_GROUP } from "./groups"
 import { buildUnpaidEntries, countByUnpaidStatus, filterUnpaidEntries } from "./unpaid"
+import { code128Bars } from "./barcode"
+import { academicYearLabel, idCardValueSize, issuedOnLabel, validThroughLabel } from "./id-card"
+import { idCardFileName } from "./id-card-export"
 
 function member(patch: Partial<DirectoryMember>): DirectoryMember {
   return {
@@ -138,4 +141,34 @@ test("CSV exports quote cells and guard against spreadsheet formulas", () => {
   assert.ok(row.includes('"Says ""hi"", twice"'))
   const unpaid = unpaidToCsv(buildUnpaidEntries([payment({})]))
   assert.ok(unpaid.split("\r\n")[1].includes('"Awaiting payment"'))
+})
+
+test("ID card labels read the academic year, expiry and Manila issue date", () => {
+  assert.equal(academicYearLabel(2026), "2026-2027")
+  assert.equal(validThroughLabel(2026), "May 31, 2027")
+  // 20:00 UTC is already the next day in Manila.
+  assert.equal(issuedOnLabel("2026-10-27T20:00:00.000Z"), "Issued on October 28, 2026")
+  assert.equal(issuedOnLabel(null), "Issued this term")
+})
+
+test("ID card values step down a size as they get longer", () => {
+  assert.equal(idCardValueSize("AWS-2627-0189"), "lg")
+  assert.equal(idCardValueSize("Alden Alexander Olmedo"), "md")
+  assert.equal(idCardValueSize("Executive Assistant to the Chief Relations Officer"), "sm")
+  assert.equal(idCardValueSize("Executive Assistant to the Chief Technology Officer"), "xs")
+})
+
+test("ID card image files are named by member ID and side", () => {
+  assert.equal(idCardFileName("AWS-2627-0189", "front"), "AWS-2627-0189-front.png")
+  assert.equal(idCardFileName("AWS-2627-0189", "both"), "AWS-2627-0189-front-and-back.png")
+})
+
+test("ID card barcode merges adjacent dark modules into bars", () => {
+  const { bars, modules } = code128Bars("AWS-2627-0015")
+  // 11-module symbols then a 13-module stop that ends on a two-module bar.
+  assert.equal((modules - 13) % 11, 0)
+  assert.deepEqual(bars[0], { x: 0, width: 2 })
+  assert.deepEqual(bars.at(-1), { x: modules - 2, width: 2 })
+  assert.ok(bars.every((bar, index) => index === 0 || bar.x > bars[index - 1].x + bars[index - 1].width))
+  assert.deepEqual(code128Bars("ÿ"), { bars: [], modules: 0 })
 })
