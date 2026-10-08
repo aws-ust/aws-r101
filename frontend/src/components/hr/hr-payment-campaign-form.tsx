@@ -85,7 +85,7 @@ export function HrPaymentScheduleForm({ campaign, onSaved }: { campaign: Payment
         </div>
       </div>
       {error ? <p className={errorClasses} role="alert">{error}</p> : null}
-      <Button type="button" className="mt-5" disabled={pending} onClick={() => void save()}>{pending ? "Saving…" : "Save payment period"}</Button>
+      <Button type="button" color="purple" className="mt-5" disabled={pending} onClick={() => void save()}>{pending ? "Saving…" : "Save payment period"}</Button>
     </div>
   )
 }

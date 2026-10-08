@@ -9,13 +9,17 @@ import {
   openPaymentCampaign,
   type PaymentCampaign,
 } from "@/lib/api/payments"
-import { glassPanelClasses } from "@/lib/site/surface"
+import { dashboardPanelClasses } from "@/lib/site/dashboard-surface"
+import { cn } from "@/lib/utils"
 
-const panelClasses = `${glassPanelClasses} rounded-[20px] px-5 py-5`
+// Solid like every dashboard working surface.
+const panelClasses = cn(dashboardPanelClasses, "px-5 py-5 sm:px-6 sm:py-6")
 const headingRowClasses = "flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between"
 const titleClasses = "font-sans text-lg font-bold text-blue-chalk"
 const bodyClasses = "mt-1 font-sans text-sm leading-relaxed text-prelude"
 const buttonRowClasses = "flex flex-wrap gap-2"
+const groupClasses = "mt-8 border-t border-blue-chalk/10 pt-6"
+const groupTitleClasses = "font-sans text-base font-semibold text-blue-chalk"
 
 type Feedback = { type: "success" | "error"; message: string }
 type CampaignPanelProps = {
@@ -67,8 +71,12 @@ function PaymentCampaignForms({ campaign, role, onCampaign, onFeedback }: Campai
         </div>
       ) : null}
       {canManageDetails ? (
-        <div className="mt-6">
+        <div className={groupClasses}>
+          <h3 className={groupTitleClasses}>Amount and GCash QR codes</h3>
+          <p className={bodyClasses}>Applicants see the amount and the QR for how they pay.</p>
+          <div className="mt-4">
           {campaign ? <HrPaymentDetailsForm campaign={campaign} onSaved={(saved) => { onCampaign(saved); onFeedback({ type: "success", message: "Payment amount and accounts saved." }) }} /> : <p className={bodyClasses}>Save the payment period before adding the amount and official payment accounts.</p>}
+          </div>
         </div>
       ) : null}
     </>

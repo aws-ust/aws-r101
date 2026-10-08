@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 
 const sectionClasses = "mt-5 border-t border-blue-chalk/15 pt-5"
-const sectionTitleClasses = "font-sans text-sm font-semibold text-biloba-flower"
+const sectionTitleClasses = "font-sans text-sm font-semibold text-blue-chalk"
 const audienceClasses = "mt-1 font-sans text-xs text-prelude"
 const headerClasses = "mb-3"
 const rowClasses = "flex flex-col gap-4 sm:flex-row sm:items-start"
