@@ -233,6 +233,19 @@ type above are unchanged, but the working areas differ from the public site.
   ("No ID yet"). By committee nests each committee under its executive office.
   Not paid yet reads from the payments dashboard and says "Pay by" or
   "Expired". Student No. and Section show from 1400px.
+- **Payments.** One page (`/admin/hr/payments`, `?tab=review|all|setup`;
+  the old `/admin/hr/membership` redirects to the review tab). A status strip
+  of counts in work order (Pending verification first, Eligible last) filters
+  the list; only a pending count above zero is aquamarine. Tabs: To review
+  (pending receipts, oldest first), All payments (Members toolbar and
+  filters), Setup (period, amount and GCash QRs). Export, Retry Emails and
+  Release Confirmations sit beside the tabs; Release always confirms with the
+  count. A row opens a review panel, docked and sticky from 1280px and a sheet
+  below: facts, every submission with a large mono reference and copy, then
+  Verify (the one aquamarine button) or Reject / Reverse with a reason and a
+  new deadline. A decision moves to the next receipt and focuses it; ↑ / ↓
+  and Esc work unless a field, menu or picker has the key. Rows lay out by
+  the table's own width (container queries).
 - **Applicant dashboard.** One column of solid sections in a fixed order:
   identity, result or application (choices, interview, edit choices),
   groups, payment, membership ID. The page title is the h1 and its subtitle
