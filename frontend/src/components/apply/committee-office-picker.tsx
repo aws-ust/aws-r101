@@ -23,7 +23,7 @@ const triggerClasses = cn(
 )
 const triggerCopyClasses = "flex min-w-0 flex-1 flex-col gap-0.5"
 const triggerOfficeClasses = "truncate text-sm font-medium text-blue-chalk"
-const triggerCommitteeClasses = "truncate font-mono text-[0.7rem] text-prelude"
+const triggerCommitteeClasses = "truncate font-mono text-xs text-prelude"
 const triggerPlaceholderClasses = "text-sm text-prelude/70"
 const triggerIconClasses = "size-4 shrink-0 text-prelude"
 const menuClasses =
@@ -32,8 +32,8 @@ const itemHoverClasses =
   "cursor-pointer rounded-md px-2 py-2 font-sans text-sm text-blue-chalk hover:bg-biloba-flower hover:text-haiti focus:bg-biloba-flower focus:text-haiti data-highlighted:bg-biloba-flower data-highlighted:text-haiti data-open:bg-biloba-flower data-open:text-haiti data-popup-open:bg-biloba-flower data-popup-open:text-haiti"
 const officeSelectedClasses = "bg-meteorite/80"
 const committeeCopyClasses = "flex min-w-0 flex-1 flex-col gap-0.5 text-left"
-const metaClasses = "font-mono text-[0.65rem] leading-snug opacity-80"
-const closedMetaClasses = "font-mono text-[0.65rem] leading-snug text-rose-glow"
+const metaClasses = "font-mono text-xs leading-snug opacity-80"
+const closedMetaClasses = "font-mono text-xs leading-snug text-rose-glow"
 const closedItemClasses =
   "cursor-not-allowed border border-rose-blush/20 bg-rose-deep/10 opacity-70"
 const closedIconClasses = "size-3.5 shrink-0 text-rose-glow"

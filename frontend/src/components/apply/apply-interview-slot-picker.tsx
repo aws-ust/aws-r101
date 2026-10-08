@@ -23,9 +23,9 @@ import {
 } from "@/lib/season/interview"
 
 const hintClasses = "font-sans text-sm text-prelude"
-const committeeClasses = "mt-1 font-mono text-xs text-aquamarine"
+const committeeClasses = "mt-1 font-mono text-xs text-prelude"
 const errorClasses = "mt-2 font-sans text-sm text-aquamarine"
-const selectedClasses = "mt-3 font-mono text-xs text-aquamarine"
+const selectedClasses = "mt-3 font-mono text-xs text-prelude"
 
 type ApplyInterviewSlotPickerProps = {
   positionId: string
