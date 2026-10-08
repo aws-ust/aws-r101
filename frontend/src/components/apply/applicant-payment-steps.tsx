@@ -7,7 +7,7 @@ import type { ApplicantPayment } from "@/lib/api/applicant"
 import { dashboardCaptionClasses } from "@/lib/site/dashboard-surface"
 
 const stepsClasses = "flex flex-col gap-5"
-const methodGridClasses = "flex flex-wrap gap-6"
+const methodGridClasses = "flex flex-wrap justify-center gap-6"
 const noteClasses = "font-sans text-sm leading-relaxed text-pretty text-blue-chalk"
 const problemClasses = "font-sans text-sm leading-relaxed text-pretty text-rose-glow"
 
