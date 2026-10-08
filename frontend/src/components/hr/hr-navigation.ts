@@ -1,7 +1,6 @@
 import {
   Archive,
   CalendarRange,
-  ClipboardCheck,
   ClipboardList,
   IdCard,
   LayoutDashboard,
@@ -117,13 +116,8 @@ export const hrNavigationSections: HrNavigationSection[] = [
         label: "Payments",
         href: "/admin/hr/payments",
         icon: WalletCards,
-        active: (path) => path === "/admin/hr/payments",
-      },
-      {
-        label: "Verification",
-        href: "/admin/hr/membership",
-        icon: ClipboardCheck,
-        active: (path) => path.startsWith("/admin/hr/membership"),
+        // Verification merged into Payments; the old address redirects here.
+        active: (path) => path === "/admin/hr/payments" || path.startsWith("/admin/hr/membership"),
       },
       {
         label: "Community Links",

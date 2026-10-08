@@ -80,7 +80,7 @@ function candidates(overview: SeasonOverview, now: Date): Draft[] {
       detail: `${attention.paymentsToVerify} ${pick(attention.paymentsToVerify, "payment is", "payments are")} waiting for verification.`,
       state: "ready",
       actionLabel: "Verify payments",
-      href: "/admin/hr/membership",
+      href: "/admin/hr/payments?tab=review",
     })
   }
   return drafts

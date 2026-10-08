@@ -18,7 +18,7 @@ const STAGES: { key: StageKey; label: string; href: string }[] = [
   { key: "interviewBooked", label: "Interview booked", href: "/admin/hr/season" },
   { key: "decided", label: "Decided", href: "/admin/hr" },
   { key: "released", label: "Released", href: "/admin/hr/results" },
-  { key: "paymentSent", label: "Payment sent", href: "/admin/hr/membership" },
+  { key: "paymentSent", label: "Payment sent", href: "/admin/hr/payments?tab=all" },
   { key: "member", label: "Member", href: "/admin/hr/members" },
 ]
 

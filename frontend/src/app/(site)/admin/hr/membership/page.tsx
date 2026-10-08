@@ -1,5 +1,6 @@
-import { HrMembershipPaymentsPage } from "@/components/hr/hr-membership-payments-page"
+import { redirect } from "next/navigation"
 
+/** Verification now lives in Payments, on the To review tab. */
 export default function MembershipPaymentsPage() {
-  return <HrMembershipPaymentsPage />
+  redirect("/admin/hr/payments?tab=review")
 }

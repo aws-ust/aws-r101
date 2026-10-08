@@ -95,7 +95,7 @@ export function HrMembersPage() {
                 {paid ? (
                   <MembersViewSwitch view={members.view} onViewChange={members.setView} />
                 ) : (
-                  <Link href="/admin/hr/payments" className={paymentsLinkClasses}>
+                  <Link href="/admin/hr/payments?tab=all" className={paymentsLinkClasses}>
                     Open payments
                   </Link>
                 )}
@@ -113,8 +113,8 @@ export function HrMembersPage() {
               <MembersMessage
                 title="No paid members yet"
                 body="Members appear here with their Member ID once a payment is verified."
-                linkHref="/admin/hr/membership"
-                linkLabel="Open verification"
+                linkHref="/admin/hr/payments?tab=review"
+                linkLabel="Open receipts to review"
               />
             ) : null}
             {empty ? (

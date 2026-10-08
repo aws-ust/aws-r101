@@ -14,7 +14,6 @@ import {
   retryPaymentInvitationEmails,
   type PaymentCampaign,
   type PaymentDashboard,
-  type PaymentListItem,
 } from "@/lib/api/payments"
 
 export type HrPaymentFeedback = { type: "success" | "error"; message: string }
@@ -24,9 +23,10 @@ export function useHrPaymentWorkspace() {
   const [dashboard, setDashboard] = useState<PaymentDashboard | null>(null)
   const [committees, setCommittees] = useState<CommitteeApplicationStatus[]>([])
   const [role, setRole] = useState<"hr" | "admin">("hr")
-  const [selected, setSelected] = useState<PaymentListItem | null>(null)
   const [feedback, setFeedback] = useState<HrPaymentFeedback | null>(null)
   const [loading, setLoading] = useState(true)
+  // Kept apart from action feedback: a failed load must not read as "not set up".
+  const [loadError, setLoadError] = useState("")
   const [pending, setPending] = useState(false)
 
   const refresh = useCallback(async () => {
@@ -57,11 +57,7 @@ export function useHrPaymentWorkspace() {
         setCommittees(committeeRows)
       })
       .catch((caught) =>
-        setFeedback({
-          type: "error",
-          message:
-            caught instanceof Error ? caught.message : "Could not load payments.",
-        }),
+        setLoadError(caught instanceof Error ? caught.message : "Could not load payments."),
       )
       .finally(() => setLoading(false))
   }, [])
@@ -111,11 +107,10 @@ export function useHrPaymentWorkspace() {
     dashboard,
     committees,
     role,
-    selected,
-    setSelected,
     feedback,
     setFeedback,
     loading,
+    loadError,
     pending,
     setPending,
     refresh,
