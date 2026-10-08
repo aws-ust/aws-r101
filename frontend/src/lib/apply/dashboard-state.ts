@@ -49,7 +49,7 @@ function memberOnlyState(result: ApplicantResult | null): ApplicantDashboardStat
   if (result?.status === "approved") {
     return {
       chip: { label: "Member", tone: "positive" },
-      title: "Your results",
+      title: "Your Results",
       subtitle: "Your membership registration was accepted.",
     }
   }
@@ -80,7 +80,7 @@ function releasedState(result: ApplicantResult): ApplicantDashboardState {
   if (isRedirectPending(result)) {
     return {
       chip: { label: "Reply needed", tone: "action" },
-      title: "Your results",
+      title: "Your Results",
       subtitle: "Results are out. You have a placement offer to answer below.",
     }
   }
@@ -88,13 +88,13 @@ function releasedState(result: ApplicantResult): ApplicantDashboardState {
   if (isAccepted(result) && placement) {
     return {
       chip: { label: "Accepted", tone: "positive" },
-      title: "Your results",
+      title: "Your Results",
       subtitle: `Results are out. You're in ${placement.committee}.`,
     }
   }
   return {
     chip: { label: "Not selected", tone: "neutral" },
-    title: "Your results",
+    title: "Your Results",
     subtitle:
       result.redirectResponse === "declined" ? "You declined the offered placement." : "Results are out.",
   }
