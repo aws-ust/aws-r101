@@ -68,9 +68,12 @@ class BackendStack extends cdk.Stack {
       // the bucket and its files even if the stack is deleted or replaced.
       removalPolicy: cdk.RemovalPolicy.RETAIN,
       lifecycleRules: [{ prefix: "incoming/", expiration: cdk.Duration.days(1) }],
+      // POST for presigned uploads. GET lets the applicant page read the
+      // member photo's pixels when saving the ID card as an image; reads
+      // still need a presigned URL.
       cors: [{
         allowedOrigins: [corsOrigin],
-        allowedMethods: [s3.HttpMethods.POST],
+        allowedMethods: [s3.HttpMethods.POST, s3.HttpMethods.GET],
         allowedHeaders: ["*"],
       }],
     });

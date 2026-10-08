@@ -116,7 +116,7 @@ for (let attempt = 1; attempt <= 12; attempt++) {
           CORSRules: [
             {
               AllowedHeaders: ["*"],
-              AllowedMethods: ["POST"],
+              AllowedMethods: ["POST", "GET"],
               AllowedOrigins: origins,
               ExposeHeaders: ["ETag"],
               MaxAgeSeconds: 300,
