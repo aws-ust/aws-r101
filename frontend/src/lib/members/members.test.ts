@@ -37,7 +37,6 @@ function payment(patch: Partial<PaymentListItem>): PaymentListItem {
     email: "someone@ust.edu.ph",
     status: "awaiting_payment",
     membershipStatus: "inactive",
-    confirmationStatus: "not_released",
     verifiedAt: null,
     resubmissionDeadlineAt: null,
     deadlineAt: "2026-10-20T00:00:00.000Z",

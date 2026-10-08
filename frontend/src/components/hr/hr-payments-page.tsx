@@ -39,9 +39,6 @@ export function HrPaymentsPage({ initialTab }: { initialTab: PaymentTab | null }
   const workspace = useHrPaymentWorkspace()
   const { campaign, dashboard, feedback, setFeedback, loading, loadError, pending, refresh, runBatch } = workspace
   const view = usePaymentsView(dashboard, initialTab, loading || Boolean(loadError))
-  const unreleased = view.payments.filter(
-    (payment) => payment.status === "verified" && payment.confirmationStatus !== "released",
-  ).length
 
   return (
     <main className={hrPageShellClasses}>
@@ -86,7 +83,7 @@ export function HrPaymentsPage({ initialTab }: { initialTab: PaymentTab | null }
             onTabChange={view.setTab}
             reviewCount={view.queue.length}
             allCount={view.payments.length}
-            actions={<PaymentsCollectionActions unreleased={unreleased} pending={pending} onRun={runBatch} />}
+            actions={<PaymentsCollectionActions pending={pending} onRun={runBatch} />}
           />
           {feedback ? <ActionFeedback type={feedback.type} message={feedback.message} /> : null}
           <PaymentsListArea

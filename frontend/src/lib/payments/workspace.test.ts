@@ -27,7 +27,6 @@ function payment(id: string, patch: Partial<PaymentListItem> = {}): PaymentListI
     email: `${id}@ust.edu.ph`,
     status: "pending_verification",
     membershipStatus: "inactive",
-    confirmationStatus: "not_released",
     verifiedAt: null,
     resubmissionDeadlineAt: null,
     deadlineAt: "2026-10-20T15:59:00.000Z",

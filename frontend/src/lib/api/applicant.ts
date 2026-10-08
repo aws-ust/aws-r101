@@ -116,7 +116,6 @@ export type ApplicantPayment = {
     | "needs_resubmission"
     | "expired"
   membershipStatus: "inactive" | "active" | "revoked"
-  confirmationStatus: "not_released" | "released" | "email_failed"
   amountCents: number
   opensAt: string
   deadlineAt: string
@@ -152,7 +151,6 @@ export type ApplicantPayment = {
   committeeName: string | null
   /** Core team chat; only set for executive associates. */
   coreTeamChatLink: string | null
-  confirmationReleasedAt: string | null
 }
 
 export type MemberCard = {

@@ -49,7 +49,6 @@ export type PaymentListItem = {
   email: string
   status: PaymentStatus
   membershipStatus: "inactive" | "active" | "revoked"
-  confirmationStatus: "not_released" | "released" | "email_failed"
   verifiedAt: string | null
   resubmissionDeadlineAt: string | null
   deadlineAt: string
@@ -224,23 +223,9 @@ export function reversePayment(
   })
 }
 
-export function releaseMembershipConfirmations() {
-  return apiFetch<{
-    released: number
-    emailDelivery: { queued: number }
-  }>("/membership-payments/confirmations/release", { method: "POST" })
-}
-
 export function retryPaymentInvitationEmails() {
   return apiFetch<{ retried: number }>(
     "/membership-payments/emails/retry-invitations",
-    { method: "POST" },
-  )
-}
-
-export function retryMembershipConfirmationEmails() {
-  return apiFetch<{ retried: number }>(
-    "/membership-payments/emails/retry-confirmations",
     { method: "POST" },
   )
 }

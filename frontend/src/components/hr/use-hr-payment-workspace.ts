@@ -9,8 +9,6 @@ import {
 import {
   getPaymentCampaign,
   getPaymentDashboard,
-  releaseMembershipConfirmations,
-  retryMembershipConfirmationEmails,
   retryPaymentInvitationEmails,
   type PaymentCampaign,
   type PaymentDashboard,
@@ -62,31 +60,18 @@ export function useHrPaymentWorkspace() {
       .finally(() => setLoading(false))
   }, [])
 
-  async function runBatch(
-    kind: "release" | "retry-invitations" | "retry-confirmations",
-  ) {
+  async function runBatch(kind: "retry-invitations") {
     setPending(true)
     setFeedback(null)
     try {
-      if (kind === "release") {
-        const result = await releaseMembershipConfirmations()
-        setFeedback({
-          type: "success",
-          message: `Released ${result.released} membership confirmations. ${result.emailDelivery.queued} emails are being sent in the background.`,
-        })
-      } else {
-        const result =
-          kind === "retry-invitations"
-            ? await retryPaymentInvitationEmails()
-            : await retryMembershipConfirmationEmails()
-        const label =
-          kind === "retry-invitations" ? "invitation" : "confirmation"
+      if (kind === "retry-invitations") {
+        const result = await retryPaymentInvitationEmails()
         setFeedback({
           type: "success",
           message:
             result.retried === 0
-              ? `There were no failed ${label} emails to retry.`
-              : `Queued ${result.retried} ${label} emails to send again in the background.`,
+              ? "There were no failed invitation emails to retry."
+              : `Queued ${result.retried} invitation emails to send again in the background.`,
         })
       }
       await refresh()
