@@ -42,12 +42,17 @@ import {
 } from "./application-code";
 import { bookInterviewSlotForApplication } from "../interview/scheduling";
 import type { ApplicantGender } from "../applicant/gender";
+import {
+  asRecruitmentType,
+  recruitmentApplicationsOnly,
+  type RecruitmentApplicationType,
+} from "./recruitment-scope";
 
 export type { DocumentType } from "./documents";
 
 export type ApplicationStatus = "pending" | "approved" | "rejected";
 export type ApplicationListStatus = ApplicationStatus | "redirected";
-export type ApplicationType = "position" | "member";
+export type ApplicationType = RecruitmentApplicationType;
 export type ApplicationChoiceJson = {
   preferenceRank: 1 | 2;
   positionId: string;
@@ -195,7 +200,7 @@ type ApplicationRow = {
   id: string;
   applicationCode: string;
   status: ApplicationStatus;
-  applicationType: ApplicationType;
+  applicationType: ApplicationType | "officer";
   memberId: string | null;
   submittedAt: Date;
   archivedAt: Date | null;
@@ -340,7 +345,7 @@ async function attachRelations(
       id: row.id,
       applicationCode: row.applicationCode,
       status: row.status,
-      applicationType: row.applicationType,
+      applicationType: asRecruitmentType(row.applicationType),
       memberId: row.memberId,
       submittedAt: iso(row.submittedAt),
       archivedAt: row.archivedAt ? iso(row.archivedAt) : null,
@@ -418,7 +423,7 @@ export async function getApplicationById(
     .select(applicationSelect)
     .from(applications)
     .innerJoin(applicants, eq(applications.applicantId, applicants.id))
-    .where(eq(applications.id, id))
+    .where(and(eq(applications.id, id), recruitmentApplicationsOnly()))
     .limit(1);
 
   if (rows.length === 0) return null;
@@ -496,6 +501,8 @@ export async function listApplications(filters: ListFilters): Promise<{
       ),
     );
   }
+
+  conditions.push(recruitmentApplicationsOnly());
 
   if (filters.applicationType) {
     conditions.push(eq(applications.applicationType, filters.applicationType));

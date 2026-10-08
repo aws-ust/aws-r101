@@ -1,4 +1,4 @@
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import {
   applicants,
@@ -8,6 +8,10 @@ import {
   positions,
 } from "../../db/schema";
 import { recruitmentYearInt } from "../applications/application-code";
+import {
+  asRecruitmentType,
+  recruitmentApplicationsOnly,
+} from "../applications/recruitment-scope";
 import type {
   ApplicationStatus,
   ApplicationType,
@@ -139,7 +143,12 @@ async function queryResultsPreview(
     })
     .from(applications)
     .innerJoin(applicants, eq(applications.applicantId, applicants.id))
-    .where(eq(applications.recruitmentYear, recruitmentYear))
+    .where(
+      and(
+        eq(applications.recruitmentYear, recruitmentYear),
+        recruitmentApplicationsOnly(),
+      ),
+    )
     .orderBy(desc(applications.submittedAt));
   const rows = lockRows ? await rowsQuery.for("update") : await rowsQuery;
 
@@ -261,7 +270,7 @@ async function queryResultsPreview(
       return {
         id: row.id,
         applicationCode: row.applicationCode,
-        applicationType: row.applicationType,
+        applicationType: asRecruitmentType(row.applicationType),
         applicant: {
           fullName: `${row.firstName} ${row.lastName}`,
           email: row.email,

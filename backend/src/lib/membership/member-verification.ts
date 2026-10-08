@@ -5,6 +5,7 @@ import {
   applications,
   committees,
   membershipPayments,
+  officerSeats,
   positions,
 } from "../../db/schema";
 import { memberPositionLabel } from "./member-position";
@@ -36,6 +37,8 @@ export async function verifyMember(memberId: string): Promise<MemberVerification
       archivedAt: applications.archivedAt,
       positionName: positions.name,
       committeeName: committees.name,
+      officerTitle: officerSeats.title,
+      officerKind: officerSeats.kind,
       paymentStatus: membershipPayments.status,
       membershipStatus: membershipPayments.membershipStatus,
     })
@@ -44,14 +47,17 @@ export async function verifyMember(memberId: string): Promise<MemberVerification
     .leftJoin(membershipPayments, eq(membershipPayments.applicationId, applications.id))
     .leftJoin(positions, eq(applications.finalPositionId, positions.id))
     .leftJoin(committees, eq(positions.committeeId, committees.id))
+    .leftJoin(officerSeats, eq(officerSeats.applicationId, applications.id))
     .where(eq(applications.memberId, memberId))
     .limit(1);
   if (!row?.memberId) return null;
 
+  // Advisers hold an active ID from the day it is issued; everyone else
+  // needs a verified, active membership payment.
   const active =
-    row.paymentStatus === "verified" &&
-    row.membershipStatus === "active" &&
-    row.archivedAt === null;
+    row.archivedAt === null &&
+    (row.officerKind === "adviser" ||
+      (row.paymentStatus === "verified" && row.membershipStatus === "active"));
   return {
     memberId: row.memberId,
     fullName: `${row.firstName} ${row.lastName}`,

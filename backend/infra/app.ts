@@ -161,7 +161,7 @@ class BackendStack extends cdk.Stack {
       },
     );
 
-    // Sends queued bulk emails (results, payment invitations, confirmations)
+    // Sends queued bulk emails (results, payment invitations, membership verified)
     // a few per second so Gmail's per-user rate limit is never exceeded. The
     // API starts it when emails are queued and it restarts itself while work
     // remains; there is no polling schedule, so Neon can scale to zero.

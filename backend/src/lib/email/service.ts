@@ -28,8 +28,8 @@ import {
   interviewReminderTemplate,
   officerApplicationNoticeTemplate,
   memberRegistrationTemplate,
-  membershipConfirmationTemplate,
   membershipVerifiedTemplate,
+  officerWelcomeTemplate,
   paymentInvitationTemplate,
   resultAcceptedTemplate,
   resultMemberAcceptedTemplate,
@@ -509,6 +509,10 @@ export function renderResultEmail(input: {
   return resultRejectedTemplate({ lastName: input.lastName });
 }
 
+export function renderOfficerWelcome(input: Parameters<typeof officerWelcomeTemplate>[0]) {
+  return officerWelcomeTemplate(input);
+}
+
 export function renderPaymentInvitation(input: Parameters<typeof paymentInvitationTemplate>[0]) {
   return paymentInvitationTemplate(input);
 }
@@ -517,12 +521,6 @@ export function renderMembershipVerified(
   input: Parameters<typeof membershipVerifiedTemplate>[0],
 ) {
   return membershipVerifiedTemplate(input);
-}
-
-export function renderMembershipConfirmation(
-  input: Parameters<typeof membershipConfirmationTemplate>[0],
-) {
-  return membershipConfirmationTemplate(input);
 }
 
 export { listByApplicationId as listEmailNotificationsByApplicationId } from "./notifications";

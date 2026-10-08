@@ -62,9 +62,37 @@ try {
     ALTER TABLE applications
       ADD COLUMN IF NOT EXISTS application_type application_type NOT NULL DEFAULT 'position'
   `);
+  await sql.unsafe(`
+    DO $$ BEGIN
+      ALTER TYPE application_type ADD VALUE IF NOT EXISTS 'officer';
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END $$;
+  `);
   await sql.unsafe(
     "CREATE INDEX IF NOT EXISTS idx_applications_type ON applications(application_type)",
   );
+
+  await sql.unsafe(`
+    DO $$ BEGIN
+      CREATE TYPE officer_kind AS ENUM ('eb', 'director', 'adviser');
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END $$;
+  `);
+  await sql.unsafe(`
+    CREATE TABLE IF NOT EXISTS officer_seats (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+      application_id uuid NOT NULL UNIQUE REFERENCES applications(id) ON DELETE cascade,
+      recruitment_year integer NOT NULL,
+      kind officer_kind NOT NULL,
+      seat_key varchar(150) NOT NULL,
+      title varchar(150) NOT NULL,
+      committee varchar(150),
+      sort_order integer NOT NULL DEFAULT 0,
+      CONSTRAINT officer_seats_year_seat_unique UNIQUE (recruitment_year, seat_key)
+    )
+  `);
 
   await sql.unsafe(
     "ALTER TABLE application_documents ADD COLUMN IF NOT EXISTS file_size_bytes integer NOT NULL DEFAULT 0",
@@ -188,6 +216,7 @@ try {
     "applicant_dev_exam",
     "member_registration",
     "membership_verified",
+    "officer_welcome",
   ]) {
     await sql.unsafe(`
       DO $$ BEGIN

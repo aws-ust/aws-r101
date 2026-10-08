@@ -14,8 +14,10 @@ export type EmailMessageType =
   | "result_rejected"
   | "result_redirected"
   | "payment_invitation"
+  /** Legacy: no longer sent; kept so old rows still type-check. */
   | "membership_confirmation"
-  | "membership_verified";
+  | "membership_verified"
+  | "officer_welcome";
 
 export type EmailFileAttachment = {
   filename: string;

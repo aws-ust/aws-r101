@@ -8,6 +8,7 @@ import {
   membershipPaymentCampaigns,
   membershipPaymentChatLinks,
   membershipPayments,
+  officerSeats,
 } from "../../db/schema";
 import type { AuthenticatedUser } from "../../auth";
 import { recruitmentYearInt } from "../applications/application-code";
@@ -324,6 +325,17 @@ export async function openCurrentPaymentCampaign(actor: AuthenticatedUser) {
               or(
                 isNull(applications.redirectPositionId),
                 isNotNull(applications.redirectResponse),
+              ),
+            ),
+            // The elected board and directors pay like members; advisers do not.
+            and(
+              eq(applications.applicationType, "officer"),
+              inArray(
+                applications.id,
+                tx
+                  .select({ id: officerSeats.applicationId })
+                  .from(officerSeats)
+                  .where(inArray(officerSeats.kind, ["eb", "director"])),
               ),
             ),
           ),

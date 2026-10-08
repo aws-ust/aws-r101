@@ -251,7 +251,7 @@ test("membership payment workflow", async (t) => {
     assert.equal(afterVerify.payment.memberCard?.memberId, verifiedBody.memberId);
     assert.equal(afterVerify.payment.memberCard?.position, "Payment Staff");
     assert.equal(afterVerify.payment.memberCard?.photoUrl, null);
-    assert.equal(afterVerify.payment.membersGroupLink, null);
+    assert.equal(afterVerify.payment.membersGroupLink, "https://m.me/j/general-test");
     const photoBody = JSON.stringify({ mimeType: "image/png", sizeBytes: 100, checksumSha256: "A".repeat(43) + "=" });
     const photoPresign = await app.request("/applicant/payment/member-photo/presign", { method: "POST", headers: { ...originHeaders(), "Content-Type": "application/json", Cookie: `applicant_token=${applicantToken}` }, body: photoBody });
     assert.equal(photoPresign.status, 201);
@@ -314,25 +314,12 @@ test("membership payment workflow", async (t) => {
     assert.equal(rejected.status, "needs_resubmission");
   });
 
-  await t.test("confirmation release records the assigned link and failed email", async () => {
-    assert.equal((await staffRequest("/membership-payments/confirmations/release", financeToken, { method: "POST" })).status, 401);
-    const response = await staffRequest("/membership-payments/confirmations/release", hrToken, { method: "POST" });
-    assert.equal(response.status, 200);
-    await runEmailOutbox({ budgetMs: 5_000 });
-    const [payment] = await db.select().from(membershipPayments).where(eq(membershipPayments.applicationId, ids.acceptedApplication));
-    assert.equal(payment.assignedChatLink, "https://m.me/j/committee-test");
-    assert.equal(payment.confirmationStatus, "email_failed");
-    const released = (await (await app.request("/applicant/payment", { headers: { Cookie: `applicant_token=${applicantToken}` } })).json()) as { payment: { membersGroupLink: string | null; committeeChatLink: string | null } };
-    assert.equal(released.payment.membersGroupLink, "https://m.me/j/general-test");
-    assert.equal(released.payment.committeeChatLink, "https://m.me/j/committee-test");
-    assert.equal((await staffRequest("/membership-payments/emails/retry-confirmations", financeToken, { method: "POST" })).status, 401);
-    const confirmationRetry = await staffRequest(
-      "/membership-payments/emails/retry-confirmations",
-      hrToken,
-      { method: "POST" },
-    );
-    assert.equal(confirmationRetry.status, 200);
-    assert.deepEqual(await confirmationRetry.json(), { retried: 1 });
+  await t.test("there is no confirmation release; links are on the dashboard once verified", async () => {
+    assert.equal((await staffRequest("/membership-payments/confirmations/release", hrToken, { method: "POST" })).status, 404);
+    assert.equal((await staffRequest("/membership-payments/emails/retry-confirmations", hrToken, { method: "POST" })).status, 404);
+    const dashboard = (await (await app.request("/applicant/payment", { headers: { Cookie: `applicant_token=${applicantToken}` } })).json()) as { payment: { membersGroupLink: string | null; committeeChatLink: string | null } };
+    assert.equal(dashboard.payment.membersGroupLink, "https://m.me/j/general-test");
+    assert.equal(dashboard.payment.committeeChatLink, "https://m.me/j/committee-test");
   });
 
   await t.test("HR can reverse verification and Member ID is retained", async () => {

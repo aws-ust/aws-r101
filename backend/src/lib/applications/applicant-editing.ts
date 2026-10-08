@@ -8,6 +8,7 @@ import {
   committees,
   interviewBookings,
   interviewSlots,
+  officerSeats,
   positions,
   uploadSessions,
 } from "../../db/schema";
@@ -17,6 +18,7 @@ import {
   validateChoiceUrls,
 } from "../apply/field-validation";
 import { formatBirthday } from "./applications";
+import { reservedSeatMemberId } from "../core/member-id";
 import { loadResultGroupLinks } from "./result-group-links";
 import {
   applicationKey,
@@ -104,9 +106,13 @@ export async function getApplicantEditableApplication(applicationId: string) {
       motivation: applications.motivation,
       portfolioUrl: applications.portfolioUrl,
       githubUrl: applications.githubUrl,
+      seatKind: officerSeats.kind,
+      seatTitle: officerSeats.title,
+      seatCommittee: officerSeats.committee,
     })
     .from(applications)
     .innerJoin(applicants, eq(applications.applicantId, applicants.id))
+    .leftJoin(officerSeats, eq(officerSeats.applicationId, applications.id))
     .where(eq(applications.id, applicationId))
     .limit(1);
 
@@ -146,7 +152,31 @@ export async function getApplicantEditableApplication(applicationId: string) {
           editDeadline: null,
           lockReason: "Member-only applications cannot be edited.",
         }
-      : await resolveApplicantEditEligibility(application, choices);
+      : application.applicationType === "officer"
+        ? {
+            canEdit: false,
+            editDeadline: null,
+            lockReason: "Officer and adviser profiles are not part of recruitment.",
+          }
+        : await resolveApplicantEditEligibility(application, choices);
+  const officer = application.seatKind
+    ? {
+        kind: application.seatKind,
+        title: application.seatTitle ?? "Officer",
+        // A board or director seat's number is fixed, so it can be shown before they pay.
+        reservedMemberId:
+          application.memberId ??
+          (application.seatCommittee && application.seatKind !== "adviser"
+            ? await reservedSeatMemberId(
+                db,
+                application.recruitmentYear,
+                application.seatKind === "eb"
+                  ? { kind: "eb", officeCommittee: application.seatCommittee }
+                  : { kind: "director", committee: application.seatCommittee },
+              )
+            : null),
+      }
+    : null;
   const sortedChoices = [...choices].sort(
     (a, b) => a.preferenceRank - b.preferenceRank,
   );
@@ -189,6 +219,7 @@ export async function getApplicantEditableApplication(applicationId: string) {
     applicationCode: application.applicationCode,
     status: application.status,
     applicationType: application.applicationType,
+    officer,
     memberId: application.memberId,
     firstName: application.firstName,
     lastName: application.lastName,

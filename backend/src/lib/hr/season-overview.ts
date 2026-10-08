@@ -7,6 +7,7 @@ import {
   membershipPayments,
 } from "../../db/schema";
 import { recruitmentYearInt } from "../applications/application-code";
+import { recruitmentApplicationsOnly } from "../applications/recruitment-scope";
 import { outboxStatus, RESULT_MESSAGE_TYPES } from "../email/outbox";
 import { getInterviewWindow } from "../interview/window";
 import { getRecruitmentWindow } from "../recruitment/window";
@@ -71,7 +72,13 @@ async function countApplications(year: number) {
       unreleasedDecided: sql<number>`count(*) filter (where ${applications.status} <> 'pending' and ${applications.resultsReleasedAt} is null)::int`,
     })
     .from(applications)
-    .where(and(eq(applications.recruitmentYear, year), isNull(applications.archivedAt)));
+    .where(
+      and(
+        eq(applications.recruitmentYear, year),
+        recruitmentApplicationsOnly(),
+        isNull(applications.archivedAt),
+      ),
+    );
   return row;
 }
 

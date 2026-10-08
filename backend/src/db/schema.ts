@@ -23,7 +23,9 @@ export const applicationStatus = pgEnum("application_status", [
 export const applicationType = pgEnum("application_type", [
   "position",
   "member",
+  "officer",
 ]);
+export const officerKind = pgEnum("officer_kind", ["eb", "director", "adviser"]);
 export const applicationChoiceStatus = pgEnum("application_choice_status", [
   "pending",
   "approved",
@@ -59,8 +61,10 @@ export const emailMessageType = pgEnum("email_message_type", [
   "result_rejected",
   "result_redirected",
   "payment_invitation",
+  // Legacy: no longer sent. Postgres cannot drop an enum value, so it stays.
   "membership_confirmation",
   "membership_verified",
+  "officer_welcome",
 ]);
 export const emailDeliveryStatus = pgEnum("email_delivery_status", [
   "pending",
@@ -297,6 +301,29 @@ export const applications = pgTable(
     index("idx_applications_reviewed_by").on(t.reviewedBy),
     index("idx_applications_code").on(t.applicationCode),
   ],
+);
+
+/**
+ * Elected officers and advisers. Each one has an `officer` application so they
+ * sign in, pay and get a Member ID like any member, but they never take part
+ * in recruitment. `seatKey` is the office or committee name (or `adviser-<n>`).
+ */
+export const officerSeats = pgTable(
+  "officer_seats",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    applicationId: uuid("application_id")
+      .notNull()
+      .unique()
+      .references(() => applications.id, { onDelete: "cascade" }),
+    recruitmentYear: integer("recruitment_year").notNull(),
+    kind: officerKind().notNull(),
+    seatKey: varchar("seat_key", { length: 150 }).notNull(),
+    title: varchar({ length: 150 }).notNull(),
+    committee: varchar({ length: 150 }),
+    sortOrder: integer("sort_order").notNull().default(0),
+  },
+  (t) => [unique().on(t.recruitmentYear, t.seatKey)],
 );
 
 export const emailNotifications = pgTable(

@@ -7,15 +7,20 @@ import {
   committees,
   emailNotifications,
   membershipPaymentCampaigns,
-  membershipPaymentChatLinks,
   membershipPayments,
   membershipPaymentSubmissions,
+  officerSeats,
   positions,
   users,
 } from "../../db/schema";
 import { recruitmentYearInt } from "../applications/application-code";
 import { isExecutiveOfficeCommittee } from "../apply/committee-office-groups";
-import { allocateMemberId, type MemberPlacement } from "../core/member-id";
+import {
+  allocateMemberId,
+  formatMemberId,
+  MemberIdSeatTakenError,
+  type MemberPlacement,
+} from "../core/member-id";
 import { MembershipPaymentError } from "./errors";
 import { createPaymentReceiptDownload } from "./receipts";
 
@@ -49,12 +54,13 @@ export async function listMembershipPayments() {
       email: applicants.email,
       status: membershipPayments.status,
       membershipStatus: membershipPayments.membershipStatus,
-      confirmationStatus: membershipPayments.confirmationStatus,
       verifiedAt: membershipPayments.verifiedAt,
       resubmissionDeadlineAt: membershipPayments.resubmissionDeadlineAt,
       deadlineAt: membershipPaymentCampaigns.deadlineAt,
       finalPosition: positions.name,
       committee: committees.name,
+      officerTitle: officerSeats.title,
+      officerCommittee: officerSeats.committee,
     })
     .from(membershipPayments)
     .innerJoin(applications, eq(membershipPayments.applicationId, applications.id))
@@ -65,6 +71,7 @@ export async function listMembershipPayments() {
     )
     .leftJoin(positions, eq(applications.finalPositionId, positions.id))
     .leftJoin(committees, eq(positions.committeeId, committees.id))
+    .leftJoin(officerSeats, eq(officerSeats.applicationId, applications.id))
     .where(eq(membershipPaymentCampaigns.recruitmentYear, recruitmentYear))
     .orderBy(desc(membershipPayments.updatedAt));
 
@@ -93,8 +100,10 @@ export async function listMembershipPayments() {
     }
   }
 
-  const payments = rows.map((row) => ({
+  const payments = rows.map(({ officerTitle, officerCommittee, ...row }) => ({
     ...row,
+    finalPosition: row.finalPosition ?? officerTitle,
+    committee: row.committee ?? officerCommittee,
     status: displayStatus(row),
     archivedAt: row.archivedAt?.toISOString() ?? null,
     verifiedAt: row.verifiedAt?.toISOString() ?? null,
@@ -169,12 +178,24 @@ async function memberPlacement(
       applicationType: applications.applicationType,
       status: applications.status,
       committee: committees.name,
+      seatKind: officerSeats.kind,
+      seatCommittee: officerSeats.committee,
+      seatKey: officerSeats.seatKey,
+      seatOrder: officerSeats.sortOrder,
     })
     .from(applications)
     .leftJoin(positions, eq(applications.finalPositionId, positions.id))
     .leftJoin(committees, eq(positions.committeeId, committees.id))
+    .leftJoin(officerSeats, eq(officerSeats.applicationId, applications.id))
     .where(eq(applications.id, applicationId))
     .limit(1);
+  if (row?.seatKind === "eb" && row.seatCommittee) {
+    return { kind: "eb", officeCommittee: row.seatCommittee };
+  }
+  if (row?.seatKind === "director" && row.seatCommittee) {
+    return { kind: "director", committee: row.seatCommittee };
+  }
+  if (row?.seatKind === "adviser") return { kind: "adviser", index: row.seatOrder ?? 0 };
   if (!row?.committee || row.applicationType !== "position" || row.status !== "approved") {
     return { kind: "general" };
   }
@@ -245,11 +266,19 @@ export async function verifyMembershipPayment(
     }
     let memberId = payment.memberId;
     if (!memberId) {
-      memberId = await allocateMemberId(
-        tx,
-        payment.recruitmentYear,
-        await memberPlacement(tx, payment.applicationId),
-      );
+      try {
+        memberId = await allocateMemberId(
+          tx,
+          payment.recruitmentYear,
+          await memberPlacement(tx, payment.applicationId),
+        );
+      } catch (error) {
+        if (!(error instanceof MemberIdSeatTakenError)) throw error;
+        throw new MembershipPaymentError(
+          `Member ID ${formatMemberId(payment.recruitmentYear, error.sequence)} is reserved for this seat but another member already holds it. Free that ID first, then verify again.`,
+          409,
+        );
+      }
       await tx
         .update(applications)
         .set({ memberId, updatedAt: new Date() })
@@ -270,7 +299,6 @@ export async function verifyMembershipPayment(
       .set({
         status: "verified",
         membershipStatus: "active",
-        confirmationStatus: "not_released",
         verifiedAt: reviewedAt,
         verifiedBy: actor.id,
         reversedAt: null,
@@ -406,10 +434,6 @@ export async function reverseMembershipPayment(
       .set({
         status: "needs_resubmission",
         membershipStatus: "revoked",
-        confirmationStatus: "not_released",
-        confirmationReleasedAt: null,
-        confirmationReleasedBy: null,
-        assignedChatLink: null,
         resubmissionDeadlineAt,
         reversedAt,
         reversedBy: actor.id,
@@ -448,121 +472,6 @@ export async function getPaymentReceiptUrl(
   );
 }
 
-export async function releaseMembershipConfirmations(actor: AuthenticatedUser) {
-  const recruitmentYear = recruitmentYearInt();
-  return db.transaction(async (tx) => {
-    const [campaign] = await tx
-      .select()
-      .from(membershipPaymentCampaigns)
-      .where(eq(membershipPaymentCampaigns.recruitmentYear, recruitmentYear))
-      .for("update")
-      .limit(1);
-    if (!campaign) throw new MembershipPaymentError("Payment period not found.", 404);
-
-    const rows = await tx
-      .select({
-        paymentId: membershipPayments.id,
-        applicationId: applications.id,
-        recipient: applicants.email,
-        applicationType: applications.applicationType,
-        applicationStatus: applications.status,
-        committeeId: committees.id,
-      })
-      .from(membershipPayments)
-      .innerJoin(applications, eq(membershipPayments.applicationId, applications.id))
-      .innerJoin(applicants, eq(applications.applicantId, applicants.id))
-      .leftJoin(positions, eq(applications.finalPositionId, positions.id))
-      .leftJoin(committees, eq(positions.committeeId, committees.id))
-      .where(
-        and(
-          eq(membershipPayments.campaignId, campaign.id),
-          eq(membershipPayments.status, "verified"),
-          eq(membershipPayments.membershipStatus, "active"),
-          eq(membershipPayments.confirmationStatus, "not_released"),
-          isNull(applications.archivedAt),
-        ),
-      )
-      .for("update", { of: membershipPayments });
-    if (rows.length === 0) {
-      throw new MembershipPaymentError(
-        "There are no verified confirmations to release.",
-        409,
-      );
-    }
-    const links = await tx
-      .select({
-        committeeId: membershipPaymentChatLinks.committeeId,
-        chatLink: membershipPaymentChatLinks.chatLink,
-      })
-      .from(membershipPaymentChatLinks)
-      .where(eq(membershipPaymentChatLinks.campaignId, campaign.id));
-    const linkByCommittee = new Map(
-      links.map((link) => [link.committeeId, link.chatLink]),
-    );
-    if (!campaign.generalChatLink) {
-      throw new MembershipPaymentError(
-        "Add the Members Facebook Group link on the Community Links page before releasing.",
-        409,
-      );
-    }
-    const prepared = rows.map((row) => {
-      const acceptedCommitteeApplicant =
-        row.applicationType === "position" &&
-        row.applicationStatus === "approved";
-      const chatLink =
-        acceptedCommitteeApplicant && row.committeeId
-          ? linkByCommittee.get(row.committeeId) ?? null
-          : null;
-      return { ...row, acceptedCommitteeApplicant, chatLink };
-    });
-    const missingLinks = prepared.filter(
-      (row) => row.acceptedCommitteeApplicant && !row.chatLink,
-    ).length;
-    if (missingLinks > 0) {
-      throw new MembershipPaymentError(
-        `Add the office or committee group chat links on the Community Links page for ${missingLinks} verified member${missingLinks === 1 ? "" : "s"}.`,
-        409,
-      );
-    }
-
-    const releasedAt = new Date();
-    const notifications = await tx
-      .insert(emailNotifications)
-      .values(
-        prepared.map((row) => ({
-          applicationId: row.applicationId,
-          messageType: "membership_confirmation" as const,
-          recipient: row.recipient,
-        })),
-      )
-      .returning({ id: emailNotifications.id });
-    for (const row of prepared) {
-      await tx
-        .update(membershipPayments)
-        .set({
-          confirmationStatus: "released",
-          confirmationReleasedAt: releasedAt,
-          confirmationReleasedBy: actor.id,
-          assignedChatLink: row.chatLink,
-          updatedAt: releasedAt,
-        })
-        .where(eq(membershipPayments.id, row.paymentId));
-    }
-    await tx
-      .update(membershipPaymentCampaigns)
-      .set({
-        confirmationsReleasedAt: releasedAt,
-        confirmationsReleasedBy: actor.id,
-        updatedAt: releasedAt,
-      })
-      .where(eq(membershipPaymentCampaigns.id, campaign.id));
-    return {
-      released: prepared.length,
-      notificationIds: notifications.map((notification) => notification.id),
-    };
-  });
-}
-
 export async function listVerifiedMembersForExport() {
   const recruitmentYear = recruitmentYearInt();
   return db
@@ -575,6 +484,7 @@ export async function listVerifiedMembersForExport() {
       applicationType: applications.applicationType,
       committee: committees.name,
       position: positions.name,
+      officerTitle: officerSeats.title,
       verifiedAt: membershipPayments.verifiedAt,
     })
     .from(membershipPayments)
@@ -586,6 +496,7 @@ export async function listVerifiedMembersForExport() {
     )
     .leftJoin(positions, eq(applications.finalPositionId, positions.id))
     .leftJoin(committees, eq(positions.committeeId, committees.id))
+    .leftJoin(officerSeats, eq(officerSeats.applicationId, applications.id))
     .where(
       and(
         eq(membershipPaymentCampaigns.recruitmentYear, recruitmentYear),

@@ -1,3 +1,4 @@
+import { asRecruitmentType } from "../applications/recruitment-scope";
 import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import {
@@ -77,7 +78,7 @@ export async function prepareResultNotification(
       messageType,
       lastName: row.lastName,
       position: row.position,
-      applicationType: row.applicationType,
+      applicationType: asRecruitmentType(row.applicationType),
     }),
   };
 }

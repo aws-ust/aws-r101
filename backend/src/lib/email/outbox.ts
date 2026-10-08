@@ -7,7 +7,7 @@ import { classifySendError, retryAfterFromError } from "./retry";
 import type { EmailMessageType, RenderedEmail, SendEmailInput, SendEmailResult } from "./types";
 
 /**
- * Bulk emails (results, payment invitations, membership confirmations) are
+ * Bulk emails (results, payment invitations, membership verified) are
  * queued as `pending` rows and sent here one at a time, slowly enough to stay
  * under Gmail's per-user rate limit. A row is moved to `sending` before the
  * Gmail call, so if the process dies mid-send it is never re-sent
@@ -18,8 +18,8 @@ export const OUTBOX_MESSAGE_TYPES = [
   "result_rejected",
   "result_redirected",
   "payment_invitation",
-  "membership_confirmation",
   "membership_verified",
+  "officer_welcome",
 ] as const satisfies readonly EmailMessageType[];
 export type OutboxMessageType = (typeof OUTBOX_MESSAGE_TYPES)[number];
 

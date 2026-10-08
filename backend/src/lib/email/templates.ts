@@ -10,8 +10,8 @@ import {
   applicationSubmittedSubject,
   officerApplicationNoticeSubject,
   memberRegistrationSubject,
-  membershipConfirmationSubject,
   membershipVerifiedSubject,
+  officerWelcomeSubject,
   paymentInvitationSubject,
   resultAcceptedSubject,
   resultMemberAcceptedSubject,
@@ -709,7 +709,7 @@ export function membershipVerifiedTemplate(input: {
 }): RenderedEmail {
   const honorific = `Mx. ${input.lastName}`;
   const dashboardUrl = `${appBaseUrl()}/apply/dashboard`;
-  const text = `Greetings from the Clouds!\n\nGood day, ${honorific},\n\nYour membership payment has been verified. You are now a bona fide member of AWS Builders - UST!\n\nMember ID: ${input.memberId}\nMembership: ${input.position}\n\nPlease keep your Member ID for your records. You will use it for events, attendance, and other member services. You can also view your digital member ID anytime on your applicant dashboard: ${dashboardUrl}\n\nLinks to join the Members Facebook Group and your committee group chat will be sent in a separate email soon.\n\nYours in Thomasian Leadership,\nThe AWS Builders - UST Executive Board`;
+  const text = `Greetings from the Clouds!\n\nGood day, ${honorific},\n\nYour membership payment has been verified. You are now a bona fide member of AWS Builders - UST!\n\nMember ID: ${input.memberId}\nMembership: ${input.position}\n\nPlease keep your Member ID for your records. You will use it for events, attendance, and other member services. You can view your digital member ID anytime on your applicant dashboard, where your Members Facebook Group and committee group chat links are also waiting for you: ${dashboardUrl}\n\nYours in Thomasian Leadership,\nThe AWS Builders - UST Executive Board`;
   const html = wrapBrandedHtml({
     eyebrow: "AWS BUILDERS – UST",
     bannerTitle: "WELCOME, BUILDER!",
@@ -728,9 +728,8 @@ export function membershipVerifiedTemplate(input: {
     </td>
   </tr>
 </table>
-<p style="margin:0 0 16px;">Please keep your Member ID for your records. You will use it for events, attendance, and other member services. You can also view your digital member ID anytime on your applicant dashboard.</p>
-${ctaButton(dashboardUrl, "View your member ID")}
-<p style="margin:0 0 16px;">Links to join the Members Facebook Group and your committee group chat will be sent in a separate email soon.</p>
+<p style="margin:0 0 16px;">Please keep your Member ID for your records. You will use it for events, attendance, and other member services. You can view your digital member ID anytime on your applicant dashboard, where your Members Facebook Group and committee group chat links are also waiting for you.</p>
+${ctaButton(dashboardUrl, "Open your dashboard")}
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
 <p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
   });
@@ -742,43 +741,58 @@ ${ctaButton(dashboardUrl, "View your member ID")}
   };
 }
 
-export function membershipConfirmationTemplate(input: {
+/** Sent once to each elected officer: their reserved Member ID and how to sign in and pay. */
+export function officerWelcomeTemplate(input: {
   lastName: string;
+  title: string;
   memberId: string;
-  membersGroupLink: string;
-  committeeChatLink: string | null;
-  committeeName: string | null;
-  placement: string | null;
+  applicationCode: string;
 }): RenderedEmail {
   const honorific = `Mx. ${input.lastName}`;
-  const placement = input.placement ?? "General Member";
-  const committeeLabel = input.committeeName ?? "Committee";
-  const committeeText = input.committeeChatLink
-    ? `\n${committeeLabel} group chat: ${input.committeeChatLink}`
-    : "";
-  const text = `Greetings from the Clouds!\n\nGood day, ${honorific},\n\nHere are your official AWS Builders - UST groups. Please join them so you do not miss announcements and updates.\n\nMember ID: ${input.memberId}\nMembership: ${placement}\n\nMembers Facebook Group: ${input.membersGroupLink}${committeeText}\n\nYours in Thomasian Leadership,\nThe AWS Builders - UST Executive Board`;
-  const committeeButton = input.committeeChatLink
-    ? ctaButton(input.committeeChatLink, `Join the ${committeeLabel} group chat`)
-    : "";
+  const statusUrl = `${appBaseUrl()}/apply/status`;
+  const intro = `As ${input.title} of AWS Builders - UST, your official Member ID has been reserved for you. It is released, together with your digital member ID, once your membership payment is verified.`;
+  const how =
+    "Sign in to the applicant dashboard with the Application ID below and this email address. You will receive a one-time code. The payment details appear there when the payment period opens.";
+  const text = `Greetings from the Clouds!
+
+Good day, ${honorific},
+
+${intro}
+
+Reserved Member ID: ${input.memberId}
+Application ID: ${input.applicationCode}
+
+${how}
+
+Sign in: ${statusUrl}
+
+Yours in Thomasian Leadership,
+The AWS Builders - UST Executive Board`;
   const html = wrapBrandedHtml({
     eyebrow: "AWS BUILDERS – UST",
-    bannerTitle: "WELCOME, BUILDER!",
+    bannerTitle: "MEMBER ID RESERVED",
     bannerSub: input.memberId,
-    heading: "Join Your AWS Builders Groups",
+    heading: "Your Member ID Is Reserved",
     headerImageUrl: `cid:${APPLICATION_RECEIVED_HEADER_CID}`,
     headerImageAlt: "AWS Builders - UST — It's Always Day One",
     inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
 <p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
-<p style="margin:0 0 16px;">Here are your official AWS Builders - UST groups. Please join them so you do not miss announcements and updates.</p>
-<p style="margin:0 0 8px;"><strong>Member ID:</strong> ${escapeHtml(input.memberId)}</p>
-<p style="margin:0 0 16px;"><strong>Membership:</strong> ${escapeHtml(placement)}</p>
-${ctaButton(input.membersGroupLink, "Join the Members Facebook Group")}
-${committeeButton}
+<p style="margin:0 0 16px;">${escapeHtml(intro)}</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;background:#f8f5ff;border-radius:8px;">
+  <tr>
+    <td style="padding:16px 18px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#170f33;">
+      <p style="margin:0 0 8px;"><strong>Reserved Member ID</strong><br>${escapeHtml(input.memberId)}</p>
+      <p style="margin:0;"><strong>Application ID</strong><br>${escapeHtml(input.applicationCode)}</p>
+    </td>
+  </tr>
+</table>
+<p style="margin:0 0 16px;">${escapeHtml(how)}</p>
+${ctaButton(statusUrl, "Sign in to your dashboard")}
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
 <p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
   });
   return {
-    subject: membershipConfirmationSubject(input.memberId),
+    subject: officerWelcomeSubject(input.memberId),
     text,
     html,
     inline: [brandedEmailHeaderInline()],

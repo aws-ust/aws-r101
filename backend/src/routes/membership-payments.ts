@@ -19,14 +19,13 @@ import { kickEmailOutbox } from "../lib/email/outbox-kick";
 import { sendQueuedNow } from "../lib/email/queued-emails";
 import { retryFailedMembershipEmails } from "../lib/membership/email-delivery";
 import { MembershipPaymentError } from "../lib/membership/errors";
-import { listDirectoryMembers } from "../lib/membership/member-directory";
+import { listDirectoryMembers, listPendingOfficers } from "../lib/membership/member-directory";
 import {
   getMembershipPaymentDetails,
   getPaymentReceiptUrl,
   listMembershipPayments,
   listVerifiedMembersForExport,
   rejectMembershipPayment,
-  releaseMembershipConfirmations,
   reverseMembershipPayment,
   verifyMembershipPayment,
 } from "../lib/membership/reviews";
@@ -228,25 +227,6 @@ membershipPaymentRoutes.post(
 );
 
 membershipPaymentRoutes.post(
-  "/confirmations/release",
-  requireRoles("hr", "admin"),
-  async (c) => {
-    try {
-      const release = await releaseMembershipConfirmations(getCurrentUser(c));
-      // Confirmations go out through the background email outbox.
-      if (release.notificationIds.length > 0) await kickEmailOutbox();
-      return c.json({
-        released: release.released,
-        emailDelivery: { queued: release.notificationIds.length },
-      });
-    } catch (error) {
-      const result = paymentError(error);
-      return c.json(result.body, result.status);
-    }
-  },
-);
-
-membershipPaymentRoutes.post(
   "/emails/retry-invitations",
   requireRoles("hr", "admin"),
   async (c) => {
@@ -256,19 +236,13 @@ membershipPaymentRoutes.post(
   },
 );
 
-membershipPaymentRoutes.post(
-  "/emails/retry-confirmations",
-  requireRoles("hr", "admin"),
-  async (c) => {
-    const result = await retryFailedMembershipEmails("membership_confirmation");
-    if (result.retried > 0) await kickEmailOutbox();
-    return c.json(result);
-  },
-);
-
 /** Verified members of the current year, for the HR Members page. */
 membershipPaymentRoutes.get("/members", async (c) => {
-  return c.json({ members: await listDirectoryMembers() });
+  const members = await listDirectoryMembers();
+  const pendingOfficers = await listPendingOfficers(
+    new Set(members.map((member) => member.memberId)),
+  );
+  return c.json({ members, pendingOfficers });
 });
 
 membershipPaymentRoutes.get("/export", async (c) => {
@@ -292,9 +266,13 @@ membershipPaymentRoutes.get("/export", async (c) => {
       row.firstName,
       row.lastName,
       row.email,
-      row.applicationType === "member" ? "General Member" : "Committee",
+      row.applicationType === "member"
+        ? "General Member"
+        : row.applicationType === "officer"
+          ? "Officer"
+          : "Committee",
       row.committee,
-      row.position,
+      row.position ?? row.officerTitle,
       row.verifiedAt?.toISOString() ?? "",
     ]),
   ]

@@ -6,6 +6,7 @@ import {
   membershipPaymentCampaigns,
   membershipPayments,
   membershipPaymentSubmissions,
+  officerSeats,
   positions,
 } from "../../db/schema";
 import { MembershipPaymentError } from "./errors";
@@ -20,6 +21,7 @@ import {
 import { isExecutiveOfficeCommittee } from "../apply/committee-office-groups";
 import { memberPositionLabel } from "./member-position";
 import { createPaymentQrDownload } from "./payment-qr";
+import { loadResultGroupLinks } from "../applications/result-group-links";
 
 export type SubmitPaymentInput = {
   method: "gcash" | "bpi";
@@ -76,14 +78,14 @@ async function loadApplicantPayment(applicationId: string) {
       verifiedAt: membershipPayments.verifiedAt,
       recruitmentYear: applications.recruitmentYear,
       positionName: positions.name,
+      committeeId: committees.id,
       committeeName: committees.name,
+      officerTitle: officerSeats.title,
+      officerKind: officerSeats.kind,
       generalChatLink: membershipPaymentCampaigns.generalChatLink,
       coreTeamChatLink: membershipPaymentCampaigns.coreTeamChatLink,
       paymentStatus: membershipPayments.status,
       membershipStatus: membershipPayments.membershipStatus,
-      confirmationStatus: membershipPayments.confirmationStatus,
-      assignedChatLink: membershipPayments.assignedChatLink,
-      confirmationReleasedAt: membershipPayments.confirmationReleasedAt,
       resubmissionDeadlineAt: membershipPayments.resubmissionDeadlineAt,
       amountCents: membershipPaymentCampaigns.amountCents,
       opensAt: membershipPaymentCampaigns.opensAt,
@@ -107,6 +109,7 @@ async function loadApplicantPayment(applicationId: string) {
     .innerJoin(applications, eq(membershipPayments.applicationId, applications.id))
     .leftJoin(positions, eq(applications.finalPositionId, positions.id))
     .leftJoin(committees, eq(positions.committeeId, committees.id))
+    .leftJoin(officerSeats, eq(officerSeats.applicationId, applications.id))
     .where(eq(membershipPayments.applicationId, applicationId))
     .limit(1);
   if (!row) return null;
@@ -156,10 +159,11 @@ async function loadApplicantPayment(applicationId: string) {
 export async function getApplicantPayment(applicationId: string) {
   const row = await loadApplicantPayment(applicationId);
   if (!row) return null;
-  // A failed email does not hide the details: they are released either way.
-  const released =
-    row.confirmationStatus === "released" ||
-    row.confirmationStatus === "email_failed";
+  // The Member ID and the group links open up the moment the payment is verified.
+  const verified =
+    row.paymentStatus === "verified" && row.membershipStatus === "active";
+  // Advisers do not join the member group chats or Facebook groups.
+  const joinsGroups = verified && row.officerKind !== "adviser";
   const acceptedIntoCommittee =
     row.applicationType === "position" &&
     row.applicationStatus === "approved" &&
@@ -169,7 +173,8 @@ export async function getApplicantPayment(applicationId: string) {
   // rejected, and redirected applicants who declined or haven't answered) use
   // the Director for Finance's. Fall back to that one if the CFO's is missing.
   const gcashQrKey =
-    acceptedIntoCommittee && row.gcashCoreQrImageKey
+    (acceptedIntoCommittee || row.applicationType === "officer") &&
+    row.gcashCoreQrImageKey
       ? row.gcashCoreQrImageKey
       : row.gcashQrImageKey;
   const [gcashQrImageUrl, bpiQrImageUrl] = await Promise.all([
@@ -178,6 +183,13 @@ export async function getApplicantPayment(applicationId: string) {
       ? createPaymentQrDownload(row.bpiQrImageKey)
       : row.bpiQrImageUrl,
   ]);
+  const committeeLinks =
+    joinsGroups && acceptedIntoCommittee && row.committeeId && row.committeeName
+      ? await loadResultGroupLinks(row.recruitmentYear, {
+          id: row.committeeId,
+          name: row.committeeName,
+        })
+      : null;
   const memberCard =
     row.paymentStatus === "verified" &&
     row.membershipStatus === "active" &&
@@ -198,7 +210,6 @@ export async function getApplicantPayment(applicationId: string) {
     applicationStatus: row.applicationStatus,
     paymentStatus: row.paymentStatus,
     membershipStatus: row.membershipStatus,
-    confirmationStatus: row.confirmationStatus,
     amountCents: row.amountCents,
     opensAt: row.opensAt.toISOString(),
     deadlineAt: row.deadlineAt.toISOString(),
@@ -235,20 +246,19 @@ export async function getApplicantPayment(applicationId: string) {
         }
       : null,
     memberCard,
-    memberId: released ? row.memberId : null,
-    membersGroupLink: released ? row.generalChatLink : null,
-    committeeChatLink:
-      released && acceptedIntoCommittee ? row.assignedChatLink : null,
-    committeeName: released && acceptedIntoCommittee ? row.committeeName : null,
+    memberId: verified ? row.memberId : null,
+    membersGroupLink: joinsGroups ? row.generalChatLink : null,
+    committeeChatLink: committeeLinks?.committeeChatLink ?? null,
+    committeeName: committeeLinks?.committeeName ?? null,
     coreTeamChatLink:
-      released &&
-      acceptedIntoCommittee &&
-      row.committeeName &&
-      isExecutiveOfficeCommittee(row.committeeName)
+      joinsGroups &&
+      (row.officerKind === "eb" ||
+        row.officerKind === "director" ||
+        (acceptedIntoCommittee &&
+          row.committeeName &&
+          isExecutiveOfficeCommittee(row.committeeName)))
         ? row.coreTeamChatLink
         : null,
-    confirmationReleasedAt:
-      row.confirmationReleasedAt?.toISOString() ?? null,
   };
 }
 

@@ -9,11 +9,18 @@ import {
 } from "../apply/committee-office-groups";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type DbExecutor = typeof db | DbTransaction;
 
-const MAX_SEQUENCE = 9999;
+/** General members stop below the adviser block. */
+const MAX_SEQUENCE = 8999;
+const ADVISER_START = 9001;
+const ADVISER_COUNT = 3;
 
 /** Where a member sits in the hierarchy, which decides their Member ID block. */
 export type MemberPlacement =
+  | { kind: "eb"; officeCommittee: string }
+  | { kind: "director"; committee: string }
+  | { kind: "adviser"; index: number }
   | { kind: "ea"; officeCommittee: string }
   | { kind: "staff" }
   | { kind: "general" };
@@ -21,38 +28,48 @@ export type MemberPlacement =
 type Range = { start: number; end: number };
 
 export type MemberIdLayout = {
+  /** One fixed number per executive board seat, keyed by office committee. */
+  ebSeats: Map<string, number>;
   eaRanges: Map<string, Range>;
+  /** One fixed number per committee director, keyed by committee name. */
+  directorSeats: Map<string, number>;
   staffRange: Range | null;
   generalStart: number;
 };
 
 /**
  * Lays out Member ID numbers by hierarchy:
- * executive board, executive associates (per office, in order), directors,
- * committee staff, then general members. Every block is sized from real
- * counts, so offices that accepted nobody take no numbers.
+ * executive board, executive associates (per office, sized by open slots),
+ * directors, committee staff, then general members. Board and director
+ * numbers are fixed by seat, so they never move.
  */
 export function buildMemberIdLayout(input: {
   executiveOffices: string[];
-  eaHoldsByOffice: Map<string, number>;
-  directorCount: number;
+  eaSlotsByOffice: Map<string, number>;
+  directorCommittees: string[];
   staffHolds: number;
 }): MemberIdLayout {
+  const ebSeats = new Map(
+    input.executiveOffices.map((office, index) => [office, index + 1] as const),
+  );
   let next = input.executiveOffices.length + 1;
   const eaRanges = new Map<string, Range>();
   for (const office of input.executiveOffices) {
-    const holds = input.eaHoldsByOffice.get(office) ?? 0;
-    if (holds <= 0) continue;
-    eaRanges.set(office, { start: next, end: next + holds - 1 });
-    next += holds;
+    const slots = input.eaSlotsByOffice.get(office) ?? 0;
+    if (slots <= 0) continue;
+    eaRanges.set(office, { start: next, end: next + slots - 1 });
+    next += slots;
   }
-  next += input.directorCount;
+  const directorSeats = new Map(
+    input.directorCommittees.map((committee, index) => [committee, next + index] as const),
+  );
+  next += input.directorCommittees.length;
   const staffRange =
     input.staffHolds > 0
       ? { start: next, end: next + input.staffHolds - 1 }
       : null;
   next += Math.max(input.staffHolds, 0);
-  return { eaRanges, staffRange, generalStart: next };
+  return { ebSeats, eaRanges, directorSeats, staffRange, generalStart: next };
 }
 
 function firstFree(used: Set<number>, start: number, end: number) {
@@ -62,12 +79,42 @@ function firstFree(used: Set<number>, start: number, end: number) {
   return null;
 }
 
-/** Picks the first free number in the member's block, falling back to the general pool. */
+/** A board, director or adviser seat whose fixed number is already held by someone else. */
+export class MemberIdSeatTakenError extends Error {
+  constructor(readonly sequence: number, label: string) {
+    super(`Member ID seat for ${label} is already taken.`);
+    this.name = "MemberIdSeatTakenError";
+  }
+}
+
+function seatSequence(seat: number | undefined, used: Set<number>, label: string) {
+  if (seat === undefined) throw new Error(`No Member ID seat for ${label}.`);
+  if (used.has(seat)) throw new MemberIdSeatTakenError(seat, label);
+  return seat;
+}
+
+/**
+ * Picks the member's number: a fixed seat for the board, directors and
+ * advisers, otherwise the first free number in their block, falling back to
+ * the general pool.
+ */
 export function pickMemberSequence(
   layout: MemberIdLayout,
   used: Set<number>,
   placement: MemberPlacement,
 ): number {
+  if (placement.kind === "eb") {
+    return seatSequence(layout.ebSeats.get(placement.officeCommittee), used, placement.officeCommittee);
+  }
+  if (placement.kind === "director") {
+    return seatSequence(layout.directorSeats.get(placement.committee), used, placement.committee);
+  }
+  if (placement.kind === "adviser") {
+    if (placement.index < 0 || placement.index >= ADVISER_COUNT) {
+      throw new Error("Only three adviser Member IDs are reserved.");
+    }
+    return seatSequence(ADVISER_START + placement.index, used, `adviser ${placement.index + 1}`);
+  }
   const range =
     placement.kind === "ea"
       ? layout.eaRanges.get(placement.officeCommittee)
@@ -103,14 +150,28 @@ function memberSequence(memberId: string | null, recruitmentYear: number) {
 }
 
 export function formatMemberId(recruitmentYear: number, sequence: number): string {
-  if (sequence > MAX_SEQUENCE) {
+  if (sequence > 9999) {
     throw new Error(`Member ID capacity reached for ${recruitmentYear}.`);
   }
   return `AWS-${academicYearCode(recruitmentYear)}-${String(sequence).padStart(4, "0")}`;
 }
 
-/** Accepted placements plus pending redirect offers, which might still be accepted. */
-async function countHolds(transaction: DbTransaction, recruitmentYear: number) {
+/** Open EA slots per executive office; each office's EA block is sized from these. */
+async function eaSlotsByOffice(transaction: DbExecutor) {
+  const rows = await transaction
+    .select({ committee: committees.name, slots: sql<number>`sum(${positions.openSlots})::int` })
+    .from(positions)
+    .innerJoin(committees, eq(positions.committeeId, committees.id))
+    .groupBy(committees.name);
+  return new Map(
+    rows
+      .filter((row) => isExecutiveOfficeCommittee(row.committee))
+      .map((row) => [row.committee, row.slots] as const),
+  );
+}
+
+/** Accepted staff placements plus pending staff redirect offers, which might still be accepted. */
+async function countStaffHolds(transaction: DbExecutor, recruitmentYear: number) {
   const finalPosition = alias(positions, "final_position");
   const finalCommittee = alias(committees, "final_committee");
   const redirectPosition = alias(positions, "redirect_position");
@@ -135,7 +196,6 @@ async function countHolds(transaction: DbTransaction, recruitmentYear: number) {
       ),
     );
 
-  const eaHoldsByOffice = new Map<string, number>();
   let staffHolds = 0;
   for (const row of rows) {
     const committee =
@@ -144,14 +204,46 @@ async function countHolds(transaction: DbTransaction, recruitmentYear: number) {
         : row.redirectCommittee && row.redirectResponse === null
           ? row.redirectCommittee
           : null;
-    if (!committee) continue;
-    if (isExecutiveOfficeCommittee(committee)) {
-      eaHoldsByOffice.set(committee, (eaHoldsByOffice.get(committee) ?? 0) + 1);
-    } else {
-      staffHolds += 1;
-    }
+    if (committee && !isExecutiveOfficeCommittee(committee)) staffHolds += 1;
   }
-  return { eaHoldsByOffice, staffHolds };
+  return staffHolds;
+}
+
+async function loadLayout(executor: DbExecutor, recruitmentYear: number) {
+  return buildMemberIdLayout({
+    executiveOffices: executiveOfficeCommittees(),
+    eaSlotsByOffice: await eaSlotsByOffice(executor),
+    directorCommittees: staffCommittees(),
+    staffHolds: await countStaffHolds(executor, recruitmentYear),
+  });
+}
+
+/**
+ * The Member ID a board seat or director seat will get once they pay. Seat
+ * numbers never move, so this is the same number allocation will issue later.
+ */
+export async function reservedSeatMemberId(
+  executor: DbExecutor,
+  recruitmentYear: number,
+  placement: Extract<MemberPlacement, { kind: "eb" | "director" | "adviser" }>,
+): Promise<string> {
+  const layout = await loadLayout(executor, recruitmentYear);
+  return formatMemberId(
+    recruitmentYear,
+    pickMemberSequence(layout, new Set(), placement),
+  );
+}
+
+/** Reserved Member IDs for many seats at once, loading the layout a single time. */
+export async function reservedSeatMemberIds(
+  executor: DbExecutor,
+  recruitmentYear: number,
+  placements: Extract<MemberPlacement, { kind: "eb" | "director" | "adviser" }>[],
+): Promise<string[]> {
+  const layout = await loadLayout(executor, recruitmentYear);
+  return placements.map((placement) =>
+    formatMemberId(recruitmentYear, pickMemberSequence(layout, new Set(), placement)),
+  );
 }
 
 export async function allocateMemberId(
@@ -171,13 +263,7 @@ export async function allocateMemberId(
       .map((row) => memberSequence(row.memberId, recruitmentYear))
       .filter((sequence): sequence is number => sequence !== null),
   );
-  const holds = await countHolds(transaction, recruitmentYear);
-  const layout = buildMemberIdLayout({
-    executiveOffices: executiveOfficeCommittees(),
-    eaHoldsByOffice: holds.eaHoldsByOffice,
-    directorCount: staffCommittees().length,
-    staffHolds: holds.staffHolds,
-  });
+  const layout = await loadLayout(transaction, recruitmentYear);
   return formatMemberId(
     recruitmentYear,
     pickMemberSequence(layout, used, placement),
