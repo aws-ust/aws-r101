@@ -12,7 +12,7 @@ Mode: Operate. Established world: DESIGN.md palette and Poppins / JetBrains Mono
 ## Task and audience
 - HR officers, EB and directors on one shared sign-in.
 - Jobs: look up one member fast; see who is in each committee; export the list; check a Member ID; see who has not paid yet.
-- The page is the membership roster: people whose payment is verified and who have a Member ID. EB and directors stay mixed in (they have no ID in the system), shown as "No ID yet" and counted apart from paid members.
+- The page is the membership roster: people whose payment is verified and who have a Member ID. EB and directors stay mixed in until they pay, shown with the Member ID reserved for their seat and counted apart from paid members. Advisers are listed as active members.
 
 ## Structure (confirmed by the user, plus "not paid yet")
 - Header: `// MEMBERSHIP` / Members, subtitle gives the honest split (paid members, officers, not paid yet).

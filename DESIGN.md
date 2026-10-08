@@ -229,8 +229,11 @@ type above are unchanged, but the working areas differ from the public site.
   panel width (container queries), not the viewport.
 - **Members.** Scope tabs (Members, Not paid yet) over a toolbar of search
   (`/` focuses it), one dropdown, a List / By committee switch and Export. Paid
-  members come first in Member ID order, then the officers, who have no ID
-  ("No ID yet"). By committee nests each committee under its executive office.
+  members come first in Member ID order, advisers included (they are active
+  without paying), then the Executive Board and directors who have not paid
+  yet, each showing the number held for their seat ("Reserved AWS-2627-0001").
+  Advisers have their own filter and group. By committee nests each committee
+  under its executive office.
   Not paid yet reads from the payments dashboard and says "Pay by" or
   "Expired". Student No. and Section show from 1400px.
 - **Payments.** One page (`/admin/hr/payments`, `?tab=review|all|setup`;
@@ -240,9 +243,8 @@ type above are unchanged, but the working areas differ from the public site.
   (pending receipts, oldest first) and All payments (Members toolbar and
   filters). The period, amount and GCash QRs live on their own page,
   Payment Setup (`/admin/hr/payments/setup`, its own sidebar entry), and
-  Payments points to it while the period or amount is missing. Export, Retry Emails and
-  Release Confirmations sit beside the tabs; Release always confirms with the
-  count. A row opens a review panel, docked and sticky from 1280px and a sheet
+  Payments points to it while the period or amount is missing. Export and Retry
+  Invitations sit beside the tabs. A row opens a review panel, docked and sticky from 1280px and a sheet
   below: facts, every submission with a large mono reference and copy, then
   Verify (the one aquamarine button) or Reject / Reverse with a reason and a
   new deadline. A decision moves to the next receipt and focuses it; ↑ / ↓
