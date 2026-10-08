@@ -116,12 +116,12 @@ function officer(
 }
 
 export const EXECUTIVE_BOARD: OfficerSeat[] = [
-  officer(1, "ceo", "Sydney Padua", "Chief Executive Officer", "Josh Kenn Viray"),
-  officer(2, "coo", "Marc Axalan", "Chief Operating Officer", "Marc Axalan"),
+  officer(1, "ceo", "Sydney Alison Padua", "Chief Executive Officer", "Josh Kenn Viray"),
+  officer(2, "coo", "Marc Ellis Axalan", "Chief Operating Officer", "Marc Axalan"),
   officer(
     3,
     "cro",
-    "Alden Olmedo",
+    "Alden Alexander Olmedo",
     "Chief Relations Officer",
     "Leigh Andrei Sigua",
   ),
@@ -132,13 +132,13 @@ export const EXECUTIVE_BOARD: OfficerSeat[] = [
     "Corporate Secretary",
     "Jan Vincent Elleazar",
   ),
-  officer(5, "cto", "Neil Casas", "Chief Technology Officer", "Lance Owen Gulinao"),
-  officer(6, "cfo", "Kyan So", "Chief Finance Officer", "Alexa Palanog"),
-  officer(7, "chro", "Claire Abas", "Chief Human Resource Officer", "Denzel To"),
+  officer(5, "cto", "Neil Alfonz Casas", "Chief Technology Officer", "Lance Owen Gulinao"),
+  officer(6, "cfo", "Kyan Charles So", "Chief Finance Officer", "Alexa Palanog"),
+  officer(7, "chro", "Claire Antonette Abas", "Chief Human Resource Officer", "Denzel To"),
   officer(
     8,
     "cco",
-    "Lyka Escosia",
+    "Lyka Nicole Escosia",
     "Chief Creative Officer",
     "Sydney Padua",
   ),
@@ -158,7 +158,7 @@ const COMMITTEE_DIRECTOR_BY_COMMITTEE: Record<
   },
   "Sponsorship Committee": {
     title: "Sponsorships Committee Director",
-    name: "Antionio Axellance III Paco",
+    name: "Antonio Axellance III Paco",
   },
   "Marketing Committee": {
     title: "Marketing Committee Director",
