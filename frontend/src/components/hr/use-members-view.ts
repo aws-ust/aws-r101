@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import type { MembersScope, MembersView } from "@/components/hr/members-tabs"
-import type { DirectoryMember, PaymentListItem } from "@/lib/api/payments"
+import type { DirectoryMember, PaymentListItem, PendingOfficer } from "@/lib/api/payments"
 import { membersToCsv, unpaidToCsv } from "@/lib/members/csv"
 import {
   buildMemberEntries,
@@ -21,7 +21,7 @@ import {
   type UnpaidFilter,
 } from "@/lib/members/unpaid"
 
-type Data = { verified: DirectoryMember[]; payments: PaymentListItem[] }
+type Data = { verified: DirectoryMember[]; pendingOfficers: PendingOfficer[]; payments: PaymentListItem[] }
 
 /** Everything the Members page shows: the two scopes, their filters, paging and export. */
 export function useMembersView(data: Data | null) {
@@ -32,7 +32,7 @@ export function useMembersView(data: Data | null) {
   const [query, setQueryState] = useState("")
   const [page, setPage] = useState(1)
 
-  const entries = useMemo(() => buildMemberEntries(data?.verified ?? []), [data])
+  const entries = useMemo(() => buildMemberEntries(data?.verified ?? [], data?.pendingOfficers ?? []), [data])
   const unpaid = useMemo(() => buildUnpaidEntries(data?.payments ?? []), [data])
   const roleCounts = useMemo(() => countByFilter(entries), [entries])
   const unpaidCounts = useMemo(() => countByUnpaidStatus(unpaid), [unpaid])

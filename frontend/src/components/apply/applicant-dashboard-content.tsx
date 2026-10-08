@@ -6,6 +6,7 @@ import { ApplicantChoiceEditor } from "@/components/apply/applicant-choice-edito
 import { ApplicantGroupLinks } from "@/components/apply/applicant-group-links"
 import { ApplicantIdentityPanel } from "@/components/apply/applicant-identity-panel"
 import { ApplicantMembershipStatus } from "@/components/apply/applicant-membership-status"
+import { ApplicantOfficerSection } from "@/components/apply/applicant-officer-section"
 import { ApplicantPaymentPanel } from "@/components/apply/applicant-payment-panel"
 import { ApplicantResultPanel } from "@/components/apply/applicant-result-panel"
 import { ApplicantSection } from "@/components/apply/applicant-section"
@@ -120,7 +121,9 @@ export function ApplicantDashboardContent({
         trail={trail}
         onApplicationUpdated={onApplicationUpdated}
       />
-      {application.applicationType !== "position" ? (
+      {application.officer ? (
+        <ApplicantOfficerSection application={application} officer={application.officer} onUpdated={onApplicationUpdated} />
+      ) : application.applicationType !== "position" ? (
         <ApplicantMembershipStatus application={application} milestone={accepted && !payment.loading && !hasId} />
       ) : result ? (
         <ApplicantResultPanel

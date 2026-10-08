@@ -58,6 +58,12 @@ export function paysAsCommitteeMember(payment: Pick<PaymentListItem, "applicatio
   return payment.applicationType === "position" && payment.applicationStatus === "approved"
 }
 
+/** The "Pays as" line in the review panel. */
+export function paysAsLabel(payment: Pick<PaymentListItem, "applicationType" | "applicationStatus">) {
+  if (payment.applicationType === "officer") return "Officer"
+  return paysAsCommitteeMember(payment) ? "Committee member" : "General member"
+}
+
 export function filterPayments(payments: PaymentListItem[], filters: PaymentFilters) {
   const search = filters.query.trim().toLowerCase()
   return payments.filter((payment) => {

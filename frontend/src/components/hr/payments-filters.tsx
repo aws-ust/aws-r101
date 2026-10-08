@@ -29,6 +29,7 @@ function options(payments: PaymentListItem[]) {
     { value: "all", label: "All applicants", count: payments.length },
     { value: "position", label: "Committee applicants", count: count(payments, (p) => p.applicationType === "position") },
     { value: "member", label: "General members", count: count(payments, (p) => p.applicationType === "member") },
+    { value: "officer", label: "Officers", count: count(payments, (p) => p.applicationType === "officer") },
   ]
   const result: FilterOption[] = [
     { value: "all", label: "All results", count: payments.length },

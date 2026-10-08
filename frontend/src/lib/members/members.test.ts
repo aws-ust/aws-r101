@@ -1,9 +1,9 @@
 import assert from "node:assert/strict"
 import test from "node:test"
-import type { DirectoryMember, PaymentListItem } from "../api/payments"
+import type { DirectoryMember, PaymentListItem, PendingOfficer } from "../api/payments"
 import { membersToCsv, unpaidToCsv } from "./csv"
 import { buildMemberEntries, filterMemberEntries, splitByMemberId } from "./directory"
-import { buildCommitteeGroups, GENERAL_GROUP } from "./groups"
+import { ADVISER_GROUP, buildCommitteeGroups, GENERAL_GROUP } from "./groups"
 import { buildUnpaidEntries, countByUnpaidStatus, filterUnpaidEntries } from "./unpaid"
 import { code128Bars } from "./barcode"
 import { academicYearLabel, idCardValueSize, issuedOnLabel, validThroughLabel } from "./id-card"
@@ -65,6 +65,49 @@ test("paid members come first with their Member ID, then the officers with their
   const split = splitByMemberId(entries)
   assert.equal(split.withId, 1)
   assert.equal(split.officers, entries.length - 1)
+})
+
+test("seeded officers show the number held for their seat until they pay", () => {
+  const ceo: PendingOfficer = {
+    fullName: "Sydney Alison Padua",
+    position: "Chief Executive Officer",
+    role: "eb",
+    committee: "Office of the Chief Executive Officer",
+    reservedMemberId: "AWS-2627-0001",
+    applicationCode: "AP-2026-000123",
+    studentNumber: null,
+    section: null,
+  }
+  const adviser = member({
+    memberId: "AWS-2627-9001",
+    fullName: "Ronina Tayuan",
+    role: "adviser",
+    position: "Adviser",
+    committee: null,
+  })
+  const entries = buildMemberEntries([adviser], [ceo])
+  // Backend officers replace the static people list, so nobody is listed twice.
+  assert.deepEqual(
+    entries.map((entry) => [entry.fullName, entry.memberId, entry.reservedMemberId]),
+    [
+      ["Ronina Tayuan", "AWS-2627-9001", null],
+      ["Sydney Alison Padua", null, "AWS-2627-0001"],
+    ],
+  )
+  assert.equal(filterMemberEntries(entries, "all", "2627-0001").length, 1)
+  assert.equal(filterMemberEntries(entries, "adviser", "").length, 1)
+  assert.deepEqual(splitByMemberId(entries), { withId: 1, officers: 1 })
+})
+
+test("advisers get their own group ahead of the offices", () => {
+  const groups = buildCommitteeGroups(
+    buildMemberEntries([
+      member({ memberId: "AWS-2627-9001", fullName: "Ronina Tayuan", role: "adviser", committee: null }),
+      member({ memberId: "AWS-2627-0004", fullName: "Gil General" }),
+    ]),
+  )
+  assert.equal(groups[0].name, ADVISER_GROUP)
+  assert.equal(groups[groups.length - 1].name, GENERAL_GROUP)
 })
 
 test("search matches name, Member ID, student number and committee", () => {

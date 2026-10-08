@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils"
 // Who this is and where they stand, always visible; everything they submitted
 // folds into "Your application", open while they can still edit it.
 const panelClasses = cn(dashboardPanelClasses, "min-w-0 px-5 pt-5 sm:px-6 sm:pt-6")
+const officerPanelClasses = cn(panelClasses, "pb-5 sm:pb-6")
 const headClasses = "flex flex-wrap items-start justify-between gap-x-4 gap-y-3"
 const nameClasses = "font-sans text-2xl font-bold text-balance break-words text-blue-chalk"
 const codeClasses = "mt-1 font-mono text-sm tracking-wide text-prelude"
@@ -38,7 +39,7 @@ export function ApplicantIdentityPanel({ application, state, trail, onApplicatio
   const editing = application.canEdit && !application.result
 
   return (
-    <section className={panelClasses} aria-labelledby="applicant-name">
+    <section className={application.officer ? officerPanelClasses : panelClasses} aria-labelledby="applicant-name">
       <div className={headClasses}>
         <div className="min-w-0">
           <h3 id="applicant-name" className={nameClasses}>
@@ -49,6 +50,7 @@ export function ApplicantIdentityPanel({ application, state, trail, onApplicatio
         <ApplicantStatusChip {...state.chip} />
       </div>
       {trail ? <ApplicantR101Trail trail={trail} /> : <div className={trailPlaceholderClasses} aria-hidden />}
+      {application.officer ? null : (
       <Accordion className={accordionClasses} defaultValue={editing ? ["details"] : []}>
         <AccordionItem value="details">
           <AccordionTrigger className={triggerClasses}>Your application</AccordionTrigger>
@@ -62,6 +64,7 @@ export function ApplicantIdentityPanel({ application, state, trail, onApplicatio
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+      )}
     </section>
   )
 }

@@ -16,10 +16,12 @@ export type R101Trail = {
   mood: TrailMood
 }
 
-type TrailInput = Pick<ApplicantApplication, "applicationType" | "canEdit" | "result">
+type TrailInput = Pick<ApplicantApplication, "applicationType" | "canEdit" | "result"> &
+  Partial<Pick<ApplicantApplication, "officer">>
 
 const COMMITTEE_STATIONS = ["Applied", "Interview", "Results", "Payment", "Member"]
 const MEMBER_ONLY_STATIONS = ["Registered", "R101", "Payment", "Member"]
+const OFFICER_STATIONS = ["Elected", "Payment", "Member"]
 
 /** The payment and membership end of the path, shared by both kinds of applicant. */
 function paymentLeg(payment: ApplicantPayment | null, paymentIndex: number): Omit<R101Trail, "stations"> {
@@ -36,6 +38,12 @@ function paymentLeg(payment: ApplicantPayment | null, paymentIndex: number): Omi
 
 export function r101Trail(application: TrailInput, payment: ApplicantPayment | null): R101Trail {
   const { result } = application
+
+  if (application.officer) {
+    // Advisers hold their ID already; everyone else pays to release it.
+    if (application.officer.kind === "adviser") return { stations: OFFICER_STATIONS, current: 2, mood: "complete" }
+    return { stations: OFFICER_STATIONS, ...paymentLeg(payment, 1) }
+  }
 
   if (application.applicationType !== "position") {
     if (!result) return { stations: MEMBER_ONLY_STATIONS, current: 1, mood: "waiting" }

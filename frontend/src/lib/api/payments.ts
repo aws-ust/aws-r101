@@ -40,7 +40,7 @@ export type PaymentListItem = {
   paymentId: string
   applicationId: string
   applicationCode: string
-  applicationType: "position" | "member"
+  applicationType: "position" | "member" | "officer"
   applicationStatus: "pending" | "approved" | "rejected"
   archivedAt: string | null
   memberId: string | null
@@ -230,7 +230,7 @@ export function retryPaymentInvitationEmails() {
   )
 }
 
-export type DirectoryMemberRole = "ea" | "staff" | "general"
+export type DirectoryMemberRole = "eb" | "director" | "adviser" | "ea" | "staff" | "general"
 
 export type DirectoryMember = {
   memberId: string
@@ -243,7 +243,21 @@ export type DirectoryMember = {
   verifiedAt: string | null
 }
 
-/** Verified members of the current recruitment year. */
+/** A board member or director who has not paid yet, with the Member ID held for their seat. */
+export type PendingOfficer = {
+  fullName: string
+  position: string
+  role: "eb" | "director"
+  committee: string
+  reservedMemberId: string
+  applicationCode: string
+  studentNumber: string | null
+  section: string | null
+}
+
+/** Verified members of the current recruitment year, and the officers still to pay. */
 export function getDirectoryMembers() {
-  return apiFetch<{ members: DirectoryMember[] }>("/membership-payments/members")
+  return apiFetch<{ members: DirectoryMember[]; pendingOfficers: PendingOfficer[] }>(
+    "/membership-payments/members",
+  )
 }

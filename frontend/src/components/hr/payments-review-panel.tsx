@@ -8,7 +8,7 @@ import { PaymentsReviewSubmissions } from "@/components/hr/payments-review-submi
 import { usePaymentReview, type ReviewDecision } from "@/components/hr/use-payment-review"
 import type { PaymentListItem } from "@/lib/api/payments"
 import { formatDisplayDateTime } from "@/lib/datetime/display"
-import { fullName, paysAsCommitteeMember } from "@/lib/payments/workspace"
+import { fullName, paysAsLabel } from "@/lib/payments/workspace"
 import { cn } from "@/lib/utils"
 
 const panelClasses = "flex h-full min-h-0 flex-col"
@@ -81,8 +81,10 @@ export function PaymentsReviewPanel({ payment, position, total, onPrevious, onNe
       </div>
       <div className={bodyClasses}>
         <dl className={factsClasses}>
-          <Fact label="Result">{payment.applicationStatus === "approved" ? "Accepted" : "Not selected"}</Fact>
-          <Fact label="Pays as">{paysAsCommitteeMember(payment) ? "Committee member" : "General member"}</Fact>
+          {payment.applicationType === "officer" ? null : (
+            <Fact label="Result">{payment.applicationStatus === "approved" ? "Accepted" : "Not selected"}</Fact>
+          )}
+          <Fact label="Pays as">{paysAsLabel(payment)}</Fact>
           <Fact label="Placement" wide>
             {[payment.committee, payment.finalPosition].filter(Boolean).join(" · ") || "—"}
           </Fact>
