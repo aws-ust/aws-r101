@@ -233,3 +233,26 @@ type above are unchanged, but the working areas differ from the public site.
   ("No ID yet"). By committee nests each committee under its executive office.
   Not paid yet reads from the payments dashboard and says "Pay by" or
   "Expired". Student No. and Section show from 1400px.
+- **Applicant dashboard.** One column of solid sections in a fixed order:
+  identity, result or application (choices, interview, edit choices),
+  groups, payment, membership ID. The page title is the h1 and its subtitle
+  is one factual line per state (`frontend/src/lib/apply/dashboard-state.ts`).
+  Identity shows name, applicant code and one status chip; everything the
+  applicant submitted folds into "Your application", open while the edit
+  window is open. Every section uses `ApplicantSection`: a `// AREA` label,
+  a short title, one status line saying where the applicant stands (the
+  committee they got, the payment status, the booked interview), then detail
+  as ruled rows rather than nested cards. Only the "Reply needed" chip and a
+  ready-to-confirm interview slot are aquamarine; other buttons are purple.
+  Group links are plain rows with an outbound arrow.
+- **R101 trail and milestone sky (applicant personality).** Under the name, a
+  line of stations (Applied, Interview, Results, Payment, Member; member-only:
+  Registered, Approval, Payment, Member) fills from the start to "you are
+  here" on load (`frontend/src/lib/apply/r101-trail.ts`). The current station
+  is aquamarine and pulses three times only when the applicant has something
+  to do; otherwise it is biloba-flower. The newest milestone the applicant
+  earned (their acceptance, or their ID once it exists) opens on the ID card's
+  night sky (`/member-id/back-bg.png`) with Espi rising from the clouds; only
+  one section per page gets it. Motion utilities `trail-fill`,
+  `trail-beacon` and `espi-rise` live in `globals.css` and stop under reduced
+  motion.
