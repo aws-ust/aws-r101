@@ -6,7 +6,7 @@ import { MemberIdCardBack } from "@/components/apply/member-id-card-back"
 import { memberIdCardFont } from "@/components/apply/member-id-card-font"
 import { MemberIdCardFront, type MemberIdCardFrontProps } from "@/components/apply/member-id-card-front"
 import { MemberIdExportStage } from "@/components/apply/member-id-export-stage"
-import { MemberIdSaveMenu } from "@/components/apply/member-id-save-menu"
+import { MemberIdSaveButton } from "@/components/apply/member-id-save-button"
 import { MemberPhotoButton } from "@/components/apply/member-photo-button"
 import { MemberPhotoCropDialog } from "@/components/apply/member-photo-crop-dialog"
 import { useMemberIdExport } from "@/components/apply/use-member-id-export"
@@ -110,7 +110,7 @@ export function MemberIdCard({
           <RotateCw className="size-4" aria-hidden />
           {flipped ? "Show front" : "Show back"}
         </Button>
-        <MemberIdSaveMenu pending={saving} onSave={(side) => void save(side)} />
+        <MemberIdSaveButton pending={saving} onSave={() => void save()} />
       </div>
       {error ? <p className={errorClasses} role="alert">{error}</p> : null}
       {exportJob ? (

@@ -13,8 +13,8 @@ import {
 type ExportJob = { side: IdCardExportSide; photoUrl: string | null }
 
 /**
- * Saves the member ID as a PNG: mounts the off-screen stage for the chosen
- * side, captures it, downloads it, then unmounts the stage.
+ * Saves the member ID as two PNGs (front, then back): mounts the off-screen
+ * stage for each side, captures it, downloads it, then unmounts the stage.
  */
 export function useMemberIdExport(memberId: string, photoUrl: string | null) {
   const stageRef = useRef<HTMLDivElement>(null)
@@ -22,18 +22,25 @@ export function useMemberIdExport(memberId: string, photoUrl: string | null) {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function save(side: IdCardExportSide) {
+  async function saveSide(side: IdCardExportSide) {
+    const inlinedPhoto = photoUrl && side !== "back" ? await photoAsDataUrl(photoUrl) : null
+    // Mount the stage now so its node exists for the capture below.
+    flushSync(() => setJob({ side, photoUrl: inlinedPhoto }))
+    const node = stageRef.current
+    if (!node) throw new Error("The card is not ready.")
+    downloadBlob(idCardFileName(memberId, side), await captureIdCard(node))
+    return !photoUrl || side === "back" || Boolean(inlinedPhoto)
+  }
+
+  /** Downloads the front and the back as two separate images. */
+  async function save() {
     if (pending) return
     setPending(true)
     setError(null)
     try {
-      const inlinedPhoto = photoUrl && side !== "back" ? await photoAsDataUrl(photoUrl) : null
-      // Mount the stage now so its node exists for the capture below.
-      flushSync(() => setJob({ side, photoUrl: inlinedPhoto }))
-      const node = stageRef.current
-      if (!node) throw new Error("The card is not ready.")
-      downloadBlob(idCardFileName(memberId, side), await captureIdCard(node))
-      if (photoUrl && side !== "back" && !inlinedPhoto) {
+      const frontHadPhoto = await saveSide("front")
+      await saveSide("back")
+      if (!frontHadPhoto) {
         setError("Saved without your photo because it could not be loaded. Try again in a moment.")
       }
     } catch {

@@ -40,7 +40,7 @@ export function MemberIdCardDetails({ fullName, studentNumber, position, section
       <Row label="STUD NO." value={studentNumber} />
       <Row label="POSITION" value={position} />
       <Row label="YEAR & SEC." value={section} />
-      <Row label="ORG ID" value={memberId} bold />
+      <Row label="MEMBER ID" value={memberId} bold />
     </dl>
   )
 }
