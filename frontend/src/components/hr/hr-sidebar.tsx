@@ -23,7 +23,7 @@ import {
 const sidebarHeaderClasses =
   "flex flex-row items-center gap-2 border-b border-blue-chalk/20 bg-meteorite/40 p-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
 const brandRowClasses =
-  "flex min-w-0 flex-1 items-center gap-3 group-data-[collapsible=icon]:hidden"
+  "flex min-w-0 flex-1 items-center gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-aquamarine/60 group-data-[collapsible=icon]:hidden"
 const brandMarkClasses =
   "grid size-9 shrink-0 place-items-center rounded-full border border-aquamarine/35 bg-aquamarine/15 text-aquamarine"
 const brandCopyClasses = "flex min-w-0 flex-col leading-tight"

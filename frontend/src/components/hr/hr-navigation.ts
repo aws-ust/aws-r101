@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   MessagesSquare,
   Send,
+  Settings2,
   Users,
   WalletCards,
 } from "lucide-react"
@@ -20,7 +21,10 @@ export type HrNavigationItem = {
 }
 
 export type HrNavigationSection = {
-  label: string
+  /** Group heading; null for the home item, which stands alone. */
+  label: string | null
+  /** "end" pins the group to the foot of the sidebar. */
+  placement?: "end"
   visible: (role: HrRole) => boolean
   items: HrNavigationItem[]
 }
@@ -45,7 +49,8 @@ function isApplicationDetailPath(pathname: string) {
 
 export const hrNavigationSections: HrNavigationSection[] = [
   {
-    label: "Season",
+    // Home: no label, it is the page everything else hangs off.
+    label: null,
     visible: () => true,
     items: [
       {
@@ -57,18 +62,7 @@ export const hrNavigationSections: HrNavigationSection[] = [
     ],
   },
   {
-    label: "People",
-    visible: () => true,
-    items: [
-      {
-        label: "Members",
-        href: "/admin/hr/members",
-        icon: IdCard,
-        active: (path) => path.startsWith("/admin/hr/members"),
-      },
-    ],
-  },
-  {
+    // The applicant pipeline, in the order work happens.
     label: "Recruitment",
     visible: () => true,
     items: [
@@ -87,18 +81,6 @@ export const hrNavigationSections: HrNavigationSection[] = [
         active: (path) => path.startsWith("/admin/hr/results"),
       },
       {
-        label: "Committees",
-        href: "/admin/hr/committees",
-        icon: Users,
-        active: (path) => path.startsWith("/admin/hr/committees"),
-      },
-      {
-        label: "Recruitment Setup",
-        href: "/admin/hr/season",
-        icon: CalendarRange,
-        active: (path) => path.startsWith("/admin/hr/season"),
-      },
-      {
         label: "Archive",
         href: "/admin/hr/archive",
         icon: Archive,
@@ -109,9 +91,16 @@ export const hrNavigationSections: HrNavigationSection[] = [
     ],
   },
   {
+    // Once applicants become members: who they are, what they paid, where they chat.
     label: "Membership",
     visible: () => true,
     items: [
+      {
+        label: "Members",
+        href: "/admin/hr/members",
+        icon: IdCard,
+        active: (path) => path.startsWith("/admin/hr/members"),
+      },
       {
         label: "Payments",
         href: "/admin/hr/payments",
@@ -124,6 +113,33 @@ export const hrNavigationSections: HrNavigationSection[] = [
         href: "/admin/hr/groups",
         icon: MessagesSquare,
         active: (path) => path.startsWith("/admin/hr/groups"),
+      },
+    ],
+  },
+  {
+    // Configuration, visited a few times a season: pinned to the foot of the
+    // sidebar so the daily work above stays short and in reach.
+    label: "Setup",
+    placement: "end",
+    visible: () => true,
+    items: [
+      {
+        label: "Recruitment Setup",
+        href: "/admin/hr/season",
+        icon: CalendarRange,
+        active: (path) => path.startsWith("/admin/hr/season"),
+      },
+      {
+        label: "Committees",
+        href: "/admin/hr/committees",
+        icon: Users,
+        active: (path) => path.startsWith("/admin/hr/committees"),
+      },
+      {
+        label: "Payment Setup",
+        href: "/admin/hr/payments/setup",
+        icon: Settings2,
+        active: (path) => path.startsWith("/admin/hr/payments/setup"),
       },
     ],
   },
