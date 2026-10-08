@@ -4,6 +4,7 @@ import type { PaymentCampaign, PaymentListItem } from "../api/payments"
 import {
   EMPTY_PAYMENT_FILTERS,
   defaultPaymentTab,
+  needsPaymentSetup,
   filterPayments,
   nextAfterDecision,
   periodLine,
@@ -71,11 +72,14 @@ test("filters search names, codes and references; the list sorts work first", ()
   assert.deepEqual(sortPayments(rows).map((r) => r.paymentId), ["b", "c", "a"])
 })
 
-test("the page opens on Setup, then the queue while receipts wait, and says where the period stands", () => {
+test("the page opens on the queue while receipts wait, and says where the period stands", () => {
   const summary = { totalEligible: 3, awaitingPayment: 0, pendingVerification: 2, verified: 1, needsResubmission: 0, expired: 0 }
   const campaign = { isOpen: true, amountCents: 25000, deadlineAt: "2026-10-20T15:59:00.000Z" } as PaymentCampaign
-  assert.equal(defaultPaymentTab(null, summary), "setup")
-  assert.equal(defaultPaymentTab(campaign, summary), "review")
-  assert.equal(defaultPaymentTab(campaign, { ...summary, pendingVerification: 0 }), "all")
+  assert.equal(defaultPaymentTab(summary), "review")
+  assert.equal(defaultPaymentTab({ ...summary, pendingVerification: 0 }), "all")
+  assert.equal(defaultPaymentTab(null), "all")
+  assert.equal(needsPaymentSetup(null), true)
+  assert.equal(needsPaymentSetup({ ...campaign, amountCents: null }), true)
+  assert.equal(needsPaymentSetup(campaign), false)
   assert.match(periodLine(campaign), /^Open · ₱250\.00 · deadline Oct 20, 2026$/)
 })

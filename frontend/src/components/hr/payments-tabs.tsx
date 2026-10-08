@@ -6,19 +6,16 @@ import type { PaymentTab } from "@/lib/payments/workspace"
 
 const rowClasses = "mt-8 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between"
 const countClasses = "rounded-pill bg-blue-chalk/10 px-2 py-0.5 font-sans text-xs tabular-nums text-prelude"
-const setupDotClasses = "size-1.5 rounded-full bg-rose-glow"
 
 type PaymentsTabsProps = {
   tab: PaymentTab
   onTabChange: (tab: PaymentTab) => void
   reviewCount: number
   allCount: number
-  /** No period, or no amount yet: Setup still has work. */
-  setupIncomplete: boolean
   actions: ReactNode
 }
 
-export function PaymentsTabs({ tab, onTabChange, reviewCount, allCount, setupIncomplete, actions }: PaymentsTabsProps) {
+export function PaymentsTabs({ tab, onTabChange, reviewCount, allCount, actions }: PaymentsTabsProps) {
   return (
     <div className={rowClasses}>
       <Tabs value={tab} onValueChange={(next) => onTabChange(next as PaymentTab)}>
@@ -28,15 +25,6 @@ export function PaymentsTabs({ tab, onTabChange, reviewCount, allCount, setupInc
           </TabsTrigger>
           <TabsTrigger value="all">
             All payments <span className={countClasses}>{allCount}</span>
-          </TabsTrigger>
-          <TabsTrigger value="setup">
-            Setup
-            {setupIncomplete ? (
-              <>
-                <span className={setupDotClasses} aria-hidden />
-                <span className="sr-only">(needs setting up)</span>
-              </>
-            ) : null}
           </TabsTrigger>
         </TabsList>
       </Tabs>

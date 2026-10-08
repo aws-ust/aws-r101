@@ -42,8 +42,8 @@ export function PaymentsNoMatch({ action }: { action: ReactNode }) {
 }
 
 function noneBody(campaign: PaymentCampaign | null) {
-  if (!campaign) return "There is no payment period yet. Set one up in the Setup tab, then open it to send invitations."
-  if (!campaign.isOpen) return "The payment period is closed and nobody has a payment yet. Open it in Setup to send invitations."
+  if (!campaign) return "There is no payment period yet. Set one up in Payment Setup, then open it to send invitations."
+  if (!campaign.isOpen) return "The payment period is closed and nobody has a payment yet. Open it in Payment Setup to send invitations."
   return "The payment period is open, but nobody has a payment record yet."
 }
 

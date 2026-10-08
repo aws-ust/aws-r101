@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import type { StripFilter } from "@/components/hr/payments-status-strip"
-import type { PaymentCampaign, PaymentDashboard } from "@/lib/api/payments"
+import type { PaymentDashboard } from "@/lib/api/payments"
 import {
   EMPTY_PAYMENT_FILTERS,
   defaultPaymentTab,
@@ -23,7 +23,6 @@ function writeTabToUrl(tab: PaymentTab) {
 
 export function usePaymentsView(
   dashboard: PaymentDashboard | null,
-  campaign: PaymentCampaign | null,
   initialTab: PaymentTab | null,
   loading: boolean,
 ) {
@@ -31,7 +30,7 @@ export function usePaymentsView(
   // Pick the opening tab once, when the data arrives; after that only the
   // officer changes it (verifying the last receipt must not jump tabs).
   if (chosenTab === null && !loading) {
-    setChosenTab(defaultPaymentTab(campaign, dashboard?.summary ?? null))
+    setChosenTab(defaultPaymentTab(dashboard?.summary ?? null))
   }
   const [filters, setFilters] = useState<PaymentFilters>(EMPTY_PAYMENT_FILTERS)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -39,8 +38,8 @@ export function usePaymentsView(
   const payments = useMemo(() => dashboard?.payments ?? [], [dashboard])
   const queue = useMemo(() => reviewQueue(payments), [payments])
   const filtered = useMemo(() => sortPayments(filterPayments(payments, filters)), [payments, filters])
-  const tab = chosenTab ?? defaultPaymentTab(campaign, dashboard?.summary ?? null)
-  const visible = tab === "review" ? queue : tab === "all" ? filtered : []
+  const tab = chosenTab ?? defaultPaymentTab(dashboard?.summary ?? null)
+  const visible = tab === "review" ? queue : filtered
   const selected = payments.find((payment) => payment.paymentId === selectedId) ?? null
   const position = selected ? visible.findIndex((payment) => payment.paymentId === selected.paymentId) + 1 : 0
 
@@ -78,7 +77,7 @@ export function usePaymentsView(
     selectedId,
     setSelectedId,
     position,
-    stripActive: (tab === "review" ? "pending_verification" : tab === "all" ? filters.status : null) as StripFilter | null,
+    stripActive: (tab === "review" ? "pending_verification" : filters.status) as StripFilter | null,
     canStep: (delta: 1 | -1) => Boolean(selectedId && position > 0 && visible[position - 1 + delta]),
     step,
     pickStatus,

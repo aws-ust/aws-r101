@@ -6,8 +6,8 @@ import type {
 } from "@/lib/api/payments"
 import { formatDisplayDate } from "@/lib/datetime/display"
 
-/** The Payments page: clear the receipt queue, see everyone, or set up. */
-export type PaymentTab = "review" | "all" | "setup"
+/** The Payments page: clear the receipt queue, or see everyone. Setup has its own page. */
+export type PaymentTab = "review" | "all"
 
 export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
   pending_verification: "Pending verification",
@@ -105,16 +105,19 @@ export function nextAfterDecision(queue: PaymentListItem[], id: string) {
 }
 
 export function parsePaymentTab(value: string | string[] | undefined): PaymentTab | null {
-  return value === "review" || value === "all" || value === "setup" ? value : null
+  return value === "review" || value === "all" ? value : null
 }
 
-/** Setup until there is a period; the queue while anything waits; else everyone. */
-export function defaultPaymentTab(
-  campaign: PaymentCampaign | null,
-  summary: PaymentDashboard["summary"] | null,
-): PaymentTab {
-  if (!campaign) return "setup"
+/** The queue while anything waits; otherwise everyone. */
+export function defaultPaymentTab(summary: PaymentDashboard["summary"] | null): PaymentTab {
   return summary && summary.pendingVerification > 0 ? "review" : "all"
+}
+
+export const PAYMENT_SETUP_HREF = "/admin/hr/payments/setup"
+
+/** No period yet, or no amount: the officer still has to visit Payment Setup. */
+export function needsPaymentSetup(campaign: PaymentCampaign | null) {
+  return !campaign || campaign.amountCents === null
 }
 
 const pesoFormatter = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" })
@@ -125,7 +128,7 @@ export function formatPeso(amountCents: number) {
 
 /** The one line under the page title: is the period open, how much, until when. */
 export function periodLine(campaign: PaymentCampaign | null) {
-  if (!campaign) return "Not set up yet. Set the payment period, amount and GCash QRs in Setup."
+  if (!campaign) return "Not set up yet. Set the payment period, amount and GCash QRs in Payment Setup."
   const amount = campaign.amountCents === null ? "amount not set" : formatPeso(campaign.amountCents)
   const deadline = formatDisplayDate(new Date(campaign.deadlineAt), {
     month: "short",
