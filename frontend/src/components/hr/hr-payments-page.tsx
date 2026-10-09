@@ -4,6 +4,7 @@ import Link from "next/link"
 import { PaymentsCollectionActions } from "@/components/hr/payments-collection-actions"
 import { PaymentsLoadError } from "@/components/hr/payments-empty"
 import { PaymentsListArea } from "@/components/hr/payments-list-area"
+import { PaymentsEmailStrip } from "@/components/hr/payments-email-strip"
 import { PaymentsStatusStrip } from "@/components/hr/payments-status-strip"
 import { PaymentsTabs } from "@/components/hr/payments-tabs"
 import { useHrPaymentWorkspace, type HrPaymentWorkspace } from "@/components/hr/use-hr-payment-workspace"
@@ -72,6 +73,9 @@ function PaymentsLoaded({ workspace, view }: { workspace: HrPaymentWorkspace; vi
     <>
       {dashboard ? (
         <PaymentsStatusStrip summary={dashboard.summary} active={view.stripActive} onPick={view.pickStatus} />
+      ) : null}
+      {dashboard && dashboard.payments.length > 0 ? (
+        <PaymentsEmailStrip payments={dashboard.payments} active={view.emailActive} onPick={view.pickEmail} />
       ) : null}
       {needsPaymentSetup(campaign) ? <PaymentsSetupNotice campaign={campaign} /> : null}
       <PaymentsTabs

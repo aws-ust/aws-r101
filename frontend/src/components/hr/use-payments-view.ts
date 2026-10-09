@@ -10,6 +10,7 @@ import {
   reviewQueue,
   sortPayments,
   stepInList,
+  type PaymentEmailFilter,
   type PaymentFilters,
   type PaymentTab,
 } from "@/lib/payments/workspace"
@@ -59,6 +60,12 @@ export function usePaymentsView(
     setFilters((current) => ({ ...current, status: filter }))
   }
 
+  /** A count in the payment-email row: the full list filtered to it, or cleared when picked again. */
+  function pickEmail(filter: Exclude<PaymentEmailFilter, "all">) {
+    setTab("all")
+    setFilters((current) => ({ ...current, email: current.email === filter ? "all" : filter }))
+  }
+
   function step(delta: 1 | -1) {
     if (!selectedId) return
     const next = stepInList(visible, selectedId, delta)
@@ -81,6 +88,9 @@ export function usePaymentsView(
     canStep: (delta: 1 | -1) => Boolean(selectedId && position > 0 && visible[position - 1 + delta]),
     step,
     pickStatus,
+    pickEmail,
+    /** The email filter applied to the list, shown on the All payments tab only. */
+    emailActive: (tab === "all" ? filters.email : "all") as PaymentEmailFilter,
   }
 }
 

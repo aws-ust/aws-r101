@@ -43,6 +43,15 @@ export function emailNotSent(invitation: PaymentInvitation) {
   return invitation === "none" || invitation === "queued" || invitation === "failed"
 }
 
+/** How many people are in each payment-email group. `unsent` is never made, still waiting, or failed. */
+export function paymentEmailCounts(payments: PaymentListItem[]) {
+  return {
+    unsent: payments.filter((payment) => emailNotSent(payment.invitation)).length,
+    uncertain: payments.filter((payment) => payment.invitation === "uncertain").length,
+    sent: payments.filter((payment) => payment.invitation === "sent").length,
+  }
+}
+
 function matchesEmailFilter(invitation: PaymentInvitation, filter: PaymentEmailFilter) {
   if (filter === "all") return true
   if (filter === "unsent") return emailNotSent(invitation)
