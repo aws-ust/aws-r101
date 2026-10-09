@@ -251,14 +251,20 @@ type above are unchanged, but the working areas differ from the public site.
   and Esc work unless a field, menu or picker has the key. Rows lay out by
   the table's own width (container queries).
 - **HR sidebar.** Grouped by what the work is, not by page: Overview alone
-  at the top; Recruitment (Applications, Results, Archive); Officer Hunt
-  (Hunt Applications, Hunt Results, the separate round for the next board,
-  directors and EAs); Membership
-  (Members, Payments, Community Links); Setup (Recruitment Setup, Officer Hunt
-  Setup, Committees, Payment Setup) pinned to the foot, since configuration is visited a few
-  times a season. Every group below Overview is set off by a hairline. Rows are compact (36px, 44px on touch); the only lit things are the
-  current page's pill and its aquamarine icon. Navigation lives in
-  `frontend/src/components/hr/hr-navigation.ts`.
+  at the top; Recruitment (Applications, Results, Archive); Membership
+  (Members, Payments, Community Links); and Setup, folded to one row at the
+  foot. R101 and the Officer Hunt run the same pipeline, so Recruitment is one
+  group with a two-segment round switch (R101 / Officer Hunt) above its rows;
+  the chosen round is the filled segment, and the switch lands on the same kind
+  of page in the other round (Results to Results). Setup (R101 season, Officer
+  hunt, Committees, Payment period) is configuration visited a few times a
+  season, so it stays folded until the current page is inside it. On the icon
+  rail the switch is one button that flips the round and Setup lists its pages
+  directly. Every group below Overview is set off by a hairline. Rows are
+  compact (36px, 44px on touch); the only lit things are the current page's
+  pill and its aquamarine icon. Navigation lives in
+  `frontend/src/components/hr/hr-navigation.ts`, drawn by
+  `hr-sidebar-navigation.tsx`, `hr-round-switch.tsx` and `hr-sidebar-fold.tsx`.
 - **Applicant dashboard.** One column of solid sections in a fixed order:
   identity, result or application (choices, interview, edit choices),
   groups, payment, membership ID. The page title is the h1 and its subtitle
