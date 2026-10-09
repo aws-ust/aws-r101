@@ -36,18 +36,32 @@ const selectedIconClasses =
 const subMenuClasses =
   "min-w-[16rem] rounded-[14px] border border-blue-chalk/25 bg-haiti p-1 text-blue-chalk shadow-md ring-1 ring-blue-chalk/15"
 
+const countClasses = "ml-auto pl-4 font-sans text-xs tabular-nums opacity-70"
+
 type HrCommitteeFilterPickerProps = {
   value: string
   groups: CommitteeOfficeGroup[]
   onChange: (committee: string) => void
+  /** How many people each committee holds, shown beside it and totalled for the office. */
+  counts?: Record<string, number>
+  /** The count for "All Committees". */
+  total?: number
+}
+
+function CountLabel({ count }: { count: number | undefined }) {
+  return count === undefined ? null : <span className={countClasses}>{count}</span>
 }
 
 export function HrCommitteeFilterPicker({
   value,
   groups,
   onChange,
+  counts,
+  total,
 }: HrCommitteeFilterPickerProps) {
-  const office = value ? officeForCommittee(value) : ""
+  const office = value ? officeForCommittee(value) || "Other committees" : ""
+  const officeTotal = (group: CommitteeOfficeGroup) =>
+    counts ? group.committees.reduce((sum, name) => sum + (counts[name] ?? 0), 0) : undefined
 
   return (
     <DropdownMenu>
@@ -72,6 +86,7 @@ export function HrCommitteeFilterPicker({
           onClick={() => onChange("")}
         >
           All Committees
+          <CountLabel count={total} />
           {!value ? <CheckIcon className={selectedIconClasses} /> : null}
         </DropdownMenuItem>
         {groups.map((group) => (
@@ -83,6 +98,7 @@ export function HrCommitteeFilterPicker({
               )}
             >
               {group.office}
+              <CountLabel count={officeTotal(group)} />
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className={subMenuClasses}>
               {group.committees.map((name) => (
@@ -92,6 +108,7 @@ export function HrCommitteeFilterPicker({
                   onClick={() => onChange(name)}
                 >
                   {name}
+                  <CountLabel count={counts?.[name]} />
                   {value === name ? (
                     <CheckIcon className={selectedIconClasses} />
                   ) : null}
