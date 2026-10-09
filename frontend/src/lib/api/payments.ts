@@ -171,6 +171,9 @@ export function completePaymentQrUpload(
 export function openPaymentCampaign() {
   return apiFetch<{
     eligible: number
+    /** Elected officers among the eligible; they get their own invitation email. */
+    officers: number
+    members: number
     created: number
     emailDelivery: { queued: number }
   }>("/membership-payments/campaign/open", { method: "POST" })
