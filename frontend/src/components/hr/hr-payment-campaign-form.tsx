@@ -6,6 +6,7 @@ import { DatetimePicker } from "@/components/ui/datetime-picker"
 import {
   savePaymentSchedule,
   type PaymentCampaign,
+  type SavedPaymentSchedule,
 } from "@/lib/api/payments"
 import {
   dateYmdFromDate,
@@ -18,6 +19,7 @@ import { subheaderLabelClasses } from "@/lib/site/surface"
 const gridClasses = "grid gap-4 @sm:grid-cols-2"
 const fieldClasses = "flex flex-col gap-2"
 const errorClasses = "mt-3 font-sans text-sm text-rose-glow"
+const hintClasses = "mt-3 font-sans text-sm text-prelude"
 
 function defaults(campaign: PaymentCampaign | null) {
   const opensAt = campaign ? new Date(campaign.opensAt) : new Date()
@@ -30,10 +32,12 @@ function defaults(campaign: PaymentCampaign | null) {
   }
 }
 
-export function HrPaymentScheduleForm({ campaign, onSaved }: { campaign: PaymentCampaign | null; onSaved: (campaign: PaymentCampaign) => void }) {
+export function HrPaymentScheduleForm({ campaign, onSaved }: { campaign: PaymentCampaign | null; onSaved: (saved: SavedPaymentSchedule) => void }) {
   const [form, setForm] = useState(() => defaults(campaign))
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
+  // Dates are YYYY-MM-DD, so comparing them as text compares them as dates.
+  const extending = Boolean(campaign?.isOpen) && form.deadlineAt > defaults(campaign).deadlineAt
 
   async function save() {
     setPending(true)
@@ -84,6 +88,7 @@ export function HrPaymentScheduleForm({ campaign, onSaved }: { campaign: Payment
           />
         </div>
       </div>
+      {extending ? <p className={hintClasses}>Everyone who hasn&apos;t paid will be emailed the new deadline.</p> : null}
       {error ? <p className={errorClasses} role="alert">{error}</p> : null}
       <Button type="button" color="purple" className="mt-5" disabled={pending} onClick={() => void save()}>{pending ? "Saving…" : "Save payment period"}</Button>
     </div>

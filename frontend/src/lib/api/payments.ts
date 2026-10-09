@@ -128,8 +128,11 @@ export function getPaymentCampaign() {
   )
 }
 
+/** `extensionEmails` counts the "deadline extended" emails queued for people who still owe a payment. */
+export type SavedPaymentSchedule = PaymentCampaign & { extensionEmails: { queued: number } }
+
 export function savePaymentSchedule(body: PaymentScheduleInput) {
-  return apiFetch<PaymentCampaign>("/membership-payments/campaign/schedule", {
+  return apiFetch<SavedPaymentSchedule>("/membership-payments/campaign/schedule", {
     method: "PUT",
     body: JSON.stringify(body),
   })
