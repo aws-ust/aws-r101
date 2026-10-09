@@ -12,12 +12,15 @@ import {
   recruitmentYearInt,
 } from "../applications/application-code";
 import { allocateMemberId } from "../core/member-id";
+import { inviteToOpenCampaign } from "./campaigns";
 
 export type OfficerSeedResult = {
   created: { seatKey: string; applicationCode: string; memberId: string | null }[];
   existing: string[];
   skipped: { seatKey: string; reason: string }[];
   welcomeNotificationIds: string[];
+  /** Payment invitations queued because payments were already open. */
+  paymentInvitationIds: string[];
 };
 
 const ADVISER_PLACEHOLDER_DOMAIN = "advisers.awsbuilders-ust.invalid";
@@ -61,6 +64,7 @@ export async function seedOfficers(
     existing: [],
     skipped: [],
     welcomeNotificationIds: [],
+    paymentInvitationIds: [],
   };
   const seeds = officerSeedList().filter(
     (seed) => only.size === 0 || (seed.email !== null && only.has(seed.email.toLowerCase())),
@@ -180,13 +184,19 @@ export async function seedOfficers(
           .returning({ id: emailNotifications.id });
         result.welcomeNotificationIds.push(notification.id);
       }
+      if (seed.kind !== "adviser") {
+        // Payments may already be open; an officer elected later is invited right away.
+        result.paymentInvitationIds.push(
+          ...(await inviteToOpenCampaign(tx, [application.id], { nextAttemptAt })),
+        );
+      }
       result.created.push({ seatKey: seed.seatKey, applicationCode, memberId });
     });
   }
   return result;
 }
 
-/** Makes held welcome emails due now. Pass emails to release only those people's. */
+/** Makes held welcome emails, and the payment invitations held with them, due now. Pass emails to release only those people's. */
 export async function releaseHeldWelcomeEmails(onlyEmails: string[] = []) {
   const only = onlyEmails.map((email) => email.toLowerCase());
   const released = await db
@@ -194,7 +204,7 @@ export async function releaseHeldWelcomeEmails(onlyEmails: string[] = []) {
     .set({ nextAttemptAt: null })
     .where(
       and(
-        eq(emailNotifications.messageType, "officer_welcome"),
+        inArray(emailNotifications.messageType, ["officer_welcome", "payment_invitation"]),
         eq(emailNotifications.status, "pending"),
         eq(emailNotifications.nextAttemptAt, HELD_WELCOME_UNTIL),
         only.length > 0

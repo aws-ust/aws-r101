@@ -30,6 +30,7 @@ import {
   memberRegistrationTemplate,
   membershipVerifiedTemplate,
   officerWelcomeTemplate,
+  officerPaymentInvitationTemplate,
   paymentDeadlineExtendedTemplate,
   paymentInvitationTemplate,
   resultAcceptedTemplate,
@@ -516,6 +517,12 @@ export function renderOfficerWelcome(input: Parameters<typeof officerWelcomeTemp
 
 export function renderPaymentInvitation(input: Parameters<typeof paymentInvitationTemplate>[0]) {
   return paymentInvitationTemplate(input);
+}
+
+export function renderOfficerPaymentInvitation(
+  input: Parameters<typeof officerPaymentInvitationTemplate>[0],
+) {
+  return officerPaymentInvitationTemplate(input);
 }
 
 export function renderPaymentDeadlineExtended(

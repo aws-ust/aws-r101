@@ -13,6 +13,7 @@ import {
   membershipVerifiedSubject,
   officerWelcomeSubject,
   paymentDeadlineExtendedSubject,
+  officerPaymentInvitationSubject,
   paymentInvitationSubject,
   resultAcceptedSubject,
   resultMemberAcceptedSubject,
@@ -647,6 +648,14 @@ ${ctaButton(dashboardUrl, "Open your dashboard")}
   };
 }
 
+function manilaDeadline(deadlineAt: Date) {
+  return deadlineAt.toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
+    dateStyle: "long",
+    timeStyle: "short",
+  });
+}
+
 function pesoAmount(amountCents: number) {
   return new Intl.NumberFormat("en-PH", {
     style: "currency",
@@ -669,11 +678,7 @@ export function paymentInvitationTemplate(input: {
 }): RenderedEmail {
   const honorific = `Mx. ${input.lastName}`;
   const amount = pesoAmount(input.amountCents);
-  const deadline = input.deadlineAt.toLocaleString("en-PH", {
-    timeZone: "Asia/Manila",
-    dateStyle: "long",
-    timeStyle: "short",
-  });
+  const deadline = manilaDeadline(input.deadlineAt);
   const statusUrl = `${appBaseUrl()}/apply/status`;
   const message = paymentInvitationMessage;
   const text = `Greetings from the Clouds!\n\nGood day, ${honorific},\n\n${message}\n\nAmount: ${amount}\nDeadline: ${deadline}\nApplication ID: ${input.applicationCode}\n\nOpen payment instructions: ${statusUrl}\n\n${paymentVerificationNote}\n\nYours in Thomasian Leadership,\nThe AWS Builders - UST Executive Board`;
@@ -703,6 +708,77 @@ ${ctaButton(statusUrl, "Open payment instructions")}
   };
 }
 
+const officerPaymentInvitationNote =
+  "Sign in to the applicant dashboard with the Application ID below and this email address. You will receive a one-time code.";
+
+/** Payment invitation for an elected officer: same payment steps, plus their reserved Member ID. */
+export function officerPaymentInvitationTemplate(input: {
+  lastName: string;
+  title: string;
+  /** The seat's reserved number, or null when it is issued from a block at verification (EAs). */
+  memberId: string | null;
+  applicationCode: string;
+  amountCents: number;
+  deadlineAt: Date;
+}): RenderedEmail {
+  const honorific = `Mx. ${input.lastName}`;
+  const amount = pesoAmount(input.amountCents);
+  const deadline = manilaDeadline(input.deadlineAt);
+  const statusUrl = `${appBaseUrl()}/apply/status`;
+  const intro = `The membership payment period for AWS Builders - UST is now open. As ${input.title}, please pay the membership fee to complete your membership.`;
+  const idLine = input.memberId
+    ? `Your Member ID ${input.memberId} is reserved for you. It is released, together with your digital member ID, once your payment is verified.`
+    : "Your Member ID is issued, together with your digital member ID, once your payment is verified.";
+  const text = `Greetings from the Clouds!
+
+Good day, ${honorific},
+
+${intro}
+
+${idLine}
+
+${input.memberId ? `Reserved Member ID: ${input.memberId}
+` : ""}Application ID: ${input.applicationCode}
+Amount: ${amount}
+Deadline: ${deadline}
+
+${officerPaymentInvitationNote}
+
+Open payment instructions: ${statusUrl}
+
+${paymentVerificationNote}
+
+Yours in Thomasian Leadership,
+The AWS Builders - UST Executive Board`;
+  const html = wrapBrandedHtml({
+    eyebrow: "AWS BUILDERS – UST",
+    bannerTitle: "MEMBERSHIP PAYMENT",
+    bannerSub: input.memberId ?? input.applicationCode,
+    heading: "Payment Period Is Open",
+    headerImageUrl: `cid:${APPLICATION_RECEIVED_HEADER_CID}`,
+    headerImageAlt: "AWS Builders - UST — It's Always Day One",
+    inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
+<p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
+<p style="margin:0 0 16px;">${escapeHtml(intro)}</p>
+<p style="margin:0 0 16px;">${escapeHtml(idLine)}</p>
+${input.memberId ? `<p style="margin:0 0 8px;"><strong>Reserved Member ID:</strong> ${escapeHtml(input.memberId)}</p>` : ""}
+<p style="margin:0 0 8px;"><strong>Application ID:</strong> ${escapeHtml(input.applicationCode)}</p>
+<p style="margin:0 0 8px;"><strong>Amount:</strong> ${escapeHtml(amount)}</p>
+<p style="margin:0 0 16px;"><strong>Deadline:</strong> ${escapeHtml(deadline)}</p>
+<p style="margin:0 0 16px;">${escapeHtml(officerPaymentInvitationNote)}</p>
+${ctaButton(statusUrl, "Open payment instructions")}
+<p style="margin:0 0 16px;">${escapeHtml(paymentVerificationNote)}</p>
+<p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
+<p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
+  });
+  return {
+    subject: officerPaymentInvitationSubject(input.memberId ?? input.applicationCode),
+    text,
+    html,
+    inline: [brandedEmailHeaderInline()],
+  };
+}
+
 const paymentDeadlineExtendedMessage =
   "Good news: we have extended the membership payment deadline for AWS Builders - UST. You still have time to pay the membership fee and upload your receipt on your applicant dashboard.";
 
@@ -715,11 +791,7 @@ export function paymentDeadlineExtendedTemplate(input: {
 }): RenderedEmail {
   const honorific = `Mx. ${input.lastName}`;
   const amount = pesoAmount(input.amountCents);
-  const deadline = input.deadlineAt.toLocaleString("en-PH", {
-    timeZone: "Asia/Manila",
-    dateStyle: "long",
-    timeStyle: "short",
-  });
+  const deadline = manilaDeadline(input.deadlineAt);
   const statusUrl = `${appBaseUrl()}/apply/status`;
   const message = paymentDeadlineExtendedMessage;
   const text = `Greetings from the Clouds!\n\nGood day, ${honorific},\n\n${message}\n\nNew deadline: ${deadline}\nAmount: ${amount}\nApplication ID: ${input.applicationCode}\n\nOpen payment instructions: ${statusUrl}\n\n${paymentVerificationNote}\n\nYours in Thomasian Leadership,\nThe AWS Builders - UST Executive Board`;

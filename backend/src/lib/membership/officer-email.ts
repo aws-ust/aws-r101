@@ -10,6 +10,26 @@ import { reservedSeatMemberId } from "../core/member-id";
 import type { ClaimedNotification, PreparedEmail } from "../email/outbox";
 import { renderOfficerWelcome } from "../email/service";
 
+type SeatNumberInput = {
+  memberId: string | null;
+  recruitmentYear: number;
+  kind: "eb" | "director" | "adviser";
+  committee: string | null;
+};
+
+/** The officer's Member ID: the issued one, or the number their seat holds until they pay. */
+export async function officerReservedMemberId(seat: SeatNumberInput): Promise<string | null> {
+  if (seat.memberId) return seat.memberId;
+  if (!seat.committee) return null;
+  if (seat.kind === "eb") {
+    return reservedSeatMemberId(db, seat.recruitmentYear, { kind: "eb", officeCommittee: seat.committee });
+  }
+  if (seat.kind === "director") {
+    return reservedSeatMemberId(db, seat.recruitmentYear, { kind: "director", committee: seat.committee });
+  }
+  return null;
+}
+
 /** Renders the queued welcome email for an elected officer, with their reserved Member ID. */
 export async function prepareOfficerWelcome(
   notification: ClaimedNotification,
@@ -34,15 +54,8 @@ export async function prepareOfficerWelcome(
   if (row.kind === "adviser" || !row.committee) {
     return { kind: "invalid", error: "Only the board and directors get this email." };
   }
-  const memberId =
-    row.memberId ??
-    (await reservedSeatMemberId(
-      db,
-      row.recruitmentYear,
-      row.kind === "eb"
-        ? { kind: "eb", officeCommittee: row.committee }
-        : { kind: "director", committee: row.committee },
-    ));
+  const memberId = await officerReservedMemberId(row);
+  if (!memberId) return { kind: "invalid", error: "This seat has no reserved Member ID." };
   return {
     kind: "ready",
     rendered: renderOfficerWelcome({

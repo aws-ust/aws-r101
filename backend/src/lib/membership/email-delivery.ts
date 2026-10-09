@@ -17,11 +17,13 @@ import {
 } from "../email/outbox";
 import {
   renderMembershipVerified,
+  renderOfficerPaymentInvitation,
   renderPaymentDeadlineExtended,
   renderPaymentInvitation,
 } from "../email/service";
 import { recruitmentYearInt } from "../applications/application-code";
 import { memberPositionLabel } from "./member-position";
+import { officerReservedMemberId } from "./officer-email";
 
 /** Renders a queued payment invitation or verified-member email. */
 export async function prepareMembershipNotification(
@@ -37,6 +39,9 @@ export async function prepareMembershipNotification(
       position: positions.name,
       committeeName: committees.name,
       officerTitle: officerSeats.title,
+      officerKind: officerSeats.kind,
+      officerCommittee: officerSeats.committee,
+      recruitmentYear: applications.recruitmentYear,
       amountCents: membershipPaymentCampaigns.amountCents,
       deadlineAt: membershipPaymentCampaigns.deadlineAt,
       resubmissionDeadlineAt: membershipPayments.resubmissionDeadlineAt,
@@ -59,6 +64,24 @@ export async function prepareMembershipNotification(
     return { kind: "invalid", error: "Membership payment amount is not configured." };
   }
 
+  if (notification.messageType === "payment_invitation" && row.officerTitle && row.officerKind) {
+    return {
+      kind: "ready",
+      rendered: renderOfficerPaymentInvitation({
+        lastName: row.lastName,
+        title: row.officerTitle,
+        memberId: await officerReservedMemberId({
+          memberId: row.memberId,
+          recruitmentYear: row.recruitmentYear,
+          kind: row.officerKind,
+          committee: row.officerCommittee,
+        }),
+        applicationCode: row.applicationCode,
+        amountCents: row.amountCents,
+        deadlineAt: row.deadlineAt,
+      }),
+    };
+  }
   if (notification.messageType === "payment_invitation") {
     return {
       kind: "ready",

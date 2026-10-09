@@ -183,7 +183,7 @@ test("membership payment workflow", async (t) => {
     const opened = await staffRequest("/membership-payments/campaign/open", hrToken, { method: "POST" });
     assert.equal(opened.status, 200);
     const payload = (await opened.json()) as { eligible: number; created: number };
-    assert.deepEqual(payload, { eligible: 3, created: 3, emailDelivery: { queued: 3 } });
+    assert.deepEqual(payload, { eligible: 3, officers: 0, members: 3, created: 3, emailDelivery: { queued: 3 } });
     // Email is switched off in tests, so the background outbox fails them.
     assert.deepEqual(await runEmailOutbox({ budgetMs: 5_000 }), {
       skipped: false,

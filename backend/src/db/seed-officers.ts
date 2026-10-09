@@ -51,8 +51,11 @@ async function main() {
   }
   if (result.existing.length > 0) console.log(`Already seeded: ${result.existing.length}.`);
   for (const skipped of result.skipped) console.warn(`Skipped ${skipped.seatKey}: ${skipped.reason}`);
-  if (result.welcomeNotificationIds.length > 0) {
-    console.log(`Queued ${result.welcomeNotificationIds.length} welcome emails.`);
+  const queued = result.welcomeNotificationIds.length + result.paymentInvitationIds.length;
+  if (queued > 0) {
+    console.log(
+      `Queued ${result.welcomeNotificationIds.length} welcome emails and ${result.paymentInvitationIds.length} payment invitations.`,
+    );
     if (hold) console.log("They are on hold and will not send. Release them with OFFICER_SEED_RELEASE=true.");
     else await sendQueued();
   }

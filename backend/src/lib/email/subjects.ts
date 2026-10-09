@@ -90,6 +90,11 @@ export function paymentInvitationSubject(applicationCode: string): string {
   return `AWS Builders - UST | Membership Payment (${applicationCode})`;
 }
 
+/** `reference` is the officer's reserved Member ID, or their Application ID when none is reserved. */
+export function officerPaymentInvitationSubject(reference: string): string {
+  return `Membership payment is open | AWS Builders - UST (${reference})`;
+}
+
 export function paymentDeadlineExtendedSubject(applicationCode: string): string {
   return `Payment deadline extended | AWS Builders - UST (${applicationCode})`;
 }

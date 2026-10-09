@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test, { after } from "node:test";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "./db";
 import {
   applications,
@@ -27,7 +27,7 @@ import {
 import { verifyMember } from "./lib/membership/member-verification";
 import { prepareOfficerWelcome } from "./lib/membership/officer-email";
 import { HELD_WELCOME_UNTIL, releaseHeldWelcomeEmails, seedOfficers } from "./lib/membership/officer-seeding";
-import { runEmailOutbox } from "./lib/email/queued-emails";
+import { prepareQueuedEmail, runEmailOutbox } from "./lib/email/queued-emails";
 import { lookupOfficerRecipient } from "./lib/email/officer-recipients";
 
 const databaseUrl = process.env.DATABASE_URL ?? "";
@@ -253,5 +253,57 @@ test("elected officers and advisers", async (t) => {
       .from(emailNotifications)
       .where(inArray(emailNotifications.id, opened.notificationIds));
     assert.equal(invitations.length, offices.length + directorCommittees.length);
+  });
+
+  await t.test("an officer's payment email names their reserved Member ID", async () => {
+    const [ceoInvitation] = await db
+      .select({ id: emailNotifications.id })
+      .from(emailNotifications)
+      .innerJoin(officerSeats, eq(officerSeats.applicationId, emailNotifications.applicationId))
+      .where(
+        and(
+          eq(emailNotifications.messageType, "payment_invitation"),
+          eq(officerSeats.seatKey, offices[0]),
+        ),
+      );
+    const prepared = await prepareQueuedEmail({
+      id: ceoInvitation.id,
+      messageType: "payment_invitation",
+      recipient: "ceo@example.test",
+      attempts: 0,
+    });
+    assert.equal(prepared.kind, "ready");
+    if (prepared.kind !== "ready") return;
+    assert.match(prepared.rendered.subject, /^Membership payment is open/);
+    assert.match(prepared.rendered.text, /Reserved Member ID: AWS-9596-0001/);
+    assert.match(prepared.rendered.text, /Chief Executive Officer/);
+    assert.match(prepared.rendered.text, /Amount: /);
+  });
+
+  await t.test("an officer added after payments opened is invited straight away", async () => {
+    const email = lookupOfficerRecipient(directorCommittees[0])?.email;
+    assert.ok(email);
+    // Take one director out, as if they had not been elected when payments opened.
+    const [seat] = await db
+      .select({ applicationId: officerSeats.applicationId })
+      .from(officerSeats)
+      .where(eq(officerSeats.seatKey, directorCommittees[0]));
+    await db.delete(applications).where(eq(applications.id, seat.applicationId));
+
+    const added = await seedOfficers(YEAR, { onlyEmails: [email], holdWelcome: true });
+    assert.equal(added.created.length, 1);
+    assert.equal(added.paymentInvitationIds.length, 1);
+    const [payment] = await db
+      .select({ id: membershipPayments.id })
+      .from(membershipPayments)
+      .innerJoin(applications, eq(applications.id, membershipPayments.applicationId))
+      .where(eq(applications.applicationCode, added.created[0].applicationCode));
+    assert.ok(payment);
+    // Held with the welcome email, so a test run never mails anyone.
+    const [invitation] = await db
+      .select({ nextAttemptAt: emailNotifications.nextAttemptAt })
+      .from(emailNotifications)
+      .where(eq(emailNotifications.id, added.paymentInvitationIds[0]));
+    assert.equal(invitation.nextAttemptAt?.getTime(), HELD_WELCOME_UNTIL.getTime());
   });
 });

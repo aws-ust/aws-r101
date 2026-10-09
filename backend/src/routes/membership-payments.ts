@@ -205,6 +205,8 @@ membershipPaymentRoutes.post(
       if (opened.notificationIds.length > 0) await kickEmailOutbox();
       return c.json({
         eligible: opened.eligible,
+        officers: opened.officers,
+        members: opened.members,
         created: opened.created,
         emailDelivery: { queued: opened.notificationIds.length },
       });
