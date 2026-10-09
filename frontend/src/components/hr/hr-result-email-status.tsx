@@ -4,7 +4,8 @@ import { useEffect, useState } from "react"
 import { HrResultEmailProblems } from "@/components/hr/hr-result-email-problems"
 import {
   getResultEmailStatus,
-  retryUncertainResultEmailsRequest,
+  markResultEmailsDeliveredRequest,
+  resendResultEmailsRequest,
   type ResultEmailStatus,
 } from "@/lib/api/client"
 import { formatSubheaderLabel } from "@/lib/site/button-label"
@@ -31,7 +32,7 @@ function progressCopy(status: ResultEmailStatus) {
 export function HrResultEmailStatus({ refreshKey }: { refreshKey: number }) {
   const [status, setStatus] = useState<ResultEmailStatus | null>(null)
   const [error, setError] = useState("")
-  const [resending, setResending] = useState(false)
+  const [busy, setBusy] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
   const inProgress = status ? status.queued + status.sending > 0 : false
 
@@ -61,15 +62,15 @@ export function HrResultEmailStatus({ refreshKey }: { refreshKey: number }) {
     }
   }, [refreshKey, reloadKey, inProgress])
 
-  async function resendUncertain() {
-    setResending(true)
+  async function updateSelected(request: (ids: string[]) => Promise<unknown>, failure: string, ids: string[]) {
+    setBusy(true)
     try {
-      await retryUncertainResultEmailsRequest()
+      await request(ids)
       setReloadKey((key) => key + 1)
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not resend those emails.")
+      setError(caught instanceof Error ? caught.message : failure)
     } finally {
-      setResending(false)
+      setBusy(false)
     }
   }
 
@@ -97,8 +98,11 @@ export function HrResultEmailStatus({ refreshKey }: { refreshKey: number }) {
       </div>
       <HrResultEmailProblems
         problems={status.problems}
-        resending={resending}
-        onResendUncertain={() => void resendUncertain()}
+        busy={busy}
+        onResendSelected={(ids) => updateSelected(resendResultEmailsRequest, "Could not resend those emails.", ids)}
+        onMarkDelivered={(ids) =>
+          updateSelected(markResultEmailsDeliveredRequest, "Could not mark those emails as delivered.", ids)
+        }
       />
     </section>
   )

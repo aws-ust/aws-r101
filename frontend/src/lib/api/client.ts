@@ -571,9 +571,19 @@ export function retryFailedResultEmailsRequest() {
   });
 }
 
-export function retryUncertainResultEmailsRequest() {
-  return apiFetch<{ retried: number }>("/results/emails/retry-uncertain", {
+/** Resends just these uncertain emails, which HR found missing from the Sent folder. */
+export function resendResultEmailsRequest(ids: string[]) {
+  return apiFetch<{ retried: number }>("/results/emails/resend-selected", {
     method: "POST",
+    body: JSON.stringify({ ids }),
+  });
+}
+
+/** Counts these uncertain emails as sent, because HR found them in the Sent folder. */
+export function markResultEmailsDeliveredRequest(ids: string[]) {
+  return apiFetch<{ marked: number }>("/results/emails/mark-delivered", {
+    method: "POST",
+    body: JSON.stringify({ ids }),
   });
 }
 

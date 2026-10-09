@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button"
+import { HrResultEmailUncertain } from "@/components/hr/hr-result-email-uncertain"
 import type { ResultEmailStatus } from "@/lib/api/client"
 
 const sectionClasses = "mt-5 border-t border-blue-chalk/15 pt-4"
@@ -8,7 +8,6 @@ const listClasses = "mt-3 flex max-h-64 flex-col gap-2 overflow-y-auto"
 const itemClasses = "rounded-[12px] bg-haiti/55 px-3 py-2"
 const recipientClasses = "font-sans text-sm text-blue-chalk"
 const errorClasses = "mt-0.5 break-words font-mono text-[11px] text-prelude"
-const actionClasses = "mt-3"
 
 type Problem = ResultEmailStatus["problems"][number]
 
@@ -27,16 +26,18 @@ function ProblemList({ problems }: { problems: Problem[] }) {
 
 /**
  * Failed emails (safe to retry with Retry Failed Emails) and uncertain ones,
- * which may already have reached the applicant and are only resent on request.
+ * which may already have reached the applicant, so HR picks which to resend.
  */
 export function HrResultEmailProblems({
   problems,
-  resending,
-  onResendUncertain,
+  busy,
+  onResendSelected,
+  onMarkDelivered,
 }: {
   problems: Problem[]
-  resending: boolean
-  onResendUncertain: () => void
+  busy: boolean
+  onResendSelected: (ids: string[]) => Promise<void>
+  onMarkDelivered: (ids: string[]) => Promise<void>
 }) {
   const failed = problems.filter((problem) => !problem.uncertain)
   const uncertain = problems.filter((problem) => problem.uncertain)
@@ -51,17 +52,12 @@ export function HrResultEmailProblems({
         </div>
       ) : null}
       {uncertain.length > 0 ? (
-        <div className={sectionClasses}>
-          <p className={headingClasses}>Uncertain</p>
-          <p className={helpClasses}>
-            Sending stopped partway, so these may already have been delivered. Search the sender
-            account&apos;s Sent folder for each address first, and only resend if it&apos;s missing.
-          </p>
-          <ProblemList problems={uncertain} />
-          <Button type="button" color="danger" className={actionClasses} disabled={resending} onClick={onResendUncertain}>
-            {resending ? "Resending…" : "Resend Anyway"}
-          </Button>
-        </div>
+        <HrResultEmailUncertain
+          problems={uncertain}
+          busy={busy}
+          onResend={onResendSelected}
+          onMarkDelivered={onMarkDelivered}
+        />
       ) : null}
     </>
   )
