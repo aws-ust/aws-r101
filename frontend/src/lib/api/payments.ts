@@ -228,6 +228,22 @@ export function reversePayment(paymentId: string, body: { reason: string }) {
   })
 }
 
+/** Sends the payment email to these people: a first one, or another for one already sent or that failed. */
+export function sendPaymentInvitations(paymentIds: string[]) {
+  return apiFetch<{ queued: number; alreadyWaiting: number }>("/membership-payments/emails/send-invitations", {
+    method: "POST",
+    body: JSON.stringify({ paymentIds }),
+  })
+}
+
+/** Counts these people's uncertain payment emails as sent, once found in the Sent folder. */
+export function markPaymentInvitationsDelivered(paymentIds: string[]) {
+  return apiFetch<{ marked: number }>("/membership-payments/emails/mark-delivered", {
+    method: "POST",
+    body: JSON.stringify({ paymentIds }),
+  })
+}
+
 export function retryPaymentInvitationEmails() {
   return apiFetch<{ retried: number }>(
     "/membership-payments/emails/retry-invitations",

@@ -7,8 +7,8 @@ import type {
 } from "@/lib/api/payments"
 import { formatDisplayDate } from "@/lib/datetime/display"
 
-/** The Payments page: clear the receipt queue, or see everyone. Setup has its own page. */
-export type PaymentTab = "review" | "all"
+/** The Payments page: clear the receipt queue, see everyone, or check who has been sent the payment email. */
+export type PaymentTab = "review" | "all" | "emails"
 
 export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
   pending_verification: "Pending verification",
@@ -46,16 +46,17 @@ export function emailNotSent(invitation: PaymentInvitation) {
 /** How many people are in each payment-email group. `unsent` is never made, still waiting, or failed. */
 export function paymentEmailCounts(payments: PaymentListItem[]) {
   return {
-    unsent: payments.filter((payment) => emailNotSent(payment.invitation)).length,
+    unsent: payments.filter((payment) => matchesPaymentEmail(payment, "unsent")).length,
     uncertain: payments.filter((payment) => payment.invitation === "uncertain").length,
     sent: payments.filter((payment) => payment.invitation === "sent").length,
   }
 }
 
-function matchesEmailFilter(invitation: PaymentInvitation, filter: PaymentEmailFilter) {
+/** Whether a payment belongs in a payment-email group. Someone who already paid is never "not sent". */
+export function matchesPaymentEmail(payment: PaymentListItem, filter: PaymentEmailFilter) {
   if (filter === "all") return true
-  if (filter === "unsent") return emailNotSent(invitation)
-  return invitation === filter
+  if (filter === "unsent") return payment.status !== "verified" && emailNotSent(payment.invitation)
+  return payment.invitation === filter
 }
 
 export type PaymentFilters = {
@@ -109,7 +110,7 @@ export function filterPayments(payments: PaymentListItem[], filters: PaymentFilt
       (filters.type === "all" || payment.applicationType === filters.type) &&
       (filters.result === "all" || payment.applicationStatus === filters.result) &&
       (filters.committee === "all" || payment.committee === filters.committee) &&
-      matchesEmailFilter(payment.invitation, filters.email)
+      matchesPaymentEmail(payment, filters.email)
     )
   })
 }
@@ -147,7 +148,7 @@ export function nextAfterDecision(queue: PaymentListItem[], id: string) {
 }
 
 export function parsePaymentTab(value: string | string[] | undefined): PaymentTab | null {
-  return value === "review" || value === "all" ? value : null
+  return value === "review" || value === "all" || value === "emails" ? value : null
 }
 
 /** The queue while anything waits; otherwise everyone. */

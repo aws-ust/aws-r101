@@ -21,9 +21,9 @@ type Cell = { filter: StripFilter; label: string; value: number }
 
 function cells(summary: PaymentDashboard["summary"]): Cell[] {
   return [
-    { filter: "pending_verification", label: "Pending verification", value: summary.pendingVerification },
-    { filter: "awaiting_payment", label: "Awaiting payment", value: summary.awaitingPayment },
-    { filter: "needs_resubmission", label: "Needs resubmission", value: summary.needsResubmission },
+    { filter: "pending_verification", label: "Pending Verification", value: summary.pendingVerification },
+    { filter: "awaiting_payment", label: "Awaiting Payment", value: summary.awaitingPayment },
+    { filter: "needs_resubmission", label: "Needs Resubmission", value: summary.needsResubmission },
     { filter: "expired", label: "Expired", value: summary.expired },
     { filter: "verified", label: "Verified", value: summary.verified },
     { filter: "all", label: "Eligible", value: summary.totalEligible },

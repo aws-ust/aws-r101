@@ -86,6 +86,8 @@ test("filters search names, codes and references; the list sorts work first", ()
   assert.deepEqual(emailIds("sent"), ["sent"])
   assert.equal(emailIds("all").length, 5)
   assert.deepEqual(paymentEmailCounts(emailRows), { unsent: 3, uncertain: 1, sent: 1 })
+  // Someone who already paid has no use for the invitation, so they are never listed as not sent.
+  assert.equal(paymentEmailCounts([payment("paid", { invitation: "none", status: "verified" })]).unsent, 0)
   assert.deepEqual(sortPayments(rows).map((r) => r.paymentId), ["b", "c", "a"])
 })
 

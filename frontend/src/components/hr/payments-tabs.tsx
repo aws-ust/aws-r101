@@ -12,19 +12,24 @@ type PaymentsTabsProps = {
   onTabChange: (tab: PaymentTab) => void
   reviewCount: number
   allCount: number
+  /** People still to be sent the payment email. */
+  emailCount: number
   actions: ReactNode
 }
 
-export function PaymentsTabs({ tab, onTabChange, reviewCount, allCount, actions }: PaymentsTabsProps) {
+export function PaymentsTabs({ tab, onTabChange, reviewCount, allCount, emailCount, actions }: PaymentsTabsProps) {
   return (
     <div className={rowClasses}>
       <Tabs value={tab} onValueChange={(next) => onTabChange(next as PaymentTab)}>
         <TabsList variant="line" aria-label="Payments view">
           <TabsTrigger value="review">
-            To review <span className={countClasses}>{reviewCount}</span>
+            To Review <span className={countClasses}>{reviewCount}</span>
           </TabsTrigger>
           <TabsTrigger value="all">
-            All payments <span className={countClasses}>{allCount}</span>
+            All Payments <span className={countClasses}>{allCount}</span>
+          </TabsTrigger>
+          <TabsTrigger value="emails">
+            Payment Emails <span className={countClasses}>{emailCount}</span>
           </TabsTrigger>
         </TabsList>
       </Tabs>

@@ -4,7 +4,7 @@ import Link from "next/link"
 import { PaymentsCollectionActions } from "@/components/hr/payments-collection-actions"
 import { PaymentsLoadError } from "@/components/hr/payments-empty"
 import { PaymentsListArea } from "@/components/hr/payments-list-area"
-import { PaymentsEmailStrip } from "@/components/hr/payments-email-strip"
+import { PaymentsEmailsPanel } from "@/components/hr/payments-emails-panel"
 import { PaymentsStatusStrip } from "@/components/hr/payments-status-strip"
 import { PaymentsTabs } from "@/components/hr/payments-tabs"
 import { useHrPaymentWorkspace, type HrPaymentWorkspace } from "@/components/hr/use-hr-payment-workspace"
@@ -14,7 +14,13 @@ import { SectionHeader } from "@/components/shared/section-header"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { PaymentCampaign } from "@/lib/api/payments"
-import { PAYMENT_SETUP_HREF, needsPaymentSetup, periodLine, type PaymentTab } from "@/lib/payments/workspace"
+import {
+  PAYMENT_SETUP_HREF,
+  needsPaymentSetup,
+  paymentEmailCounts,
+  periodLine,
+  type PaymentTab,
+} from "@/lib/payments/workspace"
 import { dashboardActionTargetClasses, dashboardTitleClasses } from "@/lib/site/dashboard-surface"
 import { hrPageShellClasses } from "@/lib/site/surface"
 
@@ -74,25 +80,27 @@ function PaymentsLoaded({ workspace, view }: { workspace: HrPaymentWorkspace; vi
       {dashboard ? (
         <PaymentsStatusStrip summary={dashboard.summary} active={view.stripActive} onPick={view.pickStatus} />
       ) : null}
-      {dashboard && dashboard.payments.length > 0 ? (
-        <PaymentsEmailStrip payments={dashboard.payments} active={view.emailActive} onPick={view.pickEmail} />
-      ) : null}
       {needsPaymentSetup(campaign) ? <PaymentsSetupNotice campaign={campaign} /> : null}
       <PaymentsTabs
         tab={view.tab}
         onTabChange={view.setTab}
         reviewCount={view.queue.length}
         allCount={view.payments.length}
+        emailCount={paymentEmailCounts(view.payments).unsent}
         actions={<PaymentsCollectionActions pending={pending} onRun={runBatch} />}
       />
       {feedback ? <ActionFeedback type={feedback.type} message={feedback.message} /> : null}
-      <PaymentsListArea
-        view={view}
-        campaign={campaign}
-        verified={dashboard?.summary.verified ?? 0}
-        refresh={refresh}
-        onFeedback={setFeedback}
-      />
+      {view.tab === "emails" ? (
+        <PaymentsEmailsPanel payments={view.payments} onChanged={refresh} />
+      ) : (
+        <PaymentsListArea
+          view={view}
+          campaign={campaign}
+          verified={dashboard?.summary.verified ?? 0}
+          refresh={refresh}
+          onFeedback={setFeedback}
+        />
+      )}
     </>
   )
 }

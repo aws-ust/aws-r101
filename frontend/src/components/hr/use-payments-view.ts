@@ -10,7 +10,6 @@ import {
   reviewQueue,
   sortPayments,
   stepInList,
-  type PaymentEmailFilter,
   type PaymentFilters,
   type PaymentTab,
 } from "@/lib/payments/workspace"
@@ -40,7 +39,7 @@ export function usePaymentsView(
   const queue = useMemo(() => reviewQueue(payments), [payments])
   const filtered = useMemo(() => sortPayments(filterPayments(payments, filters)), [payments, filters])
   const tab = chosenTab ?? defaultPaymentTab(dashboard?.summary ?? null)
-  const visible = tab === "review" ? queue : filtered
+  const visible = tab === "review" ? queue : tab === "all" ? filtered : []
   const selected = payments.find((payment) => payment.paymentId === selectedId) ?? null
   const position = selected ? visible.findIndex((payment) => payment.paymentId === selected.paymentId) + 1 : 0
 
@@ -58,12 +57,6 @@ export function usePaymentsView(
     }
     setTab("all")
     setFilters((current) => ({ ...current, status: filter }))
-  }
-
-  /** A count in the payment-email row: the full list filtered to it, or cleared when picked again. */
-  function pickEmail(filter: Exclude<PaymentEmailFilter, "all">) {
-    setTab("all")
-    setFilters((current) => ({ ...current, email: current.email === filter ? "all" : filter }))
   }
 
   function step(delta: 1 | -1) {
@@ -88,9 +81,6 @@ export function usePaymentsView(
     canStep: (delta: 1 | -1) => Boolean(selectedId && position > 0 && visible[position - 1 + delta]),
     step,
     pickStatus,
-    pickEmail,
-    /** The email filter applied to the list, shown on the All payments tab only. */
-    emailActive: (tab === "all" ? filters.email : "all") as PaymentEmailFilter,
   }
 }
 

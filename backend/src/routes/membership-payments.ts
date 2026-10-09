@@ -17,7 +17,11 @@ import {
 } from "../lib/membership/payment-qr";
 import { kickEmailOutbox } from "../lib/email/outbox-kick";
 import { sendQueuedNow } from "../lib/email/queued-emails";
-import { retryFailedMembershipEmails } from "../lib/membership/email-delivery";
+import {
+  markPaymentInvitationsDelivered,
+  retryFailedMembershipEmails,
+  sendPaymentInvitations,
+} from "../lib/membership/email-delivery";
 import { MembershipPaymentError } from "../lib/membership/errors";
 import { listDirectoryMembers, listPendingOfficers } from "../lib/membership/member-directory";
 import {
@@ -73,6 +77,7 @@ const completePaymentQrSchema = paymentQrSchema.extend({
   key: z.string().trim().min(1).max(500),
   fileName: z.string().trim().max(255).optional(),
 });
+const paymentSelectionSchema = z.object({ paymentIds: z.array(z.uuid()).min(1).max(500) });
 const reviewSchema = z.object({
   reason: z.string().trim().min(1).max(1000),
 });
@@ -240,6 +245,35 @@ membershipPaymentRoutes.post(
 );
 
 /** Verified members of the current year, for the HR Members page. */
+/** Sends (or resends) the payment email to the people HR ticked. */
+membershipPaymentRoutes.post(
+  "/emails/send-invitations",
+  requireRoles("hr", "admin"),
+  async (c) => {
+    const parsed = paymentSelectionSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: "Pick at least one person." }, 400);
+    try {
+      const result = await sendPaymentInvitations(parsed.data.paymentIds);
+      if (result.queued > 0) await kickEmailOutbox();
+      return c.json(result);
+    } catch (error) {
+      const result = paymentError(error);
+      return c.json(result.body, result.status);
+    }
+  },
+);
+
+/** Counts the ticked people's uncertain payment emails as sent; HR found them in the Sent folder. */
+membershipPaymentRoutes.post(
+  "/emails/mark-delivered",
+  requireRoles("hr", "admin"),
+  async (c) => {
+    const parsed = paymentSelectionSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: "Pick at least one person." }, 400);
+    return c.json(await markPaymentInvitationsDelivered(parsed.data.paymentIds));
+  },
+);
+
 membershipPaymentRoutes.get("/members", async (c) => {
   const members = await listDirectoryMembers();
   const pendingOfficers = await listPendingOfficers(

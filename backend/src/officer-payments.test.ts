@@ -172,6 +172,71 @@ test("elected officers pay and get their ID", async (t) => {
     await setCeoInvitation({ status: "sent", lastError: null });
   });
 
+  await t.test("HR can send the payment email again to the people they tick", async () => {
+    const paymentFor = async (applicationId: string) =>
+      (await db.select({ id: membershipPayments.id }).from(membershipPayments).where(eq(membershipPayments.applicationId, applicationId)))[0].id;
+    const invitationRows = (applicationId: string) =>
+      db
+        .select({ id: emailNotifications.id, status: emailNotifications.status })
+        .from(emailNotifications)
+        .where(
+          and(
+            eq(emailNotifications.applicationId, applicationId),
+            eq(emailNotifications.messageType, "payment_invitation"),
+          ),
+        );
+    const send = (paymentIds: string[]) =>
+      hr("/membership-payments/emails/send-invitations", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ paymentIds }),
+      });
+    const ceoPayment = await paymentFor(ceo.applicationId);
+    const directorPayment = await paymentFor(director.applicationId);
+
+    // The director never got one (it was removed above): they get a first email.
+    assert.equal((await invitationRows(director.applicationId)).length, 0);
+    // The CEO's was sent: a second copy goes out because HR asked.
+    const response = await send([ceoPayment, directorPayment]);
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { queued: 2, alreadyWaiting: 0 });
+    assert.equal((await invitationRows(director.applicationId)).length, 1);
+    assert.equal((await invitationRows(ceo.applicationId)).length, 2);
+
+    // Both are waiting to go out now, so asking again does not double them up.
+    assert.deepEqual(await (await send([ceoPayment, directorPayment])).json(), { queued: 0, alreadyWaiting: 2 });
+    assert.equal((await invitationRows(ceo.applicationId)).length, 2);
+
+    // One that failed is queued again rather than copied.
+    await db
+      .update(emailNotifications)
+      .set({ status: "failed", lastError: "Gmail send failed (400): bad recipient" })
+      .where(and(eq(emailNotifications.applicationId, director.applicationId), eq(emailNotifications.messageType, "payment_invitation")));
+    assert.deepEqual(await (await send([directorPayment])).json(), { queued: 1, alreadyWaiting: 0 });
+    const [again] = await invitationRows(director.applicationId);
+    assert.equal(again.status, "pending");
+
+    // An uncertain one can be counted as sent once HR finds it in the Sent folder.
+    await db
+      .update(emailNotifications)
+      .set({ status: "failed", lastError: "Uncertain: delivery may have completed" })
+      .where(and(eq(emailNotifications.applicationId, director.applicationId), eq(emailNotifications.messageType, "payment_invitation")));
+    const marked = await hr("/membership-payments/emails/mark-delivered", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ paymentIds: [directorPayment] }),
+    });
+    assert.deepEqual(await marked.json(), { marked: 1 });
+    assert.equal((await invitationRows(director.applicationId))[0].status, "sent");
+
+    assert.equal((await send([])).status, 400);
+    // Leave the CEO with only a sent email for the tests that follow.
+    await db
+      .update(emailNotifications)
+      .set({ status: "sent" })
+      .where(and(eq(emailNotifications.applicationId, ceo.applicationId), eq(emailNotifications.messageType, "payment_invitation")));
+  });
+
   await t.test("the CEO pays, HR verifies, and the ID is 0001 with a card and the core team chat", async () => {
     assert.equal(await pay(ceo, "OFFICER-CEO-1"), id("0001"));
     const { payment } = (await (
