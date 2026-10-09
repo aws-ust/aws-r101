@@ -1,0 +1,75 @@
+import { eq } from "drizzle-orm";
+import { db } from "../../db";
+import {
+  applicants,
+  applications,
+  emailNotifications,
+  officerSeats,
+} from "../../db/schema";
+import { reservedSeatMemberId } from "../core/member-id";
+import type { ClaimedNotification, PreparedEmail } from "../email/outbox";
+import { renderOfficerWelcome } from "../email/service";
+
+type SeatNumberInput = {
+  memberId: string | null;
+  recruitmentYear: number;
+  kind: "eb" | "director" | "ea" | "adviser";
+  committee: string | null;
+};
+
+/**
+ * The officer's Member ID: the issued one, or the number their seat holds until
+ * they pay. Executive assistants have none reserved; theirs comes from their
+ * office's block when the payment is verified.
+ */
+export async function officerReservedMemberId(seat: SeatNumberInput): Promise<string | null> {
+  if (seat.memberId) return seat.memberId;
+  if (!seat.committee) return null;
+  if (seat.kind === "eb") {
+    return reservedSeatMemberId(db, seat.recruitmentYear, { kind: "eb", officeCommittee: seat.committee });
+  }
+  if (seat.kind === "director") {
+    return reservedSeatMemberId(db, seat.recruitmentYear, { kind: "director", committee: seat.committee });
+  }
+  return null;
+}
+
+/** Renders the queued welcome email for an elected officer, with their reserved Member ID. */
+export async function prepareOfficerWelcome(
+  notification: ClaimedNotification,
+): Promise<PreparedEmail> {
+  const [row] = await db
+    .select({
+      lastName: applicants.lastName,
+      applicationCode: applications.applicationCode,
+      recruitmentYear: applications.recruitmentYear,
+      memberId: applications.memberId,
+      kind: officerSeats.kind,
+      committee: officerSeats.committee,
+      title: officerSeats.title,
+    })
+    .from(emailNotifications)
+    .innerJoin(applications, eq(emailNotifications.applicationId, applications.id))
+    .innerJoin(applicants, eq(applications.applicantId, applicants.id))
+    .innerJoin(officerSeats, eq(officerSeats.applicationId, applications.id))
+    .where(eq(emailNotifications.id, notification.id))
+    .limit(1);
+  if (!row) return { kind: "invalid", error: "Officer seat for this email was not found." };
+  if (row.kind === "adviser" || !row.committee) {
+    return { kind: "invalid", error: "Only elected officers get this email." };
+  }
+  const memberId = await officerReservedMemberId(row);
+  if (!memberId && row.kind !== "ea") {
+    return { kind: "invalid", error: "This seat has no reserved Member ID." };
+  }
+  return {
+    kind: "ready",
+    rendered: renderOfficerWelcome({
+      lastName: row.lastName,
+      title: row.title,
+      committee: row.committee,
+      memberId,
+      applicationCode: row.applicationCode,
+    }),
+  };
+}

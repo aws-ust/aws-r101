@@ -1,10 +1,14 @@
+import { getOfficerHuntSettings } from "../officer-hunt/settings";
 import { getRecruitmentWindow, type RecruitmentWindow } from "../recruitment/window";
+import type { RecruitmentTrack } from "./recruitment-scope";
 
 type RecruitmentWindowDatabase = NonNullable<
   Parameters<typeof getRecruitmentWindow>[0]
 >;
 
 type ApplicationState = {
+  /** Which round's dates apply; R101's when absent. */
+  track?: RecruitmentTrack;
   status: "pending" | "approved" | "rejected";
   archivedAt: Date | null;
   resultsReleasedAt: Date | null;
@@ -102,6 +106,14 @@ export function getApplicantEditEligibility(
   };
 }
 
+/** The officer hunt's application period, in the same shape as R101's window. */
+async function getOfficerHuntApplicationWindow(): Promise<RecruitmentWindow | null> {
+  const settings = await getOfficerHuntSettings();
+  return settings?.applicationsOpenAt && settings.applicationsCloseAt
+    ? { startsAt: settings.applicationsOpenAt, endsAt: settings.applicationsCloseAt }
+    : null;
+}
+
 export async function resolveApplicantEditEligibility(
   application: ApplicationState,
   choices: ChoiceState[],
@@ -113,7 +125,9 @@ export async function resolveApplicantEditEligibility(
   return getApplicantEditEligibility(
     application,
     choices,
-    await getRecruitmentWindow(options.database),
+    application.track === "officer_hunt"
+      ? await getOfficerHuntApplicationWindow()
+      : await getRecruitmentWindow(options.database),
     options.now,
   );
 }

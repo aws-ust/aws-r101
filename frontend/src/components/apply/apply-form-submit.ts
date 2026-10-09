@@ -12,6 +12,7 @@ import {
   documentUploadMetadata,
   uploadDocumentFiles,
 } from "@/lib/apply/document-upload"
+import type { RecruitmentTrack } from "@/lib/types/track"
 
 type CompletedUploadSession = { fingerprint: string; id: string; expiresAt: string }
 
@@ -31,6 +32,7 @@ export async function submitApplyForm(
   ustEmailDomain: string,
   completedUploadRef: MutableRefObject<CompletedUploadSession | null>,
   hrMode = false,
+  track: RecruitmentTrack = "r101",
 ): Promise<ApplyFormSubmitSuccess> {
   const files = [
     { documentType: "resume" as const, file: values.upload.resume! },
@@ -46,7 +48,7 @@ export async function submitApplyForm(
     new Date(cachedUpload.expiresAt) <= new Date()
   ) {
     const createSession = hrMode ? createHrUploadSession : createUploadSession
-    const session = await createSession({ documents })
+    const session = await createSession({ documents }, track)
     await uploadDocumentFiles(files, session)
     uploadSessionId = session.uploadSessionId
     completedUploadRef.current = {
@@ -55,19 +57,18 @@ export async function submitApplyForm(
       expiresAt: session.sessionExpiresAt,
     }
   }
-  const create = hrMode ? createHrApplication : createApplication
-  const created = await create(
-    toCreateApplicationInput(
-      values.privacy,
-      values.general,
-      values.committee,
-      values.upload,
-      ustEmailDomain,
-      uploadSessionId!,
-      hrMode,
-    ),
+  const input = toCreateApplicationInput(
+    values.privacy,
+    values.general,
+    values.committee,
+    values.upload,
+    ustEmailDomain,
+    uploadSessionId!,
+    hrMode,
   )
-  if (!hrMode) clearApplyFormDraft()
+  const created = hrMode ? await createHrApplication(input) : await createApplication(input, track)
+  // The saved draft belongs to R101's form; the hunt does not keep one.
+  if (!hrMode && track === "r101") clearApplyFormDraft()
   const createdFirst = created.choices.find((choice) => choice.preferenceRank === 1)
   const createdSecond = created.choices.find((choice) => choice.preferenceRank === 2)
   return {

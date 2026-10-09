@@ -36,11 +36,16 @@ export type PaymentCampaign = {
   committeeChatLinks: { committeeId: string; chatLink: string }[]
 }
 
+/** Where a person's payment invitation email stands. */
+export type PaymentInvitation = "none" | "queued" | "sent" | "failed" | "uncertain"
+
 export type PaymentListItem = {
+  /** The payment invitation email: not made yet, waiting to send, sent, failed, or possibly delivered. */
+  invitation: PaymentInvitation
   paymentId: string
   applicationId: string
   applicationCode: string
-  applicationType: "position" | "member"
+  applicationType: "position" | "member" | "officer"
   applicationStatus: "pending" | "approved" | "rejected"
   archivedAt: string | null
   memberId: string | null
@@ -49,7 +54,6 @@ export type PaymentListItem = {
   email: string
   status: PaymentStatus
   membershipStatus: "inactive" | "active" | "revoked"
-  confirmationStatus: "not_released" | "released" | "email_failed"
   verifiedAt: string | null
   resubmissionDeadlineAt: string | null
   deadlineAt: string
@@ -129,8 +133,11 @@ export function getPaymentCampaign() {
   )
 }
 
+/** `extensionEmails` counts the "deadline extended" emails queued for people who still owe a payment. */
+export type SavedPaymentSchedule = PaymentCampaign & { extensionEmails: { queued: number } }
+
 export function savePaymentSchedule(body: PaymentScheduleInput) {
-  return apiFetch<PaymentCampaign>("/membership-payments/campaign/schedule", {
+  return apiFetch<SavedPaymentSchedule>("/membership-payments/campaign/schedule", {
     method: "PUT",
     body: JSON.stringify(body),
   })
@@ -169,6 +176,9 @@ export function completePaymentQrUpload(
 export function openPaymentCampaign() {
   return apiFetch<{
     eligible: number
+    /** Elected officers among the eligible; they get their own invitation email. */
+    officers: number
+    members: number
     created: number
     emailDelivery: { queued: number }
   }>("/membership-payments/campaign/open", { method: "POST" })
@@ -204,31 +214,34 @@ export function verifyPayment(paymentId: string) {
   })
 }
 
-export function rejectPayment(
-  paymentId: string,
-  body: { reason: string; resubmissionDeadlineAt: string | null },
-) {
+export function rejectPayment(paymentId: string, body: { reason: string }) {
   return apiFetch(`/membership-payments/${paymentId}/reject`, {
     method: "POST",
     body: JSON.stringify(body),
   })
 }
 
-export function reversePayment(
-  paymentId: string,
-  body: { reason: string; resubmissionDeadlineAt: string | null },
-) {
+export function reversePayment(paymentId: string, body: { reason: string }) {
   return apiFetch(`/membership-payments/${paymentId}/reverse`, {
     method: "POST",
     body: JSON.stringify(body),
   })
 }
 
-export function releaseMembershipConfirmations() {
-  return apiFetch<{
-    released: number
-    emailDelivery: { queued: number }
-  }>("/membership-payments/confirmations/release", { method: "POST" })
+/** Sends the payment email to these people: a first one, or another for one already sent or that failed. */
+export function sendPaymentInvitations(paymentIds: string[]) {
+  return apiFetch<{ queued: number; alreadyWaiting: number }>("/membership-payments/emails/send-invitations", {
+    method: "POST",
+    body: JSON.stringify({ paymentIds }),
+  })
+}
+
+/** Counts these people's uncertain payment emails as sent, once found in the Sent folder. */
+export function markPaymentInvitationsDelivered(paymentIds: string[]) {
+  return apiFetch<{ marked: number }>("/membership-payments/emails/mark-delivered", {
+    method: "POST",
+    body: JSON.stringify({ paymentIds }),
+  })
 }
 
 export function retryPaymentInvitationEmails() {
@@ -238,14 +251,7 @@ export function retryPaymentInvitationEmails() {
   )
 }
 
-export function retryMembershipConfirmationEmails() {
-  return apiFetch<{ retried: number }>(
-    "/membership-payments/emails/retry-confirmations",
-    { method: "POST" },
-  )
-}
-
-export type DirectoryMemberRole = "ea" | "staff" | "general"
+export type DirectoryMemberRole = "eb" | "director" | "adviser" | "ea" | "staff" | "general"
 
 export type DirectoryMember = {
   memberId: string
@@ -258,7 +264,22 @@ export type DirectoryMember = {
   verifiedAt: string | null
 }
 
-/** Verified members of the current recruitment year. */
+/** A board member or director who has not paid yet, with the Member ID held for their seat. */
+export type PendingOfficer = {
+  fullName: string
+  position: string
+  role: "eb" | "director" | "ea"
+  committee: string
+  /** Null for executive assistants: their number comes from their office's block at payment. */
+  reservedMemberId: string | null
+  applicationCode: string
+  studentNumber: string | null
+  section: string | null
+}
+
+/** Verified members of the current recruitment year, and the officers still to pay. */
 export function getDirectoryMembers() {
-  return apiFetch<{ members: DirectoryMember[] }>("/membership-payments/members")
+  return apiFetch<{ members: DirectoryMember[]; pendingOfficers: PendingOfficer[] }>(
+    "/membership-payments/members",
+  )
 }

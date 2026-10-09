@@ -1,4 +1,4 @@
-import type { ApplicantApplication, ApplicantResult } from "@/lib/api/applicant"
+import type { ApplicantApplication, ApplicantResult, OfficerInfo } from "@/lib/api/applicant"
 import { formatDisplayDateTime } from "@/lib/datetime/display"
 
 /**
@@ -19,7 +19,8 @@ export type Placement = NonNullable<ApplicantResult["finalPlacement"]>
 type StateInput = Pick<
   ApplicantApplication,
   "applicationType" | "canEdit" | "editDeadline" | "result"
->
+> &
+  Partial<Pick<ApplicantApplication, "officer">>
 
 export function isRedirectPending(result: ApplicantResult) {
   return result.redirectPlacement !== null && result.redirectResponse === null
@@ -57,6 +58,17 @@ function memberOnlyState(result: ApplicantResult | null): ApplicantDashboardStat
     chip: { label: "Member-only application", tone: "neutral" },
     title: "Your application",
     subtitle: "You registered as a general member.",
+  }
+}
+
+function officerState(officer: OfficerInfo): ApplicantDashboardState {
+  const adviser = officer.kind === "adviser"
+  return {
+    chip: { label: adviser ? "Adviser" : "Officer", tone: "neutral" },
+    title: "Your Membership",
+    subtitle: adviser
+      ? "Your official Member ID is ready."
+      : "Your Member ID is reserved. It is released once your membership payment is verified.",
   }
 }
 
@@ -101,6 +113,7 @@ function releasedState(result: ApplicantResult): ApplicantDashboardState {
 }
 
 export function applicantDashboardState(application: StateInput): ApplicantDashboardState {
+  if (application.officer) return officerState(application.officer)
   if (application.applicationType !== "position") return memberOnlyState(application.result)
   if (!application.result) return pendingState(application.canEdit, application.editDeadline)
   return releasedState(application.result)

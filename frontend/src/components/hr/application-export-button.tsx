@@ -34,7 +34,7 @@ export function ApplicationExportButton({
       const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = url
-      link.download = `r101-applications-${filters.archive ?? "active"}-${new Date()
+      link.download = `${filters.track === "officer_hunt" ? "officer-hunt" : "r101"}-applications-${filters.archive ?? "active"}-${new Date()
         .toISOString()
         .slice(0, 10)}.csv`
       document.body.append(link)

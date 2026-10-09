@@ -11,6 +11,10 @@ import { hrFilterSelectClasses } from "@/lib/site/surface"
 import { cn } from "@/lib/utils"
 
 const triggerClasses = cn(hrFilterSelectClasses, "w-full")
+// The list is as wide as its longest option (never narrower than the trigger), so
+// a long label and its count are not clipped or run under the check mark.
+const listClasses = "w-max min-w-(--anchor-width) max-w-[min(26rem,calc(100vw-2rem))]"
+const countClasses = "ml-auto pl-4 tabular-nums text-prelude"
 
 export type FilterOption = { value: string; label: string; count: number }
 
@@ -31,10 +35,11 @@ export function MembersFilterSelect({ value, options, onChange, label }: Members
           {current.label} ({current.count})
         </SelectValue>
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className={listClasses}>
         {options.map((option) => (
           <SelectItem key={option.value} value={option.value}>
-            {option.label} ({option.count})
+            <span>{option.label}</span>
+            <span className={countClasses}>{option.count}</span>
           </SelectItem>
         ))}
       </SelectContent>

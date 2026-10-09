@@ -8,6 +8,17 @@ import {
   userFacingApiError,
 } from "@/lib/api/error-message"
 import type { ApplicationStatus, ApplicationType, DocumentType } from "@/lib/types/application"
+import type { RecruitmentTrack } from "@/lib/types/track"
+
+/** Elected officers and advisers sign in as an `officer` application. */
+export type ApplicantApplicationType = ApplicationType | "officer"
+
+export type OfficerInfo = {
+  kind: "eb" | "director" | "ea" | "adviser"
+  title: string
+  /** The number held for this seat until the membership payment is verified. */
+  reservedMemberId: string | null
+}
 
 export type ApplicantChoice = {
   preferenceRank: 1 | 2
@@ -56,7 +67,10 @@ export type ApplicantResult = {
 export type ApplicantApplication = {
   applicationCode: string
   status: ApplicationStatus
-  applicationType: ApplicationType
+  applicationType: ApplicantApplicationType
+  /** R101, or the officer hunt for the next board, directors and assistants. */
+  track: RecruitmentTrack
+  officer: OfficerInfo | null
   memberId: string | null
   firstName: string
   lastName: string
@@ -107,7 +121,7 @@ export type ApplicantInterviewSchedule = {
 
 export type ApplicantPayment = {
   applicationCode: string
-  applicationType: "position" | "member"
+  applicationType: ApplicantApplicationType
   applicationStatus: "pending" | "approved" | "rejected"
   paymentStatus:
     | "awaiting_payment"
@@ -116,7 +130,6 @@ export type ApplicantPayment = {
     | "needs_resubmission"
     | "expired"
   membershipStatus: "inactive" | "active" | "revoked"
-  confirmationStatus: "not_released" | "released" | "email_failed"
   amountCents: number
   opensAt: string
   deadlineAt: string
@@ -150,9 +163,8 @@ export type ApplicantPayment = {
   membersGroupLink: string | null
   committeeChatLink: string | null
   committeeName: string | null
-  /** Core team chat; only set for executive associates. */
+  /** Core team chat; only set for executive associates, the board and directors. */
   coreTeamChatLink: string | null
-  confirmationReleasedAt: string | null
 }
 
 export type MemberCard = {
@@ -259,6 +271,13 @@ export function putApplicantInterviewBooking(slotId: string) {
     method: "PUT",
     body: JSON.stringify({ slotId }),
   })
+}
+
+export function saveOfficerDetails(body: { studentNumber: string; section: string }) {
+  return applicantFetch<{ studentNumber: string; section: string }>(
+    "/applicant/application/officer-details",
+    { method: "PUT", body: JSON.stringify(body) },
+  )
 }
 
 export function getApplicantPayment() {

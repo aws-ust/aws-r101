@@ -28,8 +28,13 @@ import {
   interviewReminderTemplate,
   officerApplicationNoticeTemplate,
   memberRegistrationTemplate,
-  membershipConfirmationTemplate,
   membershipVerifiedTemplate,
+  officerWelcomeTemplate,
+  officerHuntRedirectedTemplate,
+  officerHuntRejectedTemplate,
+  officerPaymentInvitationTemplate,
+  paymentDeadlineExtendedTemplate,
+  paymentResubmissionTemplate,
   paymentInvitationTemplate,
   resultAcceptedTemplate,
   resultMemberAcceptedTemplate,
@@ -329,7 +334,8 @@ export async function sendApplicationSubmitted(
       ),
     }),
   ];
-  if (applicationRequiresDevExam(choiceRefs)) {
+  // The dev assessment is part of R101's technical committees, not the officer hunt.
+  if (application.track === "r101" && applicationRequiresDevExam(choiceRefs)) {
     rendered.attachments.push(awsDevAssessmentAttachment());
   }
   return deliverEmail({
@@ -490,7 +496,21 @@ export function renderResultEmail(input: {
   position: string | null;
   committee?: string | null;
   applicationType?: "position" | "member";
+  /** The officer hunt has its own wording for the results it sends. */
+  track?: "r101" | "officer_hunt";
 }): RenderedEmail {
+  if (input.track === "officer_hunt") {
+    if (input.messageType === "result_redirected") {
+      return officerHuntRedirectedTemplate({
+        lastName: input.lastName,
+        position: input.position ?? "",
+        committee: input.committee ?? "",
+      });
+    }
+    if (input.messageType === "result_rejected") {
+      return officerHuntRejectedTemplate({ lastName: input.lastName });
+    }
+  }
   if (input.messageType === "result_accepted") {
     return input.applicationType === "member"
       ? resultMemberAcceptedTemplate({ lastName: input.lastName })
@@ -509,20 +529,36 @@ export function renderResultEmail(input: {
   return resultRejectedTemplate({ lastName: input.lastName });
 }
 
+export function renderOfficerWelcome(input: Parameters<typeof officerWelcomeTemplate>[0]) {
+  return officerWelcomeTemplate(input);
+}
+
 export function renderPaymentInvitation(input: Parameters<typeof paymentInvitationTemplate>[0]) {
   return paymentInvitationTemplate(input);
+}
+
+export function renderOfficerPaymentInvitation(
+  input: Parameters<typeof officerPaymentInvitationTemplate>[0],
+) {
+  return officerPaymentInvitationTemplate(input);
+}
+
+export function renderPaymentResubmission(
+  input: Parameters<typeof paymentResubmissionTemplate>[0],
+) {
+  return paymentResubmissionTemplate(input);
+}
+
+export function renderPaymentDeadlineExtended(
+  input: Parameters<typeof paymentDeadlineExtendedTemplate>[0],
+) {
+  return paymentDeadlineExtendedTemplate(input);
 }
 
 export function renderMembershipVerified(
   input: Parameters<typeof membershipVerifiedTemplate>[0],
 ) {
   return membershipVerifiedTemplate(input);
-}
-
-export function renderMembershipConfirmation(
-  input: Parameters<typeof membershipConfirmationTemplate>[0],
-) {
-  return membershipConfirmationTemplate(input);
 }
 
 export { listByApplicationId as listEmailNotificationsByApplicationId } from "./notifications";

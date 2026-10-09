@@ -1,13 +1,14 @@
 import type {
   PaymentCampaign,
   PaymentDashboard,
+  PaymentInvitation,
   PaymentListItem,
   PaymentStatus,
 } from "@/lib/api/payments"
 import { formatDisplayDate } from "@/lib/datetime/display"
 
-/** The Payments page: clear the receipt queue, or see everyone. Setup has its own page. */
-export type PaymentTab = "review" | "all"
+/** The Payments page: clear the receipt queue, see everyone, or check who has been sent the payment email. */
+export type PaymentTab = "review" | "all" | "emails"
 
 export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
   pending_verification: "Pending verification",
@@ -25,6 +26,38 @@ export const PAYMENT_STATUS_ORDER: PaymentStatus[] = [
   "expired",
   "verified",
 ]
+
+/** What HR can ask of the payment email: who has not received it, who might have. */
+export type PaymentEmailFilter = "all" | "unsent" | "uncertain" | "sent"
+
+export const PAYMENT_EMAIL_LABELS: Record<PaymentInvitation, string> = {
+  none: "No email yet",
+  queued: "Email waiting to send",
+  failed: "Email failed",
+  uncertain: "Email may not have arrived",
+  sent: "Email sent",
+}
+
+/** Anyone who has not been sent their email: never made, still waiting, or failed. */
+export function emailNotSent(invitation: PaymentInvitation) {
+  return invitation === "none" || invitation === "queued" || invitation === "failed"
+}
+
+/** How many people are in each payment-email group. `unsent` is never made, still waiting, or failed. */
+export function paymentEmailCounts(payments: PaymentListItem[]) {
+  return {
+    unsent: payments.filter((payment) => matchesPaymentEmail(payment, "unsent")).length,
+    uncertain: payments.filter((payment) => payment.invitation === "uncertain").length,
+    sent: payments.filter((payment) => payment.invitation === "sent").length,
+  }
+}
+
+/** Whether a payment belongs in a payment-email group. Someone who already paid is never "not sent". */
+export function matchesPaymentEmail(payment: PaymentListItem, filter: PaymentEmailFilter) {
+  if (filter === "all") return true
+  if (filter === "unsent") return payment.status !== "verified" && emailNotSent(payment.invitation)
+  return payment.invitation === filter
+}
 
 export type PaymentFilters = {
   query: string
@@ -56,6 +89,12 @@ export function placementLabel(payment: Pick<PaymentListItem, "applicationType" 
 /** Committee members pay the CFO's QR; everyone else pays as a general member. */
 export function paysAsCommitteeMember(payment: Pick<PaymentListItem, "applicationType" | "applicationStatus">) {
   return payment.applicationType === "position" && payment.applicationStatus === "approved"
+}
+
+/** The "Pays as" line in the review panel. */
+export function paysAsLabel(payment: Pick<PaymentListItem, "applicationType" | "applicationStatus">) {
+  if (payment.applicationType === "officer") return "Officer"
+  return paysAsCommitteeMember(payment) ? "Committee member" : "General member"
 }
 
 export function filterPayments(payments: PaymentListItem[], filters: PaymentFilters) {
@@ -105,7 +144,7 @@ export function nextAfterDecision(queue: PaymentListItem[], id: string) {
 }
 
 export function parsePaymentTab(value: string | string[] | undefined): PaymentTab | null {
-  return value === "review" || value === "all" ? value : null
+  return value === "review" || value === "all" || value === "emails" ? value : null
 }
 
 /** The queue while anything waits; otherwise everyone. */

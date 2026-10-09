@@ -23,7 +23,14 @@ const statusCellClasses = cn(cellClasses, "w-44 max-xl:hidden")
 const mutedClasses = "text-prelude"
 
 function IdStatus({ entry }: { entry: MemberEntry }) {
-  if (!entry.memberId) return <span className={mutedClasses}>No ID yet</span>
+  if (!entry.memberId) {
+    const pendingLabel = entry.reservedMemberId
+      ? `Reserved ${entry.reservedMemberId}`
+      : entry.role === "ea"
+        ? "Numbered at payment"
+        : "No ID yet"
+    return <span className={mutedClasses}>{pendingLabel}</span>
+  }
   return (
     <span>
       Active

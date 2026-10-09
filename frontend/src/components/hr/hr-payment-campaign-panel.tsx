@@ -62,11 +62,17 @@ function PaymentPeriodPanel({ campaign, role, pending, onCampaign, onPending, on
       ) : null}
       {canManage ? (
         <div className={formClasses}>
-          <HrPaymentScheduleForm campaign={campaign} onSaved={(saved) => { onCampaign(saved); onFeedback({ type: "success", message: "Payment period saved." }) }} />
+          <HrPaymentScheduleForm campaign={campaign} onSaved={(saved) => { onCampaign(saved); onFeedback({ type: "success", message: scheduleSavedMessage(saved.extensionEmails.queued) }) }} />
         </div>
       ) : null}
     </section>
   )
+}
+
+/** A later deadline also emails everyone who hasn't paid, so say how many. */
+function scheduleSavedMessage(emailed: number) {
+  if (emailed === 0) return "Payment period saved."
+  return `Payment period saved. ${emailed} ${emailed === 1 ? "person was" : "people were"} emailed the new deadline.`
 }
 
 function PaymentDetailsPanel({ campaign, role, onCampaign, onFeedback }: CampaignPanelProps) {
@@ -92,12 +98,17 @@ function campaignStatus(campaign: PaymentCampaign | null) {
   return `${campaign.isOpen ? "Open" : "Closed"} · Recruitment year ${campaign.recruitmentYear}${detailsStatus}`
 }
 
+function openedMessage(result: Awaited<ReturnType<typeof openPaymentCampaign>>) {
+  const who = `${result.members} R101 ${result.members === 1 ? "member" : "members"} and ${result.officers} ${result.officers === 1 ? "officer" : "officers"}`
+  return `Payment period opened for ${who}. ${result.emailDelivery.queued} invitation emails are being sent in the background.`
+}
+
 async function updatePaymentPeriod(open: boolean, campaign: PaymentCampaign, onCampaign: CampaignPanelProps["onCampaign"], onPending: CampaignPanelProps["onPending"], onFeedback: CampaignPanelProps["onFeedback"]) {
   onPending(true)
   try {
     if (open) {
       const result = await openPaymentCampaign()
-      onFeedback({ type: "success", message: `Payment period opened for ${result.eligible} eligible applicants. ${result.emailDelivery.queued} invitation emails are being sent in the background.` })
+      onFeedback({ type: "success", message: openedMessage(result) })
       onCampaign({ ...campaign, isOpen: true })
     } else {
       onCampaign(await closePaymentCampaign())

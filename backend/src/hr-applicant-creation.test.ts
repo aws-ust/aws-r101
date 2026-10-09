@@ -47,6 +47,9 @@ const applicantIds: string[] = [];
 const applicationIds: string[] = [];
 const uploadSessionIds: string[] = [];
 const originalEnv = new Map<string, string | undefined>();
+// The test makes its own bucket, so it works on any LocalStack: the one from .env
+// when it is set, otherwise a dedicated one on port 4568.
+const s3Endpoint = process.env.S3_ENDPOINT ?? "http://localhost:4568";
 let originalWindow: typeof recruitmentWindows.$inferSelect | undefined;
 let bucketCreated = false;
 
@@ -54,7 +57,7 @@ for (const [key, value] of Object.entries({
   JWT_SECRET: "hr-applicant-creation-secret-at-least-32-characters",
   RECRUITMENT_YEAR: String(year),
   EMAIL_ENABLED: "false",
-  S3_ENDPOINT: "http://localhost:4568",
+  S3_ENDPOINT: s3Endpoint,
   S3_REGION: "us-east-1",
   S3_BUCKET: bucket,
   S3_FORCE_PATH_STYLE: "true",
@@ -68,7 +71,7 @@ for (const [key, value] of Object.entries({
 
 const s3 = new S3Client({
   region: "us-east-1",
-  endpoint: "http://localhost:4568",
+  endpoint: s3Endpoint,
   forcePathStyle: true,
   credentials: { accessKeyId: "test", secretAccessKey: "test" },
 });

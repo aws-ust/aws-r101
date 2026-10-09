@@ -4,9 +4,12 @@ import { useEffect, useState } from "react"
 import { HrResultEmailProblems } from "@/components/hr/hr-result-email-problems"
 import {
   getResultEmailStatus,
-  retryUncertainResultEmailsRequest,
+  markResultEmailsDeliveredRequest,
+  resendResultEmailsRequest,
   type ResultEmailStatus,
 } from "@/lib/api/client"
+import { useRecruitmentTrack } from "@/lib/recruitment-track"
+import type { RecruitmentTrack } from "@/lib/types/track"
 import { formatSubheaderLabel } from "@/lib/site/button-label"
 import { glassPanelClasses, subheaderLabelClasses } from "@/lib/site/surface"
 
@@ -29,16 +32,17 @@ function progressCopy(status: ResultEmailStatus) {
 
 /** Live delivery progress for released result emails. */
 export function HrResultEmailStatus({ refreshKey }: { refreshKey: number }) {
+  const track = useRecruitmentTrack()
   const [status, setStatus] = useState<ResultEmailStatus | null>(null)
   const [error, setError] = useState("")
-  const [resending, setResending] = useState(false)
+  const [busy, setBusy] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
   const inProgress = status ? status.queued + status.sending > 0 : false
 
   useEffect(() => {
     let cancelled = false
     const load = () =>
-      getResultEmailStatus()
+      getResultEmailStatus(track)
         .then((next) => {
           if (!cancelled) {
             setStatus(next)
@@ -59,17 +63,21 @@ export function HrResultEmailStatus({ refreshKey }: { refreshKey: number }) {
       cancelled = true
       clearInterval(timer)
     }
-  }, [refreshKey, reloadKey, inProgress])
+  }, [refreshKey, reloadKey, inProgress, track])
 
-  async function resendUncertain() {
-    setResending(true)
+  async function updateSelected(
+    request: (ids: string[], track: RecruitmentTrack) => Promise<unknown>,
+    failure: string,
+    ids: string[],
+  ) {
+    setBusy(true)
     try {
-      await retryUncertainResultEmailsRequest()
+      await request(ids, track)
       setReloadKey((key) => key + 1)
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not resend those emails.")
+      setError(caught instanceof Error ? caught.message : failure)
     } finally {
-      setResending(false)
+      setBusy(false)
     }
   }
 
@@ -97,8 +105,11 @@ export function HrResultEmailStatus({ refreshKey }: { refreshKey: number }) {
       </div>
       <HrResultEmailProblems
         problems={status.problems}
-        resending={resending}
-        onResendUncertain={() => void resendUncertain()}
+        busy={busy}
+        onResendSelected={(ids) => updateSelected(resendResultEmailsRequest, "Could not resend those emails.", ids)}
+        onMarkDelivered={(ids) =>
+          updateSelected(markResultEmailsDeliveredRequest, "Could not mark those emails as delivered.", ids)
+        }
       />
     </section>
   )

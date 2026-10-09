@@ -229,8 +229,11 @@ type above are unchanged, but the working areas differ from the public site.
   panel width (container queries), not the viewport.
 - **Members.** Scope tabs (Members, Not paid yet) over a toolbar of search
   (`/` focuses it), one dropdown, a List / By committee switch and Export. Paid
-  members come first in Member ID order, then the officers, who have no ID
-  ("No ID yet"). By committee nests each committee under its executive office.
+  members come first in Member ID order, advisers included (they are active
+  without paying), then the Executive Board and directors who have not paid
+  yet, each showing the number held for their seat ("Reserved AWS-2627-0001").
+  Advisers have their own filter and group. By committee nests each committee
+  under its executive office.
   Not paid yet reads from the payments dashboard and says "Pay by" or
   "Expired". Student No. and Section show from 1400px.
 - **Payments.** One page (`/admin/hr/payments`, `?tab=review|all|setup`;
@@ -240,9 +243,8 @@ type above are unchanged, but the working areas differ from the public site.
   (pending receipts, oldest first) and All payments (Members toolbar and
   filters). The period, amount and GCash QRs live on their own page,
   Payment Setup (`/admin/hr/payments/setup`, its own sidebar entry), and
-  Payments points to it while the period or amount is missing. Export, Retry Emails and
-  Release Confirmations sit beside the tabs; Release always confirms with the
-  count. A row opens a review panel, docked and sticky from 1280px and a sheet
+  Payments points to it while the period or amount is missing. Export and Retry
+  Invitations sit beside the tabs. A row opens a review panel, docked and sticky from 1280px and a sheet
   below: facts, every submission with a large mono reference and copy, then
   Verify (the one aquamarine button) or Reject / Reverse with a reason and a
   new deadline. A decision moves to the next receipt and focuses it; ↑ / ↓
@@ -250,11 +252,19 @@ type above are unchanged, but the working areas differ from the public site.
   the table's own width (container queries).
 - **HR sidebar.** Grouped by what the work is, not by page: Overview alone
   at the top; Recruitment (Applications, Results, Archive); Membership
-  (Members, Payments, Community Links); Setup (Recruitment Setup, Committees,
-  Payment Setup) pinned to the foot, since configuration is visited a few
-  times a season. Every group below Overview is set off by a hairline. Rows are compact (36px, 44px on touch); the only lit things are the
-  current page's pill and its aquamarine icon. Navigation lives in
-  `frontend/src/components/hr/hr-navigation.ts`.
+  (Members, Payments, Community Links); and Setup, folded to one row at the
+  foot. R101 and the Officer Hunt run the same pipeline, so Recruitment is one
+  group with a two-segment round switch (R101 / Officer Hunt) above its rows;
+  the chosen round is the filled segment, and the switch lands on the same kind
+  of page in the other round (Results to Results). Setup (R101 season, Officer
+  hunt, Committees, Payment period) is configuration visited a few times a
+  season, so it stays folded until the current page is inside it. On the icon
+  rail the switch is one button that flips the round and Setup lists its pages
+  directly. Every group below Overview is set off by a hairline. Rows are
+  compact (36px, 44px on touch); the only lit things are the current page's
+  pill and its aquamarine icon. Navigation lives in
+  `frontend/src/components/hr/hr-navigation.ts`, drawn by
+  `hr-sidebar-navigation.tsx`, `hr-round-switch.tsx` and `hr-sidebar-fold.tsx`.
 - **Applicant dashboard.** One column of solid sections in a fixed order:
   identity, result or application (choices, interview, edit choices),
   groups, payment, membership ID. The page title is the h1 and its subtitle

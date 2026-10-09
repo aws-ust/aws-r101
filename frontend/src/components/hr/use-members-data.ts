@@ -6,10 +6,12 @@ import {
   getPaymentDashboard,
   type DirectoryMember,
   type PaymentListItem,
+  type PendingOfficer,
 } from "@/lib/api/payments"
 
 type MembersData = {
   verified: DirectoryMember[]
+  pendingOfficers: PendingOfficer[]
   payments: PaymentListItem[]
 }
 
@@ -25,7 +27,11 @@ export function useMembersData() {
       .then(([directory, dashboard]) => {
         if (cancelled) return
         setError("")
-        setData({ verified: directory.members, payments: dashboard.payments })
+        setData({
+          verified: directory.members,
+          pendingOfficers: directory.pendingOfficers,
+          payments: dashboard.payments,
+        })
       })
       .catch((caught: unknown) => {
         if (!cancelled) {

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import test, { after } from "node:test";
+import test, { after, before } from "node:test";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { sign } from "hono/jwt";
@@ -23,7 +23,27 @@ if (!/(^|[_-])test([_-]|$)/i.test(databaseName)) {
 process.env.JWT_SECRET = "hr-auth-test-secret";
 process.env.CORS_ORIGIN = "http://localhost:3000";
 
+// The login tests use the seeded HR account. Create it when the test database
+// has not been seeded, and remove only what this file created.
+let createdHrUserId: string | null = null;
+
+before(async () => {
+  const [created] = await db
+    .insert(users)
+    .values({
+      email: "hr@aws-ust.org",
+      passwordHash: await bcrypt.hash("password123", 10),
+      firstName: "Hazel",
+      lastName: "Reyes",
+      role: "hr",
+    })
+    .onConflictDoNothing()
+    .returning({ id: users.id });
+  createdHrUserId = created?.id ?? null;
+});
+
 after(async () => {
+  if (createdHrUserId) await db.delete(users).where(eq(users.id, createdHrUserId));
   await db.$client.end();
 });
 

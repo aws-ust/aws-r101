@@ -8,6 +8,8 @@ import type {
   HrApplication,
   UpdateApplicationDecisionInput,
 } from "@/lib/types/hr-application"
+import { useRecruitmentTrack } from "@/lib/recruitment-track"
+import type { RecruitmentTrack } from "@/lib/types/track"
 import {
   ApiError,
   getApplicationById,
@@ -85,6 +87,7 @@ export function useApplications(params: ApplicationListParams) {
     page = 1,
     pageSize = 10,
   } = params
+  const track = useRecruitmentTrack()
   const [applications, setApplications] = useState<HrApplication[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -97,6 +100,7 @@ export function useApplications(params: ApplicationListParams) {
       () => {
         setLoading(true)
         listApplications({
+          track,
           query,
           committeeName,
           status,
@@ -129,7 +133,7 @@ export function useApplications(params: ApplicationListParams) {
       cancelled = true
       window.clearTimeout(timeout)
     }
-  }, [applicationType, archive, committeeName, page, pageSize, query, reloadVersion, status])
+  }, [applicationType, archive, committeeName, page, pageSize, query, reloadVersion, status, track])
 
   const refreshApplications = useCallback(() => {
     setReloadVersion((current) => current + 1)
@@ -188,18 +192,19 @@ export function useApplication(id: string | undefined) {
 }
 
 export function useOpenPositions(includeClosed = false) {
+  const track = useRecruitmentTrack()
   const [positions, setPositions] = useState<Position[]>(
-    () => (includeClosed ? null : peekOpenPositions()) ?? [],
+    () => (includeClosed ? null : peekOpenPositions(track)) ?? [],
   )
   const [loading, setLoading] = useState(
-    () => includeClosed || !peekOpenPositions(),
+    () => includeClosed || !peekOpenPositions(track),
   )
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (includeClosed) {
       let cancelled = false
-      listAllPositions()
+      listAllPositions(track)
         .then((rows) => {
           if (cancelled) return
           setPositions(rows)
@@ -219,7 +224,7 @@ export function useOpenPositions(includeClosed = false) {
     }
 
     let cancelled = false
-    listOpenPositions()
+    listOpenPositions(track)
       .then((rows) => {
         if (cancelled) return
         setPositions(rows)
@@ -236,7 +241,7 @@ export function useOpenPositions(includeClosed = false) {
     return () => {
       cancelled = true
     }
-  }, [includeClosed])
+  }, [includeClosed, track])
 
   const committees = useMemo(
     () => [...new Set(positions.map((position) => position.committee))],
@@ -246,9 +251,10 @@ export function useOpenPositions(includeClosed = false) {
 }
 
 export async function createApplication(
-  input: CreateApplicationInput
+  input: CreateApplicationInput,
+  track?: RecruitmentTrack,
 ): Promise<Application> {
-  return postApplication(input)
+  return postApplication(input, track)
 }
 
 export async function createHrApplication(
@@ -257,8 +263,8 @@ export async function createHrApplication(
   return postHrApplication(input)
 }
 
-export async function createUploadSession(input: UploadPresignRequest) {
-  return postUploadPresign(input)
+export async function createUploadSession(input: UploadPresignRequest, track?: RecruitmentTrack) {
+  return postUploadPresign(input, track)
 }
 
 export async function createHrUploadSession(input: UploadPresignRequest) {

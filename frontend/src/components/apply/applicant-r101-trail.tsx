@@ -50,7 +50,7 @@ export function ApplicantR101Trail({ trail }: { trail: R101Trail }) {
       <ol
         className={listClasses}
         style={{ gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))` }}
-        aria-label="Your R101 progress"
+        aria-label="Your application progress"
       >
         {trail.stations.map((label, index) => {
           const state = stationState(index, trail.current)

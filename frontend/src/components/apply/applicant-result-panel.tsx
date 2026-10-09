@@ -19,9 +19,11 @@ function roleLine(placement: Placement) {
 
 function RedirectOffer({
   placement,
+  hunt,
   onApplicationUpdated,
 }: {
   placement: Placement
+  hunt: boolean
   onApplicationUpdated: (application: ApplicantApplication) => void
 }) {
   const role = roleLine(placement)
@@ -33,12 +35,14 @@ function RedirectOffer({
       status={role ? `Offered position: ${role}` : "Offered placement"}
     >
       <p className={offerBodyClasses}>
-        Officers offered you this placement instead of your choices. Accept it to join this committee, or decline to
-        continue as a general member. Your answer is final, and payment instructions follow it.
+        {hunt
+          ? "The panel offered you this seat instead of your choices. Accept it to take the seat, or decline. Your answer is final, and accepting seats you right away."
+          : "Officers offered you this placement instead of your choices. Accept it to join this committee, or decline to continue as a general member. Your answer is final, and payment instructions follow it."}
       </p>
       <ApplicantRedirectResponse
         position={placement.title}
         committee={placement.committee}
+        hunt={hunt}
         onApplicationUpdated={onApplicationUpdated}
       />
     </ApplicantSection>
@@ -48,11 +52,14 @@ function RedirectOffer({
 export function ApplicantResultPanel({
   result,
   choices,
+  hunt = false,
   milestone,
   onApplicationUpdated,
 }: {
   result: ApplicantResult
   choices: ApplicantChoice[]
+  /** An officer hunt result, which is not followed by general membership. */
+  hunt?: boolean
   /** The acceptance is the applicant's newest milestone (no ID yet). */
   milestone: boolean
   onApplicationUpdated: (application: ApplicantApplication) => void
@@ -60,7 +67,7 @@ export function ApplicantResultPanel({
   const placement = resolvePlacement(result)
 
   if (isRedirectPending(result) && placement) {
-    return <RedirectOffer placement={placement} onApplicationUpdated={onApplicationUpdated} />
+    return <RedirectOffer placement={placement} hunt={hunt} onApplicationUpdated={onApplicationUpdated} />
   }
 
   if (isAccepted(result) && placement) {
@@ -82,9 +89,13 @@ export function ApplicantResultPanel({
       titleId={TITLE_ID}
       title="Not selected this term"
       status={
-        result.redirectResponse === "declined"
-          ? "You declined the offered placement. Thank you for your interest. You can still continue as a general member."
-          : "Thank you for applying. You were not selected for a committee position this term. You can still continue as a general member."
+        hunt
+          ? result.redirectResponse === "declined"
+            ? "You declined the offered seat. Thank you for running. You can still apply to R101 when it opens."
+            : "Thank you for running. You were not selected for a seat this term. You can still apply to R101 when it opens."
+          : result.redirectResponse === "declined"
+            ? "You declined the offered placement. Thank you for your interest. You can still continue as a general member."
+            : "Thank you for applying. You were not selected for a committee position this term. You can still continue as a general member."
       }
     >
       <ApplicantRejectedChoices choices={choices} />

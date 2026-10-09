@@ -10,6 +10,7 @@ import {
   positions,
 } from "../../db/schema";
 import { resolveApplicantEditEligibility } from "../applications/applicant-edit-policy";
+import type { RecruitmentTrack } from "../applications/recruitment-scope";
 import {
   assertInterviewSlotInWindow,
   InterviewWindowError,
@@ -39,6 +40,8 @@ export class InterviewScheduleError extends Error {
 }
 
 type SlotFilters = {
+  /** Defaults to R101's slots. */
+  track?: RecruitmentTrack;
   committeeId?: string;
   from?: Date;
   to?: Date;
@@ -113,7 +116,7 @@ function isUniqueViolation(error: unknown): boolean {
 }
 
 export async function listInterviewSlotsForHr(filters: SlotFilters) {
-  const conditions = [];
+  const conditions = [eq(interviewSlots.track, filters.track ?? "r101")];
   if (filters.committeeId) {
     conditions.push(eq(interviewSlots.committeeId, filters.committeeId));
   }
@@ -177,6 +180,7 @@ export async function listInterviewSlotsForHr(filters: SlotFilters) {
 export async function createInterviewSlot(
   committeeId: string,
   startsAt: Date,
+  track: RecruitmentTrack = "r101",
 ) {
   const [committee] = await db
     .select({ id: committees.id, name: committees.name })
@@ -192,7 +196,7 @@ export async function createInterviewSlot(
   }
 
   try {
-    await assertInterviewSlotInWindow(startsAt);
+    await assertInterviewSlotInWindow(startsAt, track);
   } catch (error) {
     if (error instanceof InterviewWindowError) {
       throw new InterviewScheduleError("slot_conflict", error.message);
@@ -203,7 +207,7 @@ export async function createInterviewSlot(
   try {
     const [slot] = await db
       .insert(interviewSlots)
-      .values({ committeeId, startsAt })
+      .values({ committeeId, startsAt, track })
       .returning({
         id: interviewSlots.id,
         isOpen: interviewSlots.isOpen,
@@ -230,7 +234,10 @@ export async function createInterviewSlot(
   }
 }
 
-export async function resetInterviewScheduleForCommittee(committeeId: string) {
+export async function resetInterviewScheduleForCommittee(
+  committeeId: string,
+  track: RecruitmentTrack = "r101",
+) {
   const [committee] = await db
     .select({ id: committees.id, name: committees.name })
     .from(committees)
@@ -248,7 +255,7 @@ export async function resetInterviewScheduleForCommittee(committeeId: string) {
     const slots = await tx
       .select({ id: interviewSlots.id })
       .from(interviewSlots)
-      .where(eq(interviewSlots.committeeId, committeeId));
+      .where(and(eq(interviewSlots.committeeId, committeeId), eq(interviewSlots.track, track)));
 
     const slotIds = slots.map((slot) => slot.id);
     let deletedBookings = 0;
@@ -263,7 +270,7 @@ export async function resetInterviewScheduleForCommittee(committeeId: string) {
 
     const removedSlots = await tx
       .delete(interviewSlots)
-      .where(eq(interviewSlots.committeeId, committeeId))
+      .where(and(eq(interviewSlots.committeeId, committeeId), eq(interviewSlots.track, track)))
       .returning({ id: interviewSlots.id });
 
     return {
@@ -331,6 +338,7 @@ export async function listOpenInterviewSlotsForPosition(positionId: string) {
   const [position] = await db
     .select({
       isOpen: positions.isOpen,
+      track: positions.track,
       committeeId: committees.id,
       committeeName: committees.name,
     })
@@ -360,6 +368,7 @@ export async function listOpenInterviewSlotsForPosition(positionId: string) {
     .where(
       and(
         eq(interviewSlots.committeeId, position.committeeId),
+        eq(interviewSlots.track, position.track),
         eq(interviewSlots.isOpen, true),
         gt(interviewSlots.startsAt, new Date()),
       ),
@@ -385,6 +394,7 @@ export async function bookInterviewSlotForApplication(
   applicationId: string,
   firstChoicePositionId: string,
   slotId: string,
+  track: RecruitmentTrack = "r101",
 ) {
   const [position] = await tx
     .select({ committeeId: positions.committeeId })
@@ -403,6 +413,7 @@ export async function bookInterviewSlotForApplication(
     .select({
       id: interviewSlots.id,
       committeeId: interviewSlots.committeeId,
+      track: interviewSlots.track,
       startsAt: interviewSlots.startsAt,
       isOpen: interviewSlots.isOpen,
     })
@@ -411,7 +422,7 @@ export async function bookInterviewSlotForApplication(
     .limit(1)
     .for("update");
 
-  if (!slot) {
+  if (!slot || slot.track !== track) {
     throw new InterviewScheduleError("slot_not_found", "Slot not found.");
   }
   if (slot.committeeId !== position.committeeId) {
@@ -459,6 +470,7 @@ export async function getApplicantInterviewSchedule(
   const [application] = await db
     .select({
       status: applications.status,
+      track: applications.track,
       archivedAt: applications.archivedAt,
       resultsReleasedAt: applications.resultsReleasedAt,
     })
@@ -547,6 +559,7 @@ export async function getApplicantInterviewSchedule(
         .where(
           and(
             eq(interviewSlots.committeeId, targetCommittee.id),
+            eq(interviewSlots.track, application.track),
             eq(interviewSlots.isOpen, true),
             gt(interviewSlots.startsAt, new Date()),
           ),
@@ -588,6 +601,7 @@ export async function bookApplicantInterview(
   const [application] = await db
     .select({
       status: applications.status,
+      track: applications.track,
       archivedAt: applications.archivedAt,
       resultsReleasedAt: applications.resultsReleasedAt,
     })
@@ -670,6 +684,7 @@ export async function bookApplicantInterview(
         .select({
           id: interviewSlots.id,
           committeeId: interviewSlots.committeeId,
+          track: interviewSlots.track,
           startsAt: interviewSlots.startsAt,
           isOpen: interviewSlots.isOpen,
         })
@@ -678,7 +693,7 @@ export async function bookApplicantInterview(
         .limit(1)
         .for("update");
 
-      if (!slot) {
+      if (!slot || slot.track !== application.track) {
         throw new InterviewScheduleError("slot_not_found", "Slot not found.");
       }
       if (slot.committeeId !== applicationRow.committeeId) {

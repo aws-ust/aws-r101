@@ -6,11 +6,14 @@ const OFFICE_PREFIX = "Office of the ";
  * name, and everyone else as a general member.
  */
 export function memberPositionLabel(input: {
-  applicationType: "position" | "member";
+  applicationType: "position" | "member" | "officer";
+  /** The seat title of an officer or adviser, e.g. "Chief Executive Officer". */
+  officerTitle?: string | null;
   applicationStatus: "pending" | "approved" | "rejected";
   positionName: string | null;
   committeeName: string | null;
 }) {
+  if (input.applicationType === "officer") return input.officerTitle ?? "Officer";
   const acceptedIntoPosition =
     input.applicationType === "position" &&
     input.applicationStatus === "approved" &&

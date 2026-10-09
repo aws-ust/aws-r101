@@ -18,6 +18,7 @@ import {
 } from "@/components/apply/committee-step-choice-patch"
 import { CommitteeStepPositionFields } from "@/components/apply/committee-step-position-fields"
 import type { CommitteeOfficeGroup } from "@/lib/apply/committee-groups"
+import { useRecruitmentTrack } from "@/lib/recruitment-track"
 
 const stackClasses = "flex min-w-0 w-full flex-col gap-5"
 const memberNoticeClasses =
@@ -32,6 +33,7 @@ type CommitteeStepProps = {
 }
 
 export function CommitteeStep({ values, onChange, errors, hrMode = false }: CommitteeStepProps) {
+  const hunt = useRecruitmentTrack() === "officer_hunt"
   const { positions: openPositions, loading, error } = useOpenPositions(hrMode)
   const positions = openPositions
   const committees = useMemo(
@@ -61,11 +63,14 @@ export function CommitteeStep({ values, onChange, errors, hrMode = false }: Comm
   const positionApplication = values.applicationType === "position"
   const positionTitle = (positionId: string) =>
     positions.find((position) => position.id === positionId)?.title ?? ""
+  // The portfolio and GitHub rules are R101's committees; the hunt asks for neither.
   const showPortfolio =
     positionApplication &&
+    !hunt &&
     needsCreativesPortfolio(values.firstCommittee, values.secondCommittee)
   const showGithub =
     positionApplication &&
+    !hunt &&
     needsDevelopmentGithub(
       values.firstCommittee,
       values.secondCommittee,
@@ -90,11 +95,13 @@ export function CommitteeStep({ values, onChange, errors, hrMode = false }: Comm
 
   return (
     <div className={stackClasses}>
-      <CommitteeStepApplicationType
-        hrMode={hrMode}
-        positionApplication={positionApplication}
-        onSelect={setApplicationType}
-      />
+      {hunt ? null : (
+        <CommitteeStepApplicationType
+          hrMode={hrMode}
+          positionApplication={positionApplication}
+          onSelect={setApplicationType}
+        />
+      )}
 
       {positionApplication ? (
         <CommitteeStepPositionFields

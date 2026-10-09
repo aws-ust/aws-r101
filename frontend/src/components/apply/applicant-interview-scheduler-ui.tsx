@@ -7,7 +7,7 @@ import {
   ApplicantInterviewSchedulerFullStatus,
   ApplicantInterviewSchedulerIntro,
 } from "@/components/apply/applicant-interview-scheduler-full-status"
-import { applicantSectionPanelClasses } from "@/components/apply/applicant-section"
+import { applicantSectionPanelClasses } from "@/components/apply/applicant-section-classes"
 import { dashboardActionTargetClasses } from "@/lib/site/dashboard-surface"
 import type { InterviewSeasonBounds } from "@/lib/season/interview"
 

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { prepareResultNotification } from "../hr/result-email-delivery";
 import { prepareMembershipNotification } from "../membership/email-delivery";
+import { prepareOfficerWelcome } from "../membership/officer-email";
 import {
   acquireOutboxLease,
   releaseOutboxLease,
@@ -18,9 +19,12 @@ export function prepareQueuedEmail(notification: ClaimedNotification): Promise<P
     case "result_redirected":
       return prepareResultNotification(notification);
     case "payment_invitation":
-    case "membership_confirmation":
+    case "payment_deadline_extended":
+    case "payment_resubmission_needed":
     case "membership_verified":
       return prepareMembershipNotification(notification);
+    case "officer_welcome":
+      return prepareOfficerWelcome(notification);
     default:
       return Promise.resolve({ kind: "invalid", error: "This email type is not sent from the queue." });
   }

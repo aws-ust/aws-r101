@@ -6,7 +6,21 @@ import {
   committees,
   positions,
 } from "../../db/schema";
+import { kickEmailOutbox } from "../email/outbox-kick";
+import { seatHuntWinner } from "../officer-hunt/seats";
 import { getApplicationById, type ApplicationJson } from "./applications";
+
+/** The seat's number or key is unique per term, so a second holder trips the unique index. */
+function isSeatTaken(error: unknown): boolean {
+  let current: unknown = error;
+  for (let depth = 0; depth < 4; depth += 1) {
+    if (!current || typeof current !== "object") return false;
+    const record = current as Record<string, unknown>;
+    if (record.code === "23505") return true;
+    current = record.cause;
+  }
+  return false;
+}
 
 export class RedirectPlacementError extends Error {
   constructor(
@@ -128,6 +142,7 @@ export async function recordRedirectResponse(
     .select({
       id: applications.id,
       applicationType: applications.applicationType,
+      track: applications.track,
       archivedAt: applications.archivedAt,
       redirectPositionId: applications.redirectPositionId,
       redirectResponse: applications.redirectResponse,
@@ -171,16 +186,28 @@ export async function recordRedirectResponse(
 
   const respondedAt = new Date();
   if (response === "accepted") {
-    await db
-      .update(applications)
-      .set({
-        redirectResponse: "accepted",
-        redirectRespondedAt: respondedAt,
-        status: "approved",
-        finalPositionId: application.redirectPositionId,
-        updatedAt: new Date(),
-      })
-      .where(eq(applications.id, applicationId));
+    try {
+      await db.transaction(async (tx) => {
+        await tx
+          .update(applications)
+          .set({
+            redirectResponse: "accepted",
+            redirectRespondedAt: respondedAt,
+            status: "approved",
+            finalPositionId: application.redirectPositionId,
+            updatedAt: new Date(),
+          })
+          .where(eq(applications.id, applicationId));
+        // In the officer hunt, taking the offered seat makes them an officer now.
+        if (application.track === "officer_hunt") await seatHuntWinner(tx, applicationId);
+      });
+    } catch (error) {
+      if (application.track === "officer_hunt" && isSeatTaken(error)) {
+        throw new RedirectPlacementError("That seat was already filled for this term.", 409);
+      }
+      throw error;
+    }
+    if (application.track === "officer_hunt") await kickEmailOutbox().catch(() => undefined);
   } else {
     await db
       .update(applications)

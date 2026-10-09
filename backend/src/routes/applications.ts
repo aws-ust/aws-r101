@@ -41,6 +41,14 @@ import {
 import { InterviewScheduleError } from "../lib/interview/scheduling";
 import { resolveRecruitmentSeasonStatus } from "../lib/recruitment/window";
 import {
+  getOfficerHuntSettings,
+  officerHuntSeasonStatus,
+} from "../lib/officer-hunt/settings";
+import {
+  parseTrackParam,
+  type RecruitmentTrack,
+} from "../lib/applications/recruitment-scope";
+import {
   applicationArchivePatchSchema,
   applicationDecisionPatchSchema,
   applicationEmailPatchSchema,
@@ -88,9 +96,21 @@ function parseCreateBody(
     : { ok: false, error: result.error.issues[0].message };
 }
 
-async function handleCreateApplication(c: Context, hrIntake: boolean) {
+/** Whether applications are open for a round: R101's window, or the officer hunt's own. */
+async function applicationSeasonStatus(track: RecruitmentTrack) {
+  return track === "officer_hunt"
+    ? officerHuntSeasonStatus(await getOfficerHuntSettings())
+    : resolveRecruitmentSeasonStatus();
+}
+
+/** Creates an application in one round; the officer hunt reuses R101's form, rules and booking. */
+export async function handleCreateApplication(
+  c: Context,
+  hrIntake: boolean,
+  track: RecruitmentTrack = "r101",
+) {
   if (!hrIntake) {
-    const season = await resolveRecruitmentSeasonStatus();
+    const season = await applicationSeasonStatus(track);
     if (!season.open) {
       return c.json({ error: season.message ?? "Applications are closed." }, 403);
     }
@@ -99,10 +119,13 @@ async function handleCreateApplication(c: Context, hrIntake: boolean) {
   const body = await c.req.json().catch(() => null);
   const parsed = parseCreateBody(body, hrIntake);
   if (!parsed.ok) return c.json({ error: parsed.error }, 400);
+  if (track === "officer_hunt" && parsed.value.applicationType !== "position") {
+    return c.json({ error: "Officer hunt applications choose seats, not membership only." }, 400);
+  }
 
   if (parsed.value.applicationType === "position") {
     const positionIds = parsed.value.choices.map((choice) => choice.positionId);
-    if (!hrIntake && !(await positionsAcceptApplications(positionIds))) {
+    if (!hrIntake && !(await positionsAcceptApplications(positionIds, track))) {
       return c.json(
         {
           error:
@@ -112,17 +135,20 @@ async function handleCreateApplication(c: Context, hrIntake: boolean) {
       );
     }
 
-    const choiceRefs = await choiceRefsForPositions(positionIds);
-    const urlError = validateChoiceUrls(
-      choiceRefs,
-      parsed.value.portfolioUrl,
-      parsed.value.githubUrl,
-    );
-    if (urlError) return c.json({ error: urlError }, 400);
+    // Portfolio and GitHub links are R101 committee requirements; the hunt asks for neither.
+    if (track === "r101") {
+      const choiceRefs = await choiceRefsForPositions(positionIds);
+      const urlError = validateChoiceUrls(
+        choiceRefs,
+        parsed.value.portfolioUrl,
+        parsed.value.githubUrl,
+      );
+      if (urlError) return c.json({ error: urlError }, 400);
+    }
   }
 
   try {
-    const result = await createApplication(parsed.value, { hrIntake });
+    const result = await createApplication(parsed.value, { hrIntake, track });
     if (result.created && hrIntake) {
       logHrAudit({
         actorEmail: getCurrentUser(c).email,
@@ -141,9 +167,12 @@ async function handleCreateApplication(c: Context, hrIntake: boolean) {
           sendApplicationSubmitted(result.application).catch((err) => {
             logApiError(c, err, "submission email failed");
           }),
-          sendOfficerApplicationNotice(result.application).catch((err) => {
-            logApiError(c, err, "officer application notice failed");
-          }),
+          // The notice tells committee officers about R101 first choices; the hunt is not R101.
+          track === "r101"
+            ? sendOfficerApplicationNotice(result.application).catch((err) => {
+                logApiError(c, err, "officer application notice failed");
+              })
+            : undefined,
         ]);
       }
     }
@@ -189,10 +218,14 @@ applicationsRoutes.get("/", requireAuth, async (c) => {
   const query = (c.req.query("query") ?? "").trim();
   const status = c.req.query("status") ?? "";
   const applicationType = c.req.query("applicationType") ?? "";
+  const track = parseTrackParam(c.req.query("track"));
   const archive = c.req.query("archive") ?? "active";
   const page = parsePositiveInteger(c.req.query("page"), 1);
   const pageSize = parsePositiveInteger(c.req.query("pageSize"), 10, 100);
 
+  if (!track) {
+    return c.json({ error: "track must be r101 or officer_hunt." }, 400);
+  }
   if (committee && !isUuid(committee)) {
     return c.json({ error: "committee must be a UUID." }, 400);
   }
@@ -248,6 +281,7 @@ applicationsRoutes.get("/", requireAuth, async (c) => {
     applicationType: applicationType
       ? (applicationType as "position" | "member")
       : undefined,
+    track,
     archive: archive as "active" | "archived" | "all",
     page,
     pageSize,

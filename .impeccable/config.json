@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "arial",
+        "files": [
+          "backend/src/lib/email/templates.ts"
+        ],
+        "createdAt": "2026-10-09T07:50:22.495Z",
+        "reason": "Email HTML must use web-safe fonts; Arial is the intended fallback in the email templates. Judged by Claude from the finding context, not user confirmed."
+      }
+    ]
+  }
+}

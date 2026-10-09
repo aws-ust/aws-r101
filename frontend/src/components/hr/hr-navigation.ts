@@ -1,7 +1,9 @@
 import {
   Archive,
+  CalendarClock,
   CalendarRange,
   ClipboardList,
+  Crown,
   IdCard,
   LayoutDashboard,
   MessagesSquare,
@@ -13,8 +15,18 @@ import {
 
 export type HrRole = "hr" | "admin"
 
+/** The two rounds that share one pipeline: R101, and the hunt for the next board. */
+export type HrRound = "r101" | "officer_hunt"
+
+export const hrRounds: { round: HrRound; label: string }[] = [
+  { round: "r101", label: "R101" },
+  { round: "officer_hunt", label: "Officer Hunt" },
+]
+
 export type HrNavigationItem = {
   label: string
+  /** Said by the tooltip when the rail is collapsed and the label alone is ambiguous. */
+  tooltip?: string
   href: string
   icon: typeof Archive
   active: (pathname: string, source: string | null) => boolean
@@ -26,7 +38,50 @@ export type HrNavigationSection = {
   /** "end" pins the group to the foot of the sidebar. */
   placement?: "end"
   visible: (role: HrRole) => boolean
-  items: HrNavigationItem[]
+  /**
+   * What the group lists. Per-round lists make one group serve both rounds,
+   * with a switch to pick which one the rows belong to.
+   */
+  items: HrNavigationItem[] | Record<HrRound, HrNavigationItem[]>
+  /**
+   * Folds the group into one row, open while the current page is inside it.
+   * For configuration, which is visited a few times a season.
+   */
+  fold?: { label: string; icon: typeof Archive }
+}
+
+export function hasRounds(
+  items: HrNavigationSection["items"],
+): items is Record<HrRound, HrNavigationItem[]> {
+  return !Array.isArray(items)
+}
+
+/** The round a page belongs to; everything outside the hunt's pages is R101's. */
+export function hrRoundFromPath(pathname: string): HrRound {
+  return pathname.startsWith("/admin/hr/officer-hunt") ? "officer_hunt" : "r101"
+}
+
+/** Every item in a group, whichever round it belongs to. */
+export function allItems(section: HrNavigationSection): HrNavigationItem[] {
+  return hasRounds(section.items)
+    ? [...section.items.r101, ...section.items.officer_hunt]
+    : section.items
+}
+
+/**
+ * Where the switch sends you: the same kind of page in the other round
+ * (Results to Results), or that round's first page from anywhere else.
+ */
+export function roundCounterpartHref(
+  items: Record<HrRound, HrNavigationItem[]>,
+  target: HrRound,
+  pathname: string,
+  source: string | null,
+): string {
+  const from = hrRoundFromPath(pathname)
+  const index = items[from].findIndex((item) => item.active(pathname, source))
+  const list = items[target]
+  return (list[Math.min(Math.max(index, 0), list.length - 1)] ?? list[0]).href
 }
 
 function isApplicationDetailPath(pathname: string) {
@@ -43,6 +98,7 @@ function isApplicationDetailPath(pathname: string) {
         "groups",
         "members",
         "overview",
+        "officer-hunt",
       ].includes(match[1]),
   )
 }
@@ -62,33 +118,52 @@ export const hrNavigationSections: HrNavigationSection[] = [
     ],
   },
   {
-    // The applicant pipeline, in the order work happens.
+    // The applicant pipeline, in the order work happens. R101 and the officer
+    // hunt run it side by side, so it is one group with a round switch.
     label: "Recruitment",
     visible: () => true,
-    items: [
-      {
-        label: "Applications",
-        href: "/admin/hr",
-        icon: ClipboardList,
-        active: (path, source) =>
-          path === "/admin/hr" ||
-          (isApplicationDetailPath(path) && source !== "archive"),
-      },
-      {
-        label: "Results",
-        href: "/admin/hr/results",
-        icon: Send,
-        active: (path) => path.startsWith("/admin/hr/results"),
-      },
-      {
-        label: "Archive",
-        href: "/admin/hr/archive",
-        icon: Archive,
-        active: (path, source) =>
-          path.startsWith("/admin/hr/archive") ||
-          (source === "archive" && isApplicationDetailPath(path)),
-      },
-    ],
+    items: {
+      r101: [
+        {
+          label: "Applications",
+          href: "/admin/hr",
+          icon: ClipboardList,
+          active: (path, source) =>
+            path === "/admin/hr" ||
+            (isApplicationDetailPath(path) && source !== "archive"),
+        },
+        {
+          label: "Results",
+          href: "/admin/hr/results",
+          icon: Send,
+          active: (path) => path.startsWith("/admin/hr/results"),
+        },
+        {
+          label: "Archive",
+          href: "/admin/hr/archive",
+          icon: Archive,
+          active: (path, source) =>
+            path.startsWith("/admin/hr/archive") ||
+            (source === "archive" && isApplicationDetailPath(path)),
+        },
+      ],
+      officer_hunt: [
+        {
+          label: "Applications",
+          tooltip: "Hunt Applications",
+          href: "/admin/hr/officer-hunt",
+          icon: Crown,
+          active: (path) => path === "/admin/hr/officer-hunt",
+        },
+        {
+          label: "Results",
+          tooltip: "Hunt Results",
+          href: "/admin/hr/officer-hunt/results",
+          icon: Send,
+          active: (path) => path.startsWith("/admin/hr/officer-hunt/results"),
+        },
+      ],
+    },
   },
   {
     // Once applicants become members: who they are, what they paid, where they chat.
@@ -117,17 +192,26 @@ export const hrNavigationSections: HrNavigationSection[] = [
     ],
   },
   {
-    // Configuration, visited a few times a season: pinned to the foot of the
-    // sidebar so the daily work above stays short and in reach.
-    label: "Setup",
+    // Configuration, visited a few times a season: pinned to the foot and folded
+    // to one row, so the daily work above stays short and in reach.
+    label: null,
     placement: "end",
     visible: () => true,
+    fold: { label: "Setup", icon: Settings2 },
     items: [
       {
-        label: "Recruitment Setup",
+        label: "R101 Season",
+        tooltip: "R101 Season Setup",
         href: "/admin/hr/season",
         icon: CalendarRange,
         active: (path) => path.startsWith("/admin/hr/season"),
+      },
+      {
+        label: "Officer Hunt",
+        tooltip: "Officer Hunt Setup",
+        href: "/admin/hr/officer-hunt/setup",
+        icon: Crown,
+        active: (path) => path.startsWith("/admin/hr/officer-hunt/setup"),
       },
       {
         label: "Committees",
@@ -136,9 +220,10 @@ export const hrNavigationSections: HrNavigationSection[] = [
         active: (path) => path.startsWith("/admin/hr/committees"),
       },
       {
-        label: "Payment Setup",
+        label: "Payment Period",
+        tooltip: "Payment Setup",
         href: "/admin/hr/payments/setup",
-        icon: Settings2,
+        icon: CalendarClock,
         active: (path) => path.startsWith("/admin/hr/payments/setup"),
       },
     ],

@@ -6,8 +6,10 @@ import { db } from "./db";
 import { applicants, applications, emailNotifications, emailOutboxLease } from "./db/schema";
 import {
   acquireOutboxLease,
+  markUncertainDelivered,
   outboxStatus,
   releaseOutboxLease,
+  requeueUncertainByIds,
   runOutbox,
   sweepStaleSending,
   type SendEmail,
@@ -178,6 +180,29 @@ test("email outbox", async (t) => {
     assert.equal(after.failed - before.failed, 1);
     assert.equal(after.uncertain - before.uncertain, 1);
     assert.equal(after.sent - before.sent, 3);
+  });
+
+  await t.test("resends or dismisses only the uncertain emails HR picked", async () => {
+    const options = { messageTypes: ["result_rejected"] as const, recruitmentYear: 2097 };
+    const uncertain = "Uncertain: the send may have gone through";
+    const [resend, dismiss, untouched] = await queue(3, { status: "failed", lastError: uncertain });
+    const [plainFailed] = await queue(1, { status: "failed", lastError: "Gmail send failed (400): bad recipient" });
+    const picked = [resend, plainFailed];
+
+    // A plain failure in the selection is ignored, so only Retry Failed Emails can touch it.
+    assert.equal(await requeueUncertainByIds({ ...options, ids: picked }), 1);
+    assert.equal(await markUncertainDelivered({ ...options, ids: [dismiss, plainFailed] }), 1);
+    assert.equal(await requeueUncertainByIds({ ...options, ids: [] }), 0);
+
+    const rows = await statuses([resend, dismiss, untouched, plainFailed]);
+    assert.equal(rows.get(resend)?.status, "pending");
+    assert.equal(rows.get(dismiss)?.status, "sent");
+    assert.equal(rows.get(dismiss)?.lastError, null);
+    assert.equal(rows.get(untouched)?.status, "failed");
+    assert.equal(rows.get(plainFailed)?.status, "failed");
+
+    // Already settled rows can't be dismissed or resent a second time.
+    assert.equal(await markUncertainDelivered({ ...options, ids: [dismiss, resend] }), 0);
   });
 
   await t.test("only one worker holds the lease at a time", async () => {

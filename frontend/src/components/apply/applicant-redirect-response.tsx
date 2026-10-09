@@ -21,20 +21,24 @@ type RedirectAnswer = "accepted" | "declined"
 type ApplicantRedirectResponseProps = {
   position: string
   committee: string
+  /** The offer is an officer hunt seat, not an R101 committee. */
+  hunt?: boolean
   onApplicationUpdated: (application: ApplicantApplication) => void
 }
 
-function confirmCopy(answer: RedirectAnswer, position: string, committee: string) {
+function confirmCopy(answer: RedirectAnswer, position: string, committee: string, hunt: boolean) {
   if (answer === "accepted") {
     return {
-      title: "Accept this position?",
+      title: hunt ? "Accept this seat?" : "Accept this position?",
       body: `You're about to accept ${position} in ${committee}. This is final. You can't change your answer afterward.`,
       confirm: "Yes, accept",
     }
   }
   return {
-    title: "Decline this position?",
-    body: "You'll continue as a general member of AWS Builders - UST. This is final. You can't change your answer afterward.",
+    title: hunt ? "Decline this seat?" : "Decline this position?",
+    body: hunt
+      ? "You won't be seated this term, and you can still apply to R101 when it opens. This is final. You can't change your answer afterward."
+      : "You'll continue as a general member of AWS Builders - UST. This is final. You can't change your answer afterward.",
     confirm: "Yes, decline",
   }
 }
@@ -43,12 +47,13 @@ function confirmCopy(answer: RedirectAnswer, position: string, committee: string
 export function ApplicantRedirectResponse({
   position,
   committee,
+  hunt = false,
   onApplicationUpdated,
 }: ApplicantRedirectResponseProps) {
   const [answer, setAnswer] = useState<RedirectAnswer | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
-  const copy = answer ? confirmCopy(answer, position, committee) : null
+  const copy = answer ? confirmCopy(answer, position, committee, hunt) : null
 
   async function confirm() {
     if (!answer) return

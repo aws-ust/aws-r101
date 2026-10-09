@@ -2,6 +2,7 @@ import { compareCommitteeNames, isExecutiveOfficeCommittee } from "@/lib/apply/c
 import type { MemberEntry } from "@/lib/members/directory"
 
 export const GENERAL_GROUP = "General members"
+export const ADVISER_GROUP = "Advisers"
 
 export type CommitteeGroup = {
   name: string
@@ -14,14 +15,14 @@ export type CommitteeGroup = {
   total: number
 }
 
-const ROLE_ORDER: Record<MemberEntry["role"], number> = { eb: 0, director: 1, ea: 2, staff: 3, general: 4 }
+const ROLE_ORDER: Record<MemberEntry["role"], number> = { eb: 0, director: 1, ea: 2, staff: 3, general: 4, adviser: 5 }
 
 function byRoleThenName(a: MemberEntry, b: MemberEntry) {
   return ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || a.fullName.localeCompare(b.fullName)
 }
 
 function levelOf(name: string): 0 | 1 {
-  return name === GENERAL_GROUP || isExecutiveOfficeCommittee(name) ? 0 : 1
+  return name === GENERAL_GROUP || name === ADVISER_GROUP || isExecutiveOfficeCommittee(name) ? 0 : 1
 }
 
 /**
@@ -31,11 +32,13 @@ function levelOf(name: string): 0 | 1 {
 export function buildCommitteeGroups(entries: MemberEntry[]): CommitteeGroup[] {
   const byName = new Map<string, MemberEntry[]>()
   for (const entry of entries) {
-    const name = entry.committee ?? GENERAL_GROUP
+    const name = entry.role === "adviser" ? ADVISER_GROUP : (entry.committee ?? GENERAL_GROUP)
     byName.set(name, [...(byName.get(name) ?? []), entry])
   }
   return [...byName.entries()]
     .sort(([a], [b]) => {
+      if (a === ADVISER_GROUP) return -1
+      if (b === ADVISER_GROUP) return 1
       if (a === GENERAL_GROUP) return 1
       if (b === GENERAL_GROUP) return -1
       return compareCommitteeNames(a, b) || a.localeCompare(b)

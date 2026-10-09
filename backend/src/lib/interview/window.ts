@@ -1,6 +1,8 @@
 import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { interviewWindows, users } from "../../db/schema";
+import type { RecruitmentTrack } from "../applications/recruitment-scope";
+import { getOfficerHuntSettings } from "../officer-hunt/settings";
 
 export type InterviewWindow = {
   startsAt: Date;
@@ -43,8 +45,17 @@ export async function getInterviewWindowPayload(): Promise<InterviewWindowPayloa
   };
 }
 
-export async function assertInterviewSlotInWindow(startsAt: Date) {
-  const window = await getInterviewWindow();
+/** The officer hunt keeps its own interview dates in its setup. */
+async function getInterviewWindowFor(track: RecruitmentTrack): Promise<InterviewWindow | null> {
+  if (track === "r101") return getInterviewWindow();
+  const settings = await getOfficerHuntSettings();
+  return settings?.interviewsStartAt && settings.interviewsEndAt
+    ? { startsAt: settings.interviewsStartAt, endsAt: settings.interviewsEndAt }
+    : null;
+}
+
+export async function assertInterviewSlotInWindow(startsAt: Date, track: RecruitmentTrack = "r101") {
+  const window = await getInterviewWindowFor(track);
   if (!window) {
     throw new InterviewWindowError(
       "not_configured",

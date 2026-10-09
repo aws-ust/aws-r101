@@ -13,6 +13,7 @@ import {
   retryFailedResultEmailsRequest,
   type ResultsPreview,
 } from "@/lib/api/client"
+import { useRecruitmentTrack } from "@/lib/recruitment-track"
 import { hrPageShellClasses } from "@/lib/site/surface"
 
 const contentClasses = "mt-8 flex flex-col gap-8"
@@ -23,6 +24,8 @@ const loadingClasses = "mt-8 font-sans text-sm text-prelude"
 type Feedback = { type: "success" | "error"; message: string }
 
 export function HrResultsPage() {
+  const track = useRecruitmentTrack()
+  const hunt = track === "officer_hunt"
   const [preview, setPreview] = useState<ResultsPreview | null>(null)
   const [loading, setLoading] = useState(true)
   const [feedback, setFeedback] = useState<Feedback | null>(null)
@@ -35,7 +38,7 @@ export function HrResultsPage() {
 
   useEffect(() => {
     let cancelled = false
-    getResultsPreview()
+    getResultsPreview(track)
       .then((payload) => {
         if (!cancelled) setPreview(payload)
       })
@@ -56,10 +59,10 @@ export function HrResultsPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [track])
 
   async function refreshPreview() {
-    setPreview(await getResultsPreview())
+    setPreview(await getResultsPreview(track))
   }
 
   async function confirmRelease() {
@@ -67,7 +70,7 @@ export function HrResultsPage() {
     setFeedback(null)
     let result
     try {
-      result = await releaseResultsRequest()
+      result = await releaseResultsRequest(track)
     } catch (error: unknown) {
       setFeedback({
         type: "error",
@@ -79,7 +82,7 @@ export function HrResultsPage() {
     }
 
     setReleaseOpen(false)
-    let message = `Released ${result.released} results. ${result.emailDelivery.queued} emails are being sent in the background; progress is shown below.`
+    let message = `Released ${result.released} results${result.seated ? `, ${result.seated} seated as officers` : ""}. ${result.emailDelivery.queued} emails are being sent in the background; progress is shown below.`
     setEmailStatusKey((key) => key + 1)
     try {
       await refreshPreview()
@@ -94,7 +97,7 @@ export function HrResultsPage() {
     setPendingAction("retry")
     setFeedback(null)
     try {
-      const result = await retryFailedResultEmailsRequest()
+      const result = await retryFailedResultEmailsRequest(track)
       setFeedback({
         type: "success",
         message:
@@ -119,9 +122,13 @@ export function HrResultsPage() {
   return (
     <main className={hrPageShellClasses}>
       <SectionHeader
-        eyebrow="// RESULTS"
-        title="Release Results"
-        subtitle="Review the current recruitment batch, resolve incomplete decisions, and publish final outcomes."
+        eyebrow={hunt ? "// OFFICER HUNT" : "// RESULTS"}
+        title={hunt ? "Release Officer Hunt Results" : "Release Results"}
+        subtitle={
+          hunt
+            ? "Review the hunt's batch and resolve incomplete decisions. Releasing seats the winners as officers and emails everyone."
+            : "Review the current recruitment batch, resolve incomplete decisions, and publish final outcomes."
+        }
       />
       {feedback ? (
         <ActionFeedback type={feedback.type} message={feedback.message} />
@@ -140,7 +147,7 @@ export function HrResultsPage() {
           <section>
             <h3 className={listHeadingClasses}>Release preview</h3>
             <p className={listSubtitleClasses}>
-              Recruitment year {preview.recruitmentYear}. Open incomplete
+              {hunt ? "Term" : "Recruitment"} year {preview.recruitmentYear}. Open incomplete
               applications to finish their committee decisions or placement.
             </p>
             <div className="mt-4">

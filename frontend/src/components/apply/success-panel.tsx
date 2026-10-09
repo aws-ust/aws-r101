@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { useRecruitmentTrack } from "@/lib/recruitment-track"
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { needsDevExamSuccessCopy } from "@/lib/apply/committee"
@@ -33,6 +34,7 @@ export function SuccessPanel({
   secondChoiceTitle = "",
 }: SuccessPanelProps) {
   const positionApplication = applicationType === "position"
+  const hunt = useRecruitmentTrack() === "officer_hunt"
   const examCopy = needsDevExamSuccessCopy(
     firstChoiceCommittee,
     secondChoiceCommittee,
@@ -61,11 +63,13 @@ export function SuccessPanel({
           : " confirmation that your membership registration was accepted."}
       </p>
       <p className={bodyClasses}>
-        {positionApplication
+        {hunt
+          ? "If you are seated, we will send you your Member ID details and the membership payment instructions."
+          : positionApplication
           ? <>Please prepare <span className={emphasisClasses}>₱250</span> for the membership fee when you join.</>
           : <>Membership payment will open after <span className={emphasisClasses}>R101</span>. Please wait for the official instructions and do not send a payment yet.</>}
       </p>
-      {positionApplication && examCopy.development ? (
+      {positionApplication && !hunt && examCopy.development ? (
         <p className={bodyClasses}>
           Because you applied to the{" "}
           <span className={emphasisClasses}>Development Committee</span>, you
@@ -74,7 +78,7 @@ export function SuccessPanel({
           recruitment.
         </p>
       ) : null}
-      {positionApplication && examCopy.ctoEa ? (
+      {positionApplication && !hunt && examCopy.ctoEa ? (
         <p className={bodyClasses}>
           Because you applied as the{" "}
           <span className={emphasisClasses}>Executive Assistant to the CTO</span>
@@ -84,7 +88,9 @@ export function SuccessPanel({
         </p>
       ) : null}
       <p className={bodyClasses}>
-        {positionApplication
+        {hunt
+          ? "We will reach out once the officer hunt review wraps up."
+          : positionApplication
           ? "We will reach out once R101 review wraps up."
           : "We will email the payment details once the payment period opens."}
       </p>

@@ -1,20 +1,21 @@
 "use client"
 
 import { useEffect } from "react"
-import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import {
+  hasRounds,
   hrNavigationSections,
+  hrRoundFromPath,
+  type HrNavigationSection,
   type HrRole,
 } from "@/components/hr/hr-navigation"
+import { HrRoundSwitch } from "@/components/hr/hr-round-switch"
+import { HrSidebarFold } from "@/components/hr/hr-sidebar-fold"
+import { HrSidebarMenu } from "@/components/hr/hr-sidebar-menu"
 import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar,
 } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
 import { formatSubheaderLabel } from "@/lib/site/button-label"
@@ -31,22 +32,28 @@ const groupClasses = "p-0"
 const groupDividerClasses =
   "border-t border-blue-chalk/15 pt-4 group-data-[collapsible=icon]:pt-3"
 const endGroupClasses = "mt-auto"
-const menuClasses = "w-full gap-0.5 group-data-[collapsible=icon]:items-center"
-const itemClasses =
-  "w-full group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center"
-const buttonClasses =
-  "h-9 w-full justify-start gap-3 rounded-pill border border-transparent px-3 text-left text-sm font-medium text-prelude transition-[background-color,border-color,color] duration-200 ease-out hover:bg-blue-chalk/8 hover:text-blue-chalk focus-visible:ring-2 focus-visible:ring-aquamarine/60 pointer-coarse:h-11 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:rounded-full group-data-[collapsible=icon]:p-0 motion-reduce:transition-none"
-// The current page is the one lit thing: a filled pill and an aquamarine icon.
-const activeButtonClasses =
-  "border-biloba-flower/40 bg-daisy-bush/55 text-blue-chalk hover:bg-daisy-bush/55 [&_svg]:text-aquamarine"
-const labelClasses = "truncate text-left group-data-[collapsible=icon]:hidden"
-const tooltipClasses =
-  "glass rounded-pill border border-biloba-flower/40 bg-haiti/90 px-3 py-1.5 font-sans text-sm text-blue-chalk shadow-[0_8px_24px_-8px_rgba(0,0,0,0.5)] [&_.cn-tooltip-arrow]:hidden"
+
+type BodyProps = { section: HrNavigationSection; pathname: string; source: string | null }
+
+function SectionBody({ section, pathname, source }: BodyProps) {
+  if (hasRounds(section.items)) {
+    const items = section.items
+    return (
+      <>
+        <HrRoundSwitch items={items} pathname={pathname} source={source} />
+        <HrSidebarMenu items={items[hrRoundFromPath(pathname)]} pathname={pathname} source={source} />
+      </>
+    )
+  }
+  if (section.fold) {
+    return <HrSidebarFold fold={section.fold} items={section.items} pathname={pathname} source={source} />
+  }
+  return <HrSidebarMenu items={section.items} pathname={pathname} source={source} />
+}
 
 export function HrSidebarNavigation({ role }: { role: HrRole }) {
   const pathname = usePathname()
   const source = useSearchParams().get("source")
-  const { isMobile, setOpenMobile } = useSidebar()
 
   // On a short window the list scrolls; keep the current page in view.
   useEffect(() => {
@@ -59,10 +66,10 @@ export function HrSidebarNavigation({ role }: { role: HrRole }) {
         .filter((section) => section.visible(role))
         .map((section) => (
           <SidebarGroup
-            key={section.label ?? "home"}
+            key={section.label ?? section.fold?.label ?? "home"}
             className={cn(
               groupClasses,
-              section.label && groupDividerClasses,
+              (section.label || section.fold) && groupDividerClasses,
               section.placement === "end" && endGroupClasses,
             )}
           >
@@ -72,38 +79,7 @@ export function HrSidebarNavigation({ role }: { role: HrRole }) {
               </SidebarGroupLabel>
             ) : null}
             <SidebarGroupContent>
-              <SidebarMenu className={menuClasses}>
-                {section.items.map((item) => {
-                  const active = item.active(pathname, source)
-                  const Icon = item.icon
-                  return (
-                    <SidebarMenuItem key={item.href} className={itemClasses}>
-                      <SidebarMenuButton
-                        isActive={active}
-                        tooltip={{
-                          children: item.label,
-                          className: tooltipClasses,
-                          side: "right",
-                          sideOffset: 10,
-                        }}
-                        className={cn(buttonClasses, active && activeButtonClasses)}
-                        render={
-                          <Link
-                            href={item.href}
-                            aria-current={active ? "page" : undefined}
-                            onClick={() => {
-                              if (isMobile) setOpenMobile(false)
-                            }}
-                          />
-                        }
-                      >
-                        <Icon className="size-4 shrink-0" />
-                        <span className={labelClasses}>{item.label}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )
-                })}
-              </SidebarMenu>
+              <SectionBody section={section} pathname={pathname} source={source} />
             </SidebarGroupContent>
           </SidebarGroup>
         ))}

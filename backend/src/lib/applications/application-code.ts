@@ -1,7 +1,3 @@
-function recruitmentYearString(): string {
-  return String(recruitmentYearInt());
-}
-
 export function recruitmentYearInt(): number {
   const raw = process.env.RECRUITMENT_YEAR ?? "2026";
   const year = Number(raw);
@@ -14,10 +10,11 @@ export function generateApplicationCodeSuffix(length = 6): string {
   return value.toString().padStart(length, "0");
 }
 
-export function formatApplicationCode(suffix: string): string {
-  return `AP-${recruitmentYearString()}-${suffix}`;
+/** Codes carry the year the application belongs to, which the officer hunt sets to its term. */
+export function formatApplicationCode(suffix: string, year = recruitmentYearInt()): string {
+  return `AP-${year}-${suffix}`;
 }
 
-export function generateApplicationCode(): string {
-  return formatApplicationCode(generateApplicationCodeSuffix());
+export function generateApplicationCode(year = recruitmentYearInt()): string {
+  return formatApplicationCode(generateApplicationCodeSuffix(), year);
 }

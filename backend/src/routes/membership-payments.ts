@@ -17,16 +17,19 @@ import {
 } from "../lib/membership/payment-qr";
 import { kickEmailOutbox } from "../lib/email/outbox-kick";
 import { sendQueuedNow } from "../lib/email/queued-emails";
-import { retryFailedMembershipEmails } from "../lib/membership/email-delivery";
+import {
+  markPaymentInvitationsDelivered,
+  retryFailedMembershipEmails,
+  sendPaymentInvitations,
+} from "../lib/membership/email-delivery";
 import { MembershipPaymentError } from "../lib/membership/errors";
-import { listDirectoryMembers } from "../lib/membership/member-directory";
+import { listDirectoryMembers, listPendingOfficers } from "../lib/membership/member-directory";
 import {
   getMembershipPaymentDetails,
   getPaymentReceiptUrl,
   listMembershipPayments,
   listVerifiedMembersForExport,
   rejectMembershipPayment,
-  releaseMembershipConfirmations,
   reverseMembershipPayment,
   verifyMembershipPayment,
 } from "../lib/membership/reviews";
@@ -74,9 +77,9 @@ const completePaymentQrSchema = paymentQrSchema.extend({
   key: z.string().trim().min(1).max(500),
   fileName: z.string().trim().max(255).optional(),
 });
+const paymentSelectionSchema = z.object({ paymentIds: z.array(z.uuid()).min(1).max(500) });
 const reviewSchema = z.object({
   reason: z.string().trim().min(1).max(1000),
-  resubmissionDeadlineAt: z.string().datetime({ offset: true }).nullable(),
 });
 
 function paymentError(error: unknown) {
@@ -115,15 +118,17 @@ membershipPaymentRoutes.put(
       );
     }
     try {
-      return c.json(
-        await withQrPreviewUrls(
-          await saveCurrentPaymentSchedule({
-            ...parsed.data,
-            opensAt: new Date(parsed.data.opensAt),
-            deadlineAt: new Date(parsed.data.deadlineAt),
-          }),
-        ),
-      );
+      const saved = await saveCurrentPaymentSchedule({
+        ...parsed.data,
+        opensAt: new Date(parsed.data.opensAt),
+        deadlineAt: new Date(parsed.data.deadlineAt),
+      });
+      // "Deadline extended" emails go out through the background email outbox.
+      if (saved.extensionNotificationIds.length > 0) await kickEmailOutbox();
+      return c.json({
+        ...(await withQrPreviewUrls(saved.campaign)),
+        extensionEmails: { queued: saved.extensionNotificationIds.length },
+      });
     } catch (error) {
       const result = paymentError(error);
       return c.json(result.body, result.status);
@@ -204,6 +209,8 @@ membershipPaymentRoutes.post(
       if (opened.notificationIds.length > 0) await kickEmailOutbox();
       return c.json({
         eligible: opened.eligible,
+        officers: opened.officers,
+        members: opened.members,
         created: opened.created,
         emailDelivery: { queued: opened.notificationIds.length },
       });
@@ -228,25 +235,6 @@ membershipPaymentRoutes.post(
 );
 
 membershipPaymentRoutes.post(
-  "/confirmations/release",
-  requireRoles("hr", "admin"),
-  async (c) => {
-    try {
-      const release = await releaseMembershipConfirmations(getCurrentUser(c));
-      // Confirmations go out through the background email outbox.
-      if (release.notificationIds.length > 0) await kickEmailOutbox();
-      return c.json({
-        released: release.released,
-        emailDelivery: { queued: release.notificationIds.length },
-      });
-    } catch (error) {
-      const result = paymentError(error);
-      return c.json(result.body, result.status);
-    }
-  },
-);
-
-membershipPaymentRoutes.post(
   "/emails/retry-invitations",
   requireRoles("hr", "admin"),
   async (c) => {
@@ -256,19 +244,42 @@ membershipPaymentRoutes.post(
   },
 );
 
+/** Verified members of the current year, for the HR Members page. */
+/** Sends (or resends) the payment email to the people HR ticked. */
 membershipPaymentRoutes.post(
-  "/emails/retry-confirmations",
+  "/emails/send-invitations",
   requireRoles("hr", "admin"),
   async (c) => {
-    const result = await retryFailedMembershipEmails("membership_confirmation");
-    if (result.retried > 0) await kickEmailOutbox();
-    return c.json(result);
+    const parsed = paymentSelectionSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: "Pick at least one person." }, 400);
+    try {
+      const result = await sendPaymentInvitations(parsed.data.paymentIds);
+      if (result.queued > 0) await kickEmailOutbox();
+      return c.json(result);
+    } catch (error) {
+      const result = paymentError(error);
+      return c.json(result.body, result.status);
+    }
   },
 );
 
-/** Verified members of the current year, for the HR Members page. */
+/** Counts the ticked people's uncertain payment emails as sent; HR found them in the Sent folder. */
+membershipPaymentRoutes.post(
+  "/emails/mark-delivered",
+  requireRoles("hr", "admin"),
+  async (c) => {
+    const parsed = paymentSelectionSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: "Pick at least one person." }, 400);
+    return c.json(await markPaymentInvitationsDelivered(parsed.data.paymentIds));
+  },
+);
+
 membershipPaymentRoutes.get("/members", async (c) => {
-  return c.json({ members: await listDirectoryMembers() });
+  const members = await listDirectoryMembers();
+  const pendingOfficers = await listPendingOfficers(
+    new Set(members.map((member) => member.memberId)),
+  );
+  return c.json({ members, pendingOfficers });
 });
 
 membershipPaymentRoutes.get("/export", async (c) => {
@@ -292,9 +303,13 @@ membershipPaymentRoutes.get("/export", async (c) => {
       row.firstName,
       row.lastName,
       row.email,
-      row.applicationType === "member" ? "General Member" : "Committee",
+      row.applicationType === "member"
+        ? "General Member"
+        : row.applicationType === "officer"
+          ? "Officer"
+          : "Committee",
       row.committee,
-      row.position,
+      row.position ?? row.officerTitle,
       row.verifiedAt?.toISOString() ?? "",
     ]),
   ]
@@ -367,16 +382,15 @@ membershipPaymentRoutes.post(
     const parsed = reviewSchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) return c.json({ error: "A rejection reason is required." }, 400);
     try {
-      return c.json(
-        await rejectMembershipPayment(
-          paymentId,
-          getCurrentUser(c),
-          parsed.data.reason,
-          parsed.data.resubmissionDeadlineAt
-            ? new Date(parsed.data.resubmissionDeadlineAt)
-            : null,
-        ),
+      const { notificationId, ...rejected } = await rejectMembershipPayment(
+        paymentId,
+        getCurrentUser(c),
+        parsed.data.reason,
       );
+      // Tell them what to fix; if Gmail asks to slow down, the background sender finishes the job.
+      const emailDelivery = await sendQueuedNow([notificationId]);
+      if (emailDelivery.queued > 0) await kickEmailOutbox();
+      return c.json({ ...rejected, emailDelivery });
     } catch (error) {
       const result = paymentError(error);
       return c.json(result.body, result.status);
@@ -393,16 +407,14 @@ membershipPaymentRoutes.post(
     const parsed = reviewSchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) return c.json({ error: "A reversal reason is required." }, 400);
     try {
-      return c.json(
-        await reverseMembershipPayment(
-          paymentId,
-          getCurrentUser(c),
-          parsed.data.reason,
-          parsed.data.resubmissionDeadlineAt
-            ? new Date(parsed.data.resubmissionDeadlineAt)
-            : null,
-        ),
+      const { notificationId, ...reversed } = await reverseMembershipPayment(
+        paymentId,
+        getCurrentUser(c),
+        parsed.data.reason,
       );
+      const emailDelivery = await sendQueuedNow([notificationId]);
+      if (emailDelivery.queued > 0) await kickEmailOutbox();
+      return c.json({ ...reversed, emailDelivery });
     } catch (error) {
       const result = paymentError(error);
       return c.json(result.body, result.status);

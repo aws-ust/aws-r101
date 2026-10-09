@@ -8,9 +8,11 @@ import {
   membershipPaymentCampaigns,
   membershipPaymentChatLinks,
   membershipPayments,
+  officerSeats,
 } from "../../db/schema";
 import type { AuthenticatedUser } from "../../auth";
 import { recruitmentYearInt } from "../applications/application-code";
+import { extendPaymentDeadline } from "./deadline-extension";
 import { MembershipPaymentError } from "./errors";
 import {
   createPaymentQrUpload,
@@ -18,6 +20,8 @@ import {
   type PaymentQrMimeType,
   type PaymentQrProvider,
 } from "./payment-qr";
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export type PaymentScheduleInput = {
   opensAt: Date;
@@ -90,9 +94,14 @@ export async function saveCurrentPaymentSchedule(
   const recruitmentYear = recruitmentYearInt();
   return db.transaction(async (tx) => {
     const [existing] = await tx
-      .select({ id: membershipPaymentCampaigns.id })
+      .select({
+        id: membershipPaymentCampaigns.id,
+        isOpen: membershipPaymentCampaigns.isOpen,
+        deadlineAt: membershipPaymentCampaigns.deadlineAt,
+      })
       .from(membershipPaymentCampaigns)
       .where(eq(membershipPaymentCampaigns.recruitmentYear, recruitmentYear))
+      .for("update")
       .limit(1);
     const values = {
       recruitmentYear,
@@ -132,7 +141,16 @@ export async function saveCurrentPaymentSchedule(
       }
       await tx.insert(membershipPaymentChatLinks).values(links);
     }
-    return { ...campaign, committeeChatLinks: links };
+
+    // A deadline that moved later while payments are open is news to everyone who hasn't paid.
+    const extended =
+      existing?.isOpen === true &&
+      input.deadlineAt > existing.deadlineAt &&
+      input.deadlineAt > new Date();
+    const extensionNotificationIds = extended
+      ? await extendPaymentDeadline(tx, campaign.id, input.deadlineAt)
+      : [];
+    return { campaign: { ...campaign, committeeChatLinks: links }, extensionNotificationIds };
   });
 }
 
@@ -306,7 +324,7 @@ export async function openCurrentPaymentCampaign(actor: AuthenticatedUser) {
     }
 
     const eligible = await tx
-      .select({ id: applications.id })
+      .select({ id: applications.id, applicationType: applications.applicationType })
       .from(applications)
       .where(
         and(
@@ -326,6 +344,17 @@ export async function openCurrentPaymentCampaign(actor: AuthenticatedUser) {
                 isNotNull(applications.redirectResponse),
               ),
             ),
+            // The elected board and directors pay like members; advisers do not.
+            and(
+              eq(applications.applicationType, "officer"),
+              inArray(
+                applications.id,
+                tx
+                  .select({ id: officerSeats.applicationId })
+                  .from(officerSeats)
+                  .where(inArray(officerSeats.kind, ["eb", "director"])),
+              ),
+            ),
           ),
         ),
       );
@@ -336,66 +365,11 @@ export async function openCurrentPaymentCampaign(actor: AuthenticatedUser) {
       );
     }
 
-    const inserted = await tx
-      .insert(membershipPayments)
-      .values(
-        eligible.map((application) => ({
-          campaignId: campaign.id,
-          applicationId: application.id,
-        })),
-      )
-      .onConflictDoNothing({ target: membershipPayments.applicationId })
-      .returning({ applicationId: membershipPayments.applicationId });
-
-    const existingNotifications = await tx
-      .select({ applicationId: emailNotifications.applicationId })
-      .from(emailNotifications)
-      .where(
-        and(
-          eq(emailNotifications.messageType, "payment_invitation"),
-          inArray(
-            emailNotifications.applicationId,
-            eligible.map((application) => application.id),
-          ),
-        ),
-      );
-    const alreadyQueued = new Set(
-      existingNotifications.flatMap((row) =>
-        row.applicationId ? [row.applicationId] : [],
-      ),
+    const { created, notificationIds } = await createPaymentsAndInvitations(
+      tx,
+      campaign.id,
+      eligible.map((application) => application.id),
     );
-    const toQueue = eligible.filter(
-      (application) => !alreadyQueued.has(application.id),
-    );
-    const recipients =
-      toQueue.length === 0
-        ? []
-        : await tx
-            .select({
-              applicationId: applications.id,
-              recipient: applicants.email,
-            })
-            .from(applications)
-            .innerJoin(applicants, eq(applications.applicantId, applicants.id))
-            .where(
-              inArray(
-                applications.id,
-                toQueue.map((application) => application.id),
-              ),
-            );
-    const notifications =
-      recipients.length === 0
-        ? []
-        : await tx
-            .insert(emailNotifications)
-            .values(
-              recipients.map((row) => ({
-                applicationId: row.applicationId,
-                messageType: "payment_invitation" as const,
-                recipient: row.recipient,
-              })),
-            )
-            .returning({ id: emailNotifications.id });
 
     const openedAt = campaign.openedAt ?? now;
     await tx
@@ -403,13 +377,104 @@ export async function openCurrentPaymentCampaign(actor: AuthenticatedUser) {
       .set({ isOpen: true, openedAt, openedBy: actor.id, updatedAt: new Date() })
       .where(eq(membershipPaymentCampaigns.id, campaign.id));
 
+    const officers = eligible.filter((application) => application.applicationType === "officer").length;
     return {
       campaignId: campaign.id,
       eligible: eligible.length,
-      created: inserted.length,
-      notificationIds: notifications.map((notification) => notification.id),
+      // Officers get their own version of the invitation; the rest are R101 applicants.
+      officers,
+      members: eligible.length - officers,
+      created,
+      notificationIds,
     };
   });
+}
+
+/**
+ * Gives each application a payment row and, unless it already has one queued,
+ * a payment invitation email. Safe to repeat for the same applications.
+ */
+async function createPaymentsAndInvitations(
+  tx: Tx,
+  campaignId: string,
+  applicationIds: string[],
+  options: { nextAttemptAt?: Date | null } = {},
+) {
+  const inserted = await tx
+    .insert(membershipPayments)
+    .values(applicationIds.map((applicationId) => ({ campaignId, applicationId })))
+    .onConflictDoNothing({ target: membershipPayments.applicationId })
+    .returning({ applicationId: membershipPayments.applicationId });
+
+  const existingNotifications = await tx
+    .select({ applicationId: emailNotifications.applicationId })
+    .from(emailNotifications)
+    .where(
+      and(
+        eq(emailNotifications.messageType, "payment_invitation"),
+        inArray(emailNotifications.applicationId, applicationIds),
+      ),
+    );
+  const alreadyQueued = new Set(
+    existingNotifications.flatMap((row) => (row.applicationId ? [row.applicationId] : [])),
+  );
+  const toQueue = applicationIds.filter((id) => !alreadyQueued.has(id));
+  const recipients =
+    toQueue.length === 0
+      ? []
+      : await tx
+          .select({ applicationId: applications.id, recipient: applicants.email })
+          .from(applications)
+          .innerJoin(applicants, eq(applications.applicantId, applicants.id))
+          .where(inArray(applications.id, toQueue));
+  const notifications =
+    recipients.length === 0
+      ? []
+      : await tx
+          .insert(emailNotifications)
+          .values(
+            recipients.map((row) => ({
+              applicationId: row.applicationId,
+              messageType: "payment_invitation" as const,
+              recipient: row.recipient,
+              nextAttemptAt: options.nextAttemptAt ?? null,
+            })),
+          )
+          .returning({ id: emailNotifications.id });
+  return { created: inserted.length, notificationIds: notifications.map((row) => row.id) };
+}
+
+/**
+ * For someone who becomes eligible after payments opened (a newly elected
+ * officer): invites them now, since "Open payments" has already run. Does
+ * nothing while payments are closed; opening them will pick them up.
+ */
+export async function inviteToOpenCampaign(
+  tx: Tx,
+  applicationIds: string[],
+  options: { nextAttemptAt?: Date | null } = {},
+): Promise<string[]> {
+  // Only this year's people join this year's campaign. A hunt winner for a later
+  // term waits for that term's payments to open.
+  const current = (
+    await tx
+      .select({ id: applications.id })
+      .from(applications)
+      .where(
+        and(
+          inArray(applications.id, applicationIds),
+          eq(applications.recruitmentYear, recruitmentYearInt()),
+        ),
+      )
+  ).map((row) => row.id);
+  if (current.length === 0) return [];
+  const [campaign] = await tx
+    .select({ id: membershipPaymentCampaigns.id, isOpen: membershipPaymentCampaigns.isOpen })
+    .from(membershipPaymentCampaigns)
+    .where(eq(membershipPaymentCampaigns.recruitmentYear, recruitmentYearInt()))
+    .limit(1);
+  if (!campaign?.isOpen) return [];
+  return (await createPaymentsAndInvitations(tx, campaign.id, current, options)).notificationIds;
 }
 
 export async function closeCurrentPaymentCampaign() {

@@ -1,3 +1,5 @@
+import { MembershipPaymentError } from "../lib/membership/errors";
+import { updateOfficerDetails } from "../lib/membership/officer-details";
 import { Hono } from "hono";
 import {
   getApplicantSession,
@@ -278,6 +280,29 @@ applicantApplicationRoutes.patch("/application", async (c) => {
   } catch (error) {
     const result = editError(error);
     return c.json(result.body, result.status);
+  }
+});
+
+applicantApplicationRoutes.put("/application/officer-details", async (c) => {
+  const body = (await c.req.json().catch(() => null)) as {
+    studentNumber?: unknown;
+    section?: unknown;
+  } | null;
+  if (typeof body?.studentNumber !== "string" || typeof body.section !== "string") {
+    return c.json({ error: "studentNumber and section are required." }, 400);
+  }
+  try {
+    return c.json(
+      await updateOfficerDetails(getApplicantSession(c).applicationId, {
+        studentNumber: body.studentNumber,
+        section: body.section,
+      }),
+    );
+  } catch (error) {
+    if (error instanceof MembershipPaymentError) {
+      return c.json({ error: error.message }, error.status);
+    }
+    throw error;
   }
 });
 

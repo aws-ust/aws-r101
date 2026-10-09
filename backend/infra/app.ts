@@ -11,6 +11,7 @@ import * as logs from "aws-cdk-lib/aws-logs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as scheduler from "aws-cdk-lib/aws-scheduler";
 import type { Construct } from "constructs";
+import { assertDeployableSiteUrl } from "../src/lib/core/site-url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -56,8 +57,11 @@ class BackendStack extends cdk.Stack {
     super(scope, id, props);
 
     const databaseUrl = requiredEnvironment("DATABASE_URL");
-    const corsOrigin =
-      process.env.APP_BASE_URL?.trim() || requiredEnvironment("CORS_ORIGIN");
+    // The site's own address: it is the S3 CORS origin and the base of every email link,
+    // so a localhost value left over from local testing must never get this far.
+    const corsOrigin = assertDeployableSiteUrl(
+      process.env.APP_BASE_URL?.trim() || requiredEnvironment("CORS_ORIGIN"),
+    );
     const budgetAlertEmail = requiredEnvironment("BUDGET_ALERT_EMAIL");
     const freePlanEnd = freePlanEndDate();
     const documentBucket = new s3.Bucket(this, "DocumentBucket", {
@@ -94,7 +98,9 @@ class BackendStack extends cdk.Stack {
       ...(process.env.GOOGLE_SENDER_EMAIL ? { GOOGLE_SENDER_EMAIL: process.env.GOOGLE_SENDER_EMAIL } : {}),
       ...(process.env.GOOGLE_REPLY_TO_EMAIL ? { GOOGLE_REPLY_TO_EMAIL: process.env.GOOGLE_REPLY_TO_EMAIL } : {}),
       ...(process.env.GOOGLE_SIGNATORY_NAME ? { GOOGLE_SIGNATORY_NAME: process.env.GOOGLE_SIGNATORY_NAME } : {}),
-      ...(process.env.APP_BASE_URL ? { APP_BASE_URL: process.env.APP_BASE_URL } : {}),
+      // Every email link is built from this, so it is always set: the site's own
+      // address (APP_BASE_URL, or the CORS origin when that is not given).
+      APP_BASE_URL: corsOrigin,
       ...(process.env.EMAIL_ENABLED ? { EMAIL_ENABLED: process.env.EMAIL_ENABLED } : {}),
       ...(process.env.RECRUITMENT_YEAR ? { RECRUITMENT_YEAR: process.env.RECRUITMENT_YEAR } : {}),
       ...(process.env.APPLICATION_EDIT_DEADLINE ? { APPLICATION_EDIT_DEADLINE: process.env.APPLICATION_EDIT_DEADLINE } : {}),
@@ -161,7 +167,7 @@ class BackendStack extends cdk.Stack {
       },
     );
 
-    // Sends queued bulk emails (results, payment invitations, confirmations)
+    // Sends queued bulk emails (results, payment invitations, membership verified)
     // a few per second so Gmail's per-user rate limit is never exceeded. The
     // API starts it when emails are queued and it restarts itself while work
     // remains; there is no polling schedule, so Neon can scale to zero.

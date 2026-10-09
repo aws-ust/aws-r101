@@ -23,7 +23,11 @@ export const applicationStatus = pgEnum("application_status", [
 export const applicationType = pgEnum("application_type", [
   "position",
   "member",
+  "officer",
 ]);
+export const officerKind = pgEnum("officer_kind", ["eb", "director", "ea", "adviser"]);
+/** Which recruitment round an application or position belongs to: R101, or the officer hunt. */
+export const recruitmentTrack = pgEnum("recruitment_track", ["r101", "officer_hunt"]);
 export const applicationChoiceStatus = pgEnum("application_choice_status", [
   "pending",
   "approved",
@@ -59,8 +63,12 @@ export const emailMessageType = pgEnum("email_message_type", [
   "result_rejected",
   "result_redirected",
   "payment_invitation",
+  // Legacy: no longer sent. Postgres cannot drop an enum value, so it stays.
   "membership_confirmation",
   "membership_verified",
+  "officer_welcome",
+  "payment_deadline_extended",
+  "payment_resubmission_needed",
 ]);
 export const emailDeliveryStatus = pgEnum("email_delivery_status", [
   "pending",
@@ -173,6 +181,10 @@ export const positions = pgTable(
     responsibilities: text(),
     isOpen: boolean("is_open").notNull().default(true),
     openSlots: integer("open_slots").notNull().default(4),
+    /** R101 positions or officer-hunt seats; they share committees but never an apply form. */
+    track: recruitmentTrack().notNull().default("r101"),
+    /** What an accepted officer-hunt applicant becomes; null for R101 positions. */
+    seatKind: officerKind("seat_kind"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -182,7 +194,7 @@ export const positions = pgTable(
       .$onUpdate(() => new Date()),
   },
   (t) => [
-    unique().on(t.committeeId, t.name),
+    unique("positions_committee_name_track_unique").on(t.committeeId, t.name, t.track),
     index("idx_positions_committee").on(t.committeeId),
     index("idx_positions_open").on(t.isOpen),
   ],
@@ -208,6 +220,7 @@ export const applications = pgTable(
     applicationType: applicationType("application_type")
       .notNull()
       .default("position"),
+    track: recruitmentTrack().notNull().default("r101"),
     // Apply-form "Why do you want to join AWS Builders - UST?" — on the application, not the applicant.
     // default("") is for drizzle-kit push against existing rows; seed and POST always send a real answer.
     motivation: text().notNull().default(""),
@@ -285,7 +298,12 @@ export const applications = pgTable(
       "applications_redirect_response_requires_offer_check",
       sql`${t.redirectResponse} IS NULL OR ${t.redirectPositionId} IS NOT NULL`,
     ),
-    unique().on(t.applicantId, t.recruitmentYear),
+    unique("applications_applicant_year_track_unique").on(
+      t.applicantId,
+      t.recruitmentYear,
+      t.track,
+    ),
+    index("idx_applications_track").on(t.track),
     index("idx_applications_applicant").on(t.applicantId),
     index("idx_applications_status").on(t.status),
     index("idx_applications_type").on(t.applicationType),
@@ -297,6 +315,29 @@ export const applications = pgTable(
     index("idx_applications_reviewed_by").on(t.reviewedBy),
     index("idx_applications_code").on(t.applicationCode),
   ],
+);
+
+/**
+ * Elected officers and advisers. Each one has an `officer` application so they
+ * sign in, pay and get a Member ID like any member, but they never take part
+ * in recruitment. `seatKey` is the office or committee name (or `adviser-<n>`).
+ */
+export const officerSeats = pgTable(
+  "officer_seats",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    applicationId: uuid("application_id")
+      .notNull()
+      .unique()
+      .references(() => applications.id, { onDelete: "cascade" }),
+    recruitmentYear: integer("recruitment_year").notNull(),
+    kind: officerKind().notNull(),
+    seatKey: varchar("seat_key", { length: 150 }).notNull(),
+    title: varchar({ length: 150 }).notNull(),
+    committee: varchar({ length: 150 }),
+    sortOrder: integer("sort_order").notNull().default(0),
+  },
+  (t) => [unique().on(t.recruitmentYear, t.seatKey)],
 );
 
 export const emailNotifications = pgTable(
@@ -430,6 +471,7 @@ export const interviewSlots = pgTable(
       .references(() => committees.id, { onDelete: "cascade" }),
     startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
     isOpen: boolean("is_open").notNull().default(true),
+    track: recruitmentTrack().notNull().default("r101"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -532,6 +574,39 @@ export const recruitmentWindows = pgTable(
     check(
       "recruitment_windows_range_check",
       sql`${t.endsAt} > ${t.startsAt}`,
+    ),
+  ],
+);
+
+/**
+ * The officer hunt's own calendar: which term it fills, when people may apply
+ * and when interviews run. One row, like the R101 windows.
+ */
+export const officerHuntSettings = pgTable(
+  "officer_hunt_settings",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    singleton: integer().notNull().default(1),
+    /** The term the winners serve; it is their applications' `recruitment_year`. */
+    termYear: integer("term_year").notNull(),
+    applicationsOpenAt: timestamp("applications_open_at", { withTimezone: true }),
+    applicationsCloseAt: timestamp("applications_close_at", { withTimezone: true }),
+    interviewsStartAt: timestamp("interviews_start_at", { withTimezone: true }),
+    interviewsEndAt: timestamp("interviews_end_at", { withTimezone: true }),
+    updatedBy: uuid("updated_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    unique("officer_hunt_settings_singleton_unique").on(t.singleton),
+    check("officer_hunt_settings_singleton_check", sql`${t.singleton} = 1`),
+    check(
+      "officer_hunt_settings_term_year_check",
+      sql`${t.termYear} BETWEEN 2000 AND 9999`,
     ),
   ],
 );

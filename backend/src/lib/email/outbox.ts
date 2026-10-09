@@ -1,13 +1,14 @@
 import { and, asc, eq, gt, inArray, isNotNull, isNull, like, lt, lte, min, notLike, or, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { applications, emailNotifications, emailOutboxLease } from "../../db/schema";
+import type { RecruitmentTrack } from "../applications/recruitment-scope";
 import { emailEnabled, hasGmailCredentials, senderEmail } from "./config";
 import { sendViaGmail } from "./gmail-client";
 import { classifySendError, retryAfterFromError } from "./retry";
 import type { EmailMessageType, RenderedEmail, SendEmailInput, SendEmailResult } from "./types";
 
 /**
- * Bulk emails (results, payment invitations, membership confirmations) are
+ * Bulk emails (results, payment invitations, membership verified) are
  * queued as `pending` rows and sent here one at a time, slowly enough to stay
  * under Gmail's per-user rate limit. A row is moved to `sending` before the
  * Gmail call, so if the process dies mid-send it is never re-sent
@@ -18,8 +19,10 @@ export const OUTBOX_MESSAGE_TYPES = [
   "result_rejected",
   "result_redirected",
   "payment_invitation",
-  "membership_confirmation",
   "membership_verified",
+  "officer_welcome",
+  "payment_deadline_extended",
+  "payment_resubmission_needed",
 ] as const satisfies readonly EmailMessageType[];
 export type OutboxMessageType = (typeof OUTBOX_MESSAGE_TYPES)[number];
 
@@ -375,13 +378,19 @@ export async function sweepStaleSending(): Promise<number> {
   return rows.length;
 }
 
-function yearCondition(recruitmentYear: number) {
+/** Emails for one year's applications, in one round (R101 or the officer hunt) when given. */
+function yearCondition(recruitmentYear: number, track?: RecruitmentTrack) {
   return inArray(
     emailNotifications.applicationId,
     db
       .select({ id: applications.id })
       .from(applications)
-      .where(eq(applications.recruitmentYear, recruitmentYear)),
+      .where(
+        and(
+          eq(applications.recruitmentYear, recruitmentYear),
+          track ? eq(applications.track, track) : undefined,
+        ),
+      ),
   );
 }
 
@@ -392,6 +401,7 @@ function yearCondition(recruitmentYear: number) {
 export async function requeueFailed(options: {
   messageTypes: readonly OutboxMessageType[];
   recruitmentYear: number;
+  track?: RecruitmentTrack;
   uncertain: boolean;
 }): Promise<number> {
   const rows = await db
@@ -401,7 +411,7 @@ export async function requeueFailed(options: {
       and(
         eq(emailNotifications.status, "failed"),
         inArray(emailNotifications.messageType, [...options.messageTypes]),
-        yearCondition(options.recruitmentYear),
+        yearCondition(options.recruitmentYear, options.track),
         options.uncertain
           ? like(emailNotifications.lastError, `${UNCERTAIN_PREFIX}%`)
           : or(
@@ -410,6 +420,46 @@ export async function requeueFailed(options: {
             ),
       ),
     )
+    .returning({ id: emailNotifications.id });
+  return rows.length;
+}
+
+type UncertainSelection = {
+  ids: readonly string[];
+  messageTypes: readonly OutboxMessageType[];
+  recruitmentYear: number;
+  track?: RecruitmentTrack;
+};
+
+/** Only uncertain rows among the chosen ids, so a stale selection can't touch anything else. */
+function uncertainSelection(options: UncertainSelection) {
+  return and(
+    inArray(emailNotifications.id, [...options.ids]),
+    eq(emailNotifications.status, "failed"),
+    like(emailNotifications.lastError, `${UNCERTAIN_PREFIX}%`),
+    inArray(emailNotifications.messageType, [...options.messageTypes]),
+    yearCondition(options.recruitmentYear, options.track),
+  );
+}
+
+/** Resends just the chosen uncertain emails, after HR found them missing from the Sent folder. */
+export async function requeueUncertainByIds(options: UncertainSelection): Promise<number> {
+  if (options.ids.length === 0) return 0;
+  const rows = await db
+    .update(emailNotifications)
+    .set({ status: "pending", nextAttemptAt: new Date(), claimedAt: null })
+    .where(uncertainSelection(options))
+    .returning({ id: emailNotifications.id });
+  return rows.length;
+}
+
+/** Counts the chosen uncertain emails as sent, after HR found them in the Sent folder. */
+export async function markUncertainDelivered(options: UncertainSelection): Promise<number> {
+  if (options.ids.length === 0) return 0;
+  const rows = await db
+    .update(emailNotifications)
+    .set({ status: "sent", sentAt: new Date(), lastError: null, nextAttemptAt: null, claimedAt: null })
+    .where(uncertainSelection(options))
     .returning({ id: emailNotifications.id });
   return rows.length;
 }
@@ -427,10 +477,11 @@ export type OutboxStatus = {
 export async function outboxStatus(options: {
   messageTypes: readonly OutboxMessageType[];
   recruitmentYear: number;
+  track?: RecruitmentTrack;
 }): Promise<OutboxStatus> {
   const scope = and(
     inArray(emailNotifications.messageType, [...options.messageTypes]),
-    yearCondition(options.recruitmentYear),
+    yearCondition(options.recruitmentYear, options.track),
   );
   const uncertain = sql<boolean>`coalesce(${emailNotifications.lastError} like ${`${UNCERTAIN_PREFIX}%`}, false)`;
   const counts = await db
@@ -457,7 +508,7 @@ export async function outboxStatus(options: {
     .from(emailNotifications)
     .where(and(scope, eq(emailNotifications.status, "failed")))
     .orderBy(asc(emailNotifications.recipient))
-    .limit(200);
+    .limit(1000);
   status.problems = problems.map((row) => ({
     ...row,
     uncertain: row.error?.startsWith(UNCERTAIN_PREFIX) ?? false,

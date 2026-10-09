@@ -14,6 +14,7 @@ import {
 import { HrApplicationListToolbar } from "@/components/hr/hr-application-list-toolbar"
 import { useHrListUrlState } from "@/components/hr/use-hr-list-url-state"
 import { useApplications } from "@/lib/api"
+import { useRecruitmentTrack } from "@/lib/recruitment-track"
 import type { HrListSearchParamsInput } from "@/lib/hr/filters-search-params"
 import { dashboardTitleClasses } from "@/lib/site/dashboard-surface"
 import { hrPageShellClasses } from "@/lib/site/surface"
@@ -31,6 +32,7 @@ export function HrApplicationList({
   listSearch,
 }: HrApplicationListProps) {
   const isArchivedView = variant === "archived"
+  const hunt = useRecruitmentTrack() === "officer_hunt"
   const urlState = useHrListUrlState(listSearch, notice)
   const { filters, page } = urlState
   const { applications, total, loading, error, refreshApplications } =
@@ -55,12 +57,21 @@ export function HrApplicationList({
   return (
     <main className={cn(hrPageShellClasses, "min-w-0 max-w-full overflow-x-clip")}>
       <SectionHeader
-        title={isArchivedView ? "Archived applications" : "Applications"}
+        eyebrow={hunt ? "// OFFICER HUNT" : undefined}
+        title={
+          isArchivedView
+            ? "Archived Applications"
+            : hunt
+              ? "Officer Hunt Applications"
+              : "Applications"
+        }
         titleClassName={dashboardTitleClasses}
         subtitle={
           isArchivedView
             ? "Restore applicants to active review or delete permanently to free their interview slot."
-            : "Review active applicants, update decisions, and open each profile for complete details."
+            : hunt
+              ? "Review who applied for the board, director and executive assistant seats, update decisions, and open each profile."
+              : "Review active applicants, update decisions, and open each profile for complete details."
         }
       />
       {visibleFeedback ? (

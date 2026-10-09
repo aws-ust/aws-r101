@@ -5,7 +5,7 @@ import { eq, inArray } from "drizzle-orm";
 import { app } from "./app";
 import { signToken } from "./auth";
 import { db } from "./db";
-import { committees, positions, recruitmentWindows } from "./db/schema";
+import { committees, positions, recruitmentWindows, users } from "./db/schema";
 import { positionsAcceptApplications } from "./lib/applications/applications";
 import { originHeaders } from "./test-support/request";
 
@@ -25,11 +25,13 @@ process.env.EMAIL_ENABLED = "false";
 const committeeIds = [randomUUID(), randomUUID()];
 const positionIds = [randomUUID(), randomUUID()];
 const suffix = randomUUID().slice(0, 8);
+const hrEmail = `committee-status-hr-${suffix}@aws-ust.org`;
 let token = "";
 let previousWindow: { startsAt: Date; endsAt: Date } | undefined;
 
 after(async () => {
   try {
+    await db.delete(users).where(eq(users.email, hrEmail));
     await db.delete(committees).where(inArray(committees.id, committeeIds));
     if (previousWindow) {
       await db
@@ -110,7 +112,15 @@ test("HR can stop and reopen applications for a committee", async (t) => {
         endsAt: new Date(Date.now() + 60 * 60 * 1000),
       },
     });
-  token = (await signToken("committee-status-hr@aws-ust.org")).token;
+  // HR routes load the user, so the token needs a real HR account behind it.
+  await db.insert(users).values({
+    email: hrEmail,
+    passwordHash: "x",
+    firstName: "Committee",
+    lastName: "HR",
+    role: "hr",
+  });
+  token = (await signToken(hrEmail)).token;
 
   await t.test("requires HR authentication", async () => {
     assert.equal((await app.request("/positions/committees")).status, 401);

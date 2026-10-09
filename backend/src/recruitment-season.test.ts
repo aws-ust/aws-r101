@@ -64,8 +64,13 @@ before(async () => {
 });
 
 after(async () => {
-  await setRecruitmentWindow(
-    new Date(Date.now() - 60 * 1000),
-    new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-  );
+  try {
+    await setRecruitmentWindow(
+      new Date(Date.now() - 60 * 1000),
+      new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    );
+  } finally {
+    // Without this the open connection keeps the test process alive.
+    await db.$client.end();
+  }
 });

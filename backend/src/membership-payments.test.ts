@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test, { after } from "node:test";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { app } from "./app";
 import { signApplicantToken } from "./applicant-auth";
 import { signToken } from "./auth";
@@ -17,7 +17,7 @@ import {
   positions,
   users,
 } from "./db/schema";
-import { runEmailOutbox } from "./lib/email/queued-emails";
+import { prepareQueuedEmail, runEmailOutbox } from "./lib/email/queued-emails";
 import { originHeaders } from "./test-support/request";
 
 const databaseUrl = process.env.DATABASE_URL ?? "";
@@ -183,7 +183,7 @@ test("membership payment workflow", async (t) => {
     const opened = await staffRequest("/membership-payments/campaign/open", hrToken, { method: "POST" });
     assert.equal(opened.status, 200);
     const payload = (await opened.json()) as { eligible: number; created: number };
-    assert.deepEqual(payload, { eligible: 3, created: 3, emailDelivery: { queued: 3 } });
+    assert.deepEqual(payload, { eligible: 3, officers: 0, members: 3, created: 3, emailDelivery: { queued: 3 } });
     // Email is switched off in tests, so the background outbox fails them.
     assert.deepEqual(await runEmailOutbox({ budgetMs: 5_000 }), {
       skipped: false,
@@ -251,7 +251,7 @@ test("membership payment workflow", async (t) => {
     assert.equal(afterVerify.payment.memberCard?.memberId, verifiedBody.memberId);
     assert.equal(afterVerify.payment.memberCard?.position, "Payment Staff");
     assert.equal(afterVerify.payment.memberCard?.photoUrl, null);
-    assert.equal(afterVerify.payment.membersGroupLink, null);
+    assert.equal(afterVerify.payment.membersGroupLink, "https://m.me/j/general-test");
     const photoBody = JSON.stringify({ mimeType: "image/png", sizeBytes: 100, checksumSha256: "A".repeat(43) + "=" });
     const photoPresign = await app.request("/applicant/payment/member-photo/presign", { method: "POST", headers: { ...originHeaders(), "Content-Type": "application/json", Cookie: `applicant_token=${applicantToken}` }, body: photoBody });
     assert.equal(photoPresign.status, 201);
@@ -283,10 +283,7 @@ test("membership payment workflow", async (t) => {
       .update(membershipPayments)
       .set({ status: "pending_verification" })
       .where(eq(membershipPayments.id, payment.id));
-    const body = JSON.stringify({
-      reason: "Receipt details do not match",
-      resubmissionDeadlineAt: "2096-12-02T00:00:00.000Z",
-    });
+    const body = JSON.stringify({ reason: "Receipt details do not match" });
     assert.equal(
       (
         await staffRequest(
@@ -312,32 +309,43 @@ test("membership payment workflow", async (t) => {
       .from(membershipPayments)
       .where(eq(membershipPayments.id, payment.id));
     assert.equal(rejected.status, "needs_resubmission");
+
+    // They are told what to fix: an email carrying Finance's note and the new deadline.
+    const [email] = await db
+      .select({ id: emailNotifications.id })
+      .from(emailNotifications)
+      .where(
+        and(
+          eq(emailNotifications.applicationId, ids.rejectedApplication),
+          eq(emailNotifications.messageType, "payment_resubmission_needed"),
+        ),
+      );
+    assert.ok(email);
+    const prepared = await prepareQueuedEmail({
+      id: email.id,
+      messageType: "payment_resubmission_needed",
+      recipient: "x@example.test",
+      attempts: 0,
+    });
+    assert.equal(prepared.kind, "ready");
+    if (prepared.kind === "ready") {
+      assert.match(prepared.rendered.text, /Receipt details do not match/);
+      // No date was picked: they resubmit by the payment period's own deadline.
+      assert.match(prepared.rendered.text, /Resubmit by: December 1, 2096/);
+    }
   });
 
-  await t.test("confirmation release records the assigned link and failed email", async () => {
-    assert.equal((await staffRequest("/membership-payments/confirmations/release", financeToken, { method: "POST" })).status, 401);
-    const response = await staffRequest("/membership-payments/confirmations/release", hrToken, { method: "POST" });
-    assert.equal(response.status, 200);
-    await runEmailOutbox({ budgetMs: 5_000 });
-    const [payment] = await db.select().from(membershipPayments).where(eq(membershipPayments.applicationId, ids.acceptedApplication));
-    assert.equal(payment.assignedChatLink, "https://m.me/j/committee-test");
-    assert.equal(payment.confirmationStatus, "email_failed");
-    const released = (await (await app.request("/applicant/payment", { headers: { Cookie: `applicant_token=${applicantToken}` } })).json()) as { payment: { membersGroupLink: string | null; committeeChatLink: string | null } };
-    assert.equal(released.payment.membersGroupLink, "https://m.me/j/general-test");
-    assert.equal(released.payment.committeeChatLink, "https://m.me/j/committee-test");
-    assert.equal((await staffRequest("/membership-payments/emails/retry-confirmations", financeToken, { method: "POST" })).status, 401);
-    const confirmationRetry = await staffRequest(
-      "/membership-payments/emails/retry-confirmations",
-      hrToken,
-      { method: "POST" },
-    );
-    assert.equal(confirmationRetry.status, 200);
-    assert.deepEqual(await confirmationRetry.json(), { retried: 1 });
+  await t.test("there is no confirmation release; links are on the dashboard once verified", async () => {
+    assert.equal((await staffRequest("/membership-payments/confirmations/release", hrToken, { method: "POST" })).status, 404);
+    assert.equal((await staffRequest("/membership-payments/emails/retry-confirmations", hrToken, { method: "POST" })).status, 404);
+    const dashboard = (await (await app.request("/applicant/payment", { headers: { Cookie: `applicant_token=${applicantToken}` } })).json()) as { payment: { membersGroupLink: string | null; committeeChatLink: string | null } };
+    assert.equal(dashboard.payment.membersGroupLink, "https://m.me/j/general-test");
+    assert.equal(dashboard.payment.committeeChatLink, "https://m.me/j/committee-test");
   });
 
   await t.test("HR can reverse verification and Member ID is retained", async () => {
     const [payment] = await db.select().from(membershipPayments).where(eq(membershipPayments.applicationId, ids.acceptedApplication));
-    const body = JSON.stringify({ reason: "Wrong receipt was verified", resubmissionDeadlineAt: "2096-12-02T00:00:00.000Z" });
+    const body = JSON.stringify({ reason: "Wrong receipt was verified" });
     assert.equal((await staffRequest(`/membership-payments/${payment.id}/reverse`, financeToken, { method: "POST", body })).status, 401);
     assert.equal((await staffRequest(`/membership-payments/${payment.id}/reverse`, hrToken, { method: "POST", body })).status, 200);
     const [reversed] = await db.select().from(membershipPayments).where(eq(membershipPayments.id, payment.id));
@@ -381,5 +389,23 @@ test("membership payment workflow", async (t) => {
     const receipt = await staffRequest(`/membership-payments/${payment.id}/receipts/${submission.id}`, hrToken);
     assert.equal(receipt.status, 200);
     assert.deepEqual(await receipt.json(), { url: driveLink });
+  });
+
+  await t.test("a receipt cannot be sent back once the payment deadline has passed", async () => {
+    const [payment] = await db.select().from(membershipPayments).where(eq(membershipPayments.applicationId, ids.memberApplication));
+    const [campaign] = await db.select().from(membershipPaymentCampaigns).where(eq(membershipPaymentCampaigns.id, payment.campaignId));
+    await db.update(membershipPaymentCampaigns).set({ deadlineAt: new Date(Date.now() - 60_000) }).where(eq(membershipPaymentCampaigns.id, campaign.id));
+    try {
+      const response = await staffRequest(`/membership-payments/${payment.id}/reject`, hrToken, {
+        method: "POST",
+        body: JSON.stringify({ reason: "Receipt is blurry" }),
+      });
+      assert.equal(response.status, 409);
+      assert.match(((await response.json()) as { error: string }).error, /Extend the deadline in Payment Setup/);
+      const [unchanged] = await db.select().from(membershipPayments).where(eq(membershipPayments.id, payment.id));
+      assert.equal(unchanged.status, "pending_verification");
+    } finally {
+      await db.update(membershipPaymentCampaigns).set({ deadlineAt: campaign.deadlineAt }).where(eq(membershipPaymentCampaigns.id, campaign.id));
+    }
   });
 });

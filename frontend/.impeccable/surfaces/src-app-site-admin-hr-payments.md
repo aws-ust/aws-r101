@@ -11,14 +11,14 @@ Mode: Operate. Established world: DESIGN.md palette and Poppins / JetBrains Mono
 
 ## Task and audience
 - HR, EB and finance officers on the one shared sign-in, during the payment period.
-- Main job: clear the receipt queue. Open the next pending receipt, check the GCash reference and the Drive screenshot, verify it or reject it with a reason, move to the next. Second job: see where everyone stands and run collection (release confirmations, retry emails, export).
+- Main job: clear the receipt queue. Open the next pending receipt, check the GCash reference and the Drive screenshot, verify it or reject it with a reason, move to the next. Second job: see where everyone stands and run collection (retry invitations, export).
 
 ## Structure (confirmed by the user)
 - One Payments page replaces Payments + Verification. `/admin/hr/membership` redirects to the review tab; sidebar shows one "Payments".
 - Header: `// MEMBERSHIP` / Payments, one factual line about the period (open or closed, amount, deadline; or not set up).
 - Status strip: one compact row of counts in work order (Pending verification, Awaiting payment, Needs resubmission, Expired, Verified, Eligible last; work first, so the queue count leads). A count filters the list. Only Pending verification is aquamarine, and only when above zero.
 - Tabs: To review (default when anything is pending; pending receipts oldest first) · All payments (search + status, applicant type, result, committee filters). Setup moved to its own page, Payment Setup (`/admin/hr/payments/setup`, own sidebar entry) at the user's request: period, amount, the two GCash QRs, open/close. Payments shows a notice linking to it while the period or amount is missing.
-- Collection actions beside the tabs: Export verified members, Retry emails menu (invitations, confirmations), Release membership confirmations behind a confirm dialog with the count.
+- Collection actions beside the tabs: Export verified members and Retry invitations.
 - Review side panel: applicant, result, committee, amount, every submission (method, reference, attempt, submitted, reviewer note, View receipt), then Verify (aquamarine) or Reject with reason and resubmission deadline; verified receipts show Reverse verification. After a decision it advances to the next pending receipt. Previous / Next, ↑ / ↓ keys, Esc closes. Sticky beside the table on wide screens, a sheet below that.
 - Rows: dense table, name + applicant code, committee or General member, status, reference, submitted, attempt. Columns drop by the table's own width (container queries).
 - States: not set up, closed with nothing submitted, queue empty ("All caught up"), no match, receipt link failing, review error, loading, email retries running.

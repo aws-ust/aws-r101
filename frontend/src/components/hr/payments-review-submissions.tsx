@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Check, Copy, ExternalLink } from "lucide-react"
+import { Check, Copy, ExternalLink, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { PaymentSubmission } from "@/lib/api/payments"
 import { formatDisplayDateTime } from "@/lib/datetime/display"
@@ -28,21 +28,37 @@ const ATTEMPT_STATUS: Record<PaymentSubmission["status"], string> = {
   reversed: "Verification reversed",
 }
 
+type CopyState = "idle" | "copied" | "failed"
+
+const COPY_LABELS: Record<CopyState, string> = {
+  idle: "Copy reference number",
+  copied: "Reference copied",
+  failed: "Could not copy the reference",
+}
+
 function CopyReference({ value }: { value: string }) {
-  const [copied, setCopied] = useState(false)
+  const [state, setState] = useState<CopyState>("idle")
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(value)
+      setState("copied")
+    } catch {
+      // The browser can refuse clipboard access (no permission, or the tab is not focused).
+      setState("failed")
+    }
+    window.setTimeout(() => setState("idle"), 1500)
+  }
+
   return (
-    <button
-      type="button"
-      className={copyClasses}
-      aria-label={copied ? "Reference copied" : "Copy reference number"}
-      onClick={() => {
-        void navigator.clipboard.writeText(value).then(() => {
-          setCopied(true)
-          window.setTimeout(() => setCopied(false), 1500)
-        })
-      }}
-    >
-      {copied ? <Check className="size-4" aria-hidden /> : <Copy className="size-4" aria-hidden />}
+    <button type="button" className={copyClasses} aria-label={COPY_LABELS[state]} onClick={() => void copy()}>
+      {state === "copied" ? (
+        <Check className="size-4" aria-hidden />
+      ) : state === "failed" ? (
+        <X className="size-4" aria-hidden />
+      ) : (
+        <Copy className="size-4" aria-hidden />
+      )}
     </button>
   )
 }

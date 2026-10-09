@@ -1,6 +1,8 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "../../db";
 import { applications, emailNotifications, users } from "../../db/schema";
+import type { RecruitmentTrack } from "../applications/recruitment-scope";
+import { seatHuntWinner } from "../officer-hunt/seats";
 import { getResultsPreviewForUpdate } from "./results-preview";
 
 export type ResultsReleaseSummary = {
@@ -14,6 +16,8 @@ export type ResultsReleaseSummary = {
 export type ResultsRelease = {
   summary: ResultsReleaseSummary;
   notificationIds: string[];
+  /** Officer-hunt winners seated by this release. */
+  seated: number;
 };
 
 export class ResultsReleaseBlockedError extends Error {
@@ -28,9 +32,10 @@ export class ResultsReleaseBlockedError extends Error {
 
 export async function releaseResults(
   reviewerEmail?: string,
+  track: RecruitmentTrack = "r101",
 ): Promise<ResultsRelease> {
   return db.transaction(async (tx) => {
-    const preview = await getResultsPreviewForUpdate(tx);
+    const preview = await getResultsPreviewForUpdate(tx, track);
     if (preview.summary.pendingRelease === 0) {
       return {
         summary: {
@@ -41,6 +46,7 @@ export async function releaseResults(
           releasedAt: null,
         },
         notificationIds: [],
+        seated: 0,
       };
     }
     if (!preview.summary.canRelease) {
@@ -49,6 +55,7 @@ export async function releaseResults(
 
     const releasedAt = new Date();
     const notificationIds: string[] = [];
+    let seated = 0;
     let reviewerId: string | null = null;
     if (reviewerEmail) {
       const [reviewer] = await tx
@@ -83,6 +90,17 @@ export async function releaseResults(
 
       if (!application.willSendEmail) continue;
 
+      // A hunt winner becomes an officer on the spot: a seat, a welcome and, if
+      // payments are already open, their payment invitation.
+      if (track === "officer_hunt" && accepted) {
+        const queued = await seatHuntWinner(tx, application.id);
+        if (queued) {
+          seated += 1;
+          notificationIds.push(...queued);
+          continue;
+        }
+      }
+
       const messageType = redirected
         ? "result_redirected"
         : accepted
@@ -109,6 +127,7 @@ export async function releaseResults(
         releasedAt: releasedAt.toISOString(),
       },
       notificationIds,
+      seated,
     };
   });
 }
