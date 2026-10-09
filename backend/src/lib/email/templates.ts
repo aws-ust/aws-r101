@@ -12,6 +12,7 @@ import {
   memberRegistrationSubject,
   membershipVerifiedSubject,
   officerWelcomeSubject,
+  paymentDeadlineExtendedSubject,
   paymentInvitationSubject,
   resultAcceptedSubject,
   resultMemberAcceptedSubject,
@@ -696,6 +697,52 @@ ${ctaButton(statusUrl, "Open payment instructions")}
   });
   return {
     subject: paymentInvitationSubject(input.applicationCode),
+    text,
+    html,
+    inline: [brandedEmailHeaderInline()],
+  };
+}
+
+const paymentDeadlineExtendedMessage =
+  "Good news: we have extended the membership payment deadline for AWS Builders - UST. You still have time to pay the membership fee and upload your receipt on your applicant dashboard.";
+
+/** Sent to everyone who still owes a payment when HR moves the deadline later. */
+export function paymentDeadlineExtendedTemplate(input: {
+  lastName: string;
+  applicationCode: string;
+  amountCents: number;
+  deadlineAt: Date;
+}): RenderedEmail {
+  const honorific = `Mx. ${input.lastName}`;
+  const amount = pesoAmount(input.amountCents);
+  const deadline = input.deadlineAt.toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
+    dateStyle: "long",
+    timeStyle: "short",
+  });
+  const statusUrl = `${appBaseUrl()}/apply/status`;
+  const message = paymentDeadlineExtendedMessage;
+  const text = `Greetings from the Clouds!\n\nGood day, ${honorific},\n\n${message}\n\nNew deadline: ${deadline}\nAmount: ${amount}\nApplication ID: ${input.applicationCode}\n\nOpen payment instructions: ${statusUrl}\n\n${paymentVerificationNote}\n\nYours in Thomasian Leadership,\nThe AWS Builders - UST Executive Board`;
+  const html = wrapBrandedHtml({
+    eyebrow: "AWS BUILDERS – UST",
+    bannerTitle: "MEMBERSHIP PAYMENT",
+    bannerSub: input.applicationCode,
+    heading: "Payment Deadline Extended",
+    headerImageUrl: `cid:${APPLICATION_RECEIVED_HEADER_CID}`,
+    headerImageAlt: "AWS Builders - UST — It's Always Day One",
+    inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
+<p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
+<p style="margin:0 0 16px;">${escapeHtml(message)}</p>
+<p style="margin:0 0 8px;"><strong>New deadline:</strong> ${escapeHtml(deadline)}</p>
+<p style="margin:0 0 8px;"><strong>Amount:</strong> ${escapeHtml(amount)}</p>
+<p style="margin:0 0 16px;"><strong>Application ID:</strong> ${escapeHtml(input.applicationCode)}</p>
+${ctaButton(statusUrl, "Open payment instructions")}
+<p style="margin:0 0 16px;">${escapeHtml(paymentVerificationNote)}</p>
+<p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
+<p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
+  });
+  return {
+    subject: paymentDeadlineExtendedSubject(input.applicationCode),
     text,
     html,
     inline: [brandedEmailHeaderInline()],

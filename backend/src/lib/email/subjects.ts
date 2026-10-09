@@ -90,6 +90,10 @@ export function paymentInvitationSubject(applicationCode: string): string {
   return `AWS Builders - UST | Membership Payment (${applicationCode})`;
 }
 
+export function paymentDeadlineExtendedSubject(applicationCode: string): string {
+  return `Payment deadline extended | AWS Builders - UST (${applicationCode})`;
+}
+
 export function officerWelcomeSubject(memberId: string): string {
   return `Your Member ID is reserved | AWS Builders - UST (${memberId})`;
 }

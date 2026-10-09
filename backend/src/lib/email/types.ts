@@ -17,7 +17,8 @@ export type EmailMessageType =
   /** Legacy: no longer sent; kept so old rows still type-check. */
   | "membership_confirmation"
   | "membership_verified"
-  | "officer_welcome";
+  | "officer_welcome"
+  | "payment_deadline_extended";
 
 export type EmailFileAttachment = {
   filename: string;

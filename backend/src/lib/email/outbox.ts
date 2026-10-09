@@ -20,6 +20,7 @@ export const OUTBOX_MESSAGE_TYPES = [
   "payment_invitation",
   "membership_verified",
   "officer_welcome",
+  "payment_deadline_extended",
 ] as const satisfies readonly EmailMessageType[];
 export type OutboxMessageType = (typeof OUTBOX_MESSAGE_TYPES)[number];
 

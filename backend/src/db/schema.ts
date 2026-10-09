@@ -65,6 +65,7 @@ export const emailMessageType = pgEnum("email_message_type", [
   "membership_confirmation",
   "membership_verified",
   "officer_welcome",
+  "payment_deadline_extended",
 ]);
 export const emailDeliveryStatus = pgEnum("email_delivery_status", [
   "pending",

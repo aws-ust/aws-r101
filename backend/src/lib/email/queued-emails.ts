@@ -19,6 +19,7 @@ export function prepareQueuedEmail(notification: ClaimedNotification): Promise<P
     case "result_redirected":
       return prepareResultNotification(notification);
     case "payment_invitation":
+    case "payment_deadline_extended":
     case "membership_verified":
       return prepareMembershipNotification(notification);
     case "officer_welcome":

@@ -12,6 +12,7 @@ import {
 } from "../../db/schema";
 import type { AuthenticatedUser } from "../../auth";
 import { recruitmentYearInt } from "../applications/application-code";
+import { extendPaymentDeadline } from "./deadline-extension";
 import { MembershipPaymentError } from "./errors";
 import {
   createPaymentQrUpload,
@@ -91,9 +92,14 @@ export async function saveCurrentPaymentSchedule(
   const recruitmentYear = recruitmentYearInt();
   return db.transaction(async (tx) => {
     const [existing] = await tx
-      .select({ id: membershipPaymentCampaigns.id })
+      .select({
+        id: membershipPaymentCampaigns.id,
+        isOpen: membershipPaymentCampaigns.isOpen,
+        deadlineAt: membershipPaymentCampaigns.deadlineAt,
+      })
       .from(membershipPaymentCampaigns)
       .where(eq(membershipPaymentCampaigns.recruitmentYear, recruitmentYear))
+      .for("update")
       .limit(1);
     const values = {
       recruitmentYear,
@@ -133,7 +139,16 @@ export async function saveCurrentPaymentSchedule(
       }
       await tx.insert(membershipPaymentChatLinks).values(links);
     }
-    return { ...campaign, committeeChatLinks: links };
+
+    // A deadline that moved later while payments are open is news to everyone who hasn't paid.
+    const extended =
+      existing?.isOpen === true &&
+      input.deadlineAt > existing.deadlineAt &&
+      input.deadlineAt > new Date();
+    const extensionNotificationIds = extended
+      ? await extendPaymentDeadline(tx, campaign.id, input.deadlineAt)
+      : [];
+    return { campaign: { ...campaign, committeeChatLinks: links }, extensionNotificationIds };
   });
 }
 

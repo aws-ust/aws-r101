@@ -217,6 +217,7 @@ try {
     "member_registration",
     "membership_verified",
     "officer_welcome",
+    "payment_deadline_extended",
   ]) {
     await sql.unsafe(`
       DO $$ BEGIN

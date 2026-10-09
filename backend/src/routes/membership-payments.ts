@@ -114,15 +114,17 @@ membershipPaymentRoutes.put(
       );
     }
     try {
-      return c.json(
-        await withQrPreviewUrls(
-          await saveCurrentPaymentSchedule({
-            ...parsed.data,
-            opensAt: new Date(parsed.data.opensAt),
-            deadlineAt: new Date(parsed.data.deadlineAt),
-          }),
-        ),
-      );
+      const saved = await saveCurrentPaymentSchedule({
+        ...parsed.data,
+        opensAt: new Date(parsed.data.opensAt),
+        deadlineAt: new Date(parsed.data.deadlineAt),
+      });
+      // "Deadline extended" emails go out through the background email outbox.
+      if (saved.extensionNotificationIds.length > 0) await kickEmailOutbox();
+      return c.json({
+        ...(await withQrPreviewUrls(saved.campaign)),
+        extensionEmails: { queued: saved.extensionNotificationIds.length },
+      });
     } catch (error) {
       const result = paymentError(error);
       return c.json(result.body, result.status);

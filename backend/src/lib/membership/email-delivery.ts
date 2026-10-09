@@ -17,6 +17,7 @@ import {
 } from "../email/outbox";
 import {
   renderMembershipVerified,
+  renderPaymentDeadlineExtended,
   renderPaymentInvitation,
 } from "../email/service";
 import { recruitmentYearInt } from "../applications/application-code";
@@ -38,6 +39,7 @@ export async function prepareMembershipNotification(
       officerTitle: officerSeats.title,
       amountCents: membershipPaymentCampaigns.amountCents,
       deadlineAt: membershipPaymentCampaigns.deadlineAt,
+      resubmissionDeadlineAt: membershipPayments.resubmissionDeadlineAt,
     })
     .from(emailNotifications)
     .innerJoin(applications, eq(emailNotifications.applicationId, applications.id))
@@ -65,6 +67,18 @@ export async function prepareMembershipNotification(
         applicationCode: row.applicationCode,
         amountCents: row.amountCents,
         deadlineAt: row.deadlineAt,
+      }),
+    };
+  }
+  if (notification.messageType === "payment_deadline_extended") {
+    return {
+      kind: "ready",
+      rendered: renderPaymentDeadlineExtended({
+        lastName: row.lastName,
+        applicationCode: row.applicationCode,
+        amountCents: row.amountCents,
+        // Someone asked to resubmit has their own deadline, which may be later than the campaign's.
+        deadlineAt: row.resubmissionDeadlineAt ?? row.deadlineAt,
       }),
     };
   }
