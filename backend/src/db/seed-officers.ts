@@ -1,5 +1,7 @@
 import { db } from "./index";
 import { kickEmailOutbox } from "../lib/email/outbox-kick";
+import { isLoopbackUrl } from "../lib/core/site-url";
+import { appBaseUrl } from "../lib/email/config";
 import { runEmailOutbox } from "../lib/email/queued-emails";
 import {
   releaseHeldWelcomeEmails,
@@ -18,8 +20,25 @@ const onlyEmails = (process.env.OFFICER_SEED_ONLY ?? "")
   .map((email) => email.trim())
   .filter(Boolean);
 
+/** Emails rendered on this machine link to this machine's APP_BASE_URL. */
+function assertLinksWillWork() {
+  const database = process.env.DATABASE_URL ?? "";
+  let remote = false;
+  try {
+    remote = !isLoopbackUrl(`http://${new URL(database).host}`);
+  } catch {
+    // An unreadable DATABASE_URL fails later, where it is used.
+  }
+  if (remote && isLoopbackUrl(appBaseUrl())) {
+    throw new Error(
+      "These emails would link to localhost, but DATABASE_URL is not a local database. Set APP_BASE_URL to the real website, or send through the deployed worker by setting EMAIL_OUTBOX_FUNCTION_NAME instead of SEND_OFFICER_WELCOME.",
+    );
+  }
+}
+
 async function sendQueued() {
   if (process.env.SEND_OFFICER_WELCOME === "true") {
+    assertLinksWillWork();
     console.log(await runEmailOutbox({ budgetMs: 60_000 }));
   } else if (process.env.EMAIL_OUTBOX_FUNCTION_NAME) {
     // Production: the worker Lambda only starts when something kicks it.

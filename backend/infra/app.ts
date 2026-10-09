@@ -11,6 +11,7 @@ import * as logs from "aws-cdk-lib/aws-logs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as scheduler from "aws-cdk-lib/aws-scheduler";
 import type { Construct } from "constructs";
+import { assertDeployableSiteUrl } from "../src/lib/core/site-url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -56,8 +57,11 @@ class BackendStack extends cdk.Stack {
     super(scope, id, props);
 
     const databaseUrl = requiredEnvironment("DATABASE_URL");
-    const corsOrigin =
-      process.env.APP_BASE_URL?.trim() || requiredEnvironment("CORS_ORIGIN");
+    // The site's own address: it is the S3 CORS origin and the base of every email link,
+    // so a localhost value left over from local testing must never get this far.
+    const corsOrigin = assertDeployableSiteUrl(
+      process.env.APP_BASE_URL?.trim() || requiredEnvironment("CORS_ORIGIN"),
+    );
     const budgetAlertEmail = requiredEnvironment("BUDGET_ALERT_EMAIL");
     const freePlanEnd = freePlanEndDate();
     const documentBucket = new s3.Bucket(this, "DocumentBucket", {
