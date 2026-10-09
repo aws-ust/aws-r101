@@ -1,6 +1,7 @@
 import { and, asc, eq, gt, inArray, isNotNull, isNull, like, lt, lte, min, notLike, or, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { applications, emailNotifications, emailOutboxLease } from "../../db/schema";
+import type { RecruitmentTrack } from "../applications/recruitment-scope";
 import { emailEnabled, hasGmailCredentials, senderEmail } from "./config";
 import { sendViaGmail } from "./gmail-client";
 import { classifySendError, retryAfterFromError } from "./retry";
@@ -376,13 +377,19 @@ export async function sweepStaleSending(): Promise<number> {
   return rows.length;
 }
 
-function yearCondition(recruitmentYear: number) {
+/** Emails for one year's applications, in one round (R101 or the officer hunt) when given. */
+function yearCondition(recruitmentYear: number, track?: RecruitmentTrack) {
   return inArray(
     emailNotifications.applicationId,
     db
       .select({ id: applications.id })
       .from(applications)
-      .where(eq(applications.recruitmentYear, recruitmentYear)),
+      .where(
+        and(
+          eq(applications.recruitmentYear, recruitmentYear),
+          track ? eq(applications.track, track) : undefined,
+        ),
+      ),
   );
 }
 
@@ -393,6 +400,7 @@ function yearCondition(recruitmentYear: number) {
 export async function requeueFailed(options: {
   messageTypes: readonly OutboxMessageType[];
   recruitmentYear: number;
+  track?: RecruitmentTrack;
   uncertain: boolean;
 }): Promise<number> {
   const rows = await db
@@ -402,7 +410,7 @@ export async function requeueFailed(options: {
       and(
         eq(emailNotifications.status, "failed"),
         inArray(emailNotifications.messageType, [...options.messageTypes]),
-        yearCondition(options.recruitmentYear),
+        yearCondition(options.recruitmentYear, options.track),
         options.uncertain
           ? like(emailNotifications.lastError, `${UNCERTAIN_PREFIX}%`)
           : or(
@@ -419,6 +427,7 @@ type UncertainSelection = {
   ids: readonly string[];
   messageTypes: readonly OutboxMessageType[];
   recruitmentYear: number;
+  track?: RecruitmentTrack;
 };
 
 /** Only uncertain rows among the chosen ids, so a stale selection can't touch anything else. */
@@ -428,7 +437,7 @@ function uncertainSelection(options: UncertainSelection) {
     eq(emailNotifications.status, "failed"),
     like(emailNotifications.lastError, `${UNCERTAIN_PREFIX}%`),
     inArray(emailNotifications.messageType, [...options.messageTypes]),
-    yearCondition(options.recruitmentYear),
+    yearCondition(options.recruitmentYear, options.track),
   );
 }
 
@@ -467,10 +476,11 @@ export type OutboxStatus = {
 export async function outboxStatus(options: {
   messageTypes: readonly OutboxMessageType[];
   recruitmentYear: number;
+  track?: RecruitmentTrack;
 }): Promise<OutboxStatus> {
   const scope = and(
     inArray(emailNotifications.messageType, [...options.messageTypes]),
-    yearCondition(options.recruitmentYear),
+    yearCondition(options.recruitmentYear, options.track),
   );
   const uncertain = sql<boolean>`coalesce(${emailNotifications.lastError} like ${`${UNCERTAIN_PREFIX}%`}, false)`;
   const counts = await db

@@ -1,4 +1,5 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
+import { parseTrackParam } from "../lib/applications/recruitment-scope";
 import { requireAuth } from "../auth";
 import {
   createInterviewSlot,
@@ -43,6 +44,11 @@ export const interviewSlotsRoutes = new Hono();
 
 interviewSlotsRoutes.use("*", requireAuth);
 
+/** Slots belong to a round: R101's, or the officer hunt's. */
+function trackOf(c: Context) {
+  return parseTrackParam(c.req.query("track"));
+}
+
 interviewSlotsRoutes.get("/", async (c) => {
   const committeeId = c.req.query("committeeId");
   if (committeeId && !isUuid(committeeId)) {
@@ -61,7 +67,9 @@ interviewSlotsRoutes.get("/", async (c) => {
     return c.json({ error: "from must be earlier than to." }, 400);
   }
 
-  const slots = await listInterviewSlotsForHr({ committeeId, from, to });
+  const track = trackOf(c);
+  if (!track) return c.json({ error: "track must be r101 or officer_hunt." }, 400);
+  const slots = await listInterviewSlotsForHr({ committeeId, from, to, track });
   return c.json({ slots });
 });
 
@@ -71,8 +79,10 @@ interviewSlotsRoutes.delete("/", async (c) => {
     return c.json({ error: "committeeId must be a UUID." }, 400);
   }
 
+  const track = trackOf(c);
+  if (!track) return c.json({ error: "track must be r101 or officer_hunt." }, 400);
   try {
-    const result = await resetInterviewScheduleForCommittee(committeeId);
+    const result = await resetInterviewScheduleForCommittee(committeeId, track);
     return c.json(result);
   } catch (error) {
     const result = schedulingError(error);
@@ -105,8 +115,10 @@ interviewSlotsRoutes.post("/", async (c) => {
     );
   }
 
+  const track = trackOf(c);
+  if (!track) return c.json({ error: "track must be r101 or officer_hunt." }, 400);
   try {
-    const slot = await createInterviewSlot(parsed.data.committeeId, startsAt);
+    const slot = await createInterviewSlot(parsed.data.committeeId, startsAt, track);
     const jwt = c.get("jwtPayload") as { sub?: unknown };
     logHrAudit({
       actorEmail: typeof jwt.sub === "string" ? jwt.sub : undefined,

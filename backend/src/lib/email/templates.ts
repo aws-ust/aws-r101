@@ -13,6 +13,8 @@ import {
   membershipVerifiedSubject,
   officerWelcomeSubject,
   paymentDeadlineExtendedSubject,
+  officerHuntRedirectedSubject,
+  officerHuntRejectedSubject,
   officerPaymentInvitationSubject,
   paymentInvitationSubject,
   resultAcceptedSubject,
@@ -648,6 +650,74 @@ ${ctaButton(dashboardUrl, "Open your dashboard")}
   };
 }
 
+const officerHuntSignoff = "Yours in Thomasian Leadership,\nThe AWS Builders - UST Executive Board";
+
+/** Officer hunt: the applicant was not seated. They can still apply to R101. */
+export function officerHuntRejectedTemplate(input: { lastName: string }): RenderedEmail {
+  const honorific = `Mx. ${input.lastName}`;
+  const statusUrl = `${appBaseUrl()}/apply/status`;
+  const paragraphs = [
+    "Thank you for putting yourself forward in the AWS Builders - UST Officer Hunt, and for the time and care you gave the process.",
+    "After careful deliberation, we regret to inform you that you were not selected for a seat this term. It was a strong field, and the choice was genuinely difficult.",
+    "You can still join us as a member: R101 recruitment is separate from the Officer Hunt, and you are welcome to apply when it opens.",
+  ];
+  const text = `Greetings from the Clouds!\n\nGood day, ${honorific},\n\n${paragraphs.join("\n\n")}\n\nView your application: ${statusUrl}\n\n${officerHuntSignoff}`;
+  const html = wrapBrandedHtml({
+    eyebrow: "AWS BUILDERS – UST",
+    bannerTitle: "OFFICER HUNT RESULTS",
+    bannerSub: "Thank you for applying",
+    heading: "Officer Hunt Update",
+    headerImageUrl: `cid:${APPLICATION_RECEIVED_HEADER_CID}`,
+    headerImageAlt: "AWS Builders - UST — It's Always Day One",
+    inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
+<p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
+${paragraphs.map((paragraph) => `<p style="margin:0 0 16px;">${escapeHtml(paragraph)}</p>`).join("\n")}
+${ctaButton(statusUrl, "View Your Application")}
+<p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
+<p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
+  });
+  return { subject: officerHuntRejectedSubject, text, html, inline: [brandedEmailHeaderInline()] };
+}
+
+/** Officer hunt: another seat is offered, to accept or decline on the dashboard. */
+export function officerHuntRedirectedTemplate(input: {
+  lastName: string;
+  position: string;
+  committee: string;
+}): RenderedEmail {
+  const honorific = `Mx. ${input.lastName}`;
+  const dashboardUrl = `${appBaseUrl()}/apply/status`;
+  const intro =
+    "Thank you for putting yourself forward in the AWS Builders - UST Officer Hunt. After deliberation, we would like to offer you a different seat than the choices on your application. You may accept or decline it.";
+  const closing =
+    "Open your applicant dashboard to respond. Your answer is final once confirmed, and the seat is yours as soon as you accept.";
+  const text = `Greetings from the Clouds!\n\nGood day, ${honorific},\n\n${intro}\n\nOffered seat: ${input.position}\nCommittee: ${input.committee}\n\n${closing}\n\nOpen your dashboard: ${dashboardUrl}\n\n${officerHuntSignoff}`;
+  const html = wrapBrandedHtml({
+    eyebrow: "AWS BUILDERS – UST",
+    bannerTitle: "OFFICER HUNT RESULTS",
+    bannerSub: "A new seat offer",
+    heading: "A New Seat Offer",
+    headerImageUrl: `cid:${APPLICATION_RECEIVED_HEADER_CID}`,
+    headerImageAlt: "AWS Builders - UST — It's Always Day One",
+    inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
+<p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
+<p style="margin:0 0 16px;">${escapeHtml(intro)}</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;background:#f8f5ff;border-radius:8px;">
+  <tr>
+    <td style="padding:16px 18px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#170f33;">
+      <p style="margin:0 0 8px;"><strong>Offered seat</strong><br>${escapeHtml(input.position)}</p>
+      <p style="margin:0;"><strong>Committee</strong><br>${escapeHtml(input.committee)}</p>
+    </td>
+  </tr>
+</table>
+<p style="margin:0 0 16px;">${escapeHtml(closing)}</p>
+${ctaButton(dashboardUrl, "Open your dashboard")}
+<p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
+<p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
+  });
+  return { subject: officerHuntRedirectedSubject, text, html, inline: [brandedEmailHeaderInline()] };
+}
+
 function manilaDeadline(deadlineAt: Date) {
   return deadlineAt.toLocaleString("en-PH", {
     timeZone: "Asia/Manila",
@@ -864,12 +934,17 @@ ${ctaButton(dashboardUrl, "Open your dashboard")}
 export function officerWelcomeTemplate(input: {
   lastName: string;
   title: string;
-  memberId: string;
+  /** Where the seat sits, e.g. the office an executive assistant joins. */
+  committee?: string | null;
+  /** The seat's reserved number; null for executive assistants, who are numbered at payment. */
+  memberId: string | null;
   applicationCode: string;
 }): RenderedEmail {
   const honorific = `Mx. ${input.lastName}`;
   const statusUrl = `${appBaseUrl()}/apply/status`;
-  const intro = `As ${input.title} of AWS Builders - UST, your official Member ID has been reserved for you. It is released, together with your digital member ID, once your membership payment is verified.`;
+  const intro = input.memberId
+    ? `As ${input.title} of AWS Builders - UST, your official Member ID has been reserved for you. It is released, together with your digital member ID, once your membership payment is verified.`
+    : `Congratulations! You are joining AWS Builders - UST as ${input.title}${input.committee ? ` in the ${input.committee}` : ""}. Your Member ID is issued, together with your digital member ID, once your membership payment is verified.`;
   const how =
     "Sign in to the applicant dashboard with the Application ID below and this email address. You will receive a one-time code. The payment details appear there when the payment period opens.";
   const text = `Greetings from the Clouds!
@@ -878,8 +953,7 @@ Good day, ${honorific},
 
 ${intro}
 
-Reserved Member ID: ${input.memberId}
-Application ID: ${input.applicationCode}
+${input.memberId ? `Reserved Member ID: ${input.memberId}\n` : ""}Application ID: ${input.applicationCode}
 
 ${how}
 
@@ -889,9 +963,9 @@ Yours in Thomasian Leadership,
 The AWS Builders - UST Executive Board`;
   const html = wrapBrandedHtml({
     eyebrow: "AWS BUILDERS – UST",
-    bannerTitle: "MEMBER ID RESERVED",
-    bannerSub: input.memberId,
-    heading: "Your Member ID Is Reserved",
+    bannerTitle: input.memberId ? "MEMBER ID RESERVED" : "WELCOME TO THE TEAM",
+    bannerSub: input.memberId ?? input.applicationCode,
+    heading: input.memberId ? "Your Member ID Is Reserved" : "Welcome To The Team",
     headerImageUrl: `cid:${APPLICATION_RECEIVED_HEADER_CID}`,
     headerImageAlt: "AWS Builders - UST — It's Always Day One",
     inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
@@ -900,7 +974,7 @@ The AWS Builders - UST Executive Board`;
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;background:#f8f5ff;border-radius:8px;">
   <tr>
     <td style="padding:16px 18px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#170f33;">
-      <p style="margin:0 0 8px;"><strong>Reserved Member ID</strong><br>${escapeHtml(input.memberId)}</p>
+      ${input.memberId ? `<p style="margin:0 0 8px;"><strong>Reserved Member ID</strong><br>${escapeHtml(input.memberId)}</p>` : ""}
       <p style="margin:0;"><strong>Application ID</strong><br>${escapeHtml(input.applicationCode)}</p>
     </td>
   </tr>
@@ -911,7 +985,7 @@ ${ctaButton(statusUrl, "Sign in to your dashboard")}
 <p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
   });
   return {
-    subject: officerWelcomeSubject(input.memberId),
+    subject: officerWelcomeSubject(input.memberId, input.applicationCode),
     text,
     html,
     inline: [brandedEmailHeaderInline()],

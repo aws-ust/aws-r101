@@ -75,7 +75,7 @@ async function countApplications(year: number) {
     .where(
       and(
         eq(applications.recruitmentYear, year),
-        recruitmentApplicationsOnly(),
+        recruitmentApplicationsOnly("r101"),
         isNull(applications.archivedAt),
       ),
     );
@@ -91,6 +91,7 @@ async function countInterviews(year: number) {
       and(
         eq(applications.recruitmentYear, year),
         eq(applications.applicationType, "position"),
+        eq(applications.track, "r101"),
         isNull(applications.archivedAt),
       ),
     );

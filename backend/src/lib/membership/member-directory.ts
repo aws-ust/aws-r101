@@ -148,15 +148,16 @@ async function listAdvisers(): Promise<DirectoryMember[]> {
 export type PendingOfficer = {
   fullName: string;
   position: string;
-  role: "eb" | "director";
+  role: "eb" | "director" | "ea";
   committee: string;
-  reservedMemberId: string;
+  /** Null for executive assistants: their number comes from their office's block when they pay. */
+  reservedMemberId: string | null;
   applicationCode: string;
   studentNumber: string | null;
   section: string | null;
 };
 
-/** Board members and directors whose Member ID is not active yet. */
+/** Board members, directors and executive assistants whose Member ID is not active yet. */
 export async function listPendingOfficers(
   activeMemberIds: Set<string>,
 ): Promise<PendingOfficer[]> {
@@ -185,27 +186,29 @@ export async function listPendingOfficers(
     )
     .orderBy(officerSeats.kind, officerSeats.sortOrder);
   const pending = rows.flatMap((row) =>
-    (row.kind === "eb" || row.kind === "director") &&
+    (row.kind === "eb" || row.kind === "director" || row.kind === "ea") &&
     row.committee &&
     !(row.memberId && activeMemberIds.has(row.memberId))
       ? [{ ...row, kind: row.kind, committee: row.committee }]
       : [],
   );
+  const numbered = pending.filter((row) => row.kind !== "ea");
   const reserved = await reservedSeatMemberIds(
     db,
     recruitmentYear,
-    pending.map((row) =>
+    numbered.map((row) =>
       row.kind === "eb"
         ? { kind: "eb" as const, officeCommittee: row.committee }
         : { kind: "director" as const, committee: row.committee },
     ),
   );
-  return pending.map((row, index) => ({
+  const reservedByRow = new Map(numbered.map((row, index) => [row, reserved[index]]));
+  return pending.map((row) => ({
     fullName: `${row.firstName} ${row.lastName}`,
     position: row.title,
     role: row.kind,
     committee: row.committee,
-    reservedMemberId: reserved[index],
+    reservedMemberId: reservedByRow.get(row) ?? null,
     applicationCode: row.applicationCode,
     studentNumber: row.studentNumber,
     section: row.section,

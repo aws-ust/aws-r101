@@ -55,6 +55,16 @@ const ADVISERS: { seatKey: string; firstName: string; lastName: string; title: s
   { seatKey: "adviser-de-guzman", firstName: "Edwin", lastName: "De Guzman", title: "Adviser" },
 ];
 
+/** The board seat titles in office order, for the officer hunt's seats. */
+export function executiveSeatTitles(): string[] {
+  return EB_BY_OFFICE_ORDER.map((person) => person.title);
+}
+
+/** The director seat titles in committee order, for the officer hunt's seats. */
+export function directorSeatTitles(): string[] {
+  return DIRECTOR_BY_COMMITTEE_ORDER.map((person) => person.title);
+}
+
 function seatFromPerson(
   kind: "eb" | "director",
   committee: string,

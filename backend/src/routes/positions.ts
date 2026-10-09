@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { and, asc, eq, gt } from "drizzle-orm";
 import { db } from "../db";
 import { committees, positions } from "../db/schema";
+import { parseTrackParam, type RecruitmentTrack } from "../lib/applications/recruitment-scope";
 import { authenticateHrRequest, requireAuth } from "../auth";
 import {
   InterviewScheduleError,
@@ -92,7 +93,7 @@ async function selectCommitteeApplicationStatuses(): Promise<
     .orderBy(asc(committees.name));
 }
 
-async function selectAllPositions() {
+async function selectAllPositions(track: RecruitmentTrack) {
   return db
     .select({
       id: positions.id,
@@ -109,10 +110,11 @@ async function selectAllPositions() {
     })
     .from(positions)
     .innerJoin(committees, eq(positions.committeeId, committees.id))
+    .where(eq(positions.track, track))
     .orderBy(asc(positions.office), asc(positions.name));
 }
 
-async function selectOpenPositions() {
+async function selectOpenPositions(track: RecruitmentTrack) {
   return db
     .select({
       id: positions.id,
@@ -129,7 +131,9 @@ async function selectOpenPositions() {
     })
     .from(positions)
     .innerJoin(committees, eq(positions.committeeId, committees.id))
-    .where(and(eq(positions.isOpen, true), gt(positions.openSlots, 0)))
+    .where(
+      and(eq(positions.track, track), eq(positions.isOpen, true), gt(positions.openSlots, 0)),
+    )
     .orderBy(asc(positions.office), asc(positions.name));
 }
 
@@ -169,7 +173,11 @@ async function hasDuplicateTitle(committeeId: string, title: string, excludeId?:
     .select({ id: positions.id })
     .from(positions)
     .where(
-      and(eq(positions.committeeId, committeeId), eq(positions.name, title))
+      and(
+        eq(positions.committeeId, committeeId),
+        eq(positions.name, title),
+        eq(positions.track, "r101"),
+      ),
     );
 
   if (excludeId) {
@@ -226,15 +234,17 @@ positionsRoutes.patch(
 );
 
 positionsRoutes.get("/", async (c) => {
+  const track = parseTrackParam(c.req.query("track"));
+  if (!track) return c.json({ error: "track must be r101 or officer_hunt." }, 400);
   const scope = c.req.query("scope");
   if (scope === "all") {
     if (!(await authenticateHrRequest(c))) {
       return c.json({ error: "unauthorized" }, 401);
     }
-    const rows = await selectAllPositions();
+    const rows = await selectAllPositions(track);
     return c.json(rows.map(toPositionResponse));
   }
-  const rows = await selectOpenPositions();
+  const rows = await selectOpenPositions(track);
   return c.json(rows.map(toPositionResponse));
 });
 

@@ -86,6 +86,11 @@ export const resultMemberAcceptedSubject =
 export const resultRedirectedSubject =
   "A New Placement Offer | AWS Builders - UST R101";
 
+export const officerHuntRejectedSubject = "Officer Hunt Results | AWS Builders - UST";
+
+export const officerHuntRedirectedSubject =
+  "A New Seat Offer | AWS Builders - UST Officer Hunt";
+
 export function paymentInvitationSubject(applicationCode: string): string {
   return `AWS Builders - UST | Membership Payment (${applicationCode})`;
 }
@@ -99,8 +104,11 @@ export function paymentDeadlineExtendedSubject(applicationCode: string): string 
   return `Payment deadline extended | AWS Builders - UST (${applicationCode})`;
 }
 
-export function officerWelcomeSubject(memberId: string): string {
-  return `Your Member ID is reserved | AWS Builders - UST (${memberId})`;
+/** Seats with a reserved number say so; executive assistants get a plain welcome. */
+export function officerWelcomeSubject(memberId: string | null, applicationCode: string): string {
+  return memberId
+    ? `Your Member ID is reserved | AWS Builders - UST (${memberId})`
+    : `Welcome to the team | AWS Builders - UST (${applicationCode})`;
 }
 
 export function membershipVerifiedSubject(memberId: string): string {

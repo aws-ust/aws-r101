@@ -162,6 +162,8 @@ async function eaSlotsByOffice(transaction: DbExecutor) {
     .select({ committee: committees.name, slots: sql<number>`sum(${positions.openSlots})::int` })
     .from(positions)
     .innerJoin(committees, eq(positions.committeeId, committees.id))
+    // Officer-hunt seats are filled out of the same block, not added to it.
+    .where(eq(positions.track, "r101"))
     .groupBy(committees.name);
   return new Map(
     rows
@@ -192,6 +194,7 @@ async function countStaffHolds(transaction: DbExecutor, recruitmentYear: number)
       and(
         eq(applications.recruitmentYear, recruitmentYear),
         eq(applications.applicationType, "position"),
+        eq(applications.track, "r101"),
         isNull(applications.archivedAt),
       ),
     );

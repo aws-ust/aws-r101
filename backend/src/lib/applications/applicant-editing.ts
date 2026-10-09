@@ -85,6 +85,7 @@ export async function getApplicantEditableApplication(applicationId: string) {
     .select({
       applicationCode: applications.applicationCode,
       status: applications.status,
+      track: applications.track,
       applicationType: applications.applicationType,
       archivedAt: applications.archivedAt,
       recruitmentYear: applications.recruitmentYear,
@@ -284,6 +285,7 @@ export async function updateApplicantApplication(
   const [applicationPreview] = await db
     .select({
       status: applications.status,
+      track: applications.track,
       applicationType: applications.applicationType,
       archivedAt: applications.archivedAt,
       resultsReleasedAt: applications.resultsReleasedAt,
@@ -333,6 +335,7 @@ export async function updateApplicantApplication(
       const [application] = await tx
         .select({
           status: applications.status,
+          track: applications.track,
           applicationType: applications.applicationType,
           archivedAt: applications.archivedAt,
           resultsReleasedAt: applications.resultsReleasedAt,
@@ -516,7 +519,8 @@ export async function updateApplicantApplication(
         })
         .from(positions)
         .innerJoin(committees, eq(positions.committeeId, committees.id))
-        .where(inArray(positions.id, positionIds))
+        // Someone in R101 can't switch to an officer-hunt seat, or the other way round.
+        .where(and(inArray(positions.id, positionIds), eq(positions.track, application.track)))
         .for("update");
 
       const currentPositionIds = new Set(

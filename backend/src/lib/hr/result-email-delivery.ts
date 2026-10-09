@@ -1,4 +1,8 @@
-import { asRecruitmentType } from "../applications/recruitment-scope";
+import {
+  asRecruitmentType,
+  resolveScope,
+  type RecruitmentTrack,
+} from "../applications/recruitment-scope";
 import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import {
@@ -8,7 +12,6 @@ import {
   emailNotifications,
   positions,
 } from "../../db/schema";
-import { recruitmentYearInt } from "../applications/application-code";
 import {
   RESULT_MESSAGE_TYPES,
   markUncertainDelivered,
@@ -47,6 +50,7 @@ export async function prepareResultNotification(
       position: positions.name,
       redirectPositionId: applications.redirectPositionId,
       applicationType: applications.applicationType,
+      track: applications.track,
     })
     .from(emailNotifications)
     .innerJoin(applications, eq(emailNotifications.applicationId, applications.id))
@@ -71,6 +75,7 @@ export async function prepareResultNotification(
         lastName: row.lastName,
         position: redirect.title,
         committee: redirect.committee,
+        track: row.track,
       }),
     };
   }
@@ -80,7 +85,8 @@ export async function prepareResultNotification(
       messageType,
       lastName: row.lastName,
       position: row.position,
-      applicationType: asRecruitmentType(row.applicationType),
+      applicationType: asRecruitmentType(row.applicationType, row.track),
+      track: row.track,
     }),
   };
 }
@@ -89,31 +95,40 @@ export async function prepareResultNotification(
  * Requeues failed result emails for the background sender. Uncertain ones
  * (possibly already delivered) are only requeued when HR asks for them.
  */
-export async function retryFailedResultEmails() {
+export async function retryFailedResultEmails(track: RecruitmentTrack = "r101") {
   const retried = await requeueFailed({
     messageTypes: RESULT_MESSAGE_TYPES,
-    recruitmentYear: recruitmentYearInt(),
+    recruitmentYear: (await resolveScope(track)).year,
+    track,
     uncertain: false,
   });
   return { retried };
 }
 
 /** Resends only the uncertain emails HR ticked, because they were missing from the Sent folder. */
-export async function resendUncertainResultEmails(ids: readonly string[]) {
+export async function resendUncertainResultEmails(
+  ids: readonly string[],
+  track: RecruitmentTrack = "r101",
+) {
   const retried = await requeueUncertainByIds({
     ids,
     messageTypes: RESULT_MESSAGE_TYPES,
-    recruitmentYear: recruitmentYearInt(),
+    recruitmentYear: (await resolveScope(track)).year,
+    track,
   });
   return { retried };
 }
 
 /** Counts the uncertain emails HR ticked as sent, because they were found in the Sent folder. */
-export async function markUncertainResultEmailsDelivered(ids: readonly string[]) {
+export async function markUncertainResultEmailsDelivered(
+  ids: readonly string[],
+  track: RecruitmentTrack = "r101",
+) {
   const marked = await markUncertainDelivered({
     ids,
     messageTypes: RESULT_MESSAGE_TYPES,
-    recruitmentYear: recruitmentYearInt(),
+    recruitmentYear: (await resolveScope(track)).year,
+    track,
   });
   return { marked };
 }

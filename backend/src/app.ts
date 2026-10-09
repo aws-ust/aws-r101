@@ -9,6 +9,7 @@ import { applicantApplicationRoutes } from "./routes/applicant-application";
 import { applicantInterviewRoutes } from "./routes/applicant-interview";
 import { interviewSlotsRoutes } from "./routes/interview-slots";
 import { positionsRoutes } from "./routes/positions";
+import { officerHuntRoutes } from "./routes/officer-hunt";
 import { uploadsRoutes } from "./routes/uploads";
 import { recruitmentWindowRoutes } from "./routes/recruitment-window";
 import { resultsRoutes } from "./routes/results";
@@ -111,6 +112,7 @@ app.post("/auth/logout", (c) => {
 });
 
 app.route("/positions", positionsRoutes);
+app.route("/officer-hunt", officerHuntRoutes);
 
 app.route("/applicant-auth", applicantAuthRoutes);
 app.route("/applicant", applicantApplicationRoutes);

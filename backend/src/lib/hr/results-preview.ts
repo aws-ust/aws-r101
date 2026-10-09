@@ -5,12 +5,14 @@ import {
   applicationChoices,
   applications,
   committees,
+  officerSeats,
   positions,
 } from "../../db/schema";
-import { recruitmentYearInt } from "../applications/application-code";
 import {
   asRecruitmentType,
   recruitmentApplicationsOnly,
+  resolveScope,
+  type RecruitmentTrack,
 } from "../applications/recruitment-scope";
 import type {
   ApplicationStatus,
@@ -120,17 +122,71 @@ function classifyApplication(
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
+/**
+ * A board or director seat has one holder: two winners for it, or a seat that
+ * is already filled for the term, would leave the release with nobody to seat.
+ */
+async function holdSeatConflicts(
+  database: typeof db | DbTransaction,
+  year: number,
+  rows: { id: string; finalPositionId: string | null }[],
+  accepted: ResultPreviewApplication[],
+) {
+  const finalIds = [...new Set(rows.flatMap((row) => (row.finalPositionId ? [row.finalPositionId] : [])))];
+  if (finalIds.length === 0) return;
+  const seats = await database
+    .select({ id: positions.id, kind: positions.seatKind, committee: committees.name })
+    .from(positions)
+    .innerJoin(committees, eq(positions.committeeId, committees.id))
+    .where(inArray(positions.id, finalIds));
+  const seatByPosition = new Map(seats.map((seat) => [seat.id, seat]));
+  const filled = new Set(
+    (
+      await database
+        .select({ seatKey: officerSeats.seatKey })
+        .from(officerSeats)
+        .where(eq(officerSeats.recruitmentYear, year))
+    ).map((seat) => seat.seatKey),
+  );
+  const finalByApplication = new Map(rows.map((row) => [row.id, row.finalPositionId]));
+  const claimed = new Map<string, number>();
+  for (const application of accepted) {
+    const seat = seatByPosition.get(finalByApplication.get(application.id) ?? "");
+    if (!seat?.kind || seat.kind === "ea" || seat.kind === "adviser") continue;
+    claimed.set(seat.committee, (claimed.get(seat.committee) ?? 0) + 1);
+  }
+  for (const application of accepted) {
+    const seat = seatByPosition.get(finalByApplication.get(application.id) ?? "");
+    if (!seat?.kind) {
+      application.classification = "incomplete";
+      application.blockingReason = "The final placement is not an officer seat.";
+    } else if (seat.kind !== "ea" && seat.kind !== "adviser") {
+      if (filled.has(seat.committee)) {
+        application.classification = "incomplete";
+        application.blockingReason = "That seat is already filled for this term.";
+      } else if ((claimed.get(seat.committee) ?? 0) > 1) {
+        application.classification = "incomplete";
+        application.blockingReason = "Another accepted applicant holds the same seat.";
+      }
+    }
+    application.willSendEmail = application.classification !== "incomplete";
+  }
+}
+
 async function queryResultsPreview(
   database: typeof db | DbTransaction,
   lockRows: boolean,
+  track: RecruitmentTrack,
 ) {
-  const recruitmentYear = recruitmentYearInt();
+  const scope = await resolveScope(track, database);
+  const recruitmentYear = scope.year;
   const rowsQuery = database
     .select({
       id: applications.id,
       applicationCode: applications.applicationCode,
       status: applications.status,
       applicationType: applications.applicationType,
+      track: applications.track,
       finalPositionId: applications.finalPositionId,
       redirectPositionId: applications.redirectPositionId,
       memberId: applications.memberId,
@@ -146,7 +202,7 @@ async function queryResultsPreview(
     .where(
       and(
         eq(applications.recruitmentYear, recruitmentYear),
-        recruitmentApplicationsOnly(),
+        recruitmentApplicationsOnly(track),
       ),
     )
     .orderBy(desc(applications.submittedAt));
@@ -223,10 +279,6 @@ async function queryResultsPreview(
     choicesByApplication.set(row.applicationId, choices);
   }
 
-  let accepted = 0;
-  let rejected = 0;
-  let redirected = 0;
-  let incomplete = 0;
   const previewApplications: ResultPreviewApplication[] = pendingRows.map(
     (row) => {
       const choices = (choicesByApplication.get(row.id) ?? []).sort(
@@ -253,11 +305,6 @@ async function queryResultsPreview(
                   blockingReason: "Redirect placement position is missing.",
                 }
             : classifyApplication(choices, row.finalPositionId);
-      if (result.classification === "accepted") accepted += 1;
-      if (result.classification === "rejected") rejected += 1;
-      if (result.classification === "redirected") redirected += 1;
-      if (result.classification === "incomplete") incomplete += 1;
-
       const finalChoice = redirectPlacement
         ? {
             positionId: redirectPlacement.id,
@@ -270,7 +317,7 @@ async function queryResultsPreview(
       return {
         id: row.id,
         applicationCode: row.applicationCode,
-        applicationType: asRecruitmentType(row.applicationType),
+        applicationType: asRecruitmentType(row.applicationType, row.track),
         applicant: {
           fullName: `${row.firstName} ${row.lastName}`,
           email: row.email,
@@ -294,6 +341,21 @@ async function queryResultsPreview(
     },
   );
 
+  if (track === "officer_hunt") {
+    await holdSeatConflicts(
+      database,
+      recruitmentYear,
+      pendingRows,
+      previewApplications.filter((application) => application.classification === "accepted"),
+    );
+  }
+  const count = (classification: ResultClassification) =>
+    previewApplications.filter((application) => application.classification === classification).length;
+  const accepted = count("accepted");
+  const rejected = count("rejected");
+  const redirected = count("redirected");
+  const incomplete = count("incomplete");
+
   return {
     recruitmentYear,
     summary: {
@@ -310,10 +372,13 @@ async function queryResultsPreview(
   };
 }
 
-export function getResultsPreview() {
-  return queryResultsPreview(db, false);
+export function getResultsPreview(track: RecruitmentTrack = "r101") {
+  return queryResultsPreview(db, false, track);
 }
 
-export function getResultsPreviewForUpdate(transaction: DbTransaction) {
-  return queryResultsPreview(transaction, true);
+export function getResultsPreviewForUpdate(
+  transaction: DbTransaction,
+  track: RecruitmentTrack = "r101",
+) {
+  return queryResultsPreview(transaction, true, track);
 }

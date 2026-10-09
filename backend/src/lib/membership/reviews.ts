@@ -195,6 +195,10 @@ async function memberPlacement(
   if (row?.seatKind === "director" && row.seatCommittee) {
     return { kind: "director", committee: row.seatCommittee };
   }
+  // An officer-hunt EA takes the next free number in their office's block, like an R101 EA.
+  if (row?.seatKind === "ea" && row.seatCommittee) {
+    return { kind: "ea", officeCommittee: row.seatCommittee };
+  }
   if (row?.seatKind === "adviser") return { kind: "adviser", index: row.seatOrder ?? 0 };
   if (!row?.committee || row.applicationType !== "position" || row.status !== "approved") {
     return { kind: "general" };

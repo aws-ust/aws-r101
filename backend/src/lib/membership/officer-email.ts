@@ -13,11 +13,15 @@ import { renderOfficerWelcome } from "../email/service";
 type SeatNumberInput = {
   memberId: string | null;
   recruitmentYear: number;
-  kind: "eb" | "director" | "adviser";
+  kind: "eb" | "director" | "ea" | "adviser";
   committee: string | null;
 };
 
-/** The officer's Member ID: the issued one, or the number their seat holds until they pay. */
+/**
+ * The officer's Member ID: the issued one, or the number their seat holds until
+ * they pay. Executive assistants have none reserved; theirs comes from their
+ * office's block when the payment is verified.
+ */
 export async function officerReservedMemberId(seat: SeatNumberInput): Promise<string | null> {
   if (seat.memberId) return seat.memberId;
   if (!seat.committee) return null;
@@ -52,15 +56,18 @@ export async function prepareOfficerWelcome(
     .limit(1);
   if (!row) return { kind: "invalid", error: "Officer seat for this email was not found." };
   if (row.kind === "adviser" || !row.committee) {
-    return { kind: "invalid", error: "Only the board and directors get this email." };
+    return { kind: "invalid", error: "Only elected officers get this email." };
   }
   const memberId = await officerReservedMemberId(row);
-  if (!memberId) return { kind: "invalid", error: "This seat has no reserved Member ID." };
+  if (!memberId && row.kind !== "ea") {
+    return { kind: "invalid", error: "This seat has no reserved Member ID." };
+  }
   return {
     kind: "ready",
     rendered: renderOfficerWelcome({
       lastName: row.lastName,
       title: row.title,
+      committee: row.committee,
       memberId,
       applicationCode: row.applicationCode,
     }),

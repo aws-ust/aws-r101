@@ -195,7 +195,7 @@ test("elected officers and advisers", async (t) => {
     );
     assert.equal(board[0].position, "Chief Executive Officer");
     const directors = pending.filter((officer) => officer.role === "director");
-    const numbers = directors.map((officer) => Number(officer.reservedMemberId.slice(-4)));
+    const numbers = directors.map((officer) => Number(officer.reservedMemberId?.slice(-4)));
     assert.deepEqual(numbers, [...numbers].sort((a, b) => a - b));
     assert.ok(numbers[0] > offices.length);
     assert.equal(new Set(numbers).size, numbers.length);

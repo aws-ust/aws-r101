@@ -454,14 +454,27 @@ export async function inviteToOpenCampaign(
   applicationIds: string[],
   options: { nextAttemptAt?: Date | null } = {},
 ): Promise<string[]> {
-  if (applicationIds.length === 0) return [];
+  // Only this year's people join this year's campaign. A hunt winner for a later
+  // term waits for that term's payments to open.
+  const current = (
+    await tx
+      .select({ id: applications.id })
+      .from(applications)
+      .where(
+        and(
+          inArray(applications.id, applicationIds),
+          eq(applications.recruitmentYear, recruitmentYearInt()),
+        ),
+      )
+  ).map((row) => row.id);
+  if (current.length === 0) return [];
   const [campaign] = await tx
     .select({ id: membershipPaymentCampaigns.id, isOpen: membershipPaymentCampaigns.isOpen })
     .from(membershipPaymentCampaigns)
     .where(eq(membershipPaymentCampaigns.recruitmentYear, recruitmentYearInt()))
     .limit(1);
   if (!campaign?.isOpen) return [];
-  return (await createPaymentsAndInvitations(tx, campaign.id, applicationIds, options)).notificationIds;
+  return (await createPaymentsAndInvitations(tx, campaign.id, current, options)).notificationIds;
 }
 
 export async function closeCurrentPaymentCampaign() {

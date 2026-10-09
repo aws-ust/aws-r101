@@ -324,6 +324,7 @@ export async function getApplicantPayment(applicationId: string) {
       joinsGroups &&
       (row.officerKind === "eb" ||
         row.officerKind === "director" ||
+        row.officerKind === "ea" ||
         (acceptedIntoCommittee &&
           row.committeeName &&
           isExecutiveOfficeCommittee(row.committeeName)))

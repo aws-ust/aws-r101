@@ -36,16 +36,15 @@ import {
   validateIncomingDocument,
 } from "./documents";
 import { freePlanEndDate } from "../core/free-plan";
-import {
-  generateApplicationCode,
-  recruitmentYearInt,
-} from "./application-code";
+import { generateApplicationCode } from "./application-code";
 import { bookInterviewSlotForApplication } from "../interview/scheduling";
 import type { ApplicantGender } from "../applicant/gender";
 import {
   asRecruitmentType,
   recruitmentApplicationsOnly,
+  resolveScope,
   type RecruitmentApplicationType,
+  type RecruitmentTrack,
 } from "./recruitment-scope";
 
 export type { DocumentType } from "./documents";
@@ -74,6 +73,8 @@ export type ApplicationJson = {
   applicationCode: string;
   status: ApplicationStatus;
   applicationType: ApplicationType;
+  /** Which round it belongs to: R101, or the officer hunt. */
+  track: RecruitmentTrack;
   memberId: string | null;
   submittedAt: string;
   archivedAt: string | null;
@@ -131,6 +132,8 @@ export type CreateApplicationInput = {
 
 export type CreateApplicationOptions = {
   hrIntake?: boolean;
+  /** Defaults to R101. */
+  track?: RecruitmentTrack;
 };
 
 export type ListFilters = {
@@ -141,6 +144,8 @@ export type ListFilters = {
   query?: string;
   status?: ApplicationListStatus;
   applicationType?: ApplicationType;
+  /** Defaults to R101. */
+  track?: RecruitmentTrack;
   archive?: "active" | "archived" | "all";
   page?: number;
   pageSize?: number;
@@ -201,6 +206,7 @@ type ApplicationRow = {
   applicationCode: string;
   status: ApplicationStatus;
   applicationType: ApplicationType | "officer";
+  track: RecruitmentTrack;
   memberId: string | null;
   submittedAt: Date;
   archivedAt: Date | null;
@@ -345,7 +351,8 @@ async function attachRelations(
       id: row.id,
       applicationCode: row.applicationCode,
       status: row.status,
-      applicationType: asRecruitmentType(row.applicationType),
+      applicationType: asRecruitmentType(row.applicationType, row.track),
+      track: row.track,
       memberId: row.memberId,
       submittedAt: iso(row.submittedAt),
       archivedAt: row.archivedAt ? iso(row.archivedAt) : null,
@@ -394,6 +401,7 @@ const applicationSelect = {
   applicationCode: applications.applicationCode,
   status: applications.status,
   applicationType: applications.applicationType,
+  track: applications.track,
   memberId: applications.memberId,
   submittedAt: applications.submittedAt,
   archivedAt: applications.archivedAt,
@@ -502,7 +510,7 @@ export async function listApplications(filters: ListFilters): Promise<{
     );
   }
 
-  conditions.push(recruitmentApplicationsOnly());
+  conditions.push(recruitmentApplicationsOnly(filters.track ?? "r101"));
 
   if (filters.applicationType) {
     conditions.push(eq(applications.applicationType, filters.applicationType));
@@ -582,6 +590,7 @@ export async function listApplications(filters: ListFilters): Promise<{
 
 export async function positionsAcceptApplications(
   positionIds: string[],
+  track: RecruitmentTrack = "r101",
 ): Promise<boolean> {
   if (positionIds.length === 0) return false;
   const uniqueIds = [...new Set(positionIds)];
@@ -592,6 +601,7 @@ export async function positionsAcceptApplications(
     .where(
       and(
         inArray(positions.id, uniqueIds),
+        eq(positions.track, track),
         eq(positions.isOpen, true),
         gt(positions.openSlots, 0),
         eq(committees.acceptingApplications, true),
@@ -625,6 +635,7 @@ export async function createApplication(
 ): Promise<{ application: ApplicationJson; created: boolean }> {
   let copiedApplicationId: string | null = null;
   let transactionComplete = false;
+  const scope = await resolveScope(options.track ?? "r101");
   try {
     const result = await db.transaction(async (tx) => {
       const [session] = await tx
@@ -660,7 +671,7 @@ export async function createApplication(
           })
           .from(positions)
           .innerJoin(committees, eq(positions.committeeId, committees.id))
-          .where(inArray(positions.id, positionIds))
+          .where(and(inArray(positions.id, positionIds), eq(positions.track, scope.track)))
           .for("update");
 
         if (
@@ -745,7 +756,7 @@ export async function createApplication(
           .where(eq(applicants.id, applicantId));
       }
 
-      const recruitmentYear = recruitmentYearInt();
+      const recruitmentYear = scope.year;
       const [existingForCycle] = await tx
         .select({ id: applications.id })
         .from(applications)
@@ -753,6 +764,7 @@ export async function createApplication(
           and(
             eq(applications.applicantId, applicantId),
             eq(applications.recruitmentYear, recruitmentYear),
+            eq(applications.track, scope.track),
           ),
         )
         .limit(1);
@@ -769,8 +781,9 @@ export async function createApplication(
               .values({
                 id: applicationId,
                 applicantId,
-                applicationCode: generateApplicationCode(),
+                applicationCode: generateApplicationCode(recruitmentYear),
                 recruitmentYear,
+                track: scope.track,
                 status: input.applicationType === "member" ? "approved" : "pending",
                 applicationType: input.applicationType,
                 motivation: input.motivation,
@@ -822,6 +835,7 @@ export async function createApplication(
             application.id,
             firstChoice.positionId,
             input.slotId,
+            scope.track,
           );
         }
       }

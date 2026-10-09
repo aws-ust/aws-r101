@@ -9,6 +9,8 @@ import {
 import { uploadPresignSchema } from "../lib/apply/schemas";
 import { uploadsAreClosed } from "../lib/core/free-plan";
 import { resolveRecruitmentSeasonStatus } from "../lib/recruitment/window";
+import { getOfficerHuntSettings, officerHuntSeasonStatus } from "../lib/officer-hunt/settings";
+import { parseTrackParam, type RecruitmentTrack } from "../lib/applications/recruitment-scope";
 import { internalApiError } from "../lib/core/api-errors";
 import { requireAuth } from "../auth";
 
@@ -96,10 +98,13 @@ async function createUploadSession(
 export async function createUploadSessionFromRequest(
   body: unknown,
   applicationId?: string,
-  options: { hrIntake?: boolean } = {},
+  options: { hrIntake?: boolean; track?: RecruitmentTrack } = {},
 ) {
   if (!options.hrIntake) {
-    const season = await resolveRecruitmentSeasonStatus();
+    const season =
+      options.track === "officer_hunt"
+        ? officerHuntSeasonStatus(await getOfficerHuntSettings())
+        : await resolveRecruitmentSeasonStatus();
     if (!season.open) {
       throw new UploadError(403, season.message ?? "Applications are closed.");
     }
@@ -117,9 +122,13 @@ export const uploadsRoutes = new Hono();
 
 uploadsRoutes.post("/presign", async (c) => {
   try {
+    const track = parseTrackParam(c.req.query("track"));
+    if (!track) return c.json({ error: "track must be r101 or officer_hunt." }, 400);
     return c.json(
       await createUploadSessionFromRequest(
         await c.req.json().catch(() => null),
+        undefined,
+        { track },
       ),
       201,
     );
