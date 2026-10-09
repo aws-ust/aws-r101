@@ -1,11 +1,14 @@
 import { ApplicationPagination } from "@/components/hr/application-pagination"
-import { ApplicationRow } from "@/components/hr/application-row"
+import { ApplicationTable } from "@/components/hr/application-table"
 import { ApplicationListSkeleton } from "@/components/hr/application-list-skeleton"
-import { pageCount } from "@/components/hr/application-pagination-utils"
+import {
+  APPLICATION_TABLE_PAGE_SIZE,
+  pageCount,
+} from "@/components/hr/application-pagination-utils"
 import type { HrApplication } from "@/lib/types/hr-application"
 
-const listClasses = "mt-8 flex min-w-0 flex-col gap-3"
-const emptyClasses = "mt-8 font-sans text-sm text-prelude"
+const listClasses = "mt-6 flex min-w-0 flex-col gap-3"
+const emptyClasses = "mt-6 font-sans text-sm text-prelude"
 const recoveryLinkClasses =
   "text-aquamarine underline-offset-2 hover:text-blue-chalk hover:underline"
 
@@ -44,7 +47,7 @@ export function ApplicationListResults({
   if (error) {
     return <p className={emptyClasses}>{error}</p>
   }
-  const totalPages = pageCount(total)
+  const totalPages = pageCount(total, APPLICATION_TABLE_PAGE_SIZE)
   const safePage = Math.min(page, totalPages)
 
   if (applications.length === 0) {
@@ -67,6 +70,7 @@ export function ApplicationListResults({
           total={total}
           page={safePage}
           onPageChange={onPageChange}
+          pageSize={APPLICATION_TABLE_PAGE_SIZE}
         />
       </div>
     )
@@ -74,26 +78,20 @@ export function ApplicationListResults({
 
   return (
     <>
-      <ul className={listClasses}>
-        {applications.map((application, index) => (
-          <li key={application.id}>
-            <ApplicationRow
-              application={application}
-              emphasized={safePage === 1 && index === 0}
-              returnTo={returnTo}
-              onArchive={onArchive}
-              onDelete={onDelete}
-              onEditEmail={onEditEmail}
-              onResendEmail={onResendEmail}
-              onNavigate={onDetailNavigate}
-            />
-          </li>
-        ))}
-      </ul>
+      <ApplicationTable
+        applications={applications}
+        returnTo={returnTo}
+        onNavigate={onDetailNavigate}
+        onArchive={onArchive}
+        onDelete={onDelete}
+        onEditEmail={onEditEmail}
+        onResendEmail={onResendEmail}
+      />
       <ApplicationPagination
         total={total}
         page={safePage}
         onPageChange={onPageChange}
+        pageSize={APPLICATION_TABLE_PAGE_SIZE}
       />
     </>
   )

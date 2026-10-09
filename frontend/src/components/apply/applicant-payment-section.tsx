@@ -1,13 +1,12 @@
 import type { ReactNode } from "react"
 
-const sectionClasses =
-  "rounded-[16px] border border-blue-chalk/15 bg-haiti/35 p-4 sm:p-5"
-const headingClasses = "mb-4 flex items-start gap-3"
-const numberClasses =
-  "grid size-8 shrink-0 place-items-center rounded-full border border-aquamarine/35 bg-aquamarine/10 font-mono text-[10px] font-semibold text-aquamarine"
-const titleClasses = "font-sans text-base font-bold text-blue-chalk"
-const descriptionClasses =
-  "mt-1 font-sans text-sm leading-relaxed text-prelude"
+// A numbered step inside the payment section. The number stays because the
+// order matters: pay first, then submit the receipt.
+const stepClasses = "grid min-w-0 gap-x-4 border-t border-blue-chalk/10 pt-5 sm:grid-cols-[2.5rem_1fr]"
+const numberClasses = "font-mono text-sm text-prelude"
+const titleClasses = "font-sans text-base font-semibold text-blue-chalk"
+const descriptionClasses = "mt-1 font-sans text-sm leading-relaxed text-pretty text-prelude"
+const bodyClasses = "mt-4 min-w-0"
 
 export function ApplicantPaymentSection({
   number,
@@ -21,17 +20,15 @@ export function ApplicantPaymentSection({
   children?: ReactNode
 }) {
   return (
-    <div className={sectionClasses}>
-      <div className={headingClasses}>
-        <span className={numberClasses} aria-hidden>
-          {number}
-        </span>
-        <div>
-          <h3 className={titleClasses}>{title}</h3>
-          <p className={descriptionClasses}>{description}</p>
-        </div>
+    <div className={stepClasses}>
+      <span className={numberClasses} aria-hidden>
+        {number}
+      </span>
+      <div className="min-w-0">
+        <h4 className={titleClasses}>{title}</h4>
+        <p className={descriptionClasses}>{description}</p>
+        {children ? <div className={bodyClasses}>{children}</div> : null}
       </div>
-      {children}
     </div>
   )
 }

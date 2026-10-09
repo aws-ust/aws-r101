@@ -14,6 +14,12 @@ const dropErrorClasses = "font-sans text-xs text-rose-glow"
 const dropClasses =
   "flex min-h-24 cursor-pointer items-center justify-center rounded-[20px] border border-dashed border-biloba-flower/50 bg-haiti/35 px-4 py-6 text-center font-sans text-sm text-prelude transition-colors"
 const dropActiveClasses = "border-aquamarine/70 bg-haiti/55 text-blue-chalk"
+// One-line row for replacing a file that is already on record (dashboard).
+const compactDropClasses =
+  "flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-lg border border-blue-chalk/20 bg-haiti/40 px-4 py-2 text-left font-sans text-sm text-blue-chalk transition-colors hover:border-blue-chalk/40"
+const compactActiveClasses = "border-biloba-flower/60 bg-haiti/60"
+const compactNameClasses = "min-w-0 truncate"
+const compactActionClasses = "shrink-0 font-sans text-xs text-prelude underline underline-offset-4"
 const inputClasses = "sr-only"
 export const pdfDropPlaceholder = `Drag and drop or browse (.pdf, max ${APPLICATION_DOCUMENT_PDF_MAX_SIZE_LABEL})`
 
@@ -24,6 +30,8 @@ type PdfFileDropProps = {
   displayName?: string
   required?: boolean
   error?: string
+  /** A one-line row with a Replace action instead of the tall drop zone. */
+  compact?: boolean
   onFile: (file: File | null) => void
 }
 
@@ -34,6 +42,7 @@ export function PdfFileDrop({
   displayName,
   required = true,
   error,
+  compact = false,
   onFile,
 }: PdfFileDropProps) {
   const id = useId()
@@ -60,7 +69,11 @@ export function PdfFileDrop({
       {hint ? <p className={hintClasses}>{hint}</p> : null}
       <label
         htmlFor={id}
-        className={cn(dropClasses, (active || file) && dropActiveClasses)}
+        className={
+          compact
+            ? cn(compactDropClasses, (active || file) && compactActiveClasses)
+            : cn(dropClasses, (active || file) && dropActiveClasses)
+        }
         onDragOver={(event) => {
           event.preventDefault()
           setActive(true)
@@ -72,7 +85,14 @@ export function PdfFileDrop({
           takeFile(event.dataTransfer.files)
         }}
       >
-        {file?.name ?? displayName ?? pdfDropPlaceholder}
+        {compact ? (
+          <>
+            <span className={compactNameClasses}>{file?.name ?? displayName ?? pdfDropPlaceholder}</span>
+            <span className={compactActionClasses}>{file ? "Change" : "Replace"}</span>
+          </>
+        ) : (
+          (file?.name ?? displayName ?? pdfDropPlaceholder)
+        )}
       </label>
       <input
         id={id}

@@ -196,3 +196,85 @@ that rotates to an × on open. Use this as the reference until Figma has one.
 - Quiz is embedded in Committees, not a standalone section — confirm whether
   it should be pulled out before building it as its own component per the
   tracked issue.
+
+## Dashboard working surfaces (HR and applicant)
+
+The HR dashboard and the applicant dashboard are Operate surfaces: palette and
+type above are unchanged, but the working areas differ from the public site.
+
+- **Solid, not glass.** Panels, rows and tables use the classes in
+  `frontend/src/lib/site/dashboard-surface.ts` (solid `haiti` fill, 1px
+  `blue-chalk` hairline). `glass` stays on dialogs, menus, sheets and the
+  public site. Do not change `glassPanelClasses` for dashboard work; it is
+  shared with the public pages and the payments screens.
+- **Eyebrows name the area, never the title.** Dashboard page headers keep the
+  site's mono `// LABEL`, but it says something the title does not
+  (`// MEMBERSHIP` over Members, `// SEASON STATUS` over Overview), at the
+  dashboard title scale (24-30px), not the public site's 48px.
+- **12px floor.** Any text that carries data is at least 12px, in the same
+  fonts. The 10px mono labels remain only for sidebar group names.
+- **Density by pointer.** Compact rows for mouse and trackpad; 44px targets on
+  coarse pointers (`pointer-coarse:`). The Applications table starts at the
+  `xl` breakpoint because the persistent sidebar takes 256px; below that,
+  rows are two lines.
+- **One accent job.** `aquamarine` marks the single thing that needs work on a
+  screen (the lit station on the stage line, counts that need an officer).
+- **Stage line.** The recruitment stages (Applied, Interview booked, Decided,
+  Released, Payment sent, Member) are drawn as one vertical line of stations in
+  the Overview rail. Counts are running totals defined once in
+  `backend/src/lib/hr/season-overview.ts`. Only the station that needs work is
+  aquamarine; a station is drawn as done only when something reached it.
+- **Worklist.** Ready tasks first, then blocked, then watching, with one
+  aquamarine button on the first ready row. Rows switch layout on their own
+  panel width (container queries), not the viewport.
+- **Members.** Scope tabs (Members, Not paid yet) over a toolbar of search
+  (`/` focuses it), one dropdown, a List / By committee switch and Export. Paid
+  members come first in Member ID order, then the officers, who have no ID
+  ("No ID yet"). By committee nests each committee under its executive office.
+  Not paid yet reads from the payments dashboard and says "Pay by" or
+  "Expired". Student No. and Section show from 1400px.
+- **Payments.** One page (`/admin/hr/payments`, `?tab=review|all|setup`;
+  the old `/admin/hr/membership` redirects to the review tab). A status strip
+  of counts in work order (Pending verification first, Eligible last) filters
+  the list; only a pending count above zero is aquamarine. Tabs: To review
+  (pending receipts, oldest first) and All payments (Members toolbar and
+  filters). The period, amount and GCash QRs live on their own page,
+  Payment Setup (`/admin/hr/payments/setup`, its own sidebar entry), and
+  Payments points to it while the period or amount is missing. Export, Retry Emails and
+  Release Confirmations sit beside the tabs; Release always confirms with the
+  count. A row opens a review panel, docked and sticky from 1280px and a sheet
+  below: facts, every submission with a large mono reference and copy, then
+  Verify (the one aquamarine button) or Reject / Reverse with a reason and a
+  new deadline. A decision moves to the next receipt and focuses it; ↑ / ↓
+  and Esc work unless a field, menu or picker has the key. Rows lay out by
+  the table's own width (container queries).
+- **HR sidebar.** Grouped by what the work is, not by page: Overview alone
+  at the top; Recruitment (Applications, Results, Archive); Membership
+  (Members, Payments, Community Links); Setup (Recruitment Setup, Committees,
+  Payment Setup) pinned to the foot, since configuration is visited a few
+  times a season. Every group below Overview is set off by a hairline. Rows are compact (36px, 44px on touch); the only lit things are the
+  current page's pill and its aquamarine icon. Navigation lives in
+  `frontend/src/components/hr/hr-navigation.ts`.
+- **Applicant dashboard.** One column of solid sections in a fixed order:
+  identity, result or application (choices, interview, edit choices),
+  groups, payment, membership ID. The page title is the h1 and its subtitle
+  is one factual line per state (`frontend/src/lib/apply/dashboard-state.ts`).
+  Identity shows name, applicant code and one status chip; everything the
+  applicant submitted folds into "Your application", open while the edit
+  window is open. Every section uses `ApplicantSection`: a `// AREA` label,
+  a short title, one status line saying where the applicant stands (the
+  committee they got, the payment status, the booked interview), then detail
+  as ruled rows rather than nested cards. Only the "Reply needed" chip and a
+  ready-to-confirm interview slot are aquamarine; other buttons are purple.
+  Group links are plain rows with an outbound arrow.
+- **R101 trail and milestone sky (applicant personality).** Under the name, a
+  line of stations (Applied, Interview, Results, Payment, Member; member-only:
+  Registered, Approval, Payment, Member) fills from the start to "you are
+  here" on load (`frontend/src/lib/apply/r101-trail.ts`). The current station
+  is aquamarine and pulses three times only when the applicant has something
+  to do; otherwise it is biloba-flower. The newest milestone the applicant
+  earned (their acceptance, or their ID once it exists) opens on the ID card's
+  night sky (`/member-id/back-bg.png`) with Espi rising from the clouds; only
+  one section per page gets it. Motion utilities `trail-fill`,
+  `trail-beacon` and `espi-rise` live in `globals.css` and stop under reduced
+  motion.

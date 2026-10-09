@@ -62,9 +62,9 @@ const timeColumnScrollClasses = `${timeColumnClasses} ${stickyTimeColumnClasses}
 const dayHeaderWideClasses =
   "min-w-[5rem] border border-blue-chalk/25 px-1.5 py-1.5 text-center font-sans text-xs font-semibold text-blue-chalk"
 const dayHeaderScrollClasses =
-  "min-w-[4.75rem] border border-blue-chalk/25 px-1 py-1.5 text-center font-sans text-[0.65rem] font-semibold leading-tight text-blue-chalk sm:min-w-[5.5rem] sm:px-1.5 sm:text-xs"
+  "min-w-[4.75rem] border border-blue-chalk/25 px-1 py-1.5 text-center font-sans text-xs font-semibold leading-tight text-blue-chalk sm:min-w-[5.5rem] sm:px-1.5"
 const daySubheaderClasses =
-  "block font-mono text-[0.55rem] font-normal text-prelude sm:text-[0.65rem]"
+  "block font-mono text-xs font-normal text-prelude"
 const cellWideClasses =
   "relative h-10 min-w-[5rem] border border-blue-chalk/25 p-0"
 const cellScrollClasses =
@@ -83,9 +83,9 @@ const currentClasses =
 const draggedClasses = "ring-2 ring-inset ring-aquamarine/80"
 const hiddenClasses = "bg-transparent border-transparent"
 const slotTimeClasses =
-  "pointer-events-none flex flex-col items-center font-mono text-[0.5rem] leading-none sm:text-[0.6rem] sm:leading-tight"
+  "pointer-events-none flex flex-col items-center font-mono text-xs leading-tight"
 const slotDetailClasses =
-  "pointer-events-none line-clamp-2 max-w-full break-words text-center text-[0.5rem] leading-tight sm:text-[0.6rem]"
+  "pointer-events-none line-clamp-2 max-w-full break-words text-center text-xs leading-tight"
 const clockOpts = { hour: "numeric", minute: "2-digit" } as const
 const legendClasses = "mt-3 flex flex-wrap gap-4 font-sans text-xs text-prelude"
 const legendSwatchClasses = "mr-2 inline-block size-3 rounded-sm align-middle"
@@ -218,10 +218,10 @@ export const SlotGrid = memo(function SlotGrid({
   const tableClasses = scrollable ? tableScrollClasses : tableWideClasses
   const headerClasses = `${
     scrollable ? timeColumnScrollClasses : timeColumnWideClasses
-  } py-2 font-mono text-[0.65rem] uppercase tracking-wide text-prelude`
+  } py-2 font-mono text-xs uppercase tracking-wide text-prelude`
   const timeLabelClasses = `${
     scrollable ? timeColumnScrollClasses : timeColumnWideClasses
-  } py-1 font-mono text-[0.6rem] text-prelude whitespace-nowrap sm:text-[0.65rem]`
+  } py-1 font-mono text-xs text-prelude whitespace-nowrap`
   const dayHeaderClasses = scrollable
     ? dayHeaderScrollClasses
     : dayHeaderWideClasses
@@ -340,7 +340,7 @@ export const SlotGrid = memo(function SlotGrid({
       </div>
       <div className={legendClasses} aria-hidden="true">
         <span>
-          <span className={`${legendSwatchClasses} bg-haiti/50`} />
+          <span className={`${legendSwatchClasses} border border-blue-chalk/30 bg-haiti/50`} />
           Unavailable
         </span>
         <span>

@@ -30,7 +30,8 @@
     "db:sync": "node --env-file-if-exists=../.env scripts/sync-schema.mjs",
     "db:seed": "tsx --env-file=../.env src/db/seed.ts",
     "db:studio": "drizzle-kit studio",
-    "test:outbox": "tsx --test --test-concurrency=1 src/email-outbox.test.ts"
+    "test:overview": "tsx --test --test-concurrency=1 src/season-overview.test.ts",
+    "test:outbox":"tsx --test --test-concurrency=1 src/email-outbox.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-lambda": "^3.1146.0",

@@ -120,7 +120,7 @@ export function HrResultsPage() {
     <main className={hrPageShellClasses}>
       <SectionHeader
         eyebrow="// RESULTS"
-        title="Release results"
+        title="Release Results"
         subtitle="Review the current recruitment batch, resolve incomplete decisions, and publish final outcomes."
       />
       {feedback ? (

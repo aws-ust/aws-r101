@@ -7,9 +7,11 @@ import {
   ApplicantInterviewSchedulerFullStatus,
   ApplicantInterviewSchedulerIntro,
 } from "@/components/apply/applicant-interview-scheduler-full-status"
+import { applicantSectionPanelClasses } from "@/components/apply/applicant-section"
+import { dashboardActionTargetClasses } from "@/lib/site/dashboard-surface"
 import type { InterviewSeasonBounds } from "@/lib/season/interview"
 
-const sectionClasses = "mt-8 border-t border-biloba-flower/20 pt-8"
+const sectionClasses = applicantSectionPanelClasses
 const lockClasses =
   "mt-4 rounded-[14px] border border-rose-blush/45 bg-rose-deep/20 px-4 py-3 font-sans text-sm text-rose-glow"
 const actionsClasses = "mt-4 flex flex-wrap gap-3"
@@ -106,9 +108,11 @@ function ApplicantInterviewSchedulerConfirm({
 }: ApplicantInterviewSchedulerConfirmProps) {
   return (
     <div className={actionsClasses}>
+      {/* Cyan only once a slot is ready to confirm: the screen's one action. */}
       <Button
         type="button"
-        color="cyan"
+        color={enabled ? "cyan" : "purple"}
+        className={dashboardActionTargetClasses}
         disabled={pending || !enabled}
         onClick={onConfirm}
       >
@@ -142,8 +146,8 @@ export function ApplicantInterviewSchedulerFull({
   confirm,
 }: ApplicantInterviewSchedulerFullProps) {
   return (
-    <section className={sectionClasses}>
-      <ApplicantInterviewSchedulerIntro previewMode={previewMode} />
+    <section className={sectionClasses} aria-labelledby="applicant-interview-title">
+      <ApplicantInterviewSchedulerIntro previewMode={previewMode} schedule={schedule} />
       <ApplicantInterviewSchedulerFullStatus
         previewMode={previewMode}
         schedule={schedule}

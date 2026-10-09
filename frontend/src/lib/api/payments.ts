@@ -244,3 +244,21 @@ export function retryMembershipConfirmationEmails() {
     { method: "POST" },
   )
 }
+
+export type DirectoryMemberRole = "ea" | "staff" | "general"
+
+export type DirectoryMember = {
+  memberId: string
+  fullName: string
+  studentNumber: string | null
+  section: string | null
+  role: DirectoryMemberRole
+  position: string
+  committee: string | null
+  verifiedAt: string | null
+}
+
+/** Verified members of the current recruitment year. */
+export function getDirectoryMembers() {
+  return apiFetch<{ members: DirectoryMember[] }>("/membership-payments/members")
+}

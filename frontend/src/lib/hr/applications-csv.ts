@@ -21,7 +21,7 @@ const HEADERS = [
 ]
 const FORMULA_PREFIX = /^[=+\-@\t\r]/
 
-function escapeCell(value: string | null | undefined) {
+export function escapeCell(value: string | null | undefined) {
   const text = value ?? ""
   const safeText = FORMULA_PREFIX.test(text) ? `'${text}` : text
   return `"${safeText.replaceAll('"', '""')}"`

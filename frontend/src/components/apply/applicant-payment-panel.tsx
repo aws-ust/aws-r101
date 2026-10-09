@@ -1,34 +1,16 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { ApplicantPaymentForm } from "@/components/apply/applicant-payment-form"
-import { ApplicantPaymentMethodCard } from "@/components/apply/applicant-payment-method-card"
-import { ApplicantPaymentSection } from "@/components/apply/applicant-payment-section"
+import { ApplicantGroupLinks } from "@/components/apply/applicant-group-links"
 import { ApplicantMemberSection } from "@/components/apply/applicant-member-section"
-import {
-  getApplicantPayment,
-  type ApplicantApplication,
-  type ApplicantPayment,
-  type MemberCard,
-} from "@/lib/api/applicant"
+import { ApplicantPaymentStatusMessage, ApplicantPaymentSteps } from "@/components/apply/applicant-payment-steps"
+import { ApplicantSection } from "@/components/apply/applicant-section"
+import type { ApplicantPaymentState } from "@/components/apply/use-applicant-payment"
+import type { ApplicantApplication, ApplicantPayment } from "@/lib/api/applicant"
 import { formatDisplayDateTime } from "@/lib/datetime/display"
-import { glassPanelClasses } from "@/lib/site/surface"
+import { dashboardCaptionClasses } from "@/lib/site/dashboard-surface"
 
-const panelClasses = `${glassPanelClasses} mt-6 rounded-[22px] px-5 py-5`
-const eyebrowClasses = "font-mono text-[10px] uppercase tracking-[0.16em] text-aquamarine"
-const titleClasses = "mt-2 font-sans text-2xl font-bold text-blue-chalk"
-const bodyClasses = "mt-2 font-sans text-sm leading-relaxed text-prelude"
-const summaryClasses = "mt-5 grid gap-3 sm:grid-cols-2"
-const summaryItemClasses = "rounded-[12px] border border-blue-chalk/15 bg-haiti/30 px-4 py-3"
-const summaryLabelClasses = "font-mono text-[10px] uppercase tracking-[0.14em] text-prelude"
-const summaryValueClasses = "mt-1 font-sans text-sm font-semibold text-blue-chalk"
-const sectionStackClasses = "mt-6 flex flex-col gap-4"
-const methodGridClasses = "flex flex-wrap justify-center gap-6"
-const errorClasses = "mt-3 font-sans text-sm text-rose-glow"
-const pesoFormatter = new Intl.NumberFormat("en-PH", {
-  style: "currency",
-  currency: "PHP",
-})
+const problemClasses = "font-sans text-sm leading-relaxed text-pretty text-rose-glow"
+const pesoFormatter = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" })
 
 const STATUS_LABELS: Record<ApplicantPayment["paymentStatus"], string> = {
   awaiting_payment: "Awaiting payment",
@@ -40,111 +22,66 @@ const STATUS_LABELS: Record<ApplicantPayment["paymentStatus"], string> = {
 
 type MemberIdentity = Pick<ApplicantApplication, "firstName" | "lastName" | "studentNumber" | "section">
 
-export function ApplicantPaymentPanel({ application }: { application: MemberIdentity }) {
-  const [payment, setPayment] = useState<ApplicantPayment | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
+type ApplicantPaymentPanelProps = {
+  application: MemberIdentity
+  state: ApplicantPaymentState
+  /** Show the payment record's group links, when the result section did not. */
+  showGroupLinks: boolean
+  /** The ID is the applicant's newest milestone, so it gets the night sky. */
+  milestone: boolean
+}
 
-  async function refresh() {
-    const response = await getApplicantPayment()
-    setPayment(response.payment)
-  }
+export function ApplicantPaymentPanel({ application, state, showGroupLinks, milestone }: ApplicantPaymentPanelProps) {
+  const { payment, loading, error, refresh, setMemberCard } = state
 
-  useEffect(() => {
-    let active = true
-    getApplicantPayment()
-      .then((response) => {
-        if (active) setPayment(response.payment)
-      })
-      .catch((caught) => {
-        if (active) setError(caught instanceof Error ? caught.message : "Could not load payment details.")
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
-    return () => {
-      active = false
-    }
-  }, [])
-
-  if (loading) return <p className={bodyClasses}>Loading membership payment…</p>
-  if (error) return <p className={errorClasses}>{error}</p>
+  if (loading) return <p className={dashboardCaptionClasses} role="status">Loading membership payment…</p>
+  if (error) return <p className={problemClasses} role="alert">{error}</p>
   if (!payment) return null
 
   if (payment.memberCard) {
     return (
-      <ApplicantMemberSection
-        payment={payment}
-        card={payment.memberCard}
-        application={application}
-        onCardChange={(memberCard: MemberCard) => setPayment({ ...payment, memberCard })}
-      />
+      <>
+        {showGroupLinks ? (
+          <ApplicantGroupLinks
+            membersGroupLink={payment.membersGroupLink}
+            committeeChatLink={payment.committeeChatLink}
+            committeeName={payment.committeeName}
+            coreTeamChatLink={payment.coreTeamChatLink}
+          />
+        ) : null}
+        <ApplicantMemberSection
+          card={payment.memberCard}
+          application={application}
+          milestone={milestone}
+          onCardChange={setMemberCard}
+        />
+      </>
     )
   }
   return <ApplicantPaymentDetails payment={payment} onSubmitted={refresh} />
 }
 
-function ApplicantPaymentDetails({ payment, onSubmitted }: { payment: ApplicantPayment; onSubmitted: () => Promise<void> }) {
+function paymentFacts(payment: ApplicantPayment) {
   const amount = pesoFormatter.format(payment.amountCents / 100)
-  const deadline = formatDisplayDateTime(
-    new Date(payment.resubmissionDeadlineAt ?? payment.deadlineAt),
-    { dateStyle: "medium", timeStyle: "short" },
-  )
-  return (
-    <section className={panelClasses} aria-labelledby="membership-payment-title">
-      <p className={eyebrowClasses}>Membership payment</p>
-      <h2 id="membership-payment-title" className={titleClasses}>{STATUS_LABELS[payment.paymentStatus]}</h2>
-      <div className={summaryClasses}>
-        <PaymentSummaryItem label="Amount" value={amount} />
-        <PaymentSummaryItem label="Deadline" value={deadline} />
-      </div>
-      <div className={sectionStackClasses}>
-        <PaymentSubmissionSection payment={payment} onSubmitted={onSubmitted} />
-        <PaymentStatusMessage payment={payment} />
-      </div>
-    </section>
-  )
+  const resubmit = payment.resubmissionDeadlineAt !== null
+  const deadline = formatDisplayDateTime(new Date(payment.resubmissionDeadlineAt ?? payment.deadlineAt), {
+    dateStyle: "medium",
+    timeStyle: "short",
+  })
+  if (payment.paymentStatus === "expired") return `${amount} · deadline was ${deadline}`
+  return `${amount} · ${resubmit ? "resubmit" : "pay"} by ${deadline}`
 }
 
-function PaymentSummaryItem({ label, value }: { label: string; value: string }) {
+function ApplicantPaymentDetails({ payment, onSubmitted }: { payment: ApplicantPayment; onSubmitted: () => Promise<void> }) {
   return (
-    <div className={summaryItemClasses}>
-      <p className={summaryLabelClasses}>{label}</p>
-      <p className={summaryValueClasses}>{value}</p>
-    </div>
+    <ApplicantSection
+      area="MEMBERSHIP PAYMENT"
+      titleId="membership-payment-title"
+      title={STATUS_LABELS[payment.paymentStatus]}
+      status={paymentFacts(payment)}
+    >
+      <ApplicantPaymentStatusMessage payment={payment} />
+      <ApplicantPaymentSteps payment={payment} onSubmitted={onSubmitted} />
+    </ApplicantSection>
   )
-}
-
-function PaymentSubmissionSection({ payment, onSubmitted }: { payment: ApplicantPayment; onSubmitted: () => Promise<void> }) {
-  if (payment.paymentStatus !== "awaiting_payment" && payment.paymentStatus !== "needs_resubmission") return null
-  return (
-    <>
-      <ApplicantPaymentSection
-        number="01"
-        title="Payment instructions"
-        description="Pay using the official account below before submitting your receipt."
-      >
-        {payment.latestSubmission?.reviewReason ? <p className={errorClasses}>Reviewer note: {payment.latestSubmission.reviewReason}</p> : null}
-        <div className={methodGridClasses}>
-          {payment.paymentMethods.gcash ? <ApplicantPaymentMethodCard label="GCash" details={payment.paymentMethods.gcash} /> : null}
-          {payment.paymentMethods.bpi ? <ApplicantPaymentMethodCard label="BPI" details={payment.paymentMethods.bpi} /> : null}
-        </div>
-      </ApplicantPaymentSection>
-      <ApplicantPaymentSection
-        number="02"
-        title="Submit proof of payment"
-        description="Enter the reference number and a Google Drive link to a clear screenshot of your receipt for manual verification."
-      >
-        {payment.canSubmit ? <ApplicantPaymentForm payment={payment} onSubmitted={onSubmitted} /> : <p className={bodyClasses}>Payment submission is currently closed.</p>}
-      </ApplicantPaymentSection>
-    </>
-  )
-}
-
-function PaymentStatusMessage({ payment }: { payment: ApplicantPayment }) {
-  let message = ""
-  if (payment.paymentStatus === "pending_verification") message = "Your receipt is waiting for manual review. It does not count as paid until Finance verifies it."
-  if (payment.paymentStatus === "expired") message = "The payment deadline has passed. Contact the organization if you need help."
-  if (!message) return null
-  return <ApplicantPaymentSection number="01" title="Payment Status" description={message} />
 }

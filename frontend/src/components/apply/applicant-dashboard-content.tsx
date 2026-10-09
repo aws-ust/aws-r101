@@ -2,26 +2,34 @@
 
 import dynamic from "next/dynamic"
 import { ApplicantChoiceCards } from "@/components/apply/applicant-choice-cards"
+import { ApplicantChoiceEditor } from "@/components/apply/applicant-choice-editor"
+import { ApplicantGroupLinks } from "@/components/apply/applicant-group-links"
+import { ApplicantIdentityPanel } from "@/components/apply/applicant-identity-panel"
+import { ApplicantMembershipStatus } from "@/components/apply/applicant-membership-status"
+import { ApplicantPaymentPanel } from "@/components/apply/applicant-payment-panel"
+import { ApplicantResultPanel } from "@/components/apply/applicant-result-panel"
+import { ApplicantSection } from "@/components/apply/applicant-section"
+import { useApplicantPayment, type InitialApplicantPayment } from "@/components/apply/use-applicant-payment"
 import { LazyWhenVisible } from "@/components/shared/lazy-when-visible"
+import type { ApplicantApplication } from "@/lib/api/applicant"
+import { formatEditDeadline, isAccepted, type ApplicantDashboardState } from "@/lib/apply/dashboard-state"
+import { r101Trail } from "@/lib/apply/r101-trail"
 
 const ApplicantInterviewScheduler = dynamic(() =>
-  import("@/components/apply/applicant-interview-scheduler").then(
-    (mod) => mod.ApplicantInterviewScheduler,
-  ),
+  import("@/components/apply/applicant-interview-scheduler").then((mod) => mod.ApplicantInterviewScheduler),
 )
-import { ApplicantResultPanel } from "@/components/apply/applicant-result-panel"
-import { ApplicantMembershipStatus } from "@/components/apply/applicant-membership-status"
-import { ApplicantChoiceEditor } from "@/components/apply/applicant-choice-editor"
-import { ApplicantEditBanner } from "@/components/apply/applicant-edit-banner"
-import { ApplicantDashboardProfile } from "@/components/apply/applicant-dashboard-profile"
-import type { ApplicantApplication } from "@/lib/api/applicant"
-import { ApplicantDocumentEditor } from "@/components/apply/applicant-document-editor"
-import { ApplicantPaymentPanel } from "@/components/apply/applicant-payment-panel"
 
-const docsClasses = "mt-8 font-sans text-sm text-prelude"
+type SaveInput = {
+  choices: { positionId: string; preferenceRank: 1 | 2 }[]
+  slotId?: string
+  portfolioUrl?: string
+  githubUrl?: string
+}
 
 type ApplicantDashboardContentProps = {
   application: ApplicantApplication
+  state: ApplicantDashboardState
+  initialPayment: InitialApplicantPayment
   pending: boolean
   saveError: string
   saveSuccess: string
@@ -29,126 +37,103 @@ type ApplicantDashboardContentProps = {
   previewSlotId: string
   onPreviewSlotIdChange: (slotId: string) => void
   onPreviewPositionIdChange: (positionId: string | undefined) => void
-  onSave: (input: {
-    choices: { positionId: string; preferenceRank: 1 | 2 }[]
-    slotId?: string
-    portfolioUrl?: string
-    githubUrl?: string
-  }) => void
+  onSave: (input: SaveInput) => void
   onApplicationUpdated: (application: ApplicantApplication) => void
 }
 
-function ApplicantDashboardDocuments({
-  application,
-  onApplicationUpdated,
-}: {
-  application: ApplicantApplication
-  onApplicationUpdated: (application: ApplicantApplication) => void
-}) {
-  const resume = application.documents.find((doc) => doc.documentType === "resume")
-  const registration = application.documents.find(
-    (doc) => doc.documentType === "registration",
-  )
-
-  if (application.canEdit) {
-    return (
-      <ApplicantDocumentEditor
-        application={application}
-        onUpdated={onApplicationUpdated}
-      />
-    )
-  }
-
-  return (
-    <div className={docsClasses}>
-      <p>CV: {resume?.fileName ?? "—"}</p>
-      <p className="mt-1">RegForm: {registration?.fileName ?? "—"}</p>
-    </div>
-  )
+function editStatus(application: ApplicantApplication) {
+  if (!application.canEdit) return application.lockReason ?? "This application can no longer be edited."
+  const until = application.editDeadline ? formatEditDeadline(application.editDeadline) : "the end of recruitment week"
+  return `You can change these until ${until}.`
 }
 
-function ApplicantPendingSections({
-  application,
-  pending,
-  saveError,
-  saveSuccess,
-  previewPositionId,
-  previewSlotId,
-  onPreviewSlotIdChange,
-  onPreviewPositionIdChange,
-  onSave,
-}: Omit<ApplicantDashboardContentProps, "onApplicationUpdated">) {
+/** Before results: the choices, the interview booking, then the editor that can change both. */
+function ApplicantPendingSections(
+  props: Omit<ApplicantDashboardContentProps, "state" | "initialPayment" | "onApplicationUpdated">,
+) {
+  const { application, previewPositionId, previewSlotId } = props
   const first = application.choices.find((choice) => choice.preferenceRank === 1)
   const second = application.choices.find((choice) => choice.preferenceRank === 2)
 
   return (
     <>
-      <div className="mt-6">
-        <ApplicantEditBanner
-          canEdit={application.canEdit}
-          editDeadline={application.editDeadline}
-          lockReason={application.lockReason}
-        />
-      </div>
-      <div className="mt-8">
+      <ApplicantSection
+        area="APPLICATION"
+        titleId="applicant-choices-title"
+        title="Your committee choices"
+        status={editStatus(application)}
+      >
         <ApplicantChoiceCards first={first} second={second} />
-      </div>
-      <LazyWhenVisible minHeight="18rem" className="mt-8">
+      </ApplicantSection>
+      <LazyWhenVisible minHeight="18rem">
         <ApplicantInterviewScheduler
           key={`${previewPositionId ?? "current-booking"}:${first?.committee ?? ""}`}
           positionId={previewPositionId}
           previewMode={Boolean(previewPositionId)}
           selectedSlotId={previewPositionId ? previewSlotId : undefined}
-          onSelectedSlotIdChange={
-            previewPositionId ? onPreviewSlotIdChange : undefined
-          }
+          onSelectedSlotIdChange={previewPositionId ? props.onPreviewSlotIdChange : undefined}
         />
       </LazyWhenVisible>
       {application.canEdit ? (
-        <ApplicantChoiceEditor
-          application={application}
-          pending={pending}
-          error={saveError}
-          success={saveSuccess}
-          slotId={previewSlotId}
-          onPreviewPositionIdChange={onPreviewPositionIdChange}
-          onSave={onSave}
-        />
+        <ApplicantSection
+          area="EDIT CHOICES"
+          titleId="applicant-edit-title"
+          title="Change your committee choices"
+          status="A new first choice may need a new interview slot from the schedule above."
+        >
+          <ApplicantChoiceEditor
+            application={application}
+            pending={props.pending}
+            error={props.saveError}
+            success={props.saveSuccess}
+            slotId={previewSlotId}
+            onPreviewPositionIdChange={props.onPreviewPositionIdChange}
+            onSave={props.onSave}
+          />
+        </ApplicantSection>
       ) : null}
     </>
   )
 }
 
 export function ApplicantDashboardContent({
+  state,
+  initialPayment,
   onApplicationUpdated,
   ...props
 }: ApplicantDashboardContentProps) {
   const { application } = props
+  const result = application.result
+  const accepted = result !== null && isAccepted(result)
+  const groupLinks = accepted ? result.groupLinks : null
+  const payment = useApplicantPayment(initialPayment)
+  const trail = payment.loading ? null : r101Trail(application, payment.payment)
+  // Only the newest milestone gets the night sky: the ID once it exists,
+  // otherwise the acceptance.
+  const hasId = Boolean(payment.payment?.memberCard)
 
   return (
     <>
-      <ApplicantDashboardProfile application={application} />
-
+      <ApplicantIdentityPanel
+        application={application}
+        state={state}
+        trail={trail}
+        onApplicationUpdated={onApplicationUpdated}
+      />
       {application.applicationType !== "position" ? (
-        <ApplicantMembershipStatus application={application} />
-      ) : application.result ? (
+        <ApplicantMembershipStatus application={application} milestone={accepted && !payment.loading && !hasId} />
+      ) : result ? (
         <ApplicantResultPanel
-          result={application.result}
+          result={result}
           choices={application.choices}
+          milestone={accepted && !payment.loading && !hasId}
           onApplicationUpdated={onApplicationUpdated}
         />
       ) : (
         <ApplicantPendingSections {...props} />
       )}
-
-      <ApplicantPaymentPanel application={application} />
-
-      {application.result ? null : (
-        <ApplicantDashboardDocuments
-          application={application}
-          onApplicationUpdated={onApplicationUpdated}
-        />
-      )}
+      {groupLinks ? <ApplicantGroupLinks {...groupLinks} /> : null}
+      <ApplicantPaymentPanel application={application} state={payment} showGroupLinks={!groupLinks} milestone={hasId} />
     </>
   )
 }

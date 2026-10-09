@@ -11,12 +11,14 @@ import {
 } from "@/lib/apply/field-validation"
 import type { ApplicantApplication } from "@/lib/api/applicant"
 import { fieldControlClasses } from "@/lib/site/surface"
+import { dashboardActionTargetClasses } from "@/lib/site/dashboard-surface"
 import { useApplicantChoiceEditorState } from "@/components/apply/applicant-choice-editor-state"
 
-const stackClasses = "mt-6 flex flex-col gap-4"
+const stackClasses = "flex flex-col gap-4"
 const errorClasses = "text-sm text-rose-glow"
 const successClasses = "text-sm text-aquamarine"
 const hintClasses = "font-sans text-sm text-prelude"
+const submitClasses = `w-fit self-start px-5 ${dashboardActionTargetClasses}`
 
 type ApplicantChoiceEditorProps = {
   application: ApplicantApplication
@@ -131,7 +133,7 @@ export function ApplicantChoiceEditor({
       ) : success ? (
         <p className={successClasses} role="status">{success}</p>
       ) : null}
-      <Button type="submit" color="cyan" disabled={pending || !editor.canSubmit}>
+      <Button type="submit" color="purple" className={submitClasses} disabled={pending || !editor.canSubmit}>
         {pending ? "Saving…" : "Save Committee Choices"}
       </Button>
     </form>

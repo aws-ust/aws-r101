@@ -350,3 +350,55 @@ main:has(#committee-quiz) .faq-section {
     background: var(--scrollbar-track);
   }
 }
+
+/* Applicant dashboard: the R101 trail fills up to "you are here" on load,
+   the station that needs the applicant pulses three times, and Espi rises
+   out of the clouds at a milestone. Reduced motion shows the end state. */
+@utility trail-fill {
+  animation: trail-fill 700ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
+  transform-origin: left center;
+}
+
+@keyframes trail-fill {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@utility trail-beacon {
+  animation: trail-beacon 1.8s cubic-bezier(0.16, 1, 0.3, 1) 800ms 3 both;
+}
+
+@keyframes trail-beacon {
+  from {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+}
+
+@utility espi-rise {
+  animation: espi-rise 650ms cubic-bezier(0.16, 1, 0.3, 1) 200ms both;
+}
+
+@keyframes espi-rise {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trail-fill,
+  .espi-rise {
+    animation: none;
+  }
+
+  .trail-beacon {
+    animation: none;
+    opacity: 0;
+  }
+}

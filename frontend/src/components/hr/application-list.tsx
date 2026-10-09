@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { ActionFeedback } from "@/components/shared/action-feedback"
 import { SectionHeader } from "@/components/shared/section-header"
-import { APPLICATION_PAGE_SIZE } from "@/components/hr/application-pagination-utils"
+import { APPLICATION_TABLE_PAGE_SIZE } from "@/components/hr/application-pagination-utils"
 import { ApplicationListResults } from "@/components/hr/application-list-results"
 import { hrApplicationListNoticeFeedback } from "@/components/hr/application-list-feedback"
 import {
@@ -15,6 +15,7 @@ import { HrApplicationListToolbar } from "@/components/hr/hr-application-list-to
 import { useHrListUrlState } from "@/components/hr/use-hr-list-url-state"
 import { useApplications } from "@/lib/api"
 import type { HrListSearchParamsInput } from "@/lib/hr/filters-search-params"
+import { dashboardTitleClasses } from "@/lib/site/dashboard-surface"
 import { hrPageShellClasses } from "@/lib/site/surface"
 import { cn } from "@/lib/utils"
 
@@ -40,7 +41,7 @@ export function HrApplicationList({
       applicationType: filters.applicationType || undefined,
       archive: variant,
       page,
-      pageSize: APPLICATION_PAGE_SIZE,
+      pageSize: APPLICATION_TABLE_PAGE_SIZE,
     })
   const targets = useHrListDialogTargets()
   const [feedback, setFeedback] = useState<ListFeedback | null>(null)
@@ -54,9 +55,8 @@ export function HrApplicationList({
   return (
     <main className={cn(hrPageShellClasses, "min-w-0 max-w-full overflow-x-clip")}>
       <SectionHeader
-        eyebrow={isArchivedView ? "// ARCHIVE" : "// APPLICATIONS"}
         title={isArchivedView ? "Archived applications" : "Applications"}
-        titleClassName="max-w-none text-balance"
+        titleClassName={dashboardTitleClasses}
         subtitle={
           isArchivedView
             ? "Restore applicants to active review or delete permanently to free their interview slot."

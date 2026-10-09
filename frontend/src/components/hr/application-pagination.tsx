@@ -17,23 +17,28 @@ import {
 
 const footerClasses =
   "mt-8 flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:justify-between"
-const summaryClasses = "font-mono text-xs tracking-wide text-prelude"
+const summaryClasses = "whitespace-nowrap font-mono text-xs tracking-wide text-prelude"
 
 type ApplicationPaginationProps = {
   total: number
   page: number
   onPageChange: (page: number) => void
+  /** What is being paged, as shown in "Showing 1–10 of 25 …". */
+  noun?: string
+  pageSize?: number
 }
 
 export function ApplicationPagination({
   total,
   page,
   onPageChange,
+  noun = "applications",
+  pageSize = APPLICATION_PAGE_SIZE,
 }: ApplicationPaginationProps) {
-  const totalPages = pageCount(total)
+  const totalPages = pageCount(total, pageSize)
   const safePage = Math.min(page, totalPages)
-  const start = total === 0 ? 0 : (safePage - 1) * APPLICATION_PAGE_SIZE + 1
-  const end = Math.min(safePage * APPLICATION_PAGE_SIZE, total)
+  const start = total === 0 ? 0 : (safePage - 1) * pageSize + 1
+  const end = Math.min(safePage * pageSize, total)
   const pages = buildPageList(safePage, totalPages)
 
   if (total === 0) {
@@ -43,7 +48,7 @@ export function ApplicationPagination({
   return (
     <div className={footerClasses}>
       <p className={summaryClasses}>
-        Showing {start}–{end} of {total} applications
+        Showing {start}–{end} of {total} {noun}
       </p>
 
       {totalPages > 1 ? (

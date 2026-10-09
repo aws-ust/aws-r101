@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils"
 import type { HrApplication } from "@/lib/types/hr-application"
 
 const triggerClasses = cn(
-  "inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-blue-chalk/25 bg-haiti/45 p-0 text-prelude outline-none",
+  "inline-flex size-8 pointer-coarse:size-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-blue-chalk/25 bg-haiti/45 p-0 text-prelude outline-none",
   "transition-[background-color,border-color,color,box-shadow,transform] duration-200",
   "hover:border-biloba-flower/55 hover:bg-haiti/80 hover:text-blue-chalk",
   "focus-visible:border-biloba-flower/55 focus-visible:ring-2 focus-visible:ring-biloba-flower/40 focus-visible:ring-offset-0",

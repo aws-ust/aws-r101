@@ -6,6 +6,7 @@ import { db } from "./db";
 import { applicants, applications, emailNotifications, emailOutboxLease } from "./db/schema";
 import {
   acquireOutboxLease,
+  outboxStatus,
   releaseOutboxLease,
   runOutbox,
   sweepStaleSending,
@@ -163,6 +164,20 @@ test("email outbox", async (t) => {
       assert.equal(rows.get(id)?.status, "failed");
       assert.match(rows.get(id)?.lastError ?? "", /^Uncertain:/);
     }
+  });
+
+  await t.test("reports delivery progress, counting uncertain emails apart from failed ones", async () => {
+    const options = { messageTypes: ["result_rejected"] as const, recruitmentYear: 2097 };
+    const before = await outboxStatus(options);
+    await queue(2, { status: "pending" });
+    await queue(1, { status: "failed", lastError: "Gmail send failed (400): bad recipient" });
+    await queue(1, { status: "failed", lastError: "Uncertain: the send may have gone through" });
+    await queue(3, { status: "sent" });
+    const after = await outboxStatus(options);
+    assert.equal(after.queued - before.queued, 2);
+    assert.equal(after.failed - before.failed, 1);
+    assert.equal(after.uncertain - before.uncertain, 1);
+    assert.equal(after.sent - before.sent, 3);
   });
 
   await t.test("only one worker holds the lease at a time", async () => {

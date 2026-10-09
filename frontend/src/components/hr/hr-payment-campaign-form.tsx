@@ -15,7 +15,7 @@ import {
 import { formatSubheaderLabel } from "@/lib/site/button-label"
 import { subheaderLabelClasses } from "@/lib/site/surface"
 
-const gridClasses = "grid gap-4 md:grid-cols-2"
+const gridClasses = "grid gap-4 @sm:grid-cols-2"
 const fieldClasses = "flex flex-col gap-2"
 const errorClasses = "mt-3 font-sans text-sm text-rose-glow"
 
@@ -85,7 +85,7 @@ export function HrPaymentScheduleForm({ campaign, onSaved }: { campaign: Payment
         </div>
       </div>
       {error ? <p className={errorClasses} role="alert">{error}</p> : null}
-      <Button type="button" className="mt-5" disabled={pending} onClick={() => void save()}>{pending ? "Saving…" : "Save payment period"}</Button>
+      <Button type="button" color="purple" className="mt-5" disabled={pending} onClick={() => void save()}>{pending ? "Saving…" : "Save payment period"}</Button>
     </div>
   )
 }

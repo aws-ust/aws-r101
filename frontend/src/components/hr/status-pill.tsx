@@ -3,12 +3,12 @@ import type { ApplicationStatus } from "@/lib/types/application"
 import type { ApplicantListStatusTag } from "@/lib/hr/application-display"
 
 const pill = cva(
-  "inline-flex items-center rounded-pill px-3 py-0.5 font-mono text-[11px]",
+  "inline-flex items-center rounded-pill px-2.5 py-0.5 font-sans text-xs font-medium",
   {
     variants: {
       status: {
         pending: "bg-biloba-flower/90 text-haiti",
-        rejected: "bg-haiti/80 text-prelude",
+        rejected: "border border-blue-chalk/25 bg-haiti/80 text-prelude",
         approved: "bg-aquamarine text-haiti",
         accepted: "bg-aquamarine text-haiti",
         redirected: "bg-daisy-bush/70 text-blue-chalk",

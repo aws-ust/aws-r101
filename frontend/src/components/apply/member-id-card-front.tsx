@@ -1,67 +1,48 @@
-import type { ReactNode } from "react"
 import { UserRound } from "lucide-react"
 import Image from "next/image"
-import { MemberIdCardStub } from "@/components/apply/member-id-card-stub"
-import { MemberIdCloud } from "@/components/apply/member-id-cloud"
+import { MemberIdCardDetails } from "@/components/apply/member-id-card-details"
+import { MemberIdCardVerify } from "@/components/apply/member-id-card-verify"
 
-// "Day One Pass": a flat, ticket-style front. Solid navy, white elements,
-// and a white verify stub at the bottom.
+// Official membership card: a purple frame with the org header, and a white
+// panel holding the photo, the labelled details and the verify QR. Sizes are
+// cqw of the card (the nearest @container), measured from the 1183px-wide
+// design comp, so the face scales as one picture. The face fills its parent;
+// the flip and shadow belong to whoever places it.
 const frontClasses =
-  "absolute inset-0 flex flex-col overflow-hidden rounded-[22px] bg-haiti text-white shadow-xl backface-hidden"
-const contentClasses = "relative flex flex-col"
-const headerClasses = "flex items-center gap-2.5 px-5 pt-5"
-const logoChipClasses = "grid size-9 shrink-0 place-items-center rounded-[10px] bg-white"
-const orgClasses = "min-w-0 flex-1 font-mono text-[10px] font-bold leading-snug tracking-[0.08em]"
-const orgSubClasses = "block font-normal tracking-[0.14em] text-prelude"
+  "absolute inset-0 overflow-hidden rounded-[1.7cqw] bg-[linear-gradient(180deg,#35227b_0%,#6637ab_5%,#7e5fd7_10.5%,#7555d0_20%,#6438ab_55%,#5f33a4_75%,#3e2686_100%)] text-[#3b1f8d]"
+// The strip under the panel catches light across, like a foil edge.
+const footStripClasses =
+  "absolute inset-x-0 bottom-0 h-[3.55cqw] bg-[linear-gradient(90deg,#37227f_0%,#6637ab_25%,#7a5bd3_58%,#563ca7_76%,#301a7c_100%)]"
+const headerClasses = "absolute inset-x-0 top-0 flex h-[15.55cqw] items-center pl-[5.2cqw] pr-[6.6cqw]"
+const logoClasses = "h-auto w-[11.7cqw] shrink-0"
+const orgClasses =
+  "ml-[2.5cqw] whitespace-nowrap text-[4cqw] font-extrabold leading-none tracking-[-0.01em] text-white"
 const ayClasses =
-  "shrink-0 whitespace-nowrap rounded-pill border-[1.5px] border-white px-2.5 py-0.5 font-mono text-[10px] font-bold tracking-[0.06em]"
+  "ml-auto flex h-[5.4cqw] items-center whitespace-nowrap rounded-full bg-white px-[2.4cqw] text-[2.5cqw] font-extrabold leading-none"
+// The verify block sits on the panel's foot, so long rows can never push it out.
+const panelClasses =
+  "absolute inset-x-[3.55cqw] bottom-[3.55cqw] top-[15.55cqw] flex flex-col items-center bg-white pb-[8.6cqw]"
+const titleClasses = "mt-[3.4cqw] text-[5.15cqw] font-extrabold leading-none tracking-[-0.01em]"
+const ruleClasses = "mt-[3.6cqw] w-[59cqw] border-t border-[#3b3165]"
 const photoFrameClasses =
-  "mx-auto mt-5 grid size-36 place-items-center overflow-hidden rounded-[14px] border-[3px] border-white bg-jacarta"
-const nameClasses =
-  "mt-4 px-5 text-center font-sans text-[21px] font-extrabold uppercase leading-[1.1] text-balance break-words"
-const positionClasses =
-  "mt-1.5 px-5 text-center font-sans text-[13px] font-medium leading-snug text-white/85 text-balance"
-// Member ID leads on its own row; student number and section share the next.
-const gridClasses = "mt-5 grid grid-cols-2 gap-x-3 gap-y-3 px-5 pb-5 text-center"
-const memberIdCellClasses = "col-span-2"
-const labelClasses = "font-mono text-[9px] tracking-[0.16em] text-prelude"
-const valueClasses = "mt-0.5 font-mono text-[13px] font-semibold tracking-[0.04em] tabular-nums"
-const memberIdValueClasses = "mt-0.5 font-mono text-[17px] font-bold tracking-[0.12em] tabular-nums"
+  "mt-[2.2cqw] grid size-[33.3cqw] shrink-0 place-items-center overflow-hidden rounded-[2.5cqw] border-[0.45cqw] border-[#412593] bg-[#efeaff]"
+const photoClasses = "size-full object-cover"
+const photoPlaceholderClasses = "size-[12cqw] text-[#8a76b8]"
+const detailsClasses = "mt-[1.4cqw]"
+const verifyClasses = "mt-auto pt-[3cqw]"
 
-// Flat purple clouds drifting behind the content, so the face is not bare.
-const cloudFill = "bg-daisy-bush/70"
-const cloudTopRightClasses = "absolute -right-6 top-16 h-10 w-24"
-const cloudLeftClasses = "absolute -left-8 top-44 h-12 w-28"
-const cloudLowRightClasses = "absolute -right-4 top-[19rem] h-8 w-20"
-
-type MemberIdCardFrontProps = {
+export type MemberIdCardFrontProps = {
   fullName: string
   studentNumber: string
   section: string
   position: string
   memberId: string
   academicYear: string
-  issuedAt: string | null
+  issuedOn: string
+  validThrough: string
   photoUrl: string | null
-}
-
-function Detail({
-  label,
-  children,
-  className,
-  valueClassName = valueClasses,
-}: {
-  label: string
-  children: ReactNode
-  className?: string
-  valueClassName?: string
-}) {
-  return (
-    <div className={className}>
-      <dt className={labelClasses}>{label}</dt>
-      <dd className={valueClassName}>{children}</dd>
-    </div>
-  )
+  /** Full-resolution, eagerly loaded artwork for saving the card as an image. */
+  forExport?: boolean
 }
 
 export function MemberIdCardFront({
@@ -71,45 +52,52 @@ export function MemberIdCardFront({
   position,
   memberId,
   academicYear,
-  issuedAt,
+  issuedOn,
+  validThrough,
   photoUrl,
+  forExport = false,
 }: MemberIdCardFrontProps) {
   return (
     <div className={frontClasses}>
-      <MemberIdCloud className={cloudTopRightClasses} fillClassName={cloudFill} />
-      <MemberIdCloud className={cloudLeftClasses} fillClassName={cloudFill} />
-      <MemberIdCloud className={cloudLowRightClasses} fillClassName={cloudFill} />
-      <div className={contentClasses}>
-        <div className={headerClasses}>
-          <span className={logoChipClasses}>
-            <Image src="/aws-logo.png" alt="AWS Builders – UST logo" width={32} height={32} />
-          </span>
-          <p className={orgClasses}>
-            AWS BUILDERS – UST
-            <span className={orgSubClasses}>MEMBER PASS</span>
-          </p>
-          <span className={ayClasses}>A.Y. {academicYear}</span>
-        </div>
+      <span className={footStripClasses} aria-hidden />
+      <div className={headerClasses}>
+        <Image
+          src="/member-id/front-logo.png"
+          alt=""
+          width={360}
+          height={287}
+          sizes={forExport ? "280px" : "4rem"}
+          loading={forExport ? "eager" : undefined}
+          className={logoClasses}
+        />
+        <p className={orgClasses}>AWS BUILDERS – UST</p>
+        <p className={ayClasses}>AY. {academicYear}</p>
+      </div>
+      <div className={panelClasses}>
+        <p className={titleClasses}>OFFICIAL MEMBERSHIP CARD</p>
+        <span className={ruleClasses} aria-hidden />
         <div className={photoFrameClasses}>
           {photoUrl ? (
             // Signed S3 URLs are dynamic, so next/image cannot optimize them.
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={photoUrl} alt={fullName} className="size-full object-cover" />
+            <img src={photoUrl} alt={fullName} className={photoClasses} />
           ) : (
-            <UserRound className="size-14 text-prelude" aria-hidden />
+            <UserRound className={photoPlaceholderClasses} aria-hidden />
           )}
         </div>
-        <p className={nameClasses}>{fullName}</p>
-        <p className={positionClasses}>{position}</p>
-        <dl className={gridClasses}>
-          <Detail label="MEMBER ID" className={memberIdCellClasses} valueClassName={memberIdValueClasses}>
-            {memberId}
-          </Detail>
-          <Detail label="STUDENT NO.">{studentNumber}</Detail>
-          <Detail label="SECTION">{section}</Detail>
-        </dl>
+        <div className={detailsClasses}>
+          <MemberIdCardDetails
+            fullName={fullName}
+            studentNumber={studentNumber}
+            position={position}
+            section={section}
+            memberId={memberId}
+          />
+        </div>
+        <div className={verifyClasses}>
+          <MemberIdCardVerify memberId={memberId} issuedOn={issuedOn} validThrough={validThrough} />
+        </div>
       </div>
-      <MemberIdCardStub memberId={memberId} academicYear={academicYear} issuedAt={issuedAt} />
     </div>
   )
 }

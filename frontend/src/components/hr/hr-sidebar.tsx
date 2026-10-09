@@ -23,7 +23,7 @@ import {
 const sidebarHeaderClasses =
   "flex flex-row items-center gap-2 border-b border-blue-chalk/20 bg-meteorite/40 p-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
 const brandRowClasses =
-  "flex min-w-0 flex-1 items-center gap-3 group-data-[collapsible=icon]:hidden"
+  "flex min-w-0 flex-1 items-center gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-aquamarine/60 group-data-[collapsible=icon]:hidden"
 const brandMarkClasses =
   "grid size-9 shrink-0 place-items-center rounded-full border border-aquamarine/35 bg-aquamarine/15 text-aquamarine"
 const brandCopyClasses = "flex min-w-0 flex-col leading-tight"
@@ -34,7 +34,7 @@ const brandTitleClasses =
 const triggerClasses =
   "size-9 shrink-0 rounded-full border border-blue-chalk/20 bg-haiti/40 text-blue-chalk hover:border-aquamarine/40 hover:bg-aquamarine/15 hover:text-aquamarine"
 const sidebarBodyClasses =
-  "flex-1 overflow-visible bg-haiti/50 px-3 py-4 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:overflow-visible group-data-[collapsible=icon]:px-0"
+  "min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-haiti/50 px-3 py-4 [scrollbar-color:rgb(198_184_232/0.3)_transparent] [scrollbar-width:thin] group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0"
 const sidebarFooterClasses =
   "border-t border-blue-chalk/20 bg-meteorite/40 p-3 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:px-0"
 const logoutButtonClasses =
@@ -56,7 +56,7 @@ export function HrSidebar({
     <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader className={sidebarHeaderClasses}>
         <Link
-          href="/admin/hr"
+          href="/admin/hr/overview"
           className={brandRowClasses}
         >
           <span className={brandMarkClasses} aria-hidden>

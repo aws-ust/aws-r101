@@ -11,10 +11,10 @@ import {
 } from "@/lib/api/payments"
 import { uploadPaymentQr } from "@/lib/payments/payment-qr-upload"
 
-const fieldClasses = "flex flex-col gap-2"
+const fieldClasses = "flex max-w-xs flex-col gap-2"
 const errorClasses = "mt-3 font-sans text-sm text-rose-glow"
 // The two GCash QRs sit side by side on wide screens and stack on small ones.
-const qrGridClasses = "grid gap-x-8 lg:grid-cols-2"
+const qrGridClasses = "grid gap-x-8 @2xl:grid-cols-2"
 
 export function HrPaymentDetailsForm({ campaign, onSaved }: { campaign: PaymentCampaign; onSaved: (campaign: PaymentCampaign) => void }) {
   const [form, setForm] = useState(() => ({
@@ -77,7 +77,7 @@ export function HrPaymentDetailsForm({ campaign, onSaved }: { campaign: PaymentC
         />
       </div>
       {error ? <p className={errorClasses} role="alert">{error}</p> : null}
-      <Button type="button" className="mt-5" disabled={pending} onClick={() => void save()}>{pending ? "Saving…" : "Save payment details"}</Button>
+      <Button type="button" color="purple" className="mt-5" disabled={pending} onClick={() => void save()}>{pending ? "Saving…" : "Save payment details"}</Button>
     </div>
   )
 }
