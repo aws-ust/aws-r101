@@ -1,12 +1,9 @@
 "use client"
 
-import { useId, useState } from "react"
+import { useId } from "react"
+import { usePdfDrop } from "@/components/apply/use-pdf-drop"
 import { Field } from "@/components/shared/field"
-import {
-  APPLICATION_DOCUMENT_PDF_MAX_SIZE_LABEL,
-  applicationDocumentPdfSizeLimitMessage,
-  isApplicationDocumentPdfWithinSizeLimit,
-} from "@/lib/apply/field-validation"
+import { APPLICATION_DOCUMENT_PDF_MAX_SIZE_LABEL } from "@/lib/apply/field-validation"
 import { cn } from "@/lib/utils"
 
 const hintClasses = "font-sans text-xs text-prelude"
@@ -35,6 +32,23 @@ type PdfFileDropProps = {
   onFile: (file: File | null) => void
 }
 
+function dropAreaClasses(compact: boolean, highlighted: boolean) {
+  return compact
+    ? cn(compactDropClasses, highlighted && compactActiveClasses)
+    : cn(dropClasses, highlighted && dropActiveClasses)
+}
+
+/** The file name, and in the compact row also what the row does when clicked. */
+function DropContent({ compact, name, hasFile }: { compact: boolean; name: string; hasFile: boolean }) {
+  if (!compact) return name
+  return (
+    <>
+      <span className={compactNameClasses}>{name}</span>
+      <span className={compactActionClasses}>{hasFile ? "Change" : "Replace"}</span>
+    </>
+  )
+}
+
 export function PdfFileDrop({
   label,
   hint,
@@ -46,53 +60,14 @@ export function PdfFileDrop({
   onFile,
 }: PdfFileDropProps) {
   const id = useId()
-  const [active, setActive] = useState(false)
-  const [rejectReason, setRejectReason] = useState("")
-
-  function takeFile(list: FileList | null) {
-    const next = list?.[0]
-    if (!next) return
-    if (next.type !== "application/pdf") {
-      setRejectReason("Only PDF files (.pdf) are accepted.")
-      return
-    }
-    if (!isApplicationDocumentPdfWithinSizeLimit(next)) {
-      setRejectReason(applicationDocumentPdfSizeLimitMessage())
-      return
-    }
-    setRejectReason("")
-    onFile(next)
-  }
+  const { active, rejectReason, takeFile, dropHandlers } = usePdfDrop(onFile)
+  const name = file?.name ?? displayName ?? pdfDropPlaceholder
 
   return (
     <Field label={label} htmlFor={id} required={required} error={error}>
       {hint ? <p className={hintClasses}>{hint}</p> : null}
-      <label
-        htmlFor={id}
-        className={
-          compact
-            ? cn(compactDropClasses, (active || file) && compactActiveClasses)
-            : cn(dropClasses, (active || file) && dropActiveClasses)
-        }
-        onDragOver={(event) => {
-          event.preventDefault()
-          setActive(true)
-        }}
-        onDragLeave={() => setActive(false)}
-        onDrop={(event) => {
-          event.preventDefault()
-          setActive(false)
-          takeFile(event.dataTransfer.files)
-        }}
-      >
-        {compact ? (
-          <>
-            <span className={compactNameClasses}>{file?.name ?? displayName ?? pdfDropPlaceholder}</span>
-            <span className={compactActionClasses}>{file ? "Change" : "Replace"}</span>
-          </>
-        ) : (
-          (file?.name ?? displayName ?? pdfDropPlaceholder)
-        )}
+      <label htmlFor={id} className={dropAreaClasses(compact, active || file !== null)} {...dropHandlers}>
+        <DropContent compact={compact} name={name} hasFile={file !== null} />
       </label>
       <input
         id={id}
