@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test, { afterEach } from "node:test";
-import { appBaseUrl } from "./config";
+import { appBaseUrl, assertRecipientsAllowed } from "./config";
 
-const keys = ["APP_BASE_URL", "CORS_ORIGIN", "AWS_LAMBDA_FUNCTION_NAME"] as const;
+const keys = ["APP_BASE_URL", "CORS_ORIGIN", "AWS_LAMBDA_FUNCTION_NAME", "EMAIL_ALLOWED_RECIPIENTS"] as const;
 const saved = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
 
 afterEach(() => {
@@ -35,4 +35,15 @@ test("a local run falls back to localhost", () => {
 test("a deployed function never sends links to localhost", () => {
   setEnvironment({ AWS_LAMBDA_FUNCTION_NAME: "ApiFunction" });
   assert.throws(() => appBaseUrl(), /APP_BASE_URL is not set/);
+});
+
+test("with no recipient list, anyone can be emailed", () => {
+  setEnvironment({});
+  assert.doesNotThrow(() => assertRecipientsAllowed(["anyone@ust.edu.ph"]));
+});
+
+test("a recipient list holds a test run to the people on it", () => {
+  setEnvironment({ EMAIL_ALLOWED_RECIPIENTS: "Me@ust.edu.ph, you@ust.edu.ph" });
+  assert.doesNotThrow(() => assertRecipientsAllowed(["me@UST.edu.ph", "you@ust.edu.ph"]));
+  assert.throws(() => assertRecipientsAllowed(["me@ust.edu.ph", "someone.else@ust.edu.ph"]), /someone.else@ust.edu.ph is not on the test recipient list/);
 });

@@ -3,6 +3,28 @@ export function emailEnabled(): boolean {
   return raw.toLowerCase() !== "false";
 }
 
+/**
+ * A test-run safety net: when `EMAIL_ALLOWED_RECIPIENTS` lists addresses, those
+ * are the only ones ever emailed. Unset (the deployed default) it allows everyone.
+ */
+export function allowedRecipients(): Set<string> | null {
+  const raw = process.env.EMAIL_ALLOWED_RECIPIENTS?.trim();
+  if (!raw) return null;
+  return new Set(raw.split(",").map((address) => address.trim().toLowerCase()).filter(Boolean));
+}
+
+/** Throws, without sending, if the allow list is set and an address is not on it. */
+export function assertRecipientsAllowed(addresses: readonly string[]): void {
+  const allowed = allowedRecipients();
+  if (!allowed) return;
+  const blocked = addresses.filter((address) => !allowed.has(address.trim().toLowerCase()));
+  if (blocked.length > 0) {
+    throw new Error(
+      `Blocked by EMAIL_ALLOWED_RECIPIENTS: ${blocked.join(", ")} is not on the test recipient list, so nothing was sent.`,
+    );
+  }
+}
+
 export function hasGmailCredentials(): boolean {
   return Boolean(
     process.env.GOOGLE_CLIENT_ID &&

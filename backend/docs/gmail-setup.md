@@ -38,6 +38,7 @@ If using a personal Google account, add `aws.cics@ust.edu.ph` as a **Send mail a
 | `GOOGLE_SENDER_EMAIL` | From address (`aws.cics@ust.edu.ph`) |
 | `GOOGLE_REPLY_TO_EMAIL` | Reply-To header |
 | `GOOGLE_SIGNATORY_NAME` | Email sign-off (Claire) |
+| `EMAIL_ALLOWED_RECIPIENTS` | Test runs only: a comma-separated list of the only addresses that may be emailed. Everything else is blocked and shown as failed. Leave unset in production (the deploy does not pass it on) |
 | `APP_BASE_URL` | The website's address (e.g. `https://aws-ust.org`). Every button and link in every email points here. Falls back to `CORS_ORIGIN`; a deployed function with neither refuses to build email links rather than send ones to localhost, and `cdk deploy` refuses a localhost address. Keep `http://localhost:3000` in your local `.env` and export the real address in the environment you deploy from |
 | `EMAIL_ENABLED` | `false` in smoke/CI; `true` for live sends |
 | `RECRUITMENT_YEAR` | Application code year segment |

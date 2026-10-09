@@ -5,7 +5,7 @@ import type {
   SendEmailInput,
   SendEmailResult,
 } from "./types";
-import { fromHeader, replyToEmail } from "./config";
+import { assertRecipientsAllowed, fromHeader, replyToEmail } from "./config";
 
 export type GmailSendError = Error & {
   status?: number;
@@ -183,6 +183,8 @@ function gmailErrorReason(body: string): string | undefined {
 export async function sendViaGmail(
   input: SendEmailInput,
 ): Promise<SendEmailResult> {
+  // Every email in the app goes through here, so this is the one place a test run is held to its list.
+  assertRecipientsAllowed([input.to, ...(input.cc ?? [])]);
   const accessToken = await getAccessToken();
   const raw = base64UrlEncode(buildRfc2822Message(input));
 
