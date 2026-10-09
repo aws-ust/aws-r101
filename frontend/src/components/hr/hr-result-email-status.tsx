@@ -8,6 +8,8 @@ import {
   resendResultEmailsRequest,
   type ResultEmailStatus,
 } from "@/lib/api/client"
+import { useRecruitmentTrack } from "@/lib/recruitment-track"
+import type { RecruitmentTrack } from "@/lib/types/track"
 import { formatSubheaderLabel } from "@/lib/site/button-label"
 import { glassPanelClasses, subheaderLabelClasses } from "@/lib/site/surface"
 
@@ -30,6 +32,7 @@ function progressCopy(status: ResultEmailStatus) {
 
 /** Live delivery progress for released result emails. */
 export function HrResultEmailStatus({ refreshKey }: { refreshKey: number }) {
+  const track = useRecruitmentTrack()
   const [status, setStatus] = useState<ResultEmailStatus | null>(null)
   const [error, setError] = useState("")
   const [busy, setBusy] = useState(false)
@@ -39,7 +42,7 @@ export function HrResultEmailStatus({ refreshKey }: { refreshKey: number }) {
   useEffect(() => {
     let cancelled = false
     const load = () =>
-      getResultEmailStatus()
+      getResultEmailStatus(track)
         .then((next) => {
           if (!cancelled) {
             setStatus(next)
@@ -60,12 +63,16 @@ export function HrResultEmailStatus({ refreshKey }: { refreshKey: number }) {
       cancelled = true
       clearInterval(timer)
     }
-  }, [refreshKey, reloadKey, inProgress])
+  }, [refreshKey, reloadKey, inProgress, track])
 
-  async function updateSelected(request: (ids: string[]) => Promise<unknown>, failure: string, ids: string[]) {
+  async function updateSelected(
+    request: (ids: string[], track: RecruitmentTrack) => Promise<unknown>,
+    failure: string,
+    ids: string[],
+  ) {
     setBusy(true)
     try {
-      await request(ids)
+      await request(ids, track)
       setReloadKey((key) => key + 1)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : failure)

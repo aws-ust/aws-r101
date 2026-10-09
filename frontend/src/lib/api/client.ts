@@ -13,6 +13,7 @@ import {
   readApiErrorMessage,
   userFacingApiError,
 } from "@/lib/api/error-message"
+import { trackQuery, withTrack, type RecruitmentTrack } from "@/lib/types/track"
 
 const API_BASE = "/api";
 
@@ -62,6 +63,8 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 }
 
 export type ApplicationListParams = {
+  /** Which round's applications; R101's when left out. */
+  track?: RecruitmentTrack;
   query?: string;
   committeeName?: string;
   status?: "pending" | "approved" | "rejected" | "redirected";
@@ -77,7 +80,7 @@ export type ApplicationListResponse = {
 };
 
 export function listApplications(params: ApplicationListParams = {}) {
-  const query = new URLSearchParams();
+  const query = trackQuery(params.track);
   if (params.query) query.set("query", params.query);
   if (params.committeeName) query.set("committeeName", params.committeeName);
   if (params.status) query.set("status", params.status);
@@ -110,8 +113,8 @@ export function getApplicationById(id: string) {
   return apiFetch<HrApplication>(`/applications/${id}`);
 }
 
-export function postApplication(body: CreateApplicationInput) {
-  return apiFetch<Application>("/applications", {
+export function postApplication(body: CreateApplicationInput, track?: RecruitmentTrack) {
+  return apiFetch<Application>(track === "officer_hunt" ? "/officer-hunt/applications" : "/applications", {
     method: "POST",
     body: JSON.stringify(body),
   });
@@ -144,8 +147,8 @@ export type UploadPresignResponse = {
   }[]
 }
 
-export function postUploadPresign(body: UploadPresignRequest) {
-  return apiFetch<UploadPresignResponse>("/uploads/presign", {
+export function postUploadPresign(body: UploadPresignRequest, track?: RecruitmentTrack) {
+  return apiFetch<UploadPresignResponse>(withTrack("/uploads/presign", track), {
     method: "POST",
     body: JSON.stringify(body),
   })
@@ -239,9 +242,16 @@ export type BrowserPosition = {
   openSlots: number;
 };
 
-let openPositionsCache: Position[] | null = null;
-let browserPositionsCache: BrowserPosition[] | null = null;
-let positionsInflight: Promise<void> | null = null;
+const openPositionsCaches: Partial<Record<RecruitmentTrack, Position[]>> = {};
+const browserPositionsCaches: Partial<Record<RecruitmentTrack, BrowserPosition[]>> = {};
+const positionsInflight: Partial<Record<RecruitmentTrack, Promise<void>>> = {};
+
+function clearPositionCaches() {
+  for (const track of ["r101", "officer_hunt"] as const) {
+    delete openPositionsCaches[track];
+    delete browserPositionsCaches[track];
+  }
+}
 
 function mapOpenPosition(row: PositionApiRow): Position {
   return {
@@ -273,41 +283,43 @@ function mapBrowserPosition(row: PositionApiRow): BrowserPosition {
   };
 }
 
-function ensurePositionsLoaded() {
-  if (openPositionsCache && browserPositionsCache) {
+function ensurePositionsLoaded(track: RecruitmentTrack) {
+  if (openPositionsCaches[track] && browserPositionsCaches[track]) {
     return Promise.resolve();
   }
-  if (positionsInflight) return positionsInflight;
-  positionsInflight = apiFetch<PositionApiRow[]>("/positions")
+  const inflight = positionsInflight[track];
+  if (inflight) return inflight;
+  const request = apiFetch<PositionApiRow[]>(withTrack("/positions", track))
     .then((rows) => {
-      openPositionsCache = rows.map(mapOpenPosition);
-      browserPositionsCache = rows.map(mapBrowserPosition);
+      openPositionsCaches[track] = rows.map(mapOpenPosition);
+      browserPositionsCaches[track] = rows.map(mapBrowserPosition);
     })
     .finally(() => {
-      positionsInflight = null;
+      delete positionsInflight[track];
     });
-  return positionsInflight;
+  positionsInflight[track] = request;
+  return request;
 }
 
-export function peekOpenPositions() {
-  return typeof window === "undefined" ? null : openPositionsCache;
+export function peekOpenPositions(track: RecruitmentTrack = "r101") {
+  return typeof window === "undefined" ? null : (openPositionsCaches[track] ?? null);
 }
 
-export function peekBrowserPositions() {
-  return typeof window === "undefined" ? null : browserPositionsCache;
+export function peekBrowserPositions(track: RecruitmentTrack = "r101") {
+  return typeof window === "undefined" ? null : (browserPositionsCaches[track] ?? null);
 }
 
-export function listOpenPositions() {
+export function listOpenPositions(track: RecruitmentTrack = "r101") {
   if (typeof window === "undefined") {
-    return apiFetch<PositionApiRow[]>("/positions").then((rows) =>
+    return apiFetch<PositionApiRow[]>(withTrack("/positions", track)).then((rows) =>
       rows.map(mapOpenPosition)
     );
   }
-  return ensurePositionsLoaded().then(() => openPositionsCache ?? []);
+  return ensurePositionsLoaded(track).then(() => openPositionsCaches[track] ?? []);
 }
 
-export function listAllPositions() {
-  return apiFetch<PositionApiRow[]>("/positions?scope=all").then((rows) =>
+export function listAllPositions(track: RecruitmentTrack = "r101") {
+  return apiFetch<PositionApiRow[]>(withTrack("/positions?scope=all", track)).then((rows) =>
     rows.map((row) => ({
       ...mapOpenPosition(row),
       isOpen: row.isOpen,
@@ -316,11 +328,11 @@ export function listAllPositions() {
   );
 }
 
-export function listBrowserPositions() {
+export function listBrowserPositions(track: RecruitmentTrack = "r101") {
   if (typeof window === "undefined") {
-    return apiFetch<PositionApiRow[]>("/positions").then((rows) => rows.map(mapBrowserPosition));
+    return apiFetch<PositionApiRow[]>(withTrack("/positions", track)).then((rows) => rows.map(mapBrowserPosition));
   }
-  return ensurePositionsLoaded().then(() => browserPositionsCache ?? []);
+  return ensurePositionsLoaded(track).then(() => browserPositionsCaches[track] ?? []);
 }
 
 export function listCommitteeApplicationStatuses() {
@@ -338,8 +350,7 @@ export function patchCommitteeApplicationStatus(
       body: JSON.stringify({ acceptingApplications }),
     },
   ).then((updated) => {
-    openPositionsCache = null
-    browserPositionsCache = null
+    clearPositionCaches()
     return updated
   })
 }
@@ -371,8 +382,7 @@ export function patchPositionApprovalTarget(id: string, openSlots: number) {
     method: "PATCH",
     body: JSON.stringify({ open_slots: openSlots }),
   }).then((updated) => {
-    openPositionsCache = null
-    browserPositionsCache = null
+    clearPositionCaches()
     return mapPositionApprovalTarget(updated)
   })
 }
@@ -411,19 +421,23 @@ export function listInterviewSlots(params: {
   committeeId: string;
   from: string;
   to: string;
+  track?: RecruitmentTrack;
 }) {
-  const query = new URLSearchParams({
-    committeeId: params.committeeId,
-    from: params.from,
-    to: params.to,
-  });
+  const query = trackQuery(params.track);
+  query.set("committeeId", params.committeeId);
+  query.set("from", params.from);
+  query.set("to", params.to);
   return apiFetch<{ slots: HrInterviewSlot[] }>(
     `/interview-slots?${query.toString()}`,
   ).then((body) => body.slots);
 }
 
-export function createInterviewSlot(committeeId: string, startsAt: string) {
-  return apiFetch<HrInterviewSlot>("/interview-slots", {
+export function createInterviewSlot(
+  committeeId: string,
+  startsAt: string,
+  track?: RecruitmentTrack,
+) {
+  return apiFetch<HrInterviewSlot>(withTrack("/interview-slots", track), {
     method: "POST",
     body: JSON.stringify({ committeeId, startsAt }),
   });
@@ -443,8 +457,9 @@ export type ResetInterviewScheduleResult = {
   deletedBookings: number;
 };
 
-export function resetInterviewSchedule(committeeId: string) {
-  const query = new URLSearchParams({ committeeId });
+export function resetInterviewSchedule(committeeId: string, track?: RecruitmentTrack) {
+  const query = trackQuery(track);
+  query.set("committeeId", committeeId);
   return apiFetch<ResetInterviewScheduleResult>(
     `/interview-slots?${query.toString()}`,
     { method: "DELETE" },
@@ -543,6 +558,8 @@ export type ReleaseResultsResponse = {
   releasedAt: string | null;
   /** Emails are queued and sent in the background; see getResultEmailStatus. */
   emailDelivery: { queued: number };
+  /** Officer hunt only: how many winners were seated as officers. */
+  seated?: number;
 };
 
 export type ResultEmailStatus = {
@@ -555,40 +572,40 @@ export type ResultEmailStatus = {
   problems: { id: string; recipient: string; error: string | null; uncertain: boolean }[];
 };
 
-export function getResultsPreview() {
-  return apiFetch<ResultsPreview>("/results/preview");
+export function getResultsPreview(track?: RecruitmentTrack) {
+  return apiFetch<ResultsPreview>(withTrack("/results/preview", track));
 }
 
-export function releaseResultsRequest() {
-  return apiFetch<ReleaseResultsResponse>("/results/release", {
+export function releaseResultsRequest(track?: RecruitmentTrack) {
+  return apiFetch<ReleaseResultsResponse>(withTrack("/results/release", track), {
     method: "POST",
   });
 }
 
-export function retryFailedResultEmailsRequest() {
-  return apiFetch<{ retried: number }>("/results/emails/retry-failed", {
+export function retryFailedResultEmailsRequest(track?: RecruitmentTrack) {
+  return apiFetch<{ retried: number }>(withTrack("/results/emails/retry-failed", track), {
     method: "POST",
   });
 }
 
 /** Resends just these uncertain emails, which HR found missing from the Sent folder. */
-export function resendResultEmailsRequest(ids: string[]) {
-  return apiFetch<{ retried: number }>("/results/emails/resend-selected", {
+export function resendResultEmailsRequest(ids: string[], track?: RecruitmentTrack) {
+  return apiFetch<{ retried: number }>(withTrack("/results/emails/resend-selected", track), {
     method: "POST",
     body: JSON.stringify({ ids }),
   });
 }
 
 /** Counts these uncertain emails as sent, because HR found them in the Sent folder. */
-export function markResultEmailsDeliveredRequest(ids: string[]) {
-  return apiFetch<{ marked: number }>("/results/emails/mark-delivered", {
+export function markResultEmailsDeliveredRequest(ids: string[], track?: RecruitmentTrack) {
+  return apiFetch<{ marked: number }>(withTrack("/results/emails/mark-delivered", track), {
     method: "POST",
     body: JSON.stringify({ ids }),
   });
 }
 
-export function getResultEmailStatus() {
-  return apiFetch<ResultEmailStatus>("/results/emails/status");
+export function getResultEmailStatus(track?: RecruitmentTrack) {
+  return apiFetch<ResultEmailStatus>(withTrack("/results/emails/status", track));
 }
 
 type LoginResponse = {

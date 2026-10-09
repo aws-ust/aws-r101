@@ -2,6 +2,7 @@ import {
   Archive,
   CalendarRange,
   ClipboardList,
+  Crown,
   IdCard,
   LayoutDashboard,
   MessagesSquare,
@@ -43,6 +44,7 @@ function isApplicationDetailPath(pathname: string) {
         "groups",
         "members",
         "overview",
+        "officer-hunt",
       ].includes(match[1]),
   )
 }
@@ -91,6 +93,25 @@ export const hrNavigationSections: HrNavigationSection[] = [
     ],
   },
   {
+    // The separate round that fills the board, directors and executive assistants.
+    label: "Officer Hunt",
+    visible: () => true,
+    items: [
+      {
+        label: "Hunt Applications",
+        href: "/admin/hr/officer-hunt",
+        icon: Crown,
+        active: (path) => path === "/admin/hr/officer-hunt",
+      },
+      {
+        label: "Hunt Results",
+        href: "/admin/hr/officer-hunt/results",
+        icon: Send,
+        active: (path) => path.startsWith("/admin/hr/officer-hunt/results"),
+      },
+    ],
+  },
+  {
     // Once applicants become members: who they are, what they paid, where they chat.
     label: "Membership",
     visible: () => true,
@@ -128,6 +149,12 @@ export const hrNavigationSections: HrNavigationSection[] = [
         href: "/admin/hr/season",
         icon: CalendarRange,
         active: (path) => path.startsWith("/admin/hr/season"),
+      },
+      {
+        label: "Officer Hunt Setup",
+        href: "/admin/hr/officer-hunt/setup",
+        icon: CalendarRange,
+        active: (path) => path.startsWith("/admin/hr/officer-hunt/setup"),
       },
       {
         label: "Committees",

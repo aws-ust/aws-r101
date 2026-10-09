@@ -10,6 +10,7 @@ import {
   type HrInterviewSlot,
 } from "@/lib/api"
 import { groupedCommitteesForPicker } from "@/lib/apply/committee-groups"
+import { useRecruitmentTrack } from "@/lib/recruitment-track"
 import type { InterviewSeasonBounds } from "@/lib/season/interview"
 import {
   clampWeekStart,
@@ -35,6 +36,7 @@ type SlotDrag = {
 }
 
 export function useHrInterviewGrid(seasonBounds: InterviewSeasonBounds, seasonConfigured: boolean) {
+  const track = useRecruitmentTrack()
   const { positions, committees, loading: positionsLoading } = useOpenPositions()
   const committeeIds = useMemo(() => committeeOptions(positions), [positions])
   const groups = useMemo(
@@ -76,8 +78,9 @@ export function useHrInterviewGrid(seasonBounds: InterviewSeasonBounds, seasonCo
       committeeId,
       from: range.from,
       to: range.to,
+      track,
     })
-  }, [committeeId, days, displayedWeekStart, seasonConfigured])
+  }, [committeeId, days, displayedWeekStart, seasonConfigured, track])
 
   useEffect(() => {
     if (!committeeId || !seasonConfigured) {
@@ -115,7 +118,7 @@ export function useHrInterviewGrid(seasonBounds: InterviewSeasonBounds, seasonCo
     setPending(true)
     setError("")
     try {
-      const result = await resetInterviewSchedule(committeeId)
+      const result = await resetInterviewSchedule(committeeId, track)
       const parts = [
         `Removed ${result.deletedSlots} slot${result.deletedSlots === 1 ? "" : "s"}.`,
       ]
@@ -134,7 +137,7 @@ export function useHrInterviewGrid(seasonBounds: InterviewSeasonBounds, seasonCo
     } finally {
       setPending(false)
     }
-  }, [committeeId, fetchSlots])
+  }, [committeeId, fetchSlots, track])
 
 
   const startSlotDrag = useCallback(
@@ -196,7 +199,7 @@ export function useHrInterviewGrid(seasonBounds: InterviewSeasonBounds, seasonCo
       if (existing?.booking) continue
       if (drag.action === "open") {
         if (!existing) {
-          requests.push(createInterviewSlot(committeeId, cell.startsAt.toISOString()))
+          requests.push(createInterviewSlot(committeeId, cell.startsAt.toISOString(), track))
         } else if (!existing.isOpen) {
           requests.push(patchInterviewSlotOpen(existing.id, true))
         }
@@ -238,7 +241,7 @@ export function useHrInterviewGrid(seasonBounds: InterviewSeasonBounds, seasonCo
     } finally {
       setPending(false)
     }
-  }, [committeeId, pending, slots])
+  }, [committeeId, pending, slots, track])
 
   useEffect(() => {
     window.addEventListener("pointerup", finishSlotDrag)
