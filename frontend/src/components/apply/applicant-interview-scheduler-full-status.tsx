@@ -3,7 +3,7 @@ import {
   applicantSectionAreaClasses,
   applicantSectionStatusClasses,
   applicantSectionTitleClasses,
-} from "@/components/apply/applicant-section"
+} from "@/components/apply/applicant-section-classes"
 import { Button } from "@/components/ui/button"
 import {
   formatInterviewSlotLabel,
