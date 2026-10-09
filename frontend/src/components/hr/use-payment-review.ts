@@ -84,7 +84,7 @@ export function usePaymentReview(
     error,
     verify: () => run("verified", () => verifyPayment(paymentId)),
     reject: () => run("rejected", () => rejectPayment(paymentId, resubmission())),
-    reverse: () => run("reversed", () => reversePayment(paymentId, resubmission())),
+    reverseVerification: () => run("reversed", () => reversePayment(paymentId, resubmission())),
     async openReceipt(submissionId: string) {
       // Open the tab first so the browser does not treat it as a pop-up.
       const tab = window.open("", "_blank")

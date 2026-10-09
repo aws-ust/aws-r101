@@ -50,7 +50,7 @@ export function PaymentsReviewReasonForm({ review, mode }: ReasonFormProps) {
           color="danger"
           className={buttonClasses}
           disabled={review.pending || !review.reason.trim()}
-          onClick={() => void (reversing ? review.reverse() : review.reject())}
+          onClick={() => void (reversing ? review.reverseVerification() : review.reject())}
         >
           {review.pending ? "Saving…" : confirmLabel}
         </Button>
