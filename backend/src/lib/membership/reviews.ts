@@ -373,6 +373,20 @@ export async function verifyMembershipPayment(
   });
 }
 
+/**
+ * A payment sent back for another receipt is resubmitted by the payment period's
+ * deadline (Payment Setup). Once that has passed there is nothing to resubmit
+ * against, so the deadline has to be extended first.
+ */
+function assertDeadlineAllowsResubmission(deadlineAt: Date, now: Date) {
+  if (now > deadlineAt) {
+    throw new MembershipPaymentError(
+      "The payment deadline has passed, so they could not resubmit. Extend the deadline in Payment Setup first, then try again.",
+      409,
+    );
+  }
+}
+
 /** Queues the email that tells someone their payment needs another receipt, with Finance's note. */
 async function queueResubmissionEmail(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
@@ -398,23 +412,15 @@ export async function rejectMembershipPayment(
   paymentId: string,
   actor: AuthenticatedUser,
   reason: string,
-  resubmissionDeadlineAt: Date | null,
 ) {
   const cleanReason = reason.trim();
   if (!cleanReason) {
     throw new MembershipPaymentError("A rejection reason is required.");
   }
-  if (resubmissionDeadlineAt && resubmissionDeadlineAt <= new Date()) {
-    throw new MembershipPaymentError("Resubmission deadline must be in the future.");
-  }
   return db.transaction(async (tx) => {
     const { payment, submission } = await lockedPendingSubmission(tx, paymentId);
     const reviewedAt = new Date();
-    if (reviewedAt > payment.deadlineAt && !resubmissionDeadlineAt) {
-      throw new MembershipPaymentError(
-        "Set a future resubmission deadline because the payment period has ended.",
-      );
-    }
+    assertDeadlineAllowsResubmission(payment.deadlineAt, reviewedAt);
     await tx
       .update(membershipPaymentSubmissions)
       .set({
@@ -428,7 +434,8 @@ export async function rejectMembershipPayment(
       .update(membershipPayments)
       .set({
         status: "needs_resubmission",
-        resubmissionDeadlineAt,
+        // They resubmit by the payment period's own deadline, set in Payment Setup.
+        resubmissionDeadlineAt: null,
         updatedAt: reviewedAt,
       })
       .where(eq(membershipPayments.id, paymentId));
@@ -444,14 +451,10 @@ export async function reverseMembershipPayment(
   paymentId: string,
   actor: AuthenticatedUser,
   reason: string,
-  resubmissionDeadlineAt: Date | null,
 ) {
   const cleanReason = reason.trim();
   if (!cleanReason) {
     throw new MembershipPaymentError("A reversal reason is required.");
-  }
-  if (resubmissionDeadlineAt && resubmissionDeadlineAt <= new Date()) {
-    throw new MembershipPaymentError("Resubmission deadline must be in the future.");
   }
   return db.transaction(async (tx) => {
     const [payment] = await tx
@@ -475,11 +478,7 @@ export async function reverseMembershipPayment(
         409,
       );
     }
-    if (new Date() > payment.deadlineAt && !resubmissionDeadlineAt) {
-      throw new MembershipPaymentError(
-        "Set a future resubmission deadline because the payment period has ended.",
-      );
-    }
+    assertDeadlineAllowsResubmission(payment.deadlineAt, new Date());
     const [submission] = await tx
       .select({ id: membershipPaymentSubmissions.id })
       .from(membershipPaymentSubmissions)
@@ -504,7 +503,7 @@ export async function reverseMembershipPayment(
       .set({
         status: "needs_resubmission",
         membershipStatus: "revoked",
-        resubmissionDeadlineAt,
+        resubmissionDeadlineAt: null,
         reversedAt,
         reversedBy: actor.id,
         reversalReason: cleanReason,

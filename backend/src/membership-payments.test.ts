@@ -283,10 +283,7 @@ test("membership payment workflow", async (t) => {
       .update(membershipPayments)
       .set({ status: "pending_verification" })
       .where(eq(membershipPayments.id, payment.id));
-    const body = JSON.stringify({
-      reason: "Receipt details do not match",
-      resubmissionDeadlineAt: "2096-12-02T00:00:00.000Z",
-    });
+    const body = JSON.stringify({ reason: "Receipt details do not match" });
     assert.equal(
       (
         await staffRequest(
@@ -333,7 +330,8 @@ test("membership payment workflow", async (t) => {
     assert.equal(prepared.kind, "ready");
     if (prepared.kind === "ready") {
       assert.match(prepared.rendered.text, /Receipt details do not match/);
-      assert.match(prepared.rendered.text, /December 2, 2096/);
+      // No date was picked: they resubmit by the payment period's own deadline.
+      assert.match(prepared.rendered.text, /Resubmit by: December 1, 2096/);
     }
   });
 
@@ -347,7 +345,7 @@ test("membership payment workflow", async (t) => {
 
   await t.test("HR can reverse verification and Member ID is retained", async () => {
     const [payment] = await db.select().from(membershipPayments).where(eq(membershipPayments.applicationId, ids.acceptedApplication));
-    const body = JSON.stringify({ reason: "Wrong receipt was verified", resubmissionDeadlineAt: "2096-12-02T00:00:00.000Z" });
+    const body = JSON.stringify({ reason: "Wrong receipt was verified" });
     assert.equal((await staffRequest(`/membership-payments/${payment.id}/reverse`, financeToken, { method: "POST", body })).status, 401);
     assert.equal((await staffRequest(`/membership-payments/${payment.id}/reverse`, hrToken, { method: "POST", body })).status, 200);
     const [reversed] = await db.select().from(membershipPayments).where(eq(membershipPayments.id, payment.id));
@@ -391,5 +389,23 @@ test("membership payment workflow", async (t) => {
     const receipt = await staffRequest(`/membership-payments/${payment.id}/receipts/${submission.id}`, hrToken);
     assert.equal(receipt.status, 200);
     assert.deepEqual(await receipt.json(), { url: driveLink });
+  });
+
+  await t.test("a receipt cannot be sent back once the payment deadline has passed", async () => {
+    const [payment] = await db.select().from(membershipPayments).where(eq(membershipPayments.applicationId, ids.memberApplication));
+    const [campaign] = await db.select().from(membershipPaymentCampaigns).where(eq(membershipPaymentCampaigns.id, payment.campaignId));
+    await db.update(membershipPaymentCampaigns).set({ deadlineAt: new Date(Date.now() - 60_000) }).where(eq(membershipPaymentCampaigns.id, campaign.id));
+    try {
+      const response = await staffRequest(`/membership-payments/${payment.id}/reject`, hrToken, {
+        method: "POST",
+        body: JSON.stringify({ reason: "Receipt is blurry" }),
+      });
+      assert.equal(response.status, 409);
+      assert.match(((await response.json()) as { error: string }).error, /Extend the deadline in Payment Setup/);
+      const [unchanged] = await db.select().from(membershipPayments).where(eq(membershipPayments.id, payment.id));
+      assert.equal(unchanged.status, "pending_verification");
+    } finally {
+      await db.update(membershipPaymentCampaigns).set({ deadlineAt: campaign.deadlineAt }).where(eq(membershipPaymentCampaigns.id, campaign.id));
+    }
   });
 });

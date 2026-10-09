@@ -2,7 +2,6 @@
 
 import type { PaymentReviewState } from "@/components/hr/use-payment-review"
 import { Button } from "@/components/ui/button"
-import { DatetimePicker } from "@/components/ui/datetime-picker"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { dashboardActionTargetClasses } from "@/lib/site/dashboard-surface"
@@ -20,7 +19,7 @@ type ReasonFormProps = {
   mode: "reject" | "reverse"
 }
 
-/** Reject and reverse both need a reason the applicant will read and a new deadline. */
+/** Reject and reverse both need a reason the applicant will read. */
 export function PaymentsReviewReasonForm({ review, mode }: ReasonFormProps) {
   const reversing = mode === "reverse"
   const confirmLabel = reversing ? "Confirm Reversal" : "Confirm Rejection"
@@ -35,11 +34,10 @@ export function PaymentsReviewReasonForm({ review, mode }: ReasonFormProps) {
           onChange={(event) => review.setReason(event.target.value)}
           placeholder={reversing ? "e.g. The transfer was refunded" : "e.g. The reference does not match GCash"}
         />
-        <p className={hintClasses}>The applicant sees this note on their dashboard.</p>
-      </div>
-      <div className={fieldClasses}>
-        <Label htmlFor="payment-resubmit-deadline">Resubmit by</Label>
-        <DatetimePicker id="payment-resubmit-deadline" value={review.deadline} onChange={review.setDeadline} required />
+        <p className={hintClasses}>
+          The applicant sees this note on their dashboard and in an email, and can resubmit until the payment
+          deadline.
+        </p>
       </div>
       <div className={rowClasses}>
         <Button type="button" color="purple" className={buttonClasses} disabled={review.pending} onClick={() => review.setForm(null)}>

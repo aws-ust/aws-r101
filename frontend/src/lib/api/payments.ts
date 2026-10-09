@@ -214,20 +214,14 @@ export function verifyPayment(paymentId: string) {
   })
 }
 
-export function rejectPayment(
-  paymentId: string,
-  body: { reason: string; resubmissionDeadlineAt: string | null },
-) {
+export function rejectPayment(paymentId: string, body: { reason: string }) {
   return apiFetch(`/membership-payments/${paymentId}/reject`, {
     method: "POST",
     body: JSON.stringify(body),
   })
 }
 
-export function reversePayment(
-  paymentId: string,
-  body: { reason: string; resubmissionDeadlineAt: string | null },
-) {
+export function reversePayment(paymentId: string, body: { reason: string }) {
   return apiFetch(`/membership-payments/${paymentId}/reverse`, {
     method: "POST",
     body: JSON.stringify(body),

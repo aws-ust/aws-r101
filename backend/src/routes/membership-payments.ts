@@ -75,7 +75,6 @@ const completePaymentQrSchema = paymentQrSchema.extend({
 });
 const reviewSchema = z.object({
   reason: z.string().trim().min(1).max(1000),
-  resubmissionDeadlineAt: z.string().datetime({ offset: true }).nullable(),
 });
 
 function paymentError(error: unknown) {
@@ -353,9 +352,6 @@ membershipPaymentRoutes.post(
         paymentId,
         getCurrentUser(c),
         parsed.data.reason,
-        parsed.data.resubmissionDeadlineAt
-          ? new Date(parsed.data.resubmissionDeadlineAt)
-          : null,
       );
       // Tell them what to fix; if Gmail asks to slow down, the background sender finishes the job.
       const emailDelivery = await sendQueuedNow([notificationId]);
@@ -381,9 +377,6 @@ membershipPaymentRoutes.post(
         paymentId,
         getCurrentUser(c),
         parsed.data.reason,
-        parsed.data.resubmissionDeadlineAt
-          ? new Date(parsed.data.resubmissionDeadlineAt)
-          : null,
       );
       const emailDelivery = await sendQueuedNow([notificationId]);
       if (emailDelivery.queued > 0) await kickEmailOutbox();

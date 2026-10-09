@@ -9,15 +9,12 @@ import {
   verifyPayment,
   type PaymentDetails,
 } from "@/lib/api/payments"
-import { formatDatetimeLocal } from "@/lib/datetime/datetime-local"
 
 export type ReviewDecision = "verified" | "rejected" | "reversed"
-/** Reject and Reverse need a reason and a new deadline before they can be confirmed. */
+/** Reject and Reverse need a reason before they can be confirmed. */
 export type ReviewForm = "reject" | "reverse" | null
 
 type EmailDelivery = { sent: number; failed: number; queued?: number }
-
-const THREE_DAYS = 3 * 24 * 60 * 60 * 1000
 
 /**
  * One receipt under review: its details, and the verify / reject / reverse
@@ -30,7 +27,6 @@ export function usePaymentReview(
   const [details, setDetails] = useState<PaymentDetails | null>(null)
   const [form, setForm] = useState<ReviewForm>(null)
   const [reason, setReason] = useState("")
-  const [deadline, setDeadline] = useState(() => formatDatetimeLocal(new Date(Date.now() + THREE_DAYS)))
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
 
@@ -70,7 +66,8 @@ export function usePaymentReview(
     // status), so there is nothing to reset here.
   }
 
-  const resubmission = () => ({ reason: reason.trim(), resubmissionDeadlineAt: new Date(deadline).toISOString() })
+  // They resubmit by the payment period's deadline, which is set in Payment Setup, not here.
+  const resubmission = () => ({ reason: reason.trim() })
 
   return {
     details,
@@ -78,8 +75,6 @@ export function usePaymentReview(
     setForm,
     reason,
     setReason,
-    deadline,
-    setDeadline,
     pending,
     error,
     verify: () => run("verified", () => verifyPayment(paymentId)),
