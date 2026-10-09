@@ -70,7 +70,7 @@ export function HrOfficerHuntDates({ settings, onSaved }: DatesProps) {
 
   return (
     <section className={panelClasses}>
-      <h2 className={headingClasses}>Term and dates</h2>
+      <h2 className={headingClasses}>Term and Dates</h2>
       <p className={helpClasses}>
         The term year is the year the winners serve; their Member IDs follow it. Applications run 7:00 AM on the
         start date through 11:59 PM on the end date, and interviews from 7:00 AM through 9:30 PM.

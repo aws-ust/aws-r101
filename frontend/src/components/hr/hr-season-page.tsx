@@ -12,9 +12,9 @@ const stackClasses = "mt-4 flex flex-col gap-4"
 const anchorClasses = "scroll-mt-24"
 
 const sectionNavItems = [
-  { id: "application-window", label: "Application window" },
-  { id: "interview-season", label: "Interview season" },
-  { id: "availability-grid", label: "Availability grid" },
+  { id: "application-window", label: "Application Window" },
+  { id: "interview-season", label: "Interview Season" },
+  { id: "availability-grid", label: "Availability Grid" },
 ]
 
 export function HrSeasonPage() {

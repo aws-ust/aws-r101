@@ -60,9 +60,9 @@ export function HrApplicationList({
         eyebrow={hunt ? "// OFFICER HUNT" : undefined}
         title={
           isArchivedView
-            ? "Archived applications"
+            ? "Archived Applications"
             : hunt
-              ? "Officer hunt applications"
+              ? "Officer Hunt Applications"
               : "Applications"
         }
         titleClassName={dashboardTitleClasses}

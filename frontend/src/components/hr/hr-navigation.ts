@@ -150,14 +150,14 @@ export const hrNavigationSections: HrNavigationSection[] = [
       officer_hunt: [
         {
           label: "Applications",
-          tooltip: "Hunt applications",
+          tooltip: "Hunt Applications",
           href: "/admin/hr/officer-hunt",
           icon: Crown,
           active: (path) => path === "/admin/hr/officer-hunt",
         },
         {
           label: "Results",
-          tooltip: "Hunt results",
+          tooltip: "Hunt Results",
           href: "/admin/hr/officer-hunt/results",
           icon: Send,
           active: (path) => path.startsWith("/admin/hr/officer-hunt/results"),
@@ -200,15 +200,15 @@ export const hrNavigationSections: HrNavigationSection[] = [
     fold: { label: "Setup", icon: Settings2 },
     items: [
       {
-        label: "R101 season",
-        tooltip: "R101 season setup",
+        label: "R101 Season",
+        tooltip: "R101 Season Setup",
         href: "/admin/hr/season",
         icon: CalendarRange,
         active: (path) => path.startsWith("/admin/hr/season"),
       },
       {
-        label: "Officer hunt",
-        tooltip: "Officer hunt setup",
+        label: "Officer Hunt",
+        tooltip: "Officer Hunt Setup",
         href: "/admin/hr/officer-hunt/setup",
         icon: Crown,
         active: (path) => path.startsWith("/admin/hr/officer-hunt/setup"),
@@ -220,8 +220,8 @@ export const hrNavigationSections: HrNavigationSection[] = [
         active: (path) => path.startsWith("/admin/hr/committees"),
       },
       {
-        label: "Payment period",
-        tooltip: "Payment setup",
+        label: "Payment Period",
+        tooltip: "Payment Setup",
         href: "/admin/hr/payments/setup",
         icon: CalendarClock,
         active: (path) => path.startsWith("/admin/hr/payments/setup"),

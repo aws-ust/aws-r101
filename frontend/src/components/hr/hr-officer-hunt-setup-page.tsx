@@ -14,9 +14,9 @@ const stackClasses = "mt-4 flex flex-col gap-4"
 const anchorClasses = "scroll-mt-24"
 
 const sectionNavItems = [
-  { id: "hunt-dates", label: "Term and dates" },
+  { id: "hunt-dates", label: "Term and Dates" },
   { id: "hunt-seats", label: "Seats" },
-  { id: "hunt-grid", label: "Availability grid" },
+  { id: "hunt-grid", label: "Availability Grid" },
 ]
 
 /** Everything HR sets before the officer hunt opens: the term, the dates, the seats and interview slots. */
