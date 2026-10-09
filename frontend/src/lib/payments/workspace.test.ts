@@ -6,6 +6,7 @@ import {
   defaultPaymentTab,
   needsPaymentSetup,
   filterPayments,
+  matchesPaymentEmail,
   paymentEmailCounts,
   nextAfterDecision,
   periodLine,
@@ -80,7 +81,7 @@ test("filters search names, codes and references; the list sorts work first", ()
     payment("unsure", { invitation: "uncertain" }),
   ]
   const emailIds = (email: "all" | "unsent" | "uncertain" | "sent") =>
-    filterPayments(emailRows, { ...EMPTY_PAYMENT_FILTERS, email }).map((r) => r.paymentId)
+    emailRows.filter((row) => matchesPaymentEmail(row, email)).map((r) => r.paymentId)
   assert.deepEqual(emailIds("unsent"), ["none", "queued", "failed"])
   assert.deepEqual(emailIds("uncertain"), ["unsure"])
   assert.deepEqual(emailIds("sent"), ["sent"])

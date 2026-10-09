@@ -20,13 +20,13 @@ const nameClasses = "block truncate font-sans text-sm font-semibold text-blue-ch
 const codeClasses = "block font-mono text-xs tabular-nums text-prelude"
 const pillCompactClasses = "@3xl:hidden"
 const committeeClasses = "block truncate font-sans text-sm text-prelude @max-3xl:hidden"
-const pillWideClasses = "flex items-center gap-1.5 @max-3xl:hidden"
+const pillWideClasses = "flex flex-wrap items-center gap-1.5 @max-3xl:hidden"
 const referenceClasses = "truncate font-mono text-xs tabular-nums text-blue-chalk @max-3xl:hidden"
 const submittedClasses = "font-sans text-xs tabular-nums text-prelude @max-3xl:hidden"
 const metaLineClasses = "flex min-w-0 flex-wrap gap-x-2 font-sans text-xs text-prelude @3xl:hidden"
 const retryClasses = "rounded-pill bg-blue-chalk/10 px-1.5 py-px font-sans text-xs text-prelude"
 // Only an email that has not gone out gets a chip, so a full list stays quiet.
-const emailChipClasses = "rounded-pill border border-blue-chalk/20 px-1.5 py-px font-sans text-xs text-prelude"
+const emailChipClasses = "whitespace-nowrap rounded-pill border border-blue-chalk/20 px-1.5 py-px font-sans text-xs text-prelude"
 const emailChipFailedClasses = "border-rose-glow/50 text-rose-glow"
 
 function EmailChip({ payment }: { payment: PaymentListItem }) {

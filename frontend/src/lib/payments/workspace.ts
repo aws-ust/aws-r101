@@ -60,8 +60,6 @@ export function matchesPaymentEmail(payment: PaymentListItem, filter: PaymentEma
 }
 
 export type PaymentFilters = {
-  /** The payment invitation email. */
-  email: PaymentEmailFilter
   query: string
   status: PaymentStatus | "all"
   type: "all" | PaymentListItem["applicationType"]
@@ -70,7 +68,6 @@ export type PaymentFilters = {
 }
 
 export const EMPTY_PAYMENT_FILTERS: PaymentFilters = {
-  email: "all",
   query: "",
   status: "all",
   type: "all",
@@ -109,8 +106,7 @@ export function filterPayments(payments: PaymentListItem[], filters: PaymentFilt
       (filters.status === "all" || payment.status === filters.status) &&
       (filters.type === "all" || payment.applicationType === filters.type) &&
       (filters.result === "all" || payment.applicationStatus === filters.result) &&
-      (filters.committee === "all" || payment.committee === filters.committee) &&
-      matchesPaymentEmail(payment, filters.email)
+      (filters.committee === "all" || payment.committee === filters.committee)
     )
   })
 }
