@@ -27,8 +27,20 @@ export function signatoryName(): string {
   return process.env.GOOGLE_SIGNATORY_NAME ?? "Claire";
 }
 
+/**
+ * The website's address, which every button and link in an email points at.
+ * `APP_BASE_URL` wins; the site's CORS origin is the same address, so it
+ * covers a deploy that forgot to set it. Only a local run may fall back to
+ * localhost: on Lambda a missing address is an error, because an email that
+ * links to localhost can never work for the person who receives it.
+ */
 export function appBaseUrl(): string {
-  return process.env.APP_BASE_URL ?? "http://localhost:3000";
+  const configured = (process.env.APP_BASE_URL?.trim() || process.env.CORS_ORIGIN?.trim() || "").replace(/\/+$/, "");
+  if (configured) return configured;
+  if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    throw new Error("APP_BASE_URL is not set, so email links would point at localhost.");
+  }
+  return "http://localhost:3000";
 }
 
 export function fromHeader(): string {

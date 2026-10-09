@@ -38,7 +38,7 @@ If using a personal Google account, add `aws.cics@ust.edu.ph` as a **Send mail a
 | `GOOGLE_SENDER_EMAIL` | From address (`aws.cics@ust.edu.ph`) |
 | `GOOGLE_REPLY_TO_EMAIL` | Reply-To header |
 | `GOOGLE_SIGNATORY_NAME` | Email sign-off (Claire) |
-| `APP_BASE_URL` | Links in submission email |
+| `APP_BASE_URL` | The website's address (e.g. `https://aws-ust.org`). Every button and link in every email points here. Falls back to `CORS_ORIGIN`; a deployed function with neither refuses to build email links rather than send ones to localhost |
 | `EMAIL_ENABLED` | `false` in smoke/CI; `true` for live sends |
 | `RECRUITMENT_YEAR` | Application code year segment |
 

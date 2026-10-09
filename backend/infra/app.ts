@@ -94,7 +94,9 @@ class BackendStack extends cdk.Stack {
       ...(process.env.GOOGLE_SENDER_EMAIL ? { GOOGLE_SENDER_EMAIL: process.env.GOOGLE_SENDER_EMAIL } : {}),
       ...(process.env.GOOGLE_REPLY_TO_EMAIL ? { GOOGLE_REPLY_TO_EMAIL: process.env.GOOGLE_REPLY_TO_EMAIL } : {}),
       ...(process.env.GOOGLE_SIGNATORY_NAME ? { GOOGLE_SIGNATORY_NAME: process.env.GOOGLE_SIGNATORY_NAME } : {}),
-      ...(process.env.APP_BASE_URL ? { APP_BASE_URL: process.env.APP_BASE_URL } : {}),
+      // Every email link is built from this, so it is always set: the site's own
+      // address (APP_BASE_URL, or the CORS origin when that is not given).
+      APP_BASE_URL: corsOrigin,
       ...(process.env.EMAIL_ENABLED ? { EMAIL_ENABLED: process.env.EMAIL_ENABLED } : {}),
       ...(process.env.RECRUITMENT_YEAR ? { RECRUITMENT_YEAR: process.env.RECRUITMENT_YEAR } : {}),
       ...(process.env.APPLICATION_EDIT_DEADLINE ? { APPLICATION_EDIT_DEADLINE: process.env.APPLICATION_EDIT_DEADLINE } : {}),
