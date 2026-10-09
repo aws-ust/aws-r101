@@ -18,6 +18,7 @@ import {
 } from "./lib/apply/committee-office-groups";
 import { getApplicationById, listApplications } from "./lib/applications/applications";
 import { getResultsPreview } from "./lib/hr/results-preview";
+import { getApplicantPayment } from "./lib/membership/applicant-payments";
 import { openCurrentPaymentCampaign } from "./lib/membership/campaigns";
 import {
   listDirectoryMembers,
@@ -161,6 +162,27 @@ test("elected officers and advisers", async (t) => {
     const verified = await verifyMember(id("9001"));
     assert.equal(verified?.status, "active");
     assert.equal(verified?.position, "Adviser");
+  });
+
+  await t.test("an adviser's ID card says Adviser, with nothing to pay and no groups", async () => {
+    const [adviser] = await db
+      .select({ id: applications.id })
+      .from(applications)
+      .where(eq(applications.memberId, id("9001")));
+    const payment = await getApplicantPayment(adviser.id);
+    assert.equal(payment?.memberCard?.memberId, id("9001"));
+    assert.equal(payment?.memberCard?.position, "Adviser");
+    assert.equal(payment?.canSubmit, false);
+    assert.deepEqual(
+      [payment?.membersGroupLink, payment?.committeeChatLink, payment?.coreTeamChatLink],
+      [null, null, null],
+    );
+    // A board seat has no card until it pays, and no payment row yet.
+    const [ceo] = await db
+      .select({ id: officerSeats.applicationId })
+      .from(officerSeats)
+      .where(eq(officerSeats.seatKey, offices[0]));
+    assert.equal(await getApplicantPayment(ceo.id), null);
   });
 
   await t.test("the board and directors hold reserved numbers in hierarchy order until they pay", async () => {

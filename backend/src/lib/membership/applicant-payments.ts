@@ -156,9 +156,81 @@ async function loadApplicantPayment(applicationId: string) {
   return { ...row, amountCents, latestSubmission: latestSubmission ?? null };
 }
 
+async function buildMemberCard(input: {
+  memberId: string;
+  recruitmentYear: number;
+  issuedAt: Date | null;
+  position: string;
+  photoKey: string | null;
+}) {
+  return {
+    memberId: input.memberId,
+    recruitmentYear: input.recruitmentYear,
+    issuedAt: input.issuedAt?.toISOString() ?? null,
+    position: input.position,
+    photoUrl: input.photoKey ? await createMemberPhotoDownload(input.photoKey) : null,
+  };
+}
+
+/**
+ * Advisers hold an active Member ID without paying, so they have no payment row.
+ * They get the same shape as a verified member, with the card and nothing to pay.
+ */
+async function getAdviserCard(applicationId: string) {
+  const [row] = await db
+    .select({
+      applicationCode: applications.applicationCode,
+      applicationStatus: applications.status,
+      archivedAt: applications.archivedAt,
+      memberId: applications.memberId,
+      memberPhotoKey: applications.memberPhotoKey,
+      recruitmentYear: applications.recruitmentYear,
+      issuedAt: applications.submittedAt,
+      officerTitle: officerSeats.title,
+    })
+    .from(applications)
+    .innerJoin(officerSeats, eq(officerSeats.applicationId, applications.id))
+    .where(and(eq(applications.id, applicationId), eq(officerSeats.kind, "adviser")))
+    .limit(1);
+  if (!row?.memberId || row.archivedAt) return null;
+  const issuedAt = row.issuedAt.toISOString();
+  return {
+    applicationCode: row.applicationCode,
+    applicationType: "officer" as const,
+    applicationStatus: row.applicationStatus,
+    paymentStatus: "verified" as const,
+    membershipStatus: "active" as const,
+    amountCents: 0,
+    opensAt: issuedAt,
+    deadlineAt: issuedAt,
+    resubmissionDeadlineAt: null,
+    paymentMethods: { gcash: null, bpi: null },
+    canSubmit: false,
+    latestSubmission: null,
+    memberCard: await buildMemberCard({
+      memberId: row.memberId,
+      recruitmentYear: row.recruitmentYear,
+      issuedAt: row.issuedAt,
+      position: memberPositionLabel({
+        applicationType: "officer",
+        applicationStatus: row.applicationStatus,
+        positionName: null,
+        committeeName: null,
+        officerTitle: row.officerTitle,
+      }),
+      photoKey: row.memberPhotoKey,
+    }),
+    memberId: row.memberId,
+    membersGroupLink: null,
+    committeeChatLink: null,
+    committeeName: null,
+    coreTeamChatLink: null,
+  };
+}
+
 export async function getApplicantPayment(applicationId: string) {
   const row = await loadApplicantPayment(applicationId);
-  if (!row) return null;
+  if (!row) return getAdviserCard(applicationId);
   // The Member ID and the group links open up the moment the payment is verified.
   const verified =
     row.paymentStatus === "verified" && row.membershipStatus === "active";
@@ -194,15 +266,13 @@ export async function getApplicantPayment(applicationId: string) {
     row.paymentStatus === "verified" &&
     row.membershipStatus === "active" &&
     row.memberId
-      ? {
+      ? await buildMemberCard({
           memberId: row.memberId,
           recruitmentYear: row.recruitmentYear,
-          issuedAt: row.verifiedAt?.toISOString() ?? null,
+          issuedAt: row.verifiedAt,
           position: memberPositionLabel(row),
-          photoUrl: row.memberPhotoKey
-            ? await createMemberPhotoDownload(row.memberPhotoKey)
-            : null,
-        }
+          photoKey: row.memberPhotoKey,
+        })
       : null;
   return {
     applicationCode: row.applicationCode,
