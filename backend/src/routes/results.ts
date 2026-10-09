@@ -1,9 +1,14 @@
 import { Hono } from "hono";
+import { z } from "zod";
 import { requireAuth } from "../auth";
 import { recruitmentYearInt } from "../lib/applications/application-code";
 import { outboxLeaseActive, outboxStatus, RESULT_MESSAGE_TYPES } from "../lib/email/outbox";
 import { kickEmailOutbox } from "../lib/email/outbox-kick";
-import { retryFailedResultEmails } from "../lib/hr/result-email-delivery";
+import {
+  markUncertainResultEmailsDelivered,
+  resendUncertainResultEmails,
+  retryFailedResultEmails,
+} from "../lib/hr/result-email-delivery";
 import {
   releaseResults,
   ResultsReleaseBlockedError,
@@ -66,9 +71,20 @@ resultsRoutes.post("/emails/retry-failed", async (c) => {
   return c.json(result);
 });
 
-/** Resends emails that may already have been delivered; HR checks the Sent folder first. */
-resultsRoutes.post("/emails/retry-uncertain", async (c) => {
-  const result = await retryFailedResultEmails({ uncertain: true });
+const selectedEmailsSchema = z.object({ ids: z.array(z.uuid()).min(1).max(500) });
+
+/** Resends the uncertain emails HR ticked; they checked the Sent folder and found them missing. */
+resultsRoutes.post("/emails/resend-selected", async (c) => {
+  const parsed = selectedEmailsSchema.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) return c.json({ error: "Pick at least one email." }, 400);
+  const result = await resendUncertainResultEmails(parsed.data.ids);
   if (result.retried > 0) await kickEmailOutbox();
   return c.json(result);
+});
+
+/** Counts the uncertain emails HR ticked as sent; they found them in the Sent folder. */
+resultsRoutes.post("/emails/mark-delivered", async (c) => {
+  const parsed = selectedEmailsSchema.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) return c.json({ error: "Pick at least one email." }, 400);
+  return c.json(await markUncertainResultEmailsDelivered(parsed.data.ids));
 });

@@ -414,6 +414,45 @@ export async function requeueFailed(options: {
   return rows.length;
 }
 
+type UncertainSelection = {
+  ids: readonly string[];
+  messageTypes: readonly OutboxMessageType[];
+  recruitmentYear: number;
+};
+
+/** Only uncertain rows among the chosen ids, so a stale selection can't touch anything else. */
+function uncertainSelection(options: UncertainSelection) {
+  return and(
+    inArray(emailNotifications.id, [...options.ids]),
+    eq(emailNotifications.status, "failed"),
+    like(emailNotifications.lastError, `${UNCERTAIN_PREFIX}%`),
+    inArray(emailNotifications.messageType, [...options.messageTypes]),
+    yearCondition(options.recruitmentYear),
+  );
+}
+
+/** Resends just the chosen uncertain emails, after HR found them missing from the Sent folder. */
+export async function requeueUncertainByIds(options: UncertainSelection): Promise<number> {
+  if (options.ids.length === 0) return 0;
+  const rows = await db
+    .update(emailNotifications)
+    .set({ status: "pending", nextAttemptAt: new Date(), claimedAt: null })
+    .where(uncertainSelection(options))
+    .returning({ id: emailNotifications.id });
+  return rows.length;
+}
+
+/** Counts the chosen uncertain emails as sent, after HR found them in the Sent folder. */
+export async function markUncertainDelivered(options: UncertainSelection): Promise<number> {
+  if (options.ids.length === 0) return 0;
+  const rows = await db
+    .update(emailNotifications)
+    .set({ status: "sent", sentAt: new Date(), lastError: null, nextAttemptAt: null, claimedAt: null })
+    .where(uncertainSelection(options))
+    .returning({ id: emailNotifications.id });
+  return rows.length;
+}
+
 export type OutboxStatus = {
   queued: number;
   sending: number;
@@ -457,7 +496,7 @@ export async function outboxStatus(options: {
     .from(emailNotifications)
     .where(and(scope, eq(emailNotifications.status, "failed")))
     .orderBy(asc(emailNotifications.recipient))
-    .limit(200);
+    .limit(1000);
   status.problems = problems.map((row) => ({
     ...row,
     uncertain: row.error?.startsWith(UNCERTAIN_PREFIX) ?? false,

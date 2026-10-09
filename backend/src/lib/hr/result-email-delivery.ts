@@ -11,7 +11,9 @@ import {
 import { recruitmentYearInt } from "../applications/application-code";
 import {
   RESULT_MESSAGE_TYPES,
+  markUncertainDelivered,
   requeueFailed,
+  requeueUncertainByIds,
   type ClaimedNotification,
   type PreparedEmail,
 } from "../email/outbox";
@@ -87,11 +89,31 @@ export async function prepareResultNotification(
  * Requeues failed result emails for the background sender. Uncertain ones
  * (possibly already delivered) are only requeued when HR asks for them.
  */
-export async function retryFailedResultEmails(options?: { uncertain?: boolean }) {
+export async function retryFailedResultEmails() {
   const retried = await requeueFailed({
     messageTypes: RESULT_MESSAGE_TYPES,
     recruitmentYear: recruitmentYearInt(),
-    uncertain: options?.uncertain ?? false,
+    uncertain: false,
   });
   return { retried };
+}
+
+/** Resends only the uncertain emails HR ticked, because they were missing from the Sent folder. */
+export async function resendUncertainResultEmails(ids: readonly string[]) {
+  const retried = await requeueUncertainByIds({
+    ids,
+    messageTypes: RESULT_MESSAGE_TYPES,
+    recruitmentYear: recruitmentYearInt(),
+  });
+  return { retried };
+}
+
+/** Counts the uncertain emails HR ticked as sent, because they were found in the Sent folder. */
+export async function markUncertainResultEmailsDelivered(ids: readonly string[]) {
+  const marked = await markUncertainDelivered({
+    ids,
+    messageTypes: RESULT_MESSAGE_TYPES,
+    recruitmentYear: recruitmentYearInt(),
+  });
+  return { marked };
 }
