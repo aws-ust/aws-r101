@@ -36,7 +36,12 @@ export type PaymentCampaign = {
   committeeChatLinks: { committeeId: string; chatLink: string }[]
 }
 
+/** Where a person's payment invitation email stands. */
+export type PaymentInvitation = "none" | "queued" | "sent" | "failed" | "uncertain"
+
 export type PaymentListItem = {
+  /** The payment invitation email: not made yet, waiting to send, sent, failed, or possibly delivered. */
+  invitation: PaymentInvitation
   paymentId: string
   applicationId: string
   applicationCode: string

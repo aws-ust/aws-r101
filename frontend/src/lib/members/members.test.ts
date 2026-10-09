@@ -43,6 +43,7 @@ function payment(patch: Partial<PaymentListItem>): PaymentListItem {
     finalPosition: "Finance Committee Staff",
     committee: "Finance Committee",
     latestSubmission: null,
+    invitation: "sent",
     ...patch,
   }
 }

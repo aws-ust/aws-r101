@@ -41,6 +41,7 @@ function payment(id: string, patch: Partial<PaymentListItem> = {}): PaymentListI
       submittedAt: "2026-10-10T00:00:00.000Z",
       reviewReason: null,
     },
+    invitation: "sent",
     ...patch,
   }
 }
@@ -68,6 +69,21 @@ test("filters search names, codes and references; the list sorts work first", ()
   const rows = [payment("a", { status: "verified" }), payment("b"), payment("c", { applicationType: "member", committee: null })]
   assert.deepEqual(filterPayments(rows, { ...EMPTY_PAYMENT_FILTERS, query: "refb" }).map((r) => r.paymentId), ["b"])
   assert.deepEqual(filterPayments(rows, { ...EMPTY_PAYMENT_FILTERS, type: "member" }).map((r) => r.paymentId), ["c"])
+
+  // The payment email: who has not been sent theirs, and who might not have received it.
+  const emailRows = [
+    payment("sent"),
+    payment("none", { invitation: "none" }),
+    payment("queued", { invitation: "queued" }),
+    payment("failed", { invitation: "failed" }),
+    payment("unsure", { invitation: "uncertain" }),
+  ]
+  const emailIds = (email: "all" | "unsent" | "uncertain" | "sent") =>
+    filterPayments(emailRows, { ...EMPTY_PAYMENT_FILTERS, email }).map((r) => r.paymentId)
+  assert.deepEqual(emailIds("unsent"), ["none", "queued", "failed"])
+  assert.deepEqual(emailIds("uncertain"), ["unsure"])
+  assert.deepEqual(emailIds("sent"), ["sent"])
+  assert.equal(emailIds("all").length, 5)
   assert.deepEqual(sortPayments(rows).map((r) => r.paymentId), ["b", "c", "a"])
 })
 

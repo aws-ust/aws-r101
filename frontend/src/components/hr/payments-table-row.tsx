@@ -1,7 +1,7 @@
 import { PaymentStatusPill } from "@/components/hr/payment-status-pill"
 import type { PaymentListItem } from "@/lib/api/payments"
 import { formatDisplayDateTime } from "@/lib/datetime/display"
-import { fullName, placementLabel } from "@/lib/payments/workspace"
+import { fullName, PAYMENT_EMAIL_LABELS, placementLabel } from "@/lib/payments/workspace"
 import { cn } from "@/lib/utils"
 
 // Rows lay out by the table's own width (it narrows when the review panel
@@ -25,6 +25,18 @@ const referenceClasses = "truncate font-mono text-xs tabular-nums text-blue-chal
 const submittedClasses = "font-sans text-xs tabular-nums text-prelude @max-3xl:hidden"
 const metaLineClasses = "flex min-w-0 flex-wrap gap-x-2 font-sans text-xs text-prelude @3xl:hidden"
 const retryClasses = "rounded-pill bg-blue-chalk/10 px-1.5 py-px font-sans text-xs text-prelude"
+// Only an email that has not gone out gets a chip, so a full list stays quiet.
+const emailChipClasses = "rounded-pill border border-blue-chalk/20 px-1.5 py-px font-sans text-xs text-prelude"
+const emailChipFailedClasses = "border-rose-glow/50 text-rose-glow"
+
+function EmailChip({ payment }: { payment: PaymentListItem }) {
+  if (payment.invitation === "sent") return null
+  return (
+    <span className={cn(emailChipClasses, payment.invitation === "failed" && emailChipFailedClasses)}>
+      {PAYMENT_EMAIL_LABELS[payment.invitation]}
+    </span>
+  )
+}
 
 function submittedLabel(payment: PaymentListItem) {
   const submitted = payment.latestSubmission?.submittedAt
@@ -55,14 +67,16 @@ export function PaymentsTableRow({ payment, selected, onSelect }: PaymentsTableR
             <span className={nameClasses}>{fullName(payment)}</span>
             <span className={codeClasses}>{payment.applicationCode}</span>
           </span>
-          <span className={pillCompactClasses}>
+          <span className={cn(pillCompactClasses, "flex flex-wrap items-center justify-end gap-1.5")}>
             <PaymentStatusPill status={payment.status} />
+            <EmailChip payment={payment} />
           </span>
         </span>
         <span className={committeeClasses}>{placementLabel(payment)}</span>
         <span className={pillWideClasses}>
           <PaymentStatusPill status={payment.status} />
           {attempt > 1 ? <span className={retryClasses}>try {attempt}</span> : null}
+          <EmailChip payment={payment} />
         </span>
         <span className={referenceClasses}>{reference}</span>
         <span className={submittedClasses}>{submittedLabel(payment)}</span>

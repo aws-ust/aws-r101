@@ -1,6 +1,7 @@
 import type {
   PaymentCampaign,
   PaymentDashboard,
+  PaymentInvitation,
   PaymentListItem,
   PaymentStatus,
 } from "@/lib/api/payments"
@@ -26,7 +27,31 @@ export const PAYMENT_STATUS_ORDER: PaymentStatus[] = [
   "verified",
 ]
 
+/** What HR can ask of the payment email: who has not received it, who might have. */
+export type PaymentEmailFilter = "all" | "unsent" | "uncertain" | "sent"
+
+export const PAYMENT_EMAIL_LABELS: Record<PaymentInvitation, string> = {
+  none: "No email yet",
+  queued: "Email waiting to send",
+  failed: "Email failed",
+  uncertain: "Email may not have arrived",
+  sent: "Email sent",
+}
+
+/** Anyone who has not been sent their email: never made, still waiting, or failed. */
+export function emailNotSent(invitation: PaymentInvitation) {
+  return invitation === "none" || invitation === "queued" || invitation === "failed"
+}
+
+function matchesEmailFilter(invitation: PaymentInvitation, filter: PaymentEmailFilter) {
+  if (filter === "all") return true
+  if (filter === "unsent") return emailNotSent(invitation)
+  return invitation === filter
+}
+
 export type PaymentFilters = {
+  /** The payment invitation email. */
+  email: PaymentEmailFilter
   query: string
   status: PaymentStatus | "all"
   type: "all" | PaymentListItem["applicationType"]
@@ -35,6 +60,7 @@ export type PaymentFilters = {
 }
 
 export const EMPTY_PAYMENT_FILTERS: PaymentFilters = {
+  email: "all",
   query: "",
   status: "all",
   type: "all",
@@ -73,7 +99,8 @@ export function filterPayments(payments: PaymentListItem[], filters: PaymentFilt
       (filters.status === "all" || payment.status === filters.status) &&
       (filters.type === "all" || payment.applicationType === filters.type) &&
       (filters.result === "all" || payment.applicationStatus === filters.result) &&
-      (filters.committee === "all" || payment.committee === filters.committee)
+      (filters.committee === "all" || payment.committee === filters.committee) &&
+      matchesEmailFilter(payment.invitation, filters.email)
     )
   })
 }

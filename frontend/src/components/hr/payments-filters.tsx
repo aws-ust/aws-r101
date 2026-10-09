@@ -4,6 +4,7 @@ import { MembersFilterSelect, type FilterOption } from "@/components/hr/members-
 import { MembersToolbar } from "@/components/hr/members-toolbar"
 import type { PaymentListItem } from "@/lib/api/payments"
 import {
+  emailNotSent,
   PAYMENT_STATUS_LABELS,
   PAYMENT_STATUS_ORDER,
   type PaymentFilters,
@@ -40,7 +41,13 @@ function options(payments: PaymentListItem[]) {
     { value: "all", label: "All committees", count: payments.length },
     ...committees.map((name) => ({ value: name, label: name, count: count(payments, (p) => p.committee === name) })),
   ]
-  return { status, type, result, committee }
+  const email: FilterOption[] = [
+    { value: "all", label: "All payment emails", count: payments.length },
+    { value: "unsent", label: "Not sent yet", count: count(payments, (p) => emailNotSent(p.invitation)) },
+    { value: "uncertain", label: "May not have arrived", count: count(payments, (p) => p.invitation === "uncertain") },
+    { value: "sent", label: "Sent", count: count(payments, (p) => p.invitation === "sent") },
+  ]
+  return { status, type, result, committee, email }
 }
 
 type PaymentsFiltersProps = {
@@ -53,7 +60,7 @@ type PaymentsFiltersProps = {
 export function PaymentsFilters({ payments, filters, onFiltersChange }: PaymentsFiltersProps) {
   const all = options(payments)
   const set = (patch: Partial<PaymentFilters>) => onFiltersChange({ ...filters, ...patch })
-  const active = [filters.status, filters.type, filters.result, filters.committee].filter((value) => value !== "all").length
+  const active = [filters.status, filters.type, filters.result, filters.committee, filters.email].filter((value) => value !== "all").length
 
   return (
     <MembersToolbar
@@ -71,6 +78,9 @@ export function PaymentsFilters({ payments, filters, onFiltersChange }: Payments
           </div>
           <div className={selectWrapClasses}>
             <MembersFilterSelect label="Filter by result" value={filters.result} options={all.result} onChange={(value) => set({ result: value as PaymentFilters["result"] })} />
+          </div>
+          <div className={selectWrapClasses}>
+            <MembersFilterSelect label="Filter by payment email" value={filters.email} options={all.email} onChange={(value) => set({ email: value as PaymentFilters["email"] })} />
           </div>
           <div className={selectWrapClasses}>
             <MembersFilterSelect label="Filter by committee" value={filters.committee} options={all.committee} onChange={(value) => set({ committee: value })} />
