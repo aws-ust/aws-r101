@@ -102,3 +102,5 @@ export function useHrPaymentWorkspace() {
     runBatch,
   }
 }
+
+export type HrPaymentWorkspace = ReturnType<typeof useHrPaymentWorkspace>

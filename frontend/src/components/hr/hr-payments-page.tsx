@@ -6,12 +6,13 @@ import { PaymentsLoadError } from "@/components/hr/payments-empty"
 import { PaymentsListArea } from "@/components/hr/payments-list-area"
 import { PaymentsStatusStrip } from "@/components/hr/payments-status-strip"
 import { PaymentsTabs } from "@/components/hr/payments-tabs"
-import { useHrPaymentWorkspace } from "@/components/hr/use-hr-payment-workspace"
-import { usePaymentsView } from "@/components/hr/use-payments-view"
+import { useHrPaymentWorkspace, type HrPaymentWorkspace } from "@/components/hr/use-hr-payment-workspace"
+import { usePaymentsView, type PaymentsView } from "@/components/hr/use-payments-view"
 import { ActionFeedback } from "@/components/shared/action-feedback"
 import { SectionHeader } from "@/components/shared/section-header"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import type { PaymentCampaign } from "@/lib/api/payments"
 import { PAYMENT_SETUP_HREF, needsPaymentSetup, periodLine, type PaymentTab } from "@/lib/payments/workspace"
 import { dashboardActionTargetClasses, dashboardTitleClasses } from "@/lib/site/dashboard-surface"
 import { hrPageShellClasses } from "@/lib/site/surface"
@@ -34,10 +35,68 @@ function PaymentsSkeleton() {
   )
 }
 
+function PaymentsFailure({ message }: { message: string }) {
+  return (
+    <div className={errorWrapClasses}>
+      <PaymentsLoadError
+        message={message}
+        action={
+          <Button type="button" color="purple" className={retryClasses} onClick={() => window.location.reload()}>
+            Try Again
+          </Button>
+        }
+      />
+    </div>
+  )
+}
+
+function PaymentsSetupNotice({ campaign }: { campaign: PaymentCampaign | null }) {
+  return (
+    <div className={setupNoticeClasses}>
+      <p>
+        {campaign ? "The payment amount is not set yet." : "There is no payment period yet."} Set it up before opening
+        payments.
+      </p>
+      <Link href={PAYMENT_SETUP_HREF} className={setupLinkClasses}>
+        Open Payment Setup
+      </Link>
+    </div>
+  )
+}
+
+/** Everything under the header once the payments have loaded. */
+function PaymentsLoaded({ workspace, view }: { workspace: HrPaymentWorkspace; view: PaymentsView }) {
+  const { campaign, dashboard, feedback, setFeedback, pending, refresh, runBatch } = workspace
+
+  return (
+    <>
+      {dashboard ? (
+        <PaymentsStatusStrip summary={dashboard.summary} active={view.stripActive} onPick={view.pickStatus} />
+      ) : null}
+      {needsPaymentSetup(campaign) ? <PaymentsSetupNotice campaign={campaign} /> : null}
+      <PaymentsTabs
+        tab={view.tab}
+        onTabChange={view.setTab}
+        reviewCount={view.queue.length}
+        allCount={view.payments.length}
+        actions={<PaymentsCollectionActions pending={pending} onRun={runBatch} />}
+      />
+      {feedback ? <ActionFeedback type={feedback.type} message={feedback.message} /> : null}
+      <PaymentsListArea
+        view={view}
+        campaign={campaign}
+        verified={dashboard?.summary.verified ?? 0}
+        refresh={refresh}
+        onFeedback={setFeedback}
+      />
+    </>
+  )
+}
+
 /** Payments: clear the receipt queue, or see everyone. The period itself is set up in Payment Setup. */
 export function HrPaymentsPage({ initialTab }: { initialTab: PaymentTab | null }) {
   const workspace = useHrPaymentWorkspace()
-  const { campaign, dashboard, feedback, setFeedback, loading, loadError, pending, refresh, runBatch } = workspace
+  const { campaign, dashboard, loading, loadError } = workspace
   const view = usePaymentsView(dashboard, initialTab, loading || Boolean(loadError))
 
   return (
@@ -52,48 +111,9 @@ export function HrPaymentsPage({ initialTab }: { initialTab: PaymentTab | null }
       {loading ? (
         <PaymentsSkeleton />
       ) : loadError ? (
-        <div className={errorWrapClasses}>
-          <PaymentsLoadError
-            message={loadError}
-            action={
-              <Button type="button" color="purple" className={retryClasses} onClick={() => window.location.reload()}>
-                Try Again
-              </Button>
-            }
-          />
-        </div>
+        <PaymentsFailure message={loadError} />
       ) : (
-        <>
-          {dashboard ? (
-            <PaymentsStatusStrip summary={dashboard.summary} active={view.stripActive} onPick={view.pickStatus} />
-          ) : null}
-          {needsPaymentSetup(campaign) ? (
-            <div className={setupNoticeClasses}>
-              <p>
-                {campaign ? "The payment amount is not set yet." : "There is no payment period yet."} Set it up before
-                opening payments.
-              </p>
-              <Link href={PAYMENT_SETUP_HREF} className={setupLinkClasses}>
-                Open Payment Setup
-              </Link>
-            </div>
-          ) : null}
-          <PaymentsTabs
-            tab={view.tab}
-            onTabChange={view.setTab}
-            reviewCount={view.queue.length}
-            allCount={view.payments.length}
-            actions={<PaymentsCollectionActions pending={pending} onRun={runBatch} />}
-          />
-          {feedback ? <ActionFeedback type={feedback.type} message={feedback.message} /> : null}
-          <PaymentsListArea
-            view={view}
-            campaign={campaign}
-            verified={dashboard?.summary.verified ?? 0}
-            refresh={refresh}
-            onFeedback={setFeedback}
-          />
-        </>
+        <PaymentsLoaded workspace={workspace} view={view} />
       )}
     </main>
   )
