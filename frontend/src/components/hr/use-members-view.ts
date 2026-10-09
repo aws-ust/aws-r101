@@ -79,3 +79,5 @@ export function useMembersView(data: Data | null) {
     exportCurrent,
   }
 }
+
+export type MembersViewState = ReturnType<typeof useMembersView>
