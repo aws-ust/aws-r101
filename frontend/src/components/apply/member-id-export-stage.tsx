@@ -1,4 +1,4 @@
-import type { Ref } from "react"
+import { useSyncExternalStore, type Ref } from "react"
 import { createPortal } from "react-dom"
 import { MemberIdCardBack } from "@/components/apply/member-id-card-back"
 import { memberIdCardFont } from "@/components/apply/member-id-card-font"
@@ -20,7 +20,18 @@ type MemberIdExportStageProps = {
   front: Omit<MemberIdCardFrontProps, "forExport">
 }
 
+// Nothing to subscribe to: the page body never changes once it exists.
+const subscribeNever = () => () => {}
+
+/** The page body in the browser, and null on the server, so rendering never reads `document` there. */
+function usePageBody() {
+  return useSyncExternalStore(subscribeNever, () => document.body, () => null)
+}
+
 export function MemberIdExportStage({ ref, side, front }: MemberIdExportStageProps) {
+  const body = usePageBody()
+  if (!body) return null
+
   return createPortal(
     <div className={stageClasses} aria-hidden inert>
       <div ref={ref} className={cn(sheetClasses, side === "both" && bothSheetClasses, memberIdCardFont.className)}>
@@ -36,6 +47,6 @@ export function MemberIdExportStage({ ref, side, front }: MemberIdExportStagePro
         ) : null}
       </div>
     </div>,
-    document.body,
+    body,
   )
 }
