@@ -21,6 +21,7 @@ import {
   MemberIdSeatTakenError,
   type MemberPlacement,
 } from "../core/member-id";
+import { UNCERTAIN_PREFIX } from "../email/outbox";
 import { MembershipPaymentError } from "./errors";
 import { createPaymentReceiptDownload } from "./receipts";
 
@@ -36,6 +37,43 @@ function displayStatus(row: {
     return "expired" as const;
   }
   return row.status;
+}
+
+/** Where one person's payment invitation stands, for the payments list. */
+export type InvitationStatus = "none" | "queued" | "sent" | "failed" | "uncertain";
+
+/** The newest payment invitation per application, so HR can see who has not received theirs. */
+async function invitationStatuses(applicationIds: string[]) {
+  if (applicationIds.length === 0) return new Map<string, InvitationStatus>();
+  const rows = await db
+    .select({
+      applicationId: emailNotifications.applicationId,
+      status: emailNotifications.status,
+      lastError: emailNotifications.lastError,
+    })
+    .from(emailNotifications)
+    .where(
+      and(
+        eq(emailNotifications.messageType, "payment_invitation"),
+        inArray(emailNotifications.applicationId, applicationIds),
+      ),
+    )
+    .orderBy(desc(emailNotifications.createdAt));
+  const byApplication = new Map<string, InvitationStatus>();
+  for (const row of rows) {
+    if (!row.applicationId || byApplication.has(row.applicationId)) continue;
+    byApplication.set(
+      row.applicationId,
+      row.status === "sent"
+        ? "sent"
+        : row.status === "failed"
+          ? row.lastError?.startsWith(UNCERTAIN_PREFIX)
+            ? "uncertain"
+            : "failed"
+          : "queued",
+    );
+  }
+  return byApplication;
 }
 
 export async function listMembershipPayments() {
@@ -100,8 +138,10 @@ export async function listMembershipPayments() {
     }
   }
 
+  const invitations = await invitationStatuses(rows.map((row) => row.applicationId));
   const payments = rows.map(({ officerTitle, officerCommittee, ...row }) => ({
     ...row,
+    invitation: invitations.get(row.applicationId) ?? ("none" as InvitationStatus),
     finalPosition: row.finalPosition ?? officerTitle,
     committee: row.committee ?? officerCommittee,
     status: displayStatus(row),

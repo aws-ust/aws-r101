@@ -17,6 +17,7 @@
     "test:scheduling": "tsx --test --test-concurrency=1 src/interview-scheduling.test.ts",
     "test:results": "tsx --test --test-concurrency=1 src/results-preview.test.ts",
     "test:payments": "tsx --test --test-concurrency=1 src/membership-payments.test.ts",
+    "test:officer-payments": "tsx --test --test-concurrency=1 src/officer-payments.test.ts",
     "test:deadline": "tsx --test --test-concurrency=1 src/payment-deadline-extension.test.ts",
     "test:officers": "tsx --test --test-concurrency=1 src/officer-members.test.ts",
     "test:archive": "tsx --test --test-concurrency=1 src/application-archiving.test.ts",
