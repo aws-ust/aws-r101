@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "../../db";
 import {
   applicants,
@@ -6,6 +6,7 @@ import {
   committees,
   emailNotifications,
   membershipPaymentCampaigns,
+  membershipPaymentSubmissions,
   membershipPayments,
   officerSeats,
   positions,
@@ -20,6 +21,7 @@ import {
   renderOfficerPaymentInvitation,
   renderPaymentDeadlineExtended,
   renderPaymentInvitation,
+  renderPaymentResubmission,
 } from "../email/service";
 import { recruitmentYearInt } from "../applications/application-code";
 import { memberPositionLabel } from "./member-position";
@@ -45,6 +47,8 @@ export async function prepareMembershipNotification(
       amountCents: membershipPaymentCampaigns.amountCents,
       deadlineAt: membershipPaymentCampaigns.deadlineAt,
       resubmissionDeadlineAt: membershipPayments.resubmissionDeadlineAt,
+      paymentId: membershipPayments.id,
+      reversalReason: membershipPayments.reversalReason,
     })
     .from(emailNotifications)
     .innerJoin(applications, eq(emailNotifications.applicationId, applications.id))
@@ -90,6 +94,32 @@ export async function prepareMembershipNotification(
         applicationCode: row.applicationCode,
         amountCents: row.amountCents,
         deadlineAt: row.deadlineAt,
+      }),
+    };
+  }
+  if (notification.messageType === "payment_resubmission_needed") {
+    // The note Finance gave: on the turned-down receipt, or on the reversal of a verified one.
+    const [latest] = await db
+      .select({
+        status: membershipPaymentSubmissions.status,
+        reviewReason: membershipPaymentSubmissions.reviewReason,
+      })
+      .from(membershipPaymentSubmissions)
+      .where(eq(membershipPaymentSubmissions.paymentId, row.paymentId))
+      .orderBy(desc(membershipPaymentSubmissions.attemptNumber))
+      .limit(1);
+    const reversed = latest?.status === "reversed";
+    const reason = (reversed ? row.reversalReason : latest?.reviewReason) ?? "";
+    if (!reason) return { kind: "invalid", error: "This payment has no review note to send." };
+    return {
+      kind: "ready",
+      rendered: renderPaymentResubmission({
+        lastName: row.lastName,
+        applicationCode: row.applicationCode,
+        amountCents: row.amountCents,
+        deadlineAt: row.resubmissionDeadlineAt ?? row.deadlineAt,
+        reason,
+        reversed,
       }),
     };
   }

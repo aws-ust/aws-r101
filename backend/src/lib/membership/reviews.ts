@@ -373,6 +373,27 @@ export async function verifyMembershipPayment(
   });
 }
 
+/** Queues the email that tells someone their payment needs another receipt, with Finance's note. */
+async function queueResubmissionEmail(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  applicationId: string,
+) {
+  const [{ recipient }] = await tx
+    .select({ recipient: applicants.email })
+    .from(applications)
+    .innerJoin(applicants, eq(applications.applicantId, applicants.id))
+    .where(eq(applications.id, applicationId));
+  const [notification] = await tx
+    .insert(emailNotifications)
+    .values({
+      applicationId,
+      messageType: "payment_resubmission_needed" as const,
+      recipient,
+    })
+    .returning({ id: emailNotifications.id });
+  return notification.id;
+}
+
 export async function rejectMembershipPayment(
   paymentId: string,
   actor: AuthenticatedUser,
@@ -411,7 +432,11 @@ export async function rejectMembershipPayment(
         updatedAt: reviewedAt,
       })
       .where(eq(membershipPayments.id, paymentId));
-    return { paymentId, status: "needs_resubmission" as const };
+    return {
+      paymentId,
+      status: "needs_resubmission" as const,
+      notificationId: await queueResubmissionEmail(tx, payment.applicationId),
+    };
   });
 }
 
@@ -432,6 +457,7 @@ export async function reverseMembershipPayment(
     const [payment] = await tx
       .select({
         status: membershipPayments.status,
+        applicationId: membershipPayments.applicationId,
         deadlineAt: membershipPaymentCampaigns.deadlineAt,
       })
       .from(membershipPayments)
@@ -485,7 +511,11 @@ export async function reverseMembershipPayment(
         updatedAt: reversedAt,
       })
       .where(eq(membershipPayments.id, paymentId));
-    return { paymentId, status: "needs_resubmission" as const };
+    return {
+      paymentId,
+      status: "needs_resubmission" as const,
+      notificationId: await queueResubmissionEmail(tx, payment.applicationId),
+    };
   });
 }
 

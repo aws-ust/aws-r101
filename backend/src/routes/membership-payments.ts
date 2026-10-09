@@ -349,16 +349,18 @@ membershipPaymentRoutes.post(
     const parsed = reviewSchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) return c.json({ error: "A rejection reason is required." }, 400);
     try {
-      return c.json(
-        await rejectMembershipPayment(
-          paymentId,
-          getCurrentUser(c),
-          parsed.data.reason,
-          parsed.data.resubmissionDeadlineAt
-            ? new Date(parsed.data.resubmissionDeadlineAt)
-            : null,
-        ),
+      const { notificationId, ...rejected } = await rejectMembershipPayment(
+        paymentId,
+        getCurrentUser(c),
+        parsed.data.reason,
+        parsed.data.resubmissionDeadlineAt
+          ? new Date(parsed.data.resubmissionDeadlineAt)
+          : null,
       );
+      // Tell them what to fix; if Gmail asks to slow down, the background sender finishes the job.
+      const emailDelivery = await sendQueuedNow([notificationId]);
+      if (emailDelivery.queued > 0) await kickEmailOutbox();
+      return c.json({ ...rejected, emailDelivery });
     } catch (error) {
       const result = paymentError(error);
       return c.json(result.body, result.status);
@@ -375,16 +377,17 @@ membershipPaymentRoutes.post(
     const parsed = reviewSchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) return c.json({ error: "A reversal reason is required." }, 400);
     try {
-      return c.json(
-        await reverseMembershipPayment(
-          paymentId,
-          getCurrentUser(c),
-          parsed.data.reason,
-          parsed.data.resubmissionDeadlineAt
-            ? new Date(parsed.data.resubmissionDeadlineAt)
-            : null,
-        ),
+      const { notificationId, ...reversed } = await reverseMembershipPayment(
+        paymentId,
+        getCurrentUser(c),
+        parsed.data.reason,
+        parsed.data.resubmissionDeadlineAt
+          ? new Date(parsed.data.resubmissionDeadlineAt)
+          : null,
       );
+      const emailDelivery = await sendQueuedNow([notificationId]);
+      if (emailDelivery.queued > 0) await kickEmailOutbox();
+      return c.json({ ...reversed, emailDelivery });
     } catch (error) {
       const result = paymentError(error);
       return c.json(result.body, result.status);

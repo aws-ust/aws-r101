@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test, { after } from "node:test";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { app } from "./app";
 import { signApplicantToken } from "./applicant-auth";
 import { signToken } from "./auth";
@@ -17,7 +17,7 @@ import {
   positions,
   users,
 } from "./db/schema";
-import { runEmailOutbox } from "./lib/email/queued-emails";
+import { prepareQueuedEmail, runEmailOutbox } from "./lib/email/queued-emails";
 import { originHeaders } from "./test-support/request";
 
 const databaseUrl = process.env.DATABASE_URL ?? "";
@@ -312,6 +312,29 @@ test("membership payment workflow", async (t) => {
       .from(membershipPayments)
       .where(eq(membershipPayments.id, payment.id));
     assert.equal(rejected.status, "needs_resubmission");
+
+    // They are told what to fix: an email carrying Finance's note and the new deadline.
+    const [email] = await db
+      .select({ id: emailNotifications.id })
+      .from(emailNotifications)
+      .where(
+        and(
+          eq(emailNotifications.applicationId, ids.rejectedApplication),
+          eq(emailNotifications.messageType, "payment_resubmission_needed"),
+        ),
+      );
+    assert.ok(email);
+    const prepared = await prepareQueuedEmail({
+      id: email.id,
+      messageType: "payment_resubmission_needed",
+      recipient: "x@example.test",
+      attempts: 0,
+    });
+    assert.equal(prepared.kind, "ready");
+    if (prepared.kind === "ready") {
+      assert.match(prepared.rendered.text, /Receipt details do not match/);
+      assert.match(prepared.rendered.text, /December 2, 2096/);
+    }
   });
 
   await t.test("there is no confirmation release; links are on the dashboard once verified", async () => {

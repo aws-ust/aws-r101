@@ -145,3 +145,23 @@ export function ctaButton(href: string, label: string): string {
   </tr>
 </table>`;
 }
+
+/**
+ * The tinted square that holds an email's key facts (the same one the
+ * verification code and Member ID sit in), one label over one value per row.
+ */
+export function detailsBox(rows: { label: string; value: string }[]): string {
+  const items = rows
+    .map(
+      (row, index) =>
+        `<p style="margin:0${index === rows.length - 1 ? "" : " 0 12px"};"><strong>${escapeHtmlForEmail(row.label)}</strong><br>${escapeHtmlForEmail(row.value)}</p>`,
+    )
+    .join("\n      ");
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;background:#f8f5ff;border-radius:8px;">
+  <tr>
+    <td style="padding:16px 18px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#170f33;">
+      ${items}
+    </td>
+  </tr>
+</table>`;
+}

@@ -34,6 +34,7 @@ import {
   officerHuntRejectedTemplate,
   officerPaymentInvitationTemplate,
   paymentDeadlineExtendedTemplate,
+  paymentResubmissionTemplate,
   paymentInvitationTemplate,
   resultAcceptedTemplate,
   resultMemberAcceptedTemplate,
@@ -540,6 +541,12 @@ export function renderOfficerPaymentInvitation(
   input: Parameters<typeof officerPaymentInvitationTemplate>[0],
 ) {
   return officerPaymentInvitationTemplate(input);
+}
+
+export function renderPaymentResubmission(
+  input: Parameters<typeof paymentResubmissionTemplate>[0],
+) {
+  return paymentResubmissionTemplate(input);
 }
 
 export function renderPaymentDeadlineExtended(

@@ -13,6 +13,7 @@ import {
   membershipVerifiedSubject,
   officerWelcomeSubject,
   paymentDeadlineExtendedSubject,
+  paymentResubmissionSubject,
   officerHuntRedirectedSubject,
   officerHuntRejectedSubject,
   officerPaymentInvitationSubject,
@@ -27,6 +28,7 @@ import {
   APPLICATION_RECEIVED_HEADER_CID,
   brandedEmailHeaderInline,
   ctaButton,
+  detailsBox,
   escapeHtmlForEmail,
   formatChoiceLabel,
   formatInterviewSlot,
@@ -219,9 +221,11 @@ The AWS Builders - UST Executive Board`;
 <p style="margin:0 0 0;line-height:8px;font-size:8px;">&nbsp;</p>
 <p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
 <p style="margin:0 0 16px;">Your interview schedule has been ${action}.</p>
-<p style="margin:0 0 12px;"><strong>Committee</strong><br>${escapeHtml(input.committeeName)}</p>
-<p style="margin:0 0 12px;"><strong>Interview</strong><br>${escapeHtml(interviewTime)}</p>
-<p style="margin:0 0 16px;"><strong>Application ID</strong><br>${escapeHtml(input.applicationCode)}</p>
+${detailsBox([
+  { label: "Committee", value: input.committeeName },
+  { label: "Interview", value: interviewTime },
+  { label: "Application ID", value: input.applicationCode },
+])}
 <p style="margin:0 0 16px;">An updated calendar file is attached. Open it to add the interview to your calendar.</p>
 ${ctaButton(statusUrl, "View Your Application")}
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
@@ -275,9 +279,11 @@ The AWS Builders - UST Executive Board`;
 <p style="margin:0 0 0;line-height:8px;font-size:8px;">&nbsp;</p>
 <p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
 <p style="margin:0 0 16px;">${timing}</p>
-<p style="margin:0 0 12px;"><strong>Committee</strong><br>${escapeHtml(input.committeeName)}</p>
-<p style="margin:0 0 12px;"><strong>Interview</strong><br>${escapeHtml(interviewTime)}</p>
-<p style="margin:0 0 16px;"><strong>Application ID</strong><br>${escapeHtml(input.applicationCode)}</p>
+${detailsBox([
+  { label: "Committee", value: input.committeeName },
+  { label: "Interview", value: interviewTime },
+  { label: "Application ID", value: input.applicationCode },
+])}
 <p style="margin:0 0 16px;">The calendar file is attached again for convenience.</p>
 ${ctaButton(statusUrl, "View Your Application")}
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
@@ -395,7 +401,7 @@ export function memberRegistrationTemplate(input: {
     inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
 <p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
 <p style="margin:0 0 16px;">Thank you for registering to join AWS Builders - UST as a member. Your membership registration has been accepted and does not require an interview.</p>
-<p style="margin:0 0 16px;"><strong>Application ID:</strong> ${escapeHtml(input.applicationCode)}</p>
+${detailsBox([{ label: "Application ID", value: input.applicationCode }])}
 <p style="margin:0 0 16px;">Further instructions for the membership payment will be sent to you soon. Please <strong>do not send a payment yet</strong>.</p>
 ${ctaButton(statusUrl, "View Your Application")}
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
@@ -762,9 +768,11 @@ export function paymentInvitationTemplate(input: {
     inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
 <p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
 <p style="margin:0 0 16px;">${escapeHtml(message)}</p>
-<p style="margin:0 0 8px;"><strong>Amount:</strong> ${escapeHtml(amount)}</p>
-<p style="margin:0 0 8px;"><strong>Deadline:</strong> ${escapeHtml(deadline)}</p>
-<p style="margin:0 0 16px;"><strong>Application ID:</strong> ${escapeHtml(input.applicationCode)}</p>
+${detailsBox([
+  { label: "Amount", value: amount },
+  { label: "Deadline", value: deadline },
+  { label: "Application ID", value: input.applicationCode },
+])}
 ${ctaButton(statusUrl, "Open payment instructions")}
 <p style="margin:0 0 16px;">${escapeHtml(paymentVerificationNote)}</p>
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
@@ -831,10 +839,12 @@ The AWS Builders - UST Executive Board`;
 <p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
 <p style="margin:0 0 16px;">${escapeHtml(intro)}</p>
 <p style="margin:0 0 16px;">${escapeHtml(idLine)}</p>
-${input.memberId ? `<p style="margin:0 0 8px;"><strong>Reserved Member ID:</strong> ${escapeHtml(input.memberId)}</p>` : ""}
-<p style="margin:0 0 8px;"><strong>Application ID:</strong> ${escapeHtml(input.applicationCode)}</p>
-<p style="margin:0 0 8px;"><strong>Amount:</strong> ${escapeHtml(amount)}</p>
-<p style="margin:0 0 16px;"><strong>Deadline:</strong> ${escapeHtml(deadline)}</p>
+${detailsBox([
+  ...(input.memberId ? [{ label: "Reserved Member ID", value: input.memberId }] : []),
+  { label: "Application ID", value: input.applicationCode },
+  { label: "Amount", value: amount },
+  { label: "Deadline", value: deadline },
+])}
 <p style="margin:0 0 16px;">${escapeHtml(officerPaymentInvitationNote)}</p>
 ${ctaButton(statusUrl, "Open payment instructions")}
 <p style="margin:0 0 16px;">${escapeHtml(paymentVerificationNote)}</p>
@@ -875,9 +885,11 @@ export function paymentDeadlineExtendedTemplate(input: {
     inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
 <p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
 <p style="margin:0 0 16px;">${escapeHtml(message)}</p>
-<p style="margin:0 0 8px;"><strong>New deadline:</strong> ${escapeHtml(deadline)}</p>
-<p style="margin:0 0 8px;"><strong>Amount:</strong> ${escapeHtml(amount)}</p>
-<p style="margin:0 0 16px;"><strong>Application ID:</strong> ${escapeHtml(input.applicationCode)}</p>
+${detailsBox([
+  { label: "New deadline", value: deadline },
+  { label: "Amount", value: amount },
+  { label: "Application ID", value: input.applicationCode },
+])}
 ${ctaButton(statusUrl, "Open payment instructions")}
 <p style="margin:0 0 16px;">${escapeHtml(paymentVerificationNote)}</p>
 <p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
@@ -885,6 +897,58 @@ ${ctaButton(statusUrl, "Open payment instructions")}
   });
   return {
     subject: paymentDeadlineExtendedSubject(input.applicationCode),
+    text,
+    html,
+    inline: [brandedEmailHeaderInline()],
+  };
+}
+
+const paymentResubmissionIntro =
+  "We could not verify the payment receipt you submitted for your AWS Builders - UST membership. Please read the note from our Finance team below, then submit a new receipt on your applicant dashboard before the deadline.";
+const paymentReversalIntro =
+  "We had to undo the verification of your AWS Builders - UST membership payment. Please read the note from our Finance team below, then submit a new receipt on your applicant dashboard before the deadline.";
+
+/** Sent when Finance rejects a receipt, or reverses a verification, and the person has to pay or upload again. */
+export function paymentResubmissionTemplate(input: {
+  lastName: string;
+  applicationCode: string;
+  amountCents: number;
+  /** The deadline to submit a new receipt by. */
+  deadlineAt: Date;
+  /** Finance's note, as the applicant sees it on their dashboard. */
+  reason: string;
+  /** True when a payment that was verified is being undone, rather than a receipt turned down. */
+  reversed: boolean;
+}): RenderedEmail {
+  const honorific = `Mx. ${input.lastName}`;
+  const amount = pesoAmount(input.amountCents);
+  const deadline = manilaDeadline(input.deadlineAt);
+  const statusUrl = `${appBaseUrl()}/apply/status`;
+  const intro = input.reversed ? paymentReversalIntro : paymentResubmissionIntro;
+  const text = `Greetings from the Clouds!\n\nGood day, ${honorific},\n\n${intro}\n\nNote from Finance: ${input.reason}\nResubmit by: ${deadline}\nAmount: ${amount}\nApplication ID: ${input.applicationCode}\n\nResubmit your payment: ${statusUrl}\n\n${paymentVerificationNote}\n\nYours in Thomasian Leadership,\nThe AWS Builders - UST Executive Board`;
+  const html = wrapBrandedHtml({
+    eyebrow: "AWS BUILDERS – UST",
+    bannerTitle: "MEMBERSHIP PAYMENT",
+    bannerSub: input.applicationCode,
+    heading: "Payment Needs Resubmission",
+    headerImageUrl: `cid:${APPLICATION_RECEIVED_HEADER_CID}`,
+    headerImageAlt: "AWS Builders - UST — It's Always Day One",
+    inner: `<p style="margin:0 0 8px;font-weight:bold;">Greetings from the Clouds!</p>
+<p style="margin:0 0 20px;font-weight:bold;">Good day, ${escapeHtml(honorific)},</p>
+<p style="margin:0 0 16px;">${escapeHtml(intro)}</p>
+${detailsBox([
+  { label: "Note from Finance", value: input.reason },
+  { label: "Resubmit by", value: deadline },
+  { label: "Amount", value: amount },
+  { label: "Application ID", value: input.applicationCode },
+])}
+${ctaButton(statusUrl, "Resubmit your payment")}
+<p style="margin:0 0 16px;">${escapeHtml(paymentVerificationNote)}</p>
+<p style="margin:24px 0 0;">Yours in Thomasian Leadership,</p>
+<p style="margin:4px 0 28px;font-weight:bold;">The AWS Builders - UST Executive Board</p>`,
+  });
+  return {
+    subject: paymentResubmissionSubject(input.applicationCode),
     text,
     html,
     inline: [brandedEmailHeaderInline()],

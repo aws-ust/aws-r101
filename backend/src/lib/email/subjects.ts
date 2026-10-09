@@ -105,6 +105,10 @@ export function paymentDeadlineExtendedSubject(applicationCode: string): string 
 }
 
 /** Seats with a reserved number say so; executive assistants get a plain welcome. */
+export function paymentResubmissionSubject(applicationCode: string): string {
+  return `Action needed: resubmit your payment | AWS Builders - UST (${applicationCode})`;
+}
+
 export function officerWelcomeSubject(memberId: string | null, applicationCode: string): string {
   return memberId
     ? `Your Member ID is reserved | AWS Builders - UST (${memberId})`

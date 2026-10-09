@@ -14,6 +14,9 @@ import {
   membershipVerifiedTemplate,
   officerApplicationNoticeTemplate,
   paymentInvitationTemplate,
+  paymentResubmissionTemplate,
+  paymentDeadlineExtendedTemplate,
+  officerPaymentInvitationTemplate,
   resultAcceptedTemplate,
   resultMemberAcceptedTemplate,
   resultRejectedTemplate,
@@ -184,6 +187,66 @@ test("applicant email templates use compact, plain formatting", async (t) => {
     assert.match(invitation.text, /₱250\.00/);
     assert.match(invitation.text, /Finance team verifies your receipt/);
     assert.match(invitation.html, />Open Payment Instructions</);
+  });
+
+  await t.test("payment emails put the key facts in the tinted box", () => {
+    const box = /background:#f8f5ff/;
+    const invitation = paymentInvitationTemplate({
+      lastName: "Olmedo",
+      applicationCode: "AP-2026-288404",
+      amountCents: 25000,
+      deadlineAt: new Date("2026-10-31T15:59:00.000Z"),
+    });
+    assert.match(invitation.html, box);
+    assert.match(invitation.html, /<strong>Amount<\/strong><br>₱250\.00/);
+    const officer = officerPaymentInvitationTemplate({
+      lastName: "Munoz",
+      title: "Corporate Secretary",
+      memberId: "AWS-2627-0004",
+      applicationCode: "AP-2026-483437",
+      amountCents: 25000,
+      deadlineAt: new Date("2026-10-31T15:59:00.000Z"),
+    });
+    assert.match(officer.html, box);
+    assert.match(officer.html, /<strong>Reserved Member ID<\/strong><br>AWS-2627-0004/);
+    const extended = paymentDeadlineExtendedTemplate({
+      lastName: "Olmedo",
+      applicationCode: "AP-2026-288404",
+      amountCents: 25000,
+      deadlineAt: new Date("2026-10-31T15:59:00.000Z"),
+    });
+    assert.match(extended.html, box);
+    assert.match(extended.html, /<strong>New deadline<\/strong>/);
+  });
+
+  await t.test("resubmission email gives Finance's note, the new deadline and a way back", () => {
+    const rejected = paymentResubmissionTemplate({
+      lastName: "Olmedo",
+      applicationCode: "AP-2026-288404",
+      amountCents: 25000,
+      deadlineAt: new Date("2026-10-31T15:59:00.000Z"),
+      reason: "The reference does not match GCash <check>",
+      reversed: false,
+    });
+    assert.match(rejected.subject, /^Action needed: resubmit your payment/);
+    assert.match(rejected.subject, /AP-2026-288404/);
+    assert.match(rejected.text, /could not verify the payment receipt/);
+    assert.match(rejected.text, /Note from Finance: The reference does not match GCash <check>/);
+    assert.match(rejected.text, /Resubmit by: October 31, 2026 at 11:59 PM/);
+    assert.match(rejected.html, /background:#f8f5ff/);
+    assert.match(rejected.html, /GCash &lt;check&gt;/);
+    assert.match(rejected.html, />Resubmit Your Payment</);
+
+    const reversed = paymentResubmissionTemplate({
+      lastName: "Olmedo",
+      applicationCode: "AP-2026-288404",
+      amountCents: 25000,
+      deadlineAt: new Date("2026-10-31T15:59:00.000Z"),
+      reason: "Wrong receipt was verified",
+      reversed: true,
+    });
+    assert.match(reversed.text, /undo the verification/);
+    assert.doesNotMatch(reversed.text, /could not verify the payment receipt/);
   });
 
   await t.test("verification email welcomes a bona fide member with their Member ID", () => {

@@ -17,6 +17,12 @@ export function decisionMessage(
   if (decision === "verified") {
     return { type: "success", message: `Verified ${name}. Their Member ID email ${delivery?.queued ? "is on its way" : "was sent"}.${tail}` }
   }
-  if (decision === "rejected") return { type: "success", message: `Rejected ${name}'s receipt. They can resubmit from their dashboard.${tail}` }
-  return { type: "success", message: `Reversed ${name}'s verification.${tail}` }
+  const emailed = delivery && delivery.failed > 0
+    ? "Their email could not be sent, so tell them to check their dashboard."
+    : delivery?.queued
+      ? "They are being emailed what to fix."
+      : "They were emailed what to fix."
+  const type = delivery && delivery.failed > 0 ? "error" : "success"
+  if (decision === "rejected") return { type, message: `Rejected ${name}'s receipt. ${emailed} They can resubmit from their dashboard.${tail}` }
+  return { type, message: `Reversed ${name}'s verification. ${emailed}${tail}` }
 }

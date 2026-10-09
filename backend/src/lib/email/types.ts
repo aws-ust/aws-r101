@@ -18,7 +18,8 @@ export type EmailMessageType =
   | "membership_confirmation"
   | "membership_verified"
   | "officer_welcome"
-  | "payment_deadline_extended";
+  | "payment_deadline_extended"
+  | "payment_resubmission_needed";
 
 export type EmailFileAttachment = {
   filename: string;
