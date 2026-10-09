@@ -41,6 +41,8 @@ import { listOpenPositions } from "@/lib/api"
 import { submitApplyForm } from "@/components/apply/apply-form-submit"
 import { ApplyFormSteps } from "@/components/apply/apply-form-steps"
 import { UST_EMAIL_DOMAIN } from "@/lib/constants"
+import { RecruitmentTrackProvider } from "@/lib/recruitment-track"
+import type { RecruitmentTrack } from "@/lib/types/track"
 import {
   applyFlowShellClasses,
   hrPageShellClasses,
@@ -81,10 +83,23 @@ const draftDocumentKeys: DraftDocumentKey[] = ["resume", "registration"]
 type ApplyFormProps = {
   initialPositionId?: string
   mode?: "public" | "hr"
+  /** The officer hunt reuses this form with its own seats, slots and endpoints. */
+  track?: RecruitmentTrack
 }
 
-export function ApplyForm({ initialPositionId, mode = "public" }: ApplyFormProps) {
+export function ApplyForm({ initialPositionId, mode = "public", track = "r101" }: ApplyFormProps) {
+  return (
+    <RecruitmentTrackProvider track={track}>
+      <ApplyFormBody initialPositionId={initialPositionId} mode={mode} track={track} />
+    </RecruitmentTrackProvider>
+  )
+}
+
+function ApplyFormBody({ initialPositionId, mode, track }: Required<Omit<ApplyFormProps, "initialPositionId">> & { initialPositionId?: string }) {
   const hrMode = mode === "hr"
+  const hunt = track === "officer_hunt"
+  // R101 keeps a draft so applicants can come back; HR intake and the hunt start clean.
+  const noDraft = hrMode || hunt
   const router = useRouter()
   const reducedMotion = useReducedMotion() ?? false
   const [step, setStep] = useState<FormStep>(1)
@@ -122,7 +137,7 @@ export function ApplyForm({ initialPositionId, mode = "public" }: ApplyFormProps
   const upload = watch("upload")
 
   useApplyFormDraft({
-    hrMode,
+    hrMode: noDraft,
     step,
     initialPositionId,
     reset,
@@ -144,7 +159,7 @@ export function ApplyForm({ initialPositionId, mode = "public" }: ApplyFormProps
   const updateUpload = (patch: Partial<UploadValues>) => {
     completedUploadRef.current = null
     for (const [key, value] of Object.entries(patch)) setValue(`upload.${key}` as never, value as never, { shouldDirty: true, shouldTouch: true })
-    if (!hrMode) {
+    if (!noDraft) {
       for (const key of draftDocumentKeys) {
         if (!(key in patch)) continue
         const file = patch[key]
@@ -182,6 +197,7 @@ export function ApplyForm({ initialPositionId, mode = "public" }: ApplyFormProps
           UST_EMAIL_DOMAIN,
           completedUploadRef,
           hrMode,
+          track,
         )
         if (hrMode) {
           router.replace("/admin/hr?notice=added")
@@ -223,13 +239,15 @@ export function ApplyForm({ initialPositionId, mode = "public" }: ApplyFormProps
       <LazyMotion features={domAnimation}>
         <div className="flex min-w-0 flex-col gap-10">
         <SectionHeader
-          eyebrow={hrMode ? "// HR INTAKE" : "// RECRUITMENT 101"}
-          title={hrMode ? "Add Applicant" : "Apply to AWS Builders – UST"}
+          eyebrow={hrMode ? "// HR INTAKE" : hunt ? "// OFFICER HUNT" : "// RECRUITMENT 101"}
+          title={hrMode ? "Add Applicant" : hunt ? "Run for AWS Builders – UST Officer" : "Apply to AWS Builders – UST"}
           titleClassName="max-w-none text-balance"
           subtitle={
             hrMode
               ? "Enter the applicant’s profile, application choices, and documents."
-              : "Every member lands on a committee that fits how they like to build, organize, or create."
+              : hunt
+                ? "Lead the next term. Choose the board, director or executive assistant seats you want, in order of preference."
+                : "Every member lands on a committee that fits how they like to build, organize, or create."
           }
         />
         <ApplyStepper current={step} hrMode={hrMode} />

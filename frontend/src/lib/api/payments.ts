@@ -253,9 +253,10 @@ export type DirectoryMember = {
 export type PendingOfficer = {
   fullName: string
   position: string
-  role: "eb" | "director"
+  role: "eb" | "director" | "ea"
   committee: string
-  reservedMemberId: string
+  /** Null for executive assistants: their number comes from their office's block at payment. */
+  reservedMemberId: string | null
   applicationCode: string
   studentNumber: string | null
   section: string | null

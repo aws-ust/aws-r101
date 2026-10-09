@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { SectionHeader } from "@/components/shared/section-header"
 import { Button } from "@/components/ui/button"
+import { useRecruitmentTrack } from "@/lib/recruitment-track"
 import { recruitmentClosedMessage } from "@/lib/season/recruitment"
 import type { RecruitmentWindow } from "@/lib/api/client"
 import {
@@ -21,29 +22,38 @@ type ApplySeasonClosedProps = {
 
 export function ApplySeasonClosed({ window }: ApplySeasonClosedProps) {
   const message = recruitmentClosedMessage(window)
+  const hunt = useRecruitmentTrack() === "officer_hunt"
 
   return (
     <main className={`${applyFlowShellClasses} gap-10`}>
       <SectionHeader
-        eyebrow="// RECRUITMENT 101"
-        title="Apply to AWS Builders – UST"
+        eyebrow={hunt ? "// OFFICER HUNT" : "// RECRUITMENT 101"}
+        title={hunt ? "Run for AWS Builders – UST Officer" : "Apply to AWS Builders – UST"}
         titleClassName="max-w-none text-balance"
-        subtitle="Every member lands on a committee that fits how they like to build, organize, or create."
+        subtitle={
+          hunt
+            ? "Lead the next term as a board member, director or executive assistant."
+            : "Every member lands on a committee that fits how they like to build, organize, or create."
+        }
       />
       <div className={panelClasses}>
         <p className={copyClasses} role="status">{message}</p>
         <p className={`${copyClasses} mt-4`}>
-          You can still browse open roles or check an application you already submitted.
+          {hunt
+            ? "You can still check an application you already submitted."
+            : "You can still browse open roles or check an application you already submitted."}
         </p>
         <div className={actionsClasses}>
-          <Button
-            color="purple"
-            className={ghostPillButtonClasses}
-            nativeButton={false}
-            render={<Link href="/apply/positions" />}
-          >
-            Browse Positions
-          </Button>
+          {hunt ? null : (
+            <Button
+              color="purple"
+              className={ghostPillButtonClasses}
+              nativeButton={false}
+              render={<Link href="/apply/positions" />}
+            >
+              Browse Positions
+            </Button>
+          )}
           <Button
             color="cyan"
             nativeButton={false}

@@ -24,7 +24,12 @@ const mutedClasses = "text-prelude"
 
 function IdStatus({ entry }: { entry: MemberEntry }) {
   if (!entry.memberId) {
-    return <span className={mutedClasses}>{entry.reservedMemberId ? `Reserved ${entry.reservedMemberId}` : "No ID yet"}</span>
+    const pendingLabel = entry.reservedMemberId
+      ? `Reserved ${entry.reservedMemberId}`
+      : entry.role === "ea"
+        ? "Numbered at payment"
+        : "No ID yet"
+    return <span className={mutedClasses}>{pendingLabel}</span>
   }
   return (
     <span>

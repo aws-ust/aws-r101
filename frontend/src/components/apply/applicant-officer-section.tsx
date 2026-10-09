@@ -22,11 +22,13 @@ export function ApplicantOfficerSection({ application, officer, onUpdated }: Off
     <ApplicantSection
       area="MEMBER ID"
       titleId="officer-member-id-title"
-      title={issued ? officer.title : "Your Member ID is reserved"}
+      title={issued ? officer.title : memberId ? "Your Member ID is reserved" : `Welcome, ${officer.title}`}
       status={
         issued
           ? "Your official Member ID is active."
-          : "This number is held for your seat. It is released, with your digital member ID, once your membership payment is verified."
+          : memberId
+            ? "This number is held for your seat. It is released, with your digital member ID, once your membership payment is verified."
+            : "Your Member ID is issued, with your digital member ID, once your membership payment is verified."
       }
     >
       <div className={bodyClasses}>

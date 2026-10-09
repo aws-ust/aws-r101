@@ -129,6 +129,7 @@ export function ApplicantDashboardContent({
         <ApplicantResultPanel
           result={result}
           choices={application.choices}
+          hunt={application.track === "officer_hunt"}
           milestone={accepted && !payment.loading && !hasId}
           onApplicationUpdated={onApplicationUpdated}
         />

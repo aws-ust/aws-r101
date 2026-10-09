@@ -8,12 +8,13 @@ import {
   userFacingApiError,
 } from "@/lib/api/error-message"
 import type { ApplicationStatus, ApplicationType, DocumentType } from "@/lib/types/application"
+import type { RecruitmentTrack } from "@/lib/types/track"
 
 /** Elected officers and advisers sign in as an `officer` application. */
 export type ApplicantApplicationType = ApplicationType | "officer"
 
 export type OfficerInfo = {
-  kind: "eb" | "director" | "adviser"
+  kind: "eb" | "director" | "ea" | "adviser"
   title: string
   /** The number held for this seat until the membership payment is verified. */
   reservedMemberId: string | null
@@ -67,6 +68,8 @@ export type ApplicantApplication = {
   applicationCode: string
   status: ApplicationStatus
   applicationType: ApplicantApplicationType
+  /** R101, or the officer hunt for the next board, directors and assistants. */
+  track: RecruitmentTrack
   officer: OfficerInfo | null
   memberId: string | null
   firstName: string
