@@ -135,13 +135,16 @@ export async function handleCreateApplication(
       );
     }
 
-    const choiceRefs = await choiceRefsForPositions(positionIds);
-    const urlError = validateChoiceUrls(
-      choiceRefs,
-      parsed.value.portfolioUrl,
-      parsed.value.githubUrl,
-    );
-    if (urlError) return c.json({ error: urlError }, 400);
+    // Portfolio and GitHub links are R101 committee requirements; the hunt asks for neither.
+    if (track === "r101") {
+      const choiceRefs = await choiceRefsForPositions(positionIds);
+      const urlError = validateChoiceUrls(
+        choiceRefs,
+        parsed.value.portfolioUrl,
+        parsed.value.githubUrl,
+      );
+      if (urlError) return c.json({ error: urlError }, 400);
+    }
   }
 
   try {

@@ -220,6 +220,7 @@ export async function getApplicantEditableApplication(applicationId: string) {
     applicationCode: application.applicationCode,
     status: application.status,
     applicationType: application.applicationType,
+    track: application.track,
     officer,
     memberId: application.memberId,
     firstName: application.firstName,
