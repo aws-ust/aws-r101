@@ -251,9 +251,11 @@ type above are unchanged, but the working areas differ from the public site.
   and Esc work unless a field, menu or picker has the key. Rows lay out by
   the table's own width (container queries).
 - **HR sidebar.** Grouped by what the work is, not by page: Overview alone
-  at the top; Recruitment (Applications, Results, Archive); Membership
-  (Members, Payments, Community Links); Setup (Recruitment Setup, Committees,
-  Payment Setup) pinned to the foot, since configuration is visited a few
+  at the top; Recruitment (Applications, Results, Archive); Officer Hunt
+  (Hunt Applications, Hunt Results, the separate round for the next board,
+  directors and EAs); Membership
+  (Members, Payments, Community Links); Setup (Recruitment Setup, Officer Hunt
+  Setup, Committees, Payment Setup) pinned to the foot, since configuration is visited a few
   times a season. Every group below Overview is set off by a hairline. Rows are compact (36px, 44px on touch); the only lit things are the
   current page's pill and its aquamarine icon. Navigation lives in
   `frontend/src/components/hr/hr-navigation.ts`.

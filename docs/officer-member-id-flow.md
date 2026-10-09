@@ -2,6 +2,8 @@
 
 The Executive Board (8) and committee directors (13) were elected before the app existed, so they never go through R101. Advisers (3) don't pay at all. EAs, committee staff and general members come from R101.
 
+> From the next term on, the board, directors and EAs come through the **Officer Hunt**, which runs in the app. See [officer-hunt-and-payments-flow.md](officer-hunt-and-payments-flow.md). Seeding with `db:seed-officers` was the one-time way to bring in the current term.
+
 Everyone ends up with the same kind of Member ID (`AWS-2627-NNNN`) and the same digital card. What differs is how they get in.
 
 ## 1. The two paths side by side
